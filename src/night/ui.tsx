@@ -1,4 +1,4 @@
-import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
 import { teamColors } from '../data/teamColors';
@@ -7,7 +7,7 @@ import { isBombMasked, maskName, maskText, maskYears } from '../components/bombM
 import { cardRoles } from '../components/cardRoles';
 import { BRAND_MARK } from '../brand';
 import { bandInk } from './color';
-import { CapI, fmtCaps, cx } from './frame';
+import { CapI, FaceContext, fmtCaps, cx } from './frame';
 export * from './frame';
 
 /**
@@ -39,12 +39,27 @@ function initials(name: string): string {
 }
 
 /** A headshot, or the player's initials on a plain disc. The Bomb shows a "?". */
-export function NFace({ name, className }: { name: string; className?: string }) {
+export function NFace({ name, className, span }: { name: string; className?: string; span?: PlayerSpan }) {
   const src = headshotUrl(name);
   const [failed, setFailed] = useState<string | null>(null);
+  const open = useContext(FaceContext);
   if (isBombMasked(name)) return <span className={cx('ini', className)}>?</span>;
-  if (src && failed !== src) return <img className={className} src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(src)} />;
-  return <span className={cx('ini', className)}>{initials(name)}</span>;
+  const face = src && failed !== src ? <img className={className} src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(src)} /> : <span className={cx('ini', className)}>{initials(name)}</span>;
+  if (!span || !open) return face;
+  return (
+    <button
+      type="button"
+      className="face-btn"
+      title={`${span.playerName}: open his card`}
+      aria-label={`${span.playerName}: open his card`}
+      onClick={(e) => {
+        e.stopPropagation();
+        open(span);
+      }}
+    >
+      {face}
+    </button>
+  );
 }
 
 

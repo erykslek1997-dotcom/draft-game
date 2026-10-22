@@ -352,7 +352,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [x] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
       silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
 - [x] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
-- [ ] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
+- [x] Klikalne twarze i karty graczy wszędzie → okno gracza (w sezonie ze statystykami sezonu).
 - [x] Mecz na żywo: przywrócić „Key moments” (ostatnie 6 min, przed meczem i w trakcie) i ⅛.
 - [x] Box score: piątka, linia „Bench”, ławka po minutach, suma; jeden znacznik „na boisku”.
 - [ ] Draw Five: animacja rozdania / wyboru / tury AI w jednym języku; AI dostaje to samo

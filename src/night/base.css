@@ -366,3 +366,8 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 /* 2026-10-22 (playtest): the speeds sat glued to the Play button */
 .nt .speeds + .btn2, .nt .speeds + .stackb { margin-top: 18px; }
 .nt .voices-more { display: inline-block; margin-top: 10px; }
+/* a face that opens the player's window (playtest 2026-10-22): the button takes no box of its own */
+.nt .face-btn { display: contents; cursor: pointer; }
+.nt .face-btn > img, .nt .face-btn > .ini { cursor: pointer; transition: filter 0.15s; }
+.nt .face-btn:hover > img, .nt .face-btn:hover > .ini { filter: brightness(1.15); outline: 1.5px solid var(--ink3); outline-offset: 1px; }
+.nt .face-btn:focus-visible > img, .nt .face-btn:focus-visible > .ini { outline: 2px solid var(--ink); outline-offset: 2px; }

@@ -29,7 +29,8 @@ import { overallTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark } from '../night/league';
-import { Actions, Btn, Dialog, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
+import { Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
+import { SpanCard } from './PlayerPeekModal';
 import { ShareNight, type PosterData } from '../night/Share';
 import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, monthOf, standingsAt, teamGames } from './SeasonCalendar';
 
@@ -382,6 +383,14 @@ function SeasonBody({
     [playoffs, finalsDone, reveal],
   );
   const [card, setCard] = useState<SeasonPlayerLine | null>(null);
+  const [peek, setPeek] = useState<PlayerSpan | null>(null);
+  // A face opens his season card: during the calendar the season through tonight, nothing later.
+  const openFace = (span: PlayerSpan) => {
+    const lines = chapter === 'calendar' ? seasonLinesThrough(season, calendar.day) : season.players;
+    const line = lines.find((l) => l.span.id === span.id);
+    if (line) setCard(line);
+    else setPeek(span);
+  };
   const [sharing, setSharing] = useState(false);
   const startPlayoffs = () => {
     if (reveal.kind === 'none') setReveal({ kind: 'live', round: 0, game: 0 });
@@ -537,6 +546,7 @@ function SeasonBody({
   const overlay = (
     <>
       {card && <SeasonPlayerCard line={card} teams={teams} byId={byId} codes={codes} season={season} playoffs={finalsDone ? playoffs : null} onClose={() => setCard(null)} />}
+      {peek && <SpanCard span={peek} onClose={() => setPeek(null)} />}
       {sharing && <ShareNight d={poster} fileName={`${you.name} season`} onClose={() => setSharing(false)} />}
     </>
   );
@@ -544,6 +554,7 @@ function SeasonBody({
   if (chapter === 'calendar') {
     return (
       <PlayerCardContext.Provider value={setCard}>
+<FaceContext.Provider value={openFace}>
         <CalendarChapter
           teams={teams}
           codes={codes}
@@ -559,13 +570,15 @@ function SeasonBody({
           }}
           onClose={onClose}
         />
-      </PlayerCardContext.Provider>
+      </FaceContext.Provider>
+</PlayerCardContext.Provider>
     );
   }
 
   if (chapter === 'playoffs' && playoffs) {
     return (
       <PlayerCardContext.Provider value={setCard}>
+<FaceContext.Provider value={openFace}>
         <PlayoffsChapter
           teams={teams}
           byId={byId}
@@ -584,7 +597,8 @@ function SeasonBody({
           playInDone={calendar.playInDone}
           setPlayInDone={calendar.setPlayInDone}
         />
-      </PlayerCardContext.Provider>
+      </FaceContext.Provider>
+</PlayerCardContext.Provider>
     );
   }
 
@@ -598,6 +612,7 @@ function SeasonBody({
   else main = <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />;
   return (
     <PlayerCardContext.Provider value={setCard}>
+<FaceContext.Provider value={openFace}>
       <NightGame aside={aside(undefined, nextButtons)} overlay={overlay}>
         {main}
         {playoffs && (
@@ -606,7 +621,8 @@ function SeasonBody({
           </Btn>
         )}
       </NightGame>
-    </PlayerCardContext.Provider>
+    </FaceContext.Provider>
+</PlayerCardContext.Provider>
   );
 }
 
@@ -993,7 +1009,7 @@ function Stats({ teams, season, playoffs, youId, codes, through, playoffsSoFar }
                   <tr key={`${l.teamId}${l.span.id}`} className={l.teamId === youId ? 'you' : undefined}>
                     <td>
                       <span className="sb-f">
-                        <NFace name={l.span.playerName} />
+                        <NFace name={l.span.playerName} span={l.span} />
                       </span>
                       <PlayerName line={l} />
                       <small>{l.span.primaryPosition}</small>
@@ -1063,7 +1079,7 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
       <span className="an-l">{label}</span>
       {list.map((l) => (
         <div key={`${l.teamId}${l.span.id}`} className={cx('np', l.teamId === youId && 'you')}>
-          <NFace name={l.span.playerName} />
+          <NFace name={l.span.playerName} span={l.span} />
           <div>
             <b>
               <PlayerName line={l}>
@@ -1098,7 +1114,7 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
           {big.map((x) => (
             <div key={x.t} className="aw big">
               <span className="aw-f">
-                <NFace name={x.l.span.playerName} />
+                <NFace name={x.l.span.playerName} span={x.l.span} />
               </span>
               <div>
                 <span className="aw-t">{x.t}</span>
@@ -1132,7 +1148,7 @@ function Awards({ season, playoffs, byId, youId, codes }: { season: LiveSeasonRe
               {k === 1 && <span className="asg-vs">vs</span>}
               <div>
                 <div className="asg-cap">
-                  <NFace name={side.captain.span.playerName} />
+                  <NFace name={side.captain.span.playerName} span={side.captain.span} />
                   <div>
                     <b>Team {lastName(side.captain.span.playerName)}</b>
                     <small>
@@ -1443,7 +1459,7 @@ function PlayoffsChapter({
               return (
                 <div key={l.span.id} className="duel">
                   <div className="pl">
-                    <NFace name={l.span.playerName} />
+                    <NFace name={l.span.playerName} span={l.span} />
                     <div>
                       <b>
                         <PlayerName line={l}>
@@ -1459,7 +1475,7 @@ function PlayoffsChapter({
                   <span className="vs">vs</span>
                   {o ? (
                     <div className="pl r">
-                      <NFace name={o.span.playerName} />
+                      <NFace name={o.span.playerName} span={o.span} />
                       <div>
                         <b>
                           <small>{o.span.primaryPosition}</small>
@@ -1714,7 +1730,7 @@ function Finale({
             {awards.map((x, i) => (
               <div key={i} className="aw">
                 <span className="aw-f">
-                  <NFace name={x.l.span.playerName} />
+                  <NFace name={x.l.span.playerName} span={x.l.span} />
                 </span>
                 <div>
                   <span className="aw-t">{x.t}</span>
@@ -1772,7 +1788,7 @@ function SeasonTable({ lines }: { lines: SeasonPlayerLine[] }) {
             <tr key={l.span.id}>
               <td>
                 <span className="sb-f">
-                  <NFace name={l.span.playerName} />
+                  <NFace name={l.span.playerName} span={l.span} />
                 </span>
                 <PlayerName line={l} />
                 <small>{l.span.primaryPosition}</small>

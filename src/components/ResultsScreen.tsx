@@ -1178,7 +1178,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   <span>{slot}</span>
                 </div>
                 <div className="pic">
-                  <NFace name={starter.player.playerName} />
+                  <NFace name={starter.player.playerName} span={starter.player} />
                 </div>
                 <div className="nm">{maskText(starter.player.playerName)}</div>
                 <div className="sb">

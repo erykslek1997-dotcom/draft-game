@@ -174,7 +174,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
         return (
           <div key={`${l.teamId}${l.spanId}`} className={cx('mvp-r', l.teamId === youId && 'you')}>
             <span className="rk">{i + 1}</span>
-            <NFace name={span?.playerName ?? ''} />
+            <NFace name={span?.playerName ?? ''} span={span} />
             <div>
               <b>
                 {span?.playerName}
@@ -196,7 +196,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
 export function GameLine({ span, line, ctx }: { span: PlayerSpan | undefined; line: BoxLineStats; ctx: ReactNode }) {
   return (
     <div className="gos">
-      <NFace name={span?.playerName ?? ''} />
+      <NFace name={span?.playerName ?? ''} span={span} />
       <div>
         <b>
           {span?.playerName}
@@ -524,7 +524,7 @@ export function MonthBreak({ season, snap, you, byId, codes, spans }: { season: 
             <section>
               <H3 note={label}>Player of the Month</H3>
               <div className="potm">
-                <NFace name={potmSpan.playerName} />
+                <NFace name={potmSpan.playerName} span={potmSpan} />
                 <div>
                   <b>{potmSpan.playerName}</b>
                   <span className="ln">
@@ -603,7 +603,7 @@ export function AllStarDraft({ season, you, codes, title }: { season: LiveSeason
               {k === 1 && <span className="asg-vs">vs</span>}
               <div>
                 <div className="asg-cap">
-                  <NFace name={side[0].span.playerName} />
+                  <NFace name={side[0].span.playerName} span={side[0].span} />
                   <div>
                     <b>Team {capName(k as 0 | 1)}</b>
                     <small>

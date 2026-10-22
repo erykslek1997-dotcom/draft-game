@@ -864,7 +864,7 @@ export default function LiveGameNight({
                 const side = (sp: PlayerSpan | undefined) =>
                   sp ? (
                     <div className="pl">
-                      <NFace name={sp.playerName} />
+                      <NFace name={sp.playerName} span={sp} />
                       <div>
                         <b>
                           {(() => {

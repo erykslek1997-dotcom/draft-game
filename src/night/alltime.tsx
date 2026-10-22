@@ -96,7 +96,7 @@ export function BoardGrid({
               if (s)
                 return (
                   <span key={t.id} className={`bg-cell filled${t.isHuman ? ' you' : ''}`} title={`#${n} · ${maskName(s.playerName)} ${maskYears(s.playerName, s.spanLabel)}`}>
-                    <NFace name={s.playerName} />
+                    <NFace name={s.playerName} span={s} />
                     <small>{s.primaryPosition}</small>
                     <b>{shortName(s.playerName).split(' ').slice(1).join(' ') || shortName(s.playerName)}</b>
                   </span>
@@ -169,7 +169,7 @@ export function NineSlots({
           const band = spanBand(s);
           return (
             <div key={i} className="b filled" style={{ '--team': band.color } as CSSProperties} title={maskName(s.playerName)}>
-              <NFace name={s.playerName} />
+              <NFace name={s.playerName} span={s} />
               <div>
                 <b>{shortName(s.playerName)}</b>
                 <span>

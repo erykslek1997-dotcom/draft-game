@@ -204,7 +204,7 @@ export function PlayerTable({
           return (
             <tr key={r.key} className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : ''].filter(Boolean).join(' ') || undefined} title={r.title}>
               <td className="f">
-                <NFace name={s.playerName} />
+                <NFace name={s.playerName} span={s} />
               </td>
               <td>
                 {onOpen ? (

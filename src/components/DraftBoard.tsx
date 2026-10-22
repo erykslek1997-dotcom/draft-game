@@ -45,7 +45,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, EmptyNote, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, CapBar, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -472,6 +472,8 @@ export default function DraftBoard({
   }, [fgaMax]);
   // One player's scouting window at a time.
   const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
+  // A face on the board or the team opens his scouting card, with Draft when he's still there.
+  const openFace = (span: PlayerSpan) => setPeekPlayer(span.playerName);
   // Scouting reports used this draft — kept per draft seed so a resumed draft remembers them.
   const scoutKey = `draftverse.scouted.v1.${state.seed}`;
   const [scoutedPlayers, setScoutedPlayers] = useState<Set<string>>(() => {
@@ -1406,7 +1408,7 @@ export default function DraftBoard({
                       <td className="rd">R{i + 1}</td>
                       <td className={`sl${sl === 'bench' ? ' bn' : ''}`}>{sl}</td>
                       <td className="f">
-                        <NFace name={pl.playerName} />
+                        <NFace name={pl.playerName} span={pl} />
                       </td>
                       <td>
                         <div className="nm">{masked ? BOMB_NAME : pl.playerName}</div>
@@ -1462,6 +1464,7 @@ export default function DraftBoard({
       );
     }
     return (
+      <FaceContext.Provider value={openFace}>
       <NightGame aside={aside} overlay={dialogs}>
         {main}
         {rotation}
@@ -1478,6 +1481,7 @@ export default function DraftBoard({
           </div>
         )}
       </NightGame>
+      </FaceContext.Provider>
     );
   }
 
@@ -1715,6 +1719,7 @@ export default function DraftBoard({
     );
   }
   return (
+    <FaceContext.Provider value={openFace}>
     <NightGame aside={aside} overlay={dialogs}>
       {main}
       {rotation}
@@ -1734,5 +1739,6 @@ export default function DraftBoard({
         </div>
       )}
     </NightGame>
+    </FaceContext.Provider>
   );
 }

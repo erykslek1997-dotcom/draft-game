@@ -113,15 +113,17 @@ export function PlayerPeekModal({
   group: { playerName: string; spans: PlayerSpan[]; spansByAiValue: PlayerSpan[] };
   /** The stretch the player's card drafts. */
   cardSpanId: string;
-  state: DraftState;
+  /** Without a draft (the results, a mode's end): his card to read — no Draft or Scout buttons. */
+  state?: DraftState;
   canPick: boolean;
-  currentTeam: Team;
+  currentTeam?: Team;
   onClose: () => void;
-  onPick: (id: string) => void;
+  onPick?: (id: string) => void;
   scouted: boolean;
-  scoutsLeft: number;
-  onScout: () => void;
+  scoutsLeft?: number;
+  onScout?: () => void;
 }) {
+  const readOnly = !state || !currentTeam || !onPick;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -142,7 +144,7 @@ export function PlayerPeekModal({
   const hiddenCount = rows.length - 1 - shortList.length;
   const teamCodes = useMemo(() => [...new Set(rows.flatMap((s) => teamsForSpan(s).map((t) => t.code)))], [rows]);
   const careerYears = `${spanYears(rows[0].spanLabel)[0]}–${spanYears(rows[rows.length - 1].spanLabel)[1]}`;
-  const legal = (span: PlayerSpan) => canPick && isPickLegal(state, span.id);
+  const legal = (span: PlayerSpan) => canPick && !!state && isPickLegal(state, span.id);
 
   const nums: Array<[string, string, string?]> = [
     [cardSpan.box.ppg.toFixed(1), 'PTS'],
@@ -194,19 +196,21 @@ export function PlayerPeekModal({
                 <Grades span={cardSpan} />
               </div>
             )}
-            <button
-              type="button"
-              className={`btn ${legal(cardSpan) ? 'go' : 'off'}`}
-              style={{ marginTop: 14 }}
-              disabled={!legal(cardSpan)}
-              title={draftButtonTitle(state, cardSpan.id, canPick, currentTeam)}
-              onClick={() => onPick(cardSpan.id)}
-            >
-              Draft {cardSpan.spanLabel}
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                className={`btn ${legal(cardSpan) ? 'go' : 'off'}`}
+                style={{ marginTop: 14 }}
+                disabled={!legal(cardSpan)}
+                title={draftButtonTitle(state, cardSpan.id, canPick, currentTeam)}
+                onClick={() => onPick(cardSpan.id)}
+              >
+                Draft {cardSpan.spanLabel}
+              </button>
+            )}
           </section>
 
-          {!scouted && (
+          {!scouted && !readOnly && onScout && scoutsLeft !== undefined && (
             <div className="pk2-scout">
               <span>A scouting report shows his tier and six grades for every stretch.</span>
               <button
@@ -275,15 +279,17 @@ export function PlayerPeekModal({
                                   · plays {span.primaryPosition}
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                className={`btn ${legal(span) ? 'line' : 'off'}`}
-                                disabled={!legal(span)}
-                                title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                                onClick={() => onPick(span.id)}
-                              >
-                                Draft {span.spanLabel} instead
-                              </button>
+                              {!readOnly && (
+                                <button
+                                  type="button"
+                                  className={`btn ${legal(span) ? 'line' : 'off'}`}
+                                  disabled={!legal(span)}
+                                  title={draftButtonTitle(state, span.id, canPick, currentTeam)}
+                                  onClick={() => onPick(span.id)}
+                                >
+                                  Draft {span.spanLabel} instead
+                                </button>
+                              )}
                             </td>
                           </tr>
                         )}
@@ -303,4 +309,9 @@ export function PlayerPeekModal({
       </div>
     </>
   );
+}
+
+/** A player's card to read, from one span (the results, the season, a mode's end). */
+export function SpanCard({ span, onClose }: { span: PlayerSpan; onClose: () => void }) {
+  return <PlayerPeekModal group={{ playerName: span.playerName, spans: [span], spansByAiValue: [span] }} cardSpanId={span.id} canPick={false} scouted onClose={onClose} />;
 }

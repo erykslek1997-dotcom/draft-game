@@ -673,7 +673,7 @@ function OppRow({ title, note, lineup, nextPos, newId, legends }: { title: strin
             );
           return (
             <li key={s} className={p.id === newId ? 'new' : undefined}>
-              <NFace name={p.playerName} />
+              <NFace name={p.playerName} span={p} />
               <span className="pos">{s}</span>
               <span className="who">{maskName(p.playerName)}</span>
               <span className="c">
@@ -693,7 +693,7 @@ function TaleOfTheTape({ yours, theirs, theirLabel }: { yours: Lineup; theirs: L
   const side = (p: PlayerSpan | undefined) =>
     p ? (
       <div className="pl">
-        <NFace name={p.playerName} />
+        <NFace name={p.playerName} span={p} />
         <div>
           <b>{maskName(p.playerName)}</b>
           <small>
@@ -1288,7 +1288,7 @@ function MiniCard({ pos, span, hit }: { pos: Position; span?: PlayerSpan; hit: b
         <span>{pos}</span>
       </div>
       <div className="bd">
-        <NFace name={span.playerName} />
+        <NFace name={span.playerName} span={span} />
         <div style={{ minWidth: 0 }}>
           <b>{shortName(span.playerName)}</b>
           <span className="s">
