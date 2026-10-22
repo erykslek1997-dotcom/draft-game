@@ -1243,8 +1243,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 slot={slot}
                 extra={
                   <>
-                    {' '}
-                    · <b>{Math.round(starter.minutes)}m</b>
+                    <span className="sb-yc"> · </span>
+                    <b>{Math.round(starter.minutes)}m</b>
                   </>
                 }
                 foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
@@ -1342,9 +1342,29 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       <td colSpan={6}>
                         {/* their five first, as cards: who they are matters most (playtest 2026-10-22) */}
                         <div className="five-row rival-five">
-                          {primaryStarters(displayTeam(team)).map((x) => (
-                            <RosterCard key={x.slot} span={x.player} slot={x.slot} foot={null} />
-                          ))}
+                          {(() => {
+                            // the same card as your roster: the starter's minutes, who comes in for him (playtest: "brak minut i ławki")
+                            const shown = displayTeam(team);
+                            const rows = allAssignments(shown);
+                            return primaryStarters(shown).map((x) => {
+                              const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
+                              const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((a, b) => b.minutes - a.minutes);
+                              return (
+                                <RosterCard
+                                  key={x.slot}
+                                  span={x.player}
+                                  slot={x.slot}
+                                  extra={
+                                    <>
+                                      <span className="sb-yc"> · </span>
+                                      <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
+                                    </>
+                                  }
+                                  foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+                                />
+                              );
+                            });
+                          })()}
                         </div>
                         <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
                       </td>

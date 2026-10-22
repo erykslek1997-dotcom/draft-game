@@ -13,10 +13,44 @@ import { NightSettings } from './Dialogs';
 export type MenuMode = 'bestfive' | 'quickfive' | 'draft';
 
 const MODES: { id: MenuMode; name: string; line: string; time: string }[] = [
-  { id: 'bestfive', name: 'Draw Five', line: 'Five cards, one cap, beat the AI.', time: '5 min' },
-  { id: 'quickfive', name: 'Mini Draft', line: 'A real 16-team draft, five rounds.', time: '8 min' },
-  { id: 'draft', name: 'All-Time Draft', line: 'Nine rounds, then a season and the playoffs.', time: '30 min' },
+  { id: 'bestfive', name: 'Draw Five', line: 'Five cards. One cap. Beat the AI.', time: '5 min' },
+  { id: 'quickfive', name: 'Mini Draft', line: 'Sixteen GMs. Five rounds. No mercy.', time: '8 min' },
+  { id: 'draft', name: 'All-Time Draft', line: 'Nine rounds, a season, a ring.', time: '30 min' },
 ];
+
+/** Each mode's small motif in the menu (playtest 2026-10-22, "brakuje charakteru"; mockup Menu C): a
+ * fan of cards, the lottery's red ball, the trophy. */
+function ModeMark({ id }: { id: MenuMode }) {
+  if (id === 'bestfive')
+    return (
+      <span className="m2-mk fan" aria-hidden>
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+    );
+  if (id === 'quickfive')
+    return (
+      <span className="m2-mk lot" aria-hidden>
+        <i />
+      </span>
+    );
+  return (
+    <span className="m2-mk cup" aria-hidden>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+        <path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8" />
+      </svg>
+    </span>
+  );
+}
+
+/** "Wednesday, Oct 22 · Night edition" under the masthead. */
+function editionLine(): string {
+  const d = new Date();
+  return `${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })} · Night edition`;
+}
 
 /**
  * The menu (night edition, mockup `alltime.html#menu2`): the masthead, your team, a draft to
@@ -103,6 +137,7 @@ export function NightMenu({
             <div className="m2-mast">
               <b>{BRAND}</b>
               <span>{BRAND_TAGLINE}</span>
+              <span className="m2-ed">{editionLine()}</span>
             </div>
             <div className="m2-team">
               {franchise && <LeagueMark name={teamName} code={franchiseCode(teamName)} />}
@@ -137,6 +172,7 @@ export function NightMenu({
                 <li key={m.id}>
                   <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
                     <span className="m2-n">{i + 1}</span>
+                    <ModeMark id={m.id} />
                     <div>
                       <b>{m.name}</b>
                       <span>

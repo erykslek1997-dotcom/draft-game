@@ -158,7 +158,7 @@
   /* a wide row in the aside (the season's tabs) scrolls inside itself and never widens the page:
      it used to push the tally's right column off the screen (playtest: "ucieka do prawej") */
   .nt aside > * { min-width: 0; }
-  .nt aside section.snav { margin: 0 0 0 16px; padding-right: 16px; scrollbar-width: none; }
+  .nt aside section.snav { margin: 0 16px 4px; scrollbar-width: none; }
   /* the league's player table: short names, the name column held while the numbers scroll */
   .nt .sbox.stats td:first-child, .nt .sbox.stats th:first-child { position: sticky; left: 0; z-index: 1; background: var(--bg); }
   .nt .sbox.stats tr.you td:first-child { background: linear-gradient(var(--you-tint), var(--you-tint)), var(--bg); }
@@ -213,8 +213,7 @@
      no note under the tally, no notes on section heads, no words in empty slots; the menu without
      its mode lines and footnotes; a finished game's key moments only */
   .nt .prompt:not(.ph-keep) p, .nt .sub-note, .nt h3 > span, .nt .slot.empty small, .nt .slot.active small { display: none; }
-  .nt .m2-row div span, .nt .m2-note:not(.loading) { display: none; }
-  .nt .m2-row { min-height: 52px; }
+  .nt .m2-note:not(.loading) { display: none; }
   .nt .dnp-note { display: none; }
   /* the app bar is the page's top rule: no second double rule under it */
   .nt .headline, .nt .hero2 { border-top: 0; padding-top: 2px; }
@@ -269,3 +268,54 @@
 /* an opened rival in the standings: their five as cards before the comparison (phone and computer) */
 .nt .rival-five { margin: 6px 0 16px; }
 .nt .rival-five .card .roles:empty { display: none; }
+
+/* the menu's character (mockup Menu C, 2026-10-22: "brakuje charakteru"): each mode's motif, its one
+   line in the game's voice, the masthead as a paper's nameplate with the date */
+.nt .m2-row { grid-template-columns: 34px 40px minmax(0, 1fr) auto auto; }
+.nt .m2-mk { display: grid; place-items: center; height: 32px; color: var(--gold); }
+.nt .m2-mk.fan { position: relative; width: 40px; }
+.nt .m2-mk.fan i { position: absolute; top: 4px; width: 15px; height: 21px; border-radius: 2px; background: var(--card); border: 1px solid var(--cink); }
+.nt .m2-mk.fan i:nth-child(1) { left: 4px; transform: rotate(-16deg); top: 7px; }
+.nt .m2-mk.fan i:nth-child(2) { left: 11px; transform: rotate(-6deg); }
+.nt .m2-mk.fan i:nth-child(3) { left: 18px; transform: rotate(6deg); }
+.nt .m2-mk.fan i:nth-child(4) { left: 25px; transform: rotate(16deg); top: 7px; }
+.nt .m2-mk.lot i { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink3); display: grid; place-items: center; }
+.nt .m2-mk.lot i::after { content: ''; width: 11px; height: 11px; border-radius: 50%; background: var(--red); }
+.nt .m2-ed { display: none; }
+@media (max-width: 600px) {
+  .nt .m2-mast { margin: 0; height: auto; display: block; padding: 10px 0 8px; text-align: center; border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); }
+  .nt .m2-mast b { font-size: 54px; line-height: 0.9; }
+  .nt .m2-mast span { display: inline; font-size: 12px; }
+  .nt .m2-mast span:not(.m2-ed) { float: left; margin-top: 8px; }
+  .nt .m2-mast .m2-ed { display: inline; float: right; margin-top: 8px; }
+  .nt .m2-mast::after { content: ''; display: block; clear: both; }
+  .nt .m2 { padding-top: 12px; }
+  .nt .m2-n { display: none; }
+  .nt .m2-row { grid-template-columns: 44px minmax(0, 1fr) auto; min-height: 72px; gap: 12px; }
+  .nt .m2-modes b { font-size: 26px; }
+  .nt .m2-row div span { display: block; margin-top: 3px; font-size: 13px; font-style: italic; color: var(--ink2); }
+  .nt .m2-foot { border-top: 1px solid var(--rule); padding-top: 12px; }
+}
+@media (max-width: 600px) {
+  /* Stats: the Leaders | Players line right under the two tabs, the pickers in one row below it */
+  .nt .ptabs:has(> .pt-more) { border-bottom: 0; }
+  .nt .ptabs > .pt-more { border-top: 1.5px solid var(--rule2); padding-top: 8px; margin: 0 0 4px; flex-wrap: nowrap; gap: 6px; align-items: baseline; overflow-x: auto; scrollbar-width: none; }
+  .nt .pt-more > span { font-size: 12px; }
+  .nt .pt-more select { margin-right: 6px; font-size: 15px; }
+  /* the draft list: the caps on the right edge */
+  .nt .plist th.num, .nt .plist td.cap { text-align: right; }
+}
+@media (max-width: 600px) {
+  /* the results' roster cards keep the minutes and who comes in, small (playtest: "brak minut i ławki") */
+  .nt .five-row .card .sb, .nt .five-row .card .roles { display: block; padding: 0 3px 5px; font-size: 11px; line-height: 1.2; text-align: center; }
+  .nt .five-row .card .roles { font-style: italic; color: var(--cink2); }
+  /* on a phone the roster card says minutes only: no years, no caps (playtest: "rozwala całość") */
+  .nt .five-row .card .sb-yc { display: none; }
+  .nt .five-row .card .sb { font-size: 12px; }
+}
+@media (max-width: 600px) {
+  /* not on the clock: no Draft buttons, so their column goes and the caps reach the right edge */
+  .nt .plist:not(:has(.draft)) col:last-child { width: 0 !important; }
+  .nt .plist:not(:has(.draft)) td.act, .nt .plist:not(:has(.draft)) th:last-child:empty { padding: 0; }
+  .nt .plist td.cap { padding-right: 0; }
+}
