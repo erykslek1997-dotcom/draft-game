@@ -19,16 +19,18 @@ import {
   type SeasonPlayerLine,
   type SimProgress,
 } from '../engine/liveSeason';
-import { gameWinProbability, seriesWinProbability } from '../engine/matchup';
+import { gameWinProbability, projectMatchup, seriesWinProbability } from '../engine/matchup';
 import { seasonStory, seriesPreview, seriesVerdict } from '../engine/seasonStory';
 import { generateRosterInsights, insightContextFor, type RosterInsight } from '../engine/insights';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { rankTeams } from '../engine/scoring';
+import { rankTeams, scoreTeam } from '../engine/scoring';
+import { teamMetricValues } from '../engine/teamMetrics';
+import { RivalEdge } from './AllMetrics';
 import { teamNickname } from '../engine/teamNames';
 import { overallTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
-import { LeagueMark } from '../night/league';
+import { LeagueMark, TeamContext } from '../night/league';
 import { Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
 import { SpanCard } from './PlayerPeekModal';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -104,6 +106,158 @@ function PlayerName({ line, children }: { line: SeasonPlayerLine; children?: Rea
   );
 }
 
+/**
+ * 2026-10-22, playtest ("fajnie jakbym mógł kliknąć w zespół i zobaczyć ich graczy i statystyki";
+ * mockup `alltime.html` #teamWin): a team's window — where it stands, how the engine rates it, its
+ * last five, its players' season (and playoffs, as far as they've been shown), and it next to you.
+ * Everything stops at `rounds`: during the calendar nothing past tonight.
+ */
+function TeamWindow({
+  teamId,
+  byId,
+  codes,
+  season,
+  rounds,
+  playoffs,
+  status,
+  you,
+  views,
+  onClose,
+}: {
+  teamId: string;
+  byId: Map<string, Team>;
+  codes: Map<string, string>;
+  season: LiveSeasonResult;
+  rounds: number;
+  playoffs: SeasonPlayerLine[] | null;
+  status: string;
+  you: Team;
+  views: ReturnType<typeof engineTeamViews>;
+  onClose: () => void;
+}) {
+  const team = byId.get(teamId);
+  const [phase, setPhase] = useState<'season' | 'playoffs'>('season');
+  const lines = useMemo(() => (rounds >= season.dates.length ? season.players : seasonLinesThrough(season, rounds)).filter((l) => l.teamId === teamId), [season, rounds, teamId]);
+  const scores = useMemo(() => (team ? { them: scoreTeam(team), me: scoreTeam(you) } : null), [team, you]);
+  if (!team || !scores) return null;
+  const view = views.get(teamId);
+  const shown = phase === 'playoffs' && playoffs ? playoffs.filter((l) => l.teamId === teamId) : lines;
+  const byMin = (a: SeasonPlayerLine, b: SeasonPlayerLine) => b.totals.min / Math.max(1, b.games) - a.totals.min / Math.max(1, a.games);
+  const last5 = teamGames(season, teamId)
+    .filter((x) => x.game.round < rounds)
+    .slice(-5);
+  const meetings = teamGames(season, you.id).filter((x) => x.opp === teamId && x.game.round < rounds);
+  const mw = meetings.filter((x) => x.won).length;
+  const isYou = teamId === you.id;
+  const margin = isYou ? 0 : projectMatchup(you, team, undefined, undefined, 'playoffs').marginA;
+  const series = Math.round(seriesWinProbability(gameWinProbability(margin)) * 100);
+  const nick = mascot(team);
+  const edge = (
+    [
+      ['Talent', scores.them.talentScore, scores.me.talentScore],
+      ['Offense', scores.them.offenseScore, scores.me.offenseScore],
+      ['Defense', scores.them.defenseScore, scores.me.defenseScore],
+      ['Spacing', scores.them.spacingScore, scores.me.spacingScore],
+      ['Fit', scores.them.fitScore, scores.me.fitScore],
+      ['Bench', scores.them.benchDepthScore, scores.me.benchDepthScore],
+    ] as const
+  ).map(([label, t, m]) => ({ label, theirs: Math.round(t), mine: Math.round(m) }));
+  return (
+    <Dialog
+      className="wide twin"
+      onClose={onClose}
+      title={
+        <span className="tw-head">
+          <LeagueMark name={team.name} code={codes.get(teamId) ?? ''} />
+          <span>
+            <b>{team.name}</b>
+            <small>{status}</small>
+          </span>
+        </span>
+      }
+    >
+      <div className="tw-nums">
+        <div>
+          <span>Overall</span>
+          <b>{view?.overall ?? Math.round(scores.them.overall)}</b>
+        </div>
+        <div>
+          <span>Offense</span>
+          <b>{Math.round(scores.them.offenseScore)}</b>
+        </div>
+        <div>
+          <span>Defense</span>
+          <b>{Math.round(scores.them.defenseScore)}</b>
+        </div>
+        <div>
+          <span>Last five</span>
+          <div className="wl">
+            {last5.length ? (
+              last5.map((x) => (
+                <i key={x.game.round} className={x.won ? 'w' : 'l'} title={`${dateLabel(season.dates[x.game.round])} · ${x.won ? 'beat' : 'lost to'} the ${mascot(byId.get(x.opp))} ${x.us}–${x.them}`}>
+                  {x.won ? 'W' : 'L'}
+                </i>
+              ))
+            ) : (
+              <em>no games yet</em>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="tw-split">
+        <section>
+          <H3
+            note={
+              playoffs ? (
+                <span className="sw">
+                  <button type="button" className={cx(phase === 'season' && 'on')} onClick={() => setPhase('season')}>
+                    Season
+                  </button>
+                  <button type="button" className={cx(phase === 'playoffs' && 'on')} onClick={() => setPhase('playoffs')}>
+                    Playoffs
+                  </button>
+                </span>
+              ) : rounds < season.dates.length ? (
+                `through ${dateLabel(season.dates[Math.max(0, rounds - 1)])}`
+              ) : (
+                'regular season'
+              )
+            }
+          >
+            Roster
+          </H3>
+          {shown.length === 0 ? (
+            <p className="empty-note">{phase === 'playoffs' ? 'No playoff games for them yet.' : 'No games yet.'}</p>
+          ) : (
+            <SeasonTable
+              groups={[
+                ['Starting five', shown.filter((l) => l.starter).sort(byMin)],
+                ['Bench', shown.filter((l) => !l.starter).sort(byMin)],
+              ]}
+            />
+          )}
+        </section>
+        <section>
+          {isYou ? (
+            <>
+              <H3>Your team</H3>
+              <p className="empty-note">This is you. Open a rival to see how you match up.</p>
+            </>
+          ) : (
+            <>
+              <H3 note={`series ${series}% · best of 7`}>You vs them</H3>
+              <RivalEdge nick={nick} scores={edge} metrics={() => ({ theirs: teamMetricValues(team), mine: teamMetricValues(you) })} />
+              <p className="empty-note" style={{ marginTop: 10 }}>
+                {meetings.length ? `Season series ${mw}–${meetings.length - mw}.` : 'You haven’t met yet.'} Series odds are your chance to beat them in a best-of-7.
+              </p>
+            </>
+          )}
+        </section>
+      </div>
+    </Dialog>
+  );
+}
+
 function SeasonPlayerCard({
   line,
   teams,
@@ -161,7 +315,7 @@ function SeasonPlayerCard({
       </div>
       <div className="pc-facts">
         <span>
-          {team && <LeagueMark name={team.name} code={codes.get(team.id) ?? ''} />} <b>{team?.name}</b>
+          {team && <LeagueMark name={team.name} code={codes.get(team.id) ?? ''} id={team.id} />} <b>{team?.name}</b>
         </span>
         {pick !== null && (
           <span>
@@ -373,7 +527,7 @@ function SeasonBody({
     const podium = me.rank <= 3;
     return [...ins.concerns.slice(0, podium ? 1 : 2), ...ins.strengths.slice(0, podium ? 3 : 2)];
   }, [teams]);
-  const mark = (id: string) => <LeagueMark name={byId.get(id)?.name ?? ''} code={codes.get(id) ?? ''} />;
+  const mark = (id: string) => <LeagueMark name={byId.get(id)?.name ?? ''} code={codes.get(id) ?? ''} id={id} />;
   const rank = season.standings.findIndex((r) => r.teamId === you.id) + 1;
   const record = season.standings[rank - 1];
   const finalsDone = playoffs !== null && (reveal.kind === 'all' || (reveal.kind === 'live' && reveal.round >= playoffs.rounds.length));
@@ -384,6 +538,30 @@ function SeasonBody({
   );
   const [card, setCard] = useState<SeasonPlayerLine | null>(null);
   const [peek, setPeek] = useState<PlayerSpan | null>(null);
+  const [teamOpen, setTeamOpen] = useState<string | null>(null);
+  const openTeam = (id: string) => {
+    setCard(null);
+    setPeek(null);
+    setTeamOpen(id);
+  };
+  // The team window's view of the season: during the calendar nothing past tonight.
+  const teamRounds = chapter === 'calendar' ? calendar.day : season.dates.length;
+  const teamStatus = (id: string) => {
+    const st = standingsAt(season, teamRounds);
+    const pos = st.findIndex((r) => r.teamId === id) + 1;
+    const row = st[pos - 1];
+    if (!row) return '';
+    const rec = `${row.wins}–${row.losses}`;
+    if (chapter === 'calendar') return teamRounds === 0 ? 'Opening night' : `${ord(pos)} · ${rec} · through ${dateLabel(season.dates[teamRounds - 1])}`;
+    const head = `${ord(pos)} seed · ${rec}`;
+    if (!playoffs || !finalsDone) return head;
+    if (playoffs.championId === id) return `${head} · champions`;
+    const runs = playoffs.rounds.flat().filter((x) => x.teamAId === id || x.teamBId === id);
+    const out = runs[runs.length - 1];
+    if (!out) return `${head} · missed the playoffs`;
+    const [w, l] = out.teamAId === id ? [out.gamesWonA, out.gamesWonB] : [out.gamesWonB, out.gamesWonA];
+    return `${head} · lost the ${out.roundLabel.replace(/s$/, '')} ${w}–${l} to the ${mascot(byId.get(out.winnerId))}`;
+  };
   // A face opens his season card: during the calendar the season through tonight, nothing later.
   const openFace = (span: PlayerSpan) => {
     const lines = chapter === 'calendar' ? seasonLinesThrough(season, calendar.day) : season.players;
@@ -547,6 +725,20 @@ function SeasonBody({
     <>
       {card && <SeasonPlayerCard line={card} teams={teams} byId={byId} codes={codes} season={season} playoffs={finalsDone ? playoffs : null} onClose={() => setCard(null)} />}
       {peek && <SpanCard span={peek} onClose={() => setPeek(null)} />}
+      {teamOpen && (
+        <TeamWindow
+          teamId={teamOpen}
+          byId={byId}
+          codes={codes}
+          season={season}
+          rounds={teamRounds}
+          playoffs={chapter === 'calendar' ? null : finalsDone && playoffs ? playoffs.players : (playoffsSoFar?.players ?? null)}
+          status={teamStatus(teamOpen)}
+          you={you}
+          views={views}
+          onClose={() => setTeamOpen(null)}
+        />
+      )}
       {sharing && <ShareNight d={poster} fileName={`${you.name} season`} onClose={() => setSharing(false)} />}
     </>
   );
@@ -555,6 +747,7 @@ function SeasonBody({
     return (
       <PlayerCardContext.Provider value={setCard}>
 <FaceContext.Provider value={openFace}>
+<TeamContext.Provider value={openTeam}>
         <CalendarChapter
           teams={teams}
           codes={codes}
@@ -570,7 +763,8 @@ function SeasonBody({
           }}
           onClose={onClose}
         />
-      </FaceContext.Provider>
+      </TeamContext.Provider>
+</FaceContext.Provider>
 </PlayerCardContext.Provider>
     );
   }
@@ -579,6 +773,7 @@ function SeasonBody({
     return (
       <PlayerCardContext.Provider value={setCard}>
 <FaceContext.Provider value={openFace}>
+<TeamContext.Provider value={openTeam}>
         <PlayoffsChapter
           teams={teams}
           byId={byId}
@@ -597,7 +792,8 @@ function SeasonBody({
           playInDone={calendar.playInDone}
           setPlayInDone={calendar.setPlayInDone}
         />
-      </FaceContext.Provider>
+      </TeamContext.Provider>
+</FaceContext.Provider>
 </PlayerCardContext.Provider>
     );
   }
@@ -613,6 +809,7 @@ function SeasonBody({
   return (
     <PlayerCardContext.Provider value={setCard}>
 <FaceContext.Provider value={openFace}>
+<TeamContext.Provider value={openTeam}>
       <NightGame aside={aside(undefined, nextButtons)} overlay={overlay}>
         {main}
         {playoffs && (
@@ -621,7 +818,8 @@ function SeasonBody({
           </Btn>
         )}
       </NightGame>
-    </FaceContext.Provider>
+    </TeamContext.Provider>
+</FaceContext.Provider>
 </PlayerCardContext.Provider>
   );
 }
@@ -1764,8 +1962,10 @@ function Finale({
   );
 }
 
-function SeasonTable({ lines }: { lines: SeasonPlayerLine[] }) {
-  const topPts = Math.max(0, ...lines.map((l) => per(l, 'pts')));
+/** A team's season table; `groups` splits it under labelled rows (the team window: starting five, bench). */
+function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [string, SeasonPlayerLine[]][] }) {
+  const parts: [string | null, SeasonPlayerLine[]][] = groups ?? [[null, lines ?? []]];
+  const topPts = Math.max(0, ...parts.flatMap(([, ls]) => ls.map((l) => per(l, 'pts'))));
   return (
     <div className="sbox-wrap">
       <table className="box sbox">
@@ -1784,7 +1984,14 @@ function SeasonTable({ lines }: { lines: SeasonPlayerLine[] }) {
           </tr>
         </thead>
         <tbody>
-          {lines.map((l) => (
+          {parts.map(([label, ls]) => (
+            <Fragment key={label ?? 'all'}>
+              {label && ls.length > 0 && (
+                <tr className="grp">
+                  <td colSpan={10}>{label}</td>
+                </tr>
+              )}
+              {ls.map((l) => (
             <tr key={l.span.id}>
               <td>
                 <span className="sb-f">
@@ -1803,6 +2010,8 @@ function SeasonTable({ lines }: { lines: SeasonPlayerLine[] }) {
               <td>{f1(pct(l.totals.fgm, l.totals.fga))}</td>
               <td>{pctOr(l.totals.tpm, l.totals.tpa)}</td>
             </tr>
+              ))}
+            </Fragment>
           ))}
         </tbody>
       </table>

@@ -143,7 +143,7 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note, moves
             <tr key={r.teamId} className={cx(r.teamId === youId && 'you', (i === 5 || i === 9) && 'cut')}>
               <td className="rk">{i + 1}</td>
               <td className="tmc">
-                <LeagueMark name={byId.get(r.teamId)?.name ?? ''} code={codes.get(r.teamId) ?? ''} />
+                <LeagueMark name={byId.get(r.teamId)?.name ?? ''} code={codes.get(r.teamId) ?? ''} id={r.teamId} />
               </td>
               <td className="nm">{byId.get(r.teamId)?.name}</td>
               <td>{r.wins}</td>
@@ -369,12 +369,12 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
     return (
       <div key={`${g.aId}${g.bId}`} className={cx('g8', yours && 'you')}>
         <span className={cx('tmr', aw && 'w')}>
-          <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} />
+          <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} id={g.aId} />
           {nick(byId.get(g.aId))}
         </span>
         <span className={cx('sc', aw && 'w')}>{g.final[0]}</span>
         <span className={cx('tmr', !aw && 'w')}>
-          <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} />
+          <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} id={g.bId} />
           {nick(byId.get(g.bId))}
         </span>
         <span className={cx('sc', !aw && 'w')}>{g.final[1]}</span>

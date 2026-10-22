@@ -371,3 +371,8 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .face-btn > img, .nt .face-btn > .ini { cursor: pointer; transition: filter 0.15s; }
 .nt .face-btn:hover > img, .nt .face-btn:hover > .ini { filter: brightness(1.15); outline: 1.5px solid var(--ink3); outline-offset: 1px; }
 .nt .face-btn:focus-visible > img, .nt .face-btn:focus-visible > .ini { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* a crest that opens the team's window (playtest 2026-10-22) */
+.nt .team-btn { display: contents; cursor: pointer; }
+.nt .team-btn > .tm { cursor: pointer; }
+.nt .team-btn:hover > .tm { outline: 1.5px solid var(--ink3); outline-offset: 1px; }
+.nt .team-btn:focus-visible > .tm { outline: 2px solid var(--ink); outline-offset: 2px; }

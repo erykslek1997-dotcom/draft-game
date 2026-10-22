@@ -1066,3 +1066,35 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .nt .mcmp-r > span:first-child { white-space: normal; line-height: 1.15; }
   .nt .edge2 .eg { grid-template-columns: 76px minmax(0, 1fr) 70px; gap: 8px; }
 }
+/* The team window (playtest 2026-10-22, mockup alltime.html #teamWin) */
+.nt {
+  .dlg.wide { width: min(1000px, calc(100% - 32px)); }
+  .dlg.twin .dlg-head { align-items: center; }
+  .tw-head { display: flex; align-items: center; gap: 14px; }
+  .tw-head .tm { width: auto; height: auto; line-height: 1; font-size: 15px; padding: 6px 8px; }
+  .tw-head b { display: block; font: 800 36px/1 var(--cond); text-transform: uppercase; }
+  .tw-head small { display: block; margin-top: 4px; font: italic 500 14px var(--sans); color: var(--ink2); text-transform: none; letter-spacing: 0; }
+  .tw-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 10px 0 14px; border-bottom: 1px solid var(--rule); padding: 6px 0 12px; }
+  .tw-nums span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .tw-nums b { display: block; font: 600 26px var(--num); margin-top: 4px; }
+  .tw-nums em { font-size: 13px; color: var(--ink3); }
+  .tw-split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; }
+  .tw-split .sbox-wrap + .sbox-wrap { margin-top: 0; }
+  .wl { display: flex; gap: 6px; margin-top: 4px; }
+  .wl i { font: 700 12px var(--num); font-style: normal; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 3px; background: var(--surf2); color: var(--ink2); }
+  .wl i.w { color: var(--green); }
+  .wl i.l { color: var(--red); }
+  .twin .edge2 > .split { grid-template-columns: 1fr; gap: 14px; }
+  .twin .edge2 .eg { grid-template-columns: 84px minmax(0, 1fr) 70px; gap: 8px; }
+  .twin .mcmp-r { grid-template-columns: minmax(0, 1fr) 56px 40px 44px; }
+}
+@media (max-width: 600px) {
+  .nt .tw-split { grid-template-columns: 1fr; }
+  .nt .tw-nums { grid-template-columns: 1fr 1fr; }
+  .nt .tw-head b { font-size: 26px; }
+}
+.nt .sbox tr.grp td { padding: 10px 0 4px; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; background: none; }
+@media (max-width: 600px) {
+  .nt .twin .sbox-wrap { overflow-x: auto; }
+  .nt .twin .sbox { min-width: 560px; }
+}

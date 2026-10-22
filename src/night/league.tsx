@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import { franchiseByName } from '../data/franchises';
 import { teamHue } from '../components/teamLogoKit';
@@ -24,13 +24,33 @@ export function leagueColors(name: string): { bg: string; fg: string } {
 }
 
 /** A league team's printed mark (`.tm`): dark ink on light colours (AUDIT.md item 2). */
-export function LeagueMark({ name, code, lg }: { name: string; code: string; lg?: boolean }) {
+/** 2026-10-22, playtest ("fajnie jakbym mógł kliknąć w zespół"): a crest given its team id opens
+ * that team's window where a screen provides one (the season). */
+export const TeamContext = createContext<((teamId: string) => void) | null>(null);
+
+export function LeagueMark({ name, code, lg, id }: { name: string; code: string; lg?: boolean; id?: string }) {
   const { bg, fg } = leagueColors(name);
   const ink = bg.startsWith('#') ? bandInk(bg, fg) : fg;
-  return (
+  const open = useContext(TeamContext);
+  const mark = (
     <span className={`tm${lg ? ' lg' : ''}`} style={{ background: bg, color: ink }} title={name}>
       {code}
     </span>
+  );
+  if (!id || !open) return mark;
+  return (
+    <button
+      type="button"
+      className="team-btn"
+      title={`${name}: open the team`}
+      aria-label={`${name}: open the team`}
+      onClick={(e) => {
+        e.stopPropagation();
+        open(id);
+      }}
+    >
+      {mark}
+    </button>
   );
 }
 
