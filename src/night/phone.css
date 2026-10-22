@@ -331,3 +331,8 @@
   .nt .plist:not(:has(.draft:not(:disabled))) td.act { padding: 0; }
   .nt .plist:not(:has(.draft:not(:disabled))) td.cap { padding-right: 0; }
 }
+@media (max-width: 600px) {
+  /* the caps a size down, in proportion to the name (playtest 2026-10-22) */
+  .nt .plist td.cap, .nt .plist td.cap.num { font-size: 14px; }
+  .nt .plist td.cap .capi { width: 12px; height: 12px; }
+}
