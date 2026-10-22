@@ -395,6 +395,10 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       Zasada: zero przeskoków — od „Draw” przez rozdanie, wybór i turę AI karty stoją w tych samych
       miejscach i rozmiarach. Na PC to samo: dziś talia (220 px) znika po rozdaniu i karty się
       rozszerzają, więc też skacze; sprawdzić nagraniem klatek na 1366 i 390.
+- [ ] **Wyjście do menu (wszędzie, telefon + PC):** dziś to mały link „← Menu” w różnych miejscach,
+      a na telefonie po meczu w ogóle go nie widać (tylko How to play · Settings). Jedno stałe
+      miejsce na każdym ekranie: lewy górny róg nad winietą („← Menu”) albo klikalna winieta trybu;
+      w trakcie draftu/meczu pytanie „Wyjść? Postęp zostaje zapisany”.
 - [ ] Draw Five, koniec meczu (telefon): „See the result” i „Watch again” sklejone — odstęp między
       przyciskami (wspólna zasada dla wszystkich stosów przycisków).
 - [ ] Draw Five, wyniki (telefon): w mini-kartach piątki długie nazwisko się ucina
