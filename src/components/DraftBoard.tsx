@@ -45,7 +45,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, CapBar, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -1120,6 +1120,8 @@ export default function DraftBoard({
   useEffect(() => {
     if (youOnClock) buzz([15, 40, 15]);
   }, [youOnClock]);
+  // A phone brings your pick to the top when you're on the clock.
+  useStepScroll(youOnClock ? `you-${state.history.length}` : null);
   /* ---------------- the night screen (mockup alltime.html #draft, #board, #years, #team) ---------------- */
   const codeOf = (t: Team) => teamCodeByTeamId.get(t.id) ?? '';
   const totalPicks = state.teams.length * ROUNDS;

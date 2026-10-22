@@ -55,6 +55,7 @@ import {
   buzz,
   dayLabel,
   fmtCaps,
+  useStepScroll,
 } from '../night/ui';
 import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
 import { BoardGrid } from '../night/alltime';
@@ -116,6 +117,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   const currentTeam = state.teams[teamIdx];
   const humanTeam = state.teams.find((t) => t.isHuman)!;
   const canPick = currentTeam.isHuman;
+  // A phone brings your pick to the top when you're on the clock.
+  useStepScroll(phase === 'draft' && canPick && !state.complete ? `you-${state.history.length}` : null);
   const codes = useMemo(() => teamCodes(state.teams), [state.teams]);
   const codeOf = (t: Team) => codes.get(t.id) ?? '';
 
@@ -781,7 +784,7 @@ function QuickResults({
           </section>
         </>
       )}
-      <Actions links={{ ...links, onMenu: undefined }}>
+      <Actions links={{ ...links, menuPhoneOnly: true }}>
         {daily ? (
           <>
             <div className="btn2">

@@ -1,0 +1,153 @@
+/*
+ * The phone (playtest 2026-10-22, "wszystko jest duże i trzeba scrollować"): its own, denser scale —
+ * the phone sits close to the eyes — and one step to a screen: the links by the masthead, the main
+ * action pinned to the bottom, the Draw Five table in the hand's own 2×2 from the first card.
+ * Loaded last; nothing here goes under 11px.
+ */
+.nt .links .lk.po { display: none; }
+
+@media (max-width: 600px) {
+  .nt {
+    font-size: 15px;
+
+    /* the frame */
+    .game { padding: 8px 14px 18px; gap: 14px; align-content: start; }
+    main { gap: 16px; }
+
+    /* the aside on a phone: the masthead with its links on the right, the tally under both */
+    aside { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; gap: 8px 12px; }
+    aside > * { grid-column: 1 / -1; }
+    aside > .mast { grid-column: 1; grid-row: 1; }
+    aside > .actions { grid-column: 2; grid-row: 1; order: 0; align-self: stretch; display: flex !important; flex-direction: column; justify-content: center; border-top: 1.5px solid var(--rule2); border-bottom: 1.5px solid var(--rule2); }
+    aside > .actions .links { flex-direction: column; align-items: flex-end; gap: 2px; }
+    aside > .actions .links .lk { font-size: 12px; line-height: 1.35; }
+    aside > .actions .links .lk.po { display: inline; }
+    .mast { padding: 8px 0 6px; }
+    .mast b { font-size: 24px; }
+    .mast small { margin-top: 3px; font-size: 12px; }
+    .tally { margin-top: 0; padding-bottom: 8px; }
+    .t span { font-size: 11px; }
+    .t b { font-size: 22px; }
+    .t.mid b.word { font-size: 18px; }
+    .t.mid b.clock { font-size: 16px; padding: 3px 6px; }
+    .sub-note { margin-top: -4px; font-size: 13px; }
+
+    /* type */
+    h3 { margin-bottom: 6px; padding-bottom: 4px; font-size: 14px; }
+    h3 span { font-size: 12px; }
+    .prompt { padding-top: 8px; }
+    .prompt .eb { font-size: 11px; }
+    .prompt h2 { margin: 2px 0 2px; font-size: 28px; }
+    .prompt p { font-size: 14px; }
+    .headline { padding: 8px 0 6px; }
+    .headline b { font-size: 22px; }
+    .verdict h2 { font-size: 36px; }
+    .verdict p { font-size: 14px; }
+    .place b { font-size: 64px; }
+    .place b sup { font-size: 26px; vertical-align: 28px; }
+    .nums b { font-size: 22px; }
+    .hero2 { padding: 10px 0 8px; }
+    .hero2 h2 { font-size: 30px; }
+    .hero2 p { font-size: 14px; }
+    .hero2 .hn b { font-size: 22px; }
+
+    /* rows and buttons */
+    .kv { padding: 6px 0; font-size: 13px; }
+    .kv b { font-size: 13px; }
+    .log td { padding: 6px 0; font-size: 13px; }
+    .profile td { padding: 6px 0; }
+    .btn { padding: 11px 10px; font-size: 16px; }
+    .actions, .stackb { gap: 10px; }
+    /* two buttons stacked straight on the stage never touch (playtest: See the result / Watch again) */
+    :not(.btn2):not(.stackb):not(.hand):not(.five-row) > .btn + .btn { margin-top: 10px; }
+
+    /* the main action stays in reach: pinned to the bottom while the page above it scrolls
+       (a disabled one isn't worth the space) */
+    main > .btn.phone-only:not(.off) { position: sticky; bottom: 10px; z-index: 4; box-shadow: 0 0 0 10px var(--bg), 0 -16px 18px var(--bg); }
+    main > .btn2.phone-only, main > .stackb.phone-only, main > div.phone-only:has(> .btn:not(.off)) {
+      position: sticky; bottom: 0; z-index: 4; margin: 0 -14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: var(--bg); box-shadow: 0 -12px 16px var(--bg);
+    }
+
+    /* cards */
+    .slot { height: 92px; }
+    .card .nm { font-size: 17px !important; }
+    .card img, .card .ini, .card.joker .q { width: 44px !important; height: 44px !important; font-size: 20px; }
+    .card .roles { padding: 6px 6px 8px; font-size: 11px; }
+    .card .st b { font-size: 14px !important; }
+    .opp .who, .opp li.e .who { font-size: 11px; line-height: 1.15; }
+    /* a long name in a small results card wraps; it's never cut ("V. Wembanyama") */
+    .mini b { white-space: normal; overflow-wrap: anywhere; line-height: 1.1; font-size: 11px; }
+
+    /* the Draw Five table: the deck on top, the cards in the hand's own 2×2 from the first card,
+       so nothing jumps between face down, the deal and the hand */
+    .stage { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stage > .deal { grid-column: 1 / -1; order: -1; flex-direction: row; justify-content: space-between; gap: 12px; padding: 8px 0; text-align: left; }
+    .stage > .deal > div:first-child { flex: none; }
+    .stage > .deal .back { width: 46px; height: 64px; box-shadow: 3px 3px 0 var(--surf2), 6px 6px 0 var(--surf); }
+    .stage > .deal .back .mark { transform: scale(0.6); }
+    .stage > .deal .btn { width: auto; flex: 1; }
+    .stage > .deal p { display: none; }
+    .stage .ph { min-height: 0; aspect-ratio: 0.72; font-size: 28px; }
+    .stage.n5 > :nth-child(5) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }
+
+    /* the lottery fits a screen with its button */
+    .drum { max-width: 300px; }
+    .ball { width: 110px; height: 110px; }
+    .ball b { font-size: 64px; }
+  }
+}
+
+@media (max-width: 600px) {
+  /* a stack or a pair stays a grid on a phone (".phone-only" alone would make it a block and glue
+     its buttons together) */
+  .nt .stackb.phone-only, .nt .btn2.phone-only { display: grid !important; }
+  /* the stage repeats the aside's buttons at the bottom: the aside keeps its tally and speeds only */
+  .nt .game:has(> main > .phone-only .btn, > main > .btn.phone-only) > aside .stackb { display: none; }
+  .nt .mini .top { gap: 4px; letter-spacing: 0.02em; }
+}
+
+@media (max-width: 600px) {
+  /* a wide row in the aside (the season's tabs) scrolls inside itself and never widens the page:
+     it used to push the tally's right column off the screen (playtest: "ucieka do prawej") */
+  .nt aside > * { min-width: 0; }
+  .nt aside section.snav { margin: 0 -14px 0 0; padding-right: 14px; scrollbar-width: none; }
+  /* the league's player table: short names, the name column held while the numbers scroll */
+  .nt .sbox.stats td:first-child, .nt .sbox.stats th:first-child { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+  .nt .sbox.stats tr.you td:first-child { background: linear-gradient(var(--you-tint), var(--you-tint)), var(--bg); }
+  .nt .sbox.stats td:first-child .sb-f { display: none; }
+}
+
+/* the menu's draft in progress: a label over one line of team and picks, Continue with room */
+.nt .m2-resume { align-items: center; gap: 12px; }
+.nt .m2-resume > span { display: grid; min-width: 0; }
+.nt .m2-resume small { font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.nt .m2-resume b { font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  /* the menu on one screen */
+  .nt .m2 { padding: 14px 0 16px; }
+  .nt .m2-mast { padding: 10px 0 8px; }
+  .nt .m2-mast b { font-size: 40px; }
+  .nt .m2-mast span { font-size: 13px; }
+  .nt .m2-team { margin-top: 10px; font-size: 15px; }
+  .nt .m2-resume { margin-top: 12px; padding: 8px 12px; }
+  .nt .m2-modes { margin-top: 12px; }
+  .nt .m2-row { padding: 10px 0; gap: 10px; grid-template-columns: 22px minmax(0, 1fr) auto; }
+  .nt .m2-modes b { font-size: 26px; }
+  .nt .m2-modes li > div span, .nt .m2-row span { font-size: 13px; }
+  .nt .m2-today { margin-top: 14px; gap: 6px; }
+  .nt .m2-d { padding: 8px 10px; }
+  .nt .m2-d b { font-size: 14px; }
+  .nt .m2-foot { margin-top: 14px; gap: 16px; font-size: 13px; }
+}
+
+@media (max-width: 600px) {
+  /* "Your path": one compact row a series — crest, opponent and score, the round and the note under
+     the name (playtest: the note fell to its own line and the arrow sat over the score) */
+  .nt .path-r { grid-template-columns: 30px auto minmax(0, 1fr) auto; grid-template-areas: "mk op op sc" "mk rd nt sc"; gap: 0 8px; padding: 8px 0; }
+  .nt .path-r .tm { grid-area: mk; }
+  .nt .path-r .pr-opp { grid-area: op; font-size: 16px; }
+  .nt .path-r .pr-round { grid-area: rd; font-size: 11px; }
+  .nt .path-r .pr-note { grid-area: nt; grid-column: auto; font-size: 12px; }
+  .nt .path-r .pr-score { grid-area: sc; white-space: nowrap; font-size: 16px; }
+}

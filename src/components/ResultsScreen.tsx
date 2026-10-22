@@ -1026,7 +1026,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <Kv k="You" v={hero.breakdown.overall} />
         </section>
       )}
-      <Actions>
+      <Actions links={{ ...links, menuPhoneOnly: true }}>
         <Btn onClick={() => setSeasonOpen(true)}>{played ? 'Open the season →' : 'Play the season →'}</Btn>
         <div className="btn2">
           <Btn kind="line" onClick={() => setShareOpen(true)}>

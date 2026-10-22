@@ -1,6 +1,6 @@
 import { Suspense, createContext, lazy, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
-import { getSettings } from '../settings';
+import { getSettings, reducedMotion } from '../settings';
 import './index.css';
 
 /**
@@ -34,6 +34,24 @@ export const fmt1 = (v: number) => v.toFixed(1);
 export const FaceContext = createContext<((span: PlayerSpan) => void) | null>(null);
 // Lazy: the frame stays free of player data for the menu.
 const SpanCard = lazy(() => import('../components/PlayerPeekModal').then((m) => ({ default: m.SpanCard })));
+
+/**
+ * One step, one screen (playtest 2026-10-22, the phone: "żeby nie trzeba było scrollować"): when
+ * `key` changes, a phone brings the stage's prompt to the top — the cards just dealt, the AI on the
+ * clock, your pick coming up. A computer shows it all already.
+ */
+export function useStepScroll(key: string | number | null | undefined) {
+  useEffect(() => {
+    if (key == null || typeof window === 'undefined' || window.innerWidth > 600) return;
+    const t = window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>('.nt main .prompt');
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 8;
+      if (Math.abs(window.scrollY - top) > 24) window.scrollTo({ top, behavior: reducedMotion() ? 'auto' : 'smooth' });
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [key]);
+}
 
 export function NightGame({ aside, children, className, overlay }: { aside?: ReactNode; children: ReactNode; className?: string; overlay?: ReactNode }) {
   const outer = useContext(FaceContext);
@@ -157,13 +175,16 @@ export interface NavLinks {
   onMenu?: () => void;
   onHowTo?: () => void;
   onSettings?: () => void;
+  /** The screen has a Main menu button already: the link shows on a phone only, where the buttons
+   * stay hidden and the links sit by the masthead (playtest 2026-10-22: no way out on a phone). */
+  menuPhoneOnly?: boolean;
 }
 
-export function Links({ onMenu, onHowTo, onSettings }: NavLinks) {
+export function Links({ onMenu, onHowTo, onSettings, menuPhoneOnly }: NavLinks) {
   return (
     <div className="links">
       {onMenu && (
-        <button type="button" className="lk" onClick={onMenu}>
+        <button type="button" className={cx('lk', menuPhoneOnly && 'po')} onClick={onMenu}>
           ← Menu
         </button>
       )}
