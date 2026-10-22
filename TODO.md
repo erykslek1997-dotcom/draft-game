@@ -205,7 +205,22 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
-## Plan na 4 tygodnie (decyzja 2026-10-16) — obowiązuje
+## Plan do launchu: 7 tygodni (decyzja 2026-10-22) — obowiązuje
+
+| Tydzień | Zakres |
+|---|---|
+| 1 | ✅ zakończony (wydanie nocne, telefon) |
+| 2 | Listy Eryka 1–3: błędy UI, poprawki TAL, oceny AI |
+| 3 | Listy 2–4: dokończenie TAL i AI, silnik symulacji, panel ekspertów |
+| 4 | Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
+| 5 | Brand, domena (+ przepięcie logowania), „pokonaj wynik znajomego”, wstępne testy na większej grupie |
+| 6 | Strategia SM, testy kont i tabeli przez ludzi, poprawki przed launchem, wyłączenie trybów testowych |
+| 7 | Zapas na poprawki → launch (ok. 2. tydzień grudnia) |
+
+MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
+Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
+
+## Plan na 4 tygodnie (decyzja 2026-10-16) — zastąpiony planem 7 tygodni
 
 - **Tydzień 1 — dokładne dokończenie UI.** Wszystkie tryby i ekrany do końca: playtesty spójności
   (Draw Five, Mini, All-Time), ton wyniku według miejsca, reszta otwartych punktów UI z 3.1–3.4
