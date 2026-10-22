@@ -1107,3 +1107,42 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .nt .twin .sbox td:first-child { white-space: normal; line-height: 1.15; }
   .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 8px; width: 1%; white-space: nowrap; }
 }
+/* "Your season" on the results once the season is played (playtest 2026-10-22, mockup #yourSeason) */
+.nt {
+  .ysea-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 4px 0 14px; border-bottom: 1px solid var(--rule); }
+  .ysea-strip span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .ysea-strip b { display: flex; align-items: center; gap: 8px; margin-top: 6px; font: 600 24px var(--num); }
+  .ysea-strip b.w { font: 800 24px/1 var(--cond); text-transform: uppercase; }
+  .ysea-strip .tm { width: auto; height: auto; line-height: 1; font-size: 12px; padding: 4px 6px; }
+  .ysea-rows { margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+}
+@media (max-width: 600px) {
+  .nt .ysea-strip { grid-template-columns: 1fr 1fr; }
+  .nt .ysea-rows { grid-template-columns: 1fr; }
+}
+/* The champions at the season's end (playtest 2026-10-22, mockup #champions); gold is for trophies */
+.nt {
+  .champ2 { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; border-top: 5px double var(--gold); border-bottom: 1.5px solid var(--gold); padding: 16px 0; }
+  .champ2 .trophy { font-size: 44px; line-height: 1; }
+  .champ2 .eb { color: var(--gold); font: 700 12px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; }
+  .champ2 h2 { margin: 4px 0; font: 800 44px/1 var(--cond); text-transform: uppercase; color: var(--gold); display: flex; gap: 12px; align-items: center; }
+  .champ2 h2 .tm { width: auto; height: auto; line-height: 1; font-size: 16px; padding: 6px 8px; }
+  .champ2 p { margin: 0; font-style: italic; color: var(--ink2); }
+  .champ2 .fmvp { display: flex; gap: 10px; align-items: center; }
+  .champ2 .fmvp img, .champ2 .fmvp .ini { width: 56px; height: 56px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; background: var(--surf2); }
+  .champ2 .fmvp span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+  .champ2 .fmvp b { display: block; font: 700 20px/1.1 var(--cond); }
+  .champ2 .fmvp small { display: block; font: 500 12px var(--num); color: var(--ink3); }
+}
+@media (max-width: 600px) {
+  .nt .champ2 { grid-template-columns: 1fr; }
+  .nt .champ2 h2 { font-size: 32px; }
+}
+/* Your game tonight, big (playtest 2026-10-22, mockup #tonightMine) */
+.nt {
+  .mygame { border: 1.5px solid var(--rule2); border-radius: 4px; padding: 14px 16px; display: grid; gap: 8px; }
+  .mygame .mg-t { display: flex; align-items: center; gap: 10px; font: 700 22px var(--cond); text-transform: uppercase; }
+  .mygame .mg-t b { font: 600 30px var(--num); margin-left: auto; }
+  .mygame .mg-t.lo { color: var(--ink3); }
+  .mygame .mg-l { margin-top: 4px; font-style: italic; color: var(--ink2); font-size: 14px; }
+}

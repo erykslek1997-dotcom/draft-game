@@ -396,6 +396,14 @@ interface SeasonProgress {
 }
 const SEASON_PROGRESS_KEY = 'draftverse.seasonProgress.v1';
 
+/** Whether this league's season has been played to the end (the Finals shown), from the saved
+ * progress — the results then show "Your season" (playtest 2026-10-22). */
+export function seasonPlayed(teams: Team[]): boolean {
+  const saved = readSeasonProgress(seasonSeed(teams));
+  if (!saved) return false;
+  return saved.reveal.kind === 'all' || (saved.reveal.kind === 'live' && saved.reveal.round >= 3);
+}
+
 function readSeasonProgress(seed: string): SeasonProgress | null {
   try {
     const saved = JSON.parse(window.localStorage.getItem(SEASON_PROGRESS_KEY) ?? 'null') as (SeasonProgress & { seed: string }) | null;
@@ -1868,6 +1876,10 @@ function Finale({
   const fscore = `${Math.max(finals.gamesWonA, finals.gamesWonB)}–${Math.min(finals.gamesWonA, finals.gamesWonB)}`;
   const lastRun = yourRuns[yourRuns.length - 1];
   const won = champ === youId;
+  const champRecord = playoffs.rounds
+    .flat()
+    .filter((x) => x.teamAId === champ || x.teamBId === champ)
+    .reduce(([w, l], x) => (x.teamAId === champ ? [w + x.gamesWonA, l + x.gamesWonB] : [w + x.gamesWonB, l + x.gamesWonA]), [0, 0]);
   const wlOf = (s: LivePlayoffSeries) => (s.teamAId === youId ? [s.gamesWonA, s.gamesWonB] : [s.gamesWonB, s.gamesWonA]);
   const lastGame = lastRun?.games[lastRun.games.length - 1];
   const lastScore = lastGame && lastRun ? (lastRun.teamAId === youId ? lastGame.final : [lastGame.final[1], lastGame.final[0]]) : null;
@@ -1901,6 +1913,38 @@ function Finale({
           )}
         </p>
       </div>
+      {!won && (
+        // 2026-10-22, playtest ("brakuje informacji kto wygrał mistrzostwo"; mockup #champions).
+        <div className="champ2">
+          <span className="trophy" aria-hidden>
+            🏆
+          </span>
+          <div>
+            <span className="eb">
+              The Finals · {mascot(byId.get(champ))} {fscore.split('–')[0]}, {mascot(byId.get(loser))} {fscore.split('–')[1]}
+            </span>
+            <h2>
+              {mark(champ)} {byId.get(champ)?.name}
+            </h2>
+            <p>
+              Champions from the {ord(seedOf(champ))} seed, {champRecord[0]}–{champRecord[1]} in the playoffs.
+              {lastRun ? ` Your run ended in the ${lastRun.roundLabel.toLowerCase()}.` : ''}
+            </p>
+          </div>
+          {fmvp && (
+            <div className="fmvp">
+              <NFace name={fmvp.span.playerName} span={fmvp.span} />
+              <div>
+                <span>Finals MVP</span>
+                <b>{fmvp.span.playerName}</b>
+                <small>
+                  {f1(per(fmvp, 'pts'))} pts · {f1(per(fmvp, 'reb'))} reb · {f1(per(fmvp, 'ast'))} ast
+                </small>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {yourRuns.length > 0 && (
         <section>
           <H3 note="best of seven">Your path</H3>
@@ -1921,11 +1965,6 @@ function Finale({
             );
           })}
         </section>
-      )}
-      {!won && (
-        <p className="host">
-          <b>Champions:</b> the {byId.get(champ)?.name} beat the {byId.get(loser)?.name} {fscore}.{fmvp && ` Finals MVP: ${fmvp.span.playerName}.`}
-        </p>
       )}
       {awards.length > 0 && (
         <section>
@@ -2383,7 +2422,7 @@ function CalendarChapter({
         82 games for every team, a night at a time. A stop at the end of each month and at the All-Star break; watch any of your games on the way.
       </Prompt>
     );
-  else main = <CalendarDay season={season} day={day} you={you} byId={byId} codes={codes} spans={spans} />;
+  else main = <CalendarDay season={season} day={day} you={you} byId={byId} codes={codes} spans={spans} onWatch={(g) => setWatching({ kind: 'game', game: g })} />;
   if (statsSoFar) main = <Stats teams={teams} season={statsSoFar} playoffs={null} youId={you.id} codes={codes} through={{ label: dateLabel(iso), share: day / total }} />;
   return (
     <NightGame aside={aside} overlay={overlay}>

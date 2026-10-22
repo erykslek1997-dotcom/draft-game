@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
@@ -35,7 +35,9 @@ import AllMetrics, { RivalEdge } from './AllMetrics';
 import { teamMetricValues, type TeamMetricValues } from '../engine/teamMetrics';
 import { downloadDuelCard, type ShareCardStarter, type ShareRosterRow } from './shareCardImage';
 import { shortenName } from './ShotChip';
-import SeasonView, { type SeasonState } from './SeasonView';
+import SeasonView, { seasonPlayed, type SeasonState } from './SeasonView';
+import { bestNight } from './SeasonCalendar';
+import { teamNickname } from '../engine/teamNames';
 import {
   fieldGrade,
   type ProfileRow,
@@ -940,6 +942,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
 
   if (!heroRanked) return null;
   const hero = heroRanked;
+  const played = seasonState.status === 'done' && seasonState.playoffs !== null && seasonPlayed(scoredTeams);
   const heroTeam = displayTeam(hero.team);
   const fieldSize = ranked.length;
   const tier = resultTierLabel(hero.rank, fieldSize);
@@ -1026,7 +1029,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         </section>
       )}
       <Actions>
-        <Btn onClick={() => setSeasonOpen(true)}>Play the season →</Btn>
+        <Btn onClick={() => setSeasonOpen(true)}>{played ? 'Open the season →' : 'Play the season →'}</Btn>
         <div className="btn2">
           <Btn kind="line" onClick={() => setShareOpen(true)}>
             Share
@@ -1117,6 +1120,70 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined }} />;
   }
 
+  // 2026-10-22, playtest ("brakuje informacji kto wygrał mistrzostwo", "jak damy back to the results
+  // to powinno być jakieś podsumowanie sezonu"; mockup `alltime.html` #yourSeason): once the season
+  // has been played to the end, the results carry it.
+  let yourSeason: ReactNode = null;
+  if (played && seasonState.status === 'done' && seasonState.playoffs) {
+    const { season, playoffs } = seasonState;
+    const id = hero.team.id;
+    const seed = season.standings.findIndex((r) => r.teamId === id) + 1;
+    const row = season.standings[seed - 1];
+    const runs = playoffs.rounds.flat().filter((x) => x.teamAId === id || x.teamBId === id);
+    const last = runs[runs.length - 1];
+    const result = playoffs.championId === id ? 'Champions' : last ? `Out in the ${last.roundLabel.replace('Quarterfinals', 'quarters').replace('Semifinals', 'semis')}` : 'Missed the playoffs';
+    const champ = scoredTeams.find((t) => t.id === playoffs.championId);
+    const mine = season.players.filter((l) => l.teamId === id);
+    const scorer = [...mine].filter((l) => l.games >= 20).sort((a, b) => b.totals.pts / b.games - a.totals.pts / a.games)[0];
+    const last1 = (n: string) => maskText(n).split(' ').slice(-1)[0];
+    const a = season.awards;
+    const awards = [
+      a.mvp?.teamId === id && `${last1(a.mvp.span.playerName)} MVP`,
+      a.dpoy?.teamId === id && `${last1(a.dpoy.span.playerName)} DPOY`,
+      a.sixthMan?.teamId === id && `${last1(a.sixthMan.span.playerName)} Sixth Man`,
+      ...a.allNba.flatMap((team, k) => team.filter((l) => l.teamId === id).map((l) => `${last1(l.span.playerName)} All-NBA ${['1st', '2nd', '3rd'][k]}`)),
+      ...a.allDefense.flatMap((team, k) => team.filter((l) => l.teamId === id).map((l) => `${last1(l.span.playerName)} All-Defense ${['1st', '2nd'][k]}`)),
+    ].filter((x): x is string => Boolean(x));
+    const night = bestNight(season, id);
+    const nightTop = night ? night.game.top[night.side] : null;
+    const nightSpan = nightTop ? mine.find((l) => l.span.id === nightTop.spanId)?.span : undefined;
+    const nightOpp = night ? scoredTeams.find((t) => t.id === (night.side === 0 ? night.game.bId : night.game.aId)) : undefined;
+    const ordinalOf = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+    yourSeason = (
+      <section className="ysea">
+        <H3 note="played">Your season</H3>
+        <div className="ysea-strip">
+          <div>
+            <span>Season</span>
+            <b>
+              {row.wins}–{row.losses}
+            </b>
+          </div>
+          <div>
+            <span>Seed</span>
+            <b>{ordinalOf(seed)}</b>
+          </div>
+          <div>
+            <span>Playoffs</span>
+            <b className="w">{playoffs.championId === id ? '🏆 Champions' : result}</b>
+          </div>
+          <div>
+            <span>Champions</span>
+            <b className="w">
+              {champ && <LeagueMark name={champ.name} code={codeByTeamId.get(champ.id) ?? ''} />} {champ ? teamNickname(champ.name) : '—'}
+            </b>
+          </div>
+        </div>
+        <div className="ysea-rows">
+          <Kv k="Awards" v={awards.length ? awards.slice(0, 3).join(' · ') : 'none this year'} />
+          <Kv k="Best scorer" v={scorer ? `${last1(scorer.span.playerName)} ${(scorer.totals.pts / scorer.games).toFixed(1)}` : '—'} />
+          <Kv k="Game of the season" v={nightTop && nightSpan ? `${last1(nightSpan.playerName)} ${nightTop.line.pts} vs ${nightOpp ? teamNickname(nightOpp.name) : ''}` : '—'} />
+          <Kv k="The draft said" v={`${ordinalOf(hero.rank)} · the season ${Math.abs(seed - hero.rank) <= 2 ? 'agreed' : 'disagreed'}`} />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <NightGame aside={aside} overlay={overlay}>
       {bomb && <BombReveal span={bomb.span} gem={bomb.gem} onNamed={bomb.onNamed} />}
@@ -1161,6 +1228,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           </div>
         </div>
       </div>
+      {yourSeason}
       {quote && (
         <p className="host">
           <b>{DESK_CAST[quote.who].name}:</b> “{maskText(quote.text).replace(/\s*\*.+?\*\s*/g, ' ').trim()}”
@@ -1290,7 +1358,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         </table>
       </section>
       <Btn className="phone-only" onClick={() => setSeasonOpen(true)}>
-        Play the season →
+        {played ? 'Open the season →' : 'Play the season →'}
       </Btn>
     </NightGame>
   );

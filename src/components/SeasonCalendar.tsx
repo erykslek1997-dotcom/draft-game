@@ -311,7 +311,7 @@ function readTonightAll(): boolean {
   }
 }
 
-export function CalendarDay({ season, day, you, byId, codes, spans }: { season: LiveSeasonResult; day: number; you: Team; byId: Map<string, Team>; codes: Map<string, string>; spans: Map<string, PlayerSpan> }) {
+export function CalendarDay({ season, day, you, byId, codes, spans, onWatch }: { season: LiveSeasonResult; day: number; you: Team; byId: Map<string, Team>; codes: Map<string, string>; spans: Map<string, PlayerSpan>; onWatch?: (g: LiveSeasonGame) => void }) {
   const [allGames, setAllGames] = useState(readTonightAll);
   const [openOthers, setOpenOthers] = useState(false);
   const setAll = (v: boolean) => {
@@ -386,6 +386,41 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
       </div>
     );
   };
+  // Your game tonight, big (playtest 2026-10-22, mockup #tonightMine): both teams and the score,
+  // your best line, a link to watch it.
+  const MyGame = ({ g }: { g: LiveSeasonGame }) => {
+    const side = g.aId === you.id ? 0 : 1;
+    const oppId = side === 0 ? g.bId : g.aId;
+    const [us, them] = side === 0 ? g.final : [g.final[1], g.final[0]];
+    const t = g.top[side];
+    const tSpan = t ? spans.get(t.spanId) : undefined;
+    const row = (id: string, pts: number, lo: boolean) => (
+      <div className={cx('mg-t', lo && 'lo')}>
+        <LeagueMark name={byId.get(id)?.name ?? ''} code={codes.get(id) ?? ''} id={id} />
+        {nick(byId.get(id))}
+        <b>{pts}</b>
+      </div>
+    );
+    return (
+      <div className="mygame">
+        {row(you.id, us, us < them)}
+        {row(oppId, them, them < us)}
+        <p className="mg-l">
+          {t && tSpan && (
+            <>
+              {tSpan.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast · {t.line.fgm}/{t.line.fga} FG.{' '}
+            </>
+          )}
+          {us > them ? 'A win' : 'A loss'} {g.aId === you.id ? 'at home' : 'on the road'}.{' '}
+          {onWatch && (
+            <button type="button" className="lk-inline" onClick={() => onWatch(g)}>
+              Watch it
+            </button>
+          )}
+        </p>
+      </div>
+    );
+  };
   return (
     <>
       <div className="prompt">
@@ -436,7 +471,7 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
         ) : (
           <>
             {mineTonight ? (
-              <div className="board8 one">{gameCell(mineTonight)}</div>
+              <MyGame g={mineTonight} />
             ) : (
               <p className="empty-note">
                 No game tonight.{nextGame && ` Next: ${dateLabel(season.dates[nextGame.game.round])}, the ${nick(byId.get(nextGame.opp))}.`}
