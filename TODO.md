@@ -374,6 +374,36 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 **Silnik** (kalibracja, tydzień 2–3 — w Etapie 2): asysty po pozycji zamiast roli; gwiazda z
 rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 
+**Dopisane 2026-10-22 (po grupie B)**
+- [ ] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
+      otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
+      bez wybierania; powrót do „Start the draft”. Big Board z tego kroku przechodzi do draftu.
+- [ ] **Hunting — przebudowa mechaniki (silnik, tydzień 2–3).** Obecna nie działa tak, jak powinna.
+      Użytkownik opisze, jak to wygląda w rzeczywistości; pytania od Claude'a: kto wybiera cel
+      (rozgrywający w PnR czy izolacja), jak ofensywa wciąga słabego obrońcę do akcji (zasłona
+      gracza, którego kryje, ghost screen, re-screen), jak broni się obrona (switch / drop / hedge /
+      blitz, scram switch, podwojenie, chowanie słabego na najsłabszym strzelcu, strefa), ile to
+      kosztuje atak (zegar, przewidywalność, mniej ruchu), kto potrafi huntować (izolacja, PnR),
+      różnica sezon vs play-offy, przykłady serii (np. Rockets 2018 na Curry'ego) i źródła danych
+      (NBA.com matchups od 2017-18, Synergy ISO/PnR PPP).
+- [ ] **Transmisja meczu żywsza (silnik + teksty).** Dziś relacja jest sztywna. Brakuje:
+  - a) **Signature moves gwiazd:** „Dirk one-legged fadeaway from 14 ft over the defender's
+       hand”. Z play-by-play NBA (od 1996-97) da się wyciągnąć typ rzutu (fadeaway, turnaround,
+       step-back, pull-up, driving layup, hook, alley-oop, putback), odległość i udział każdego
+       typu dla gracza w sezonie → tendencje per span. Przed 1996 bez pbp: krótka ręczna lista
+       ruchów legend (skyhook Kareema, Dream Shake Hakeema, baby hook Magica, fadeaway Jordana).
+  - b) **Momenty z emocją:** and-one („tough bucket at the rim — AND ONE!”), blok + kontra,
+       wsad nad kimś, seria, trójka na prowadzenie, rzut z faulem w końcówce. And-one i rzuty
+       z faulem też policzalne z pbp (trafienie + faul przy rzucie + 1 wolny).
+  - c) **Reakcja na zegar:** szybki punkt w kontrze („early bucket in transition”, czas od zmiany
+       posiadania), trudny rzut z końcówki 24 s („beats the shot clock with a tough fadeaway”),
+       buzzer-beater na koniec kwarty, końcówka meczu. Z pbp: udział gracza w kontrze i w późnym
+       zegarze.
+  - d) **Nawiązania do rzeczywistości:** zagrania wyciągnięte z pbp (ulubione strefy, ulubiony
+       podający, typowe zakończenia), opisane tak, żeby pasowały do tej ligi, nie do dat.
+  - Źródło: play-by-play (shufinskiy/nba_data, już używane do Warriors 2014–25). Najpierw sprawdzić
+    pokrycie typów rzutów po sezonach, potem plik tendencji per span w `src/data/`.
+
 ## Kolejność prac (decyzja 2026-10-10, zastąpiona planem 4 tygodni)
 
 **Decyzja 2026-10-15 (wieczór):** intro All-Time Draft i kalibracja siły AI — na sam koniec;
