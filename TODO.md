@@ -732,6 +732,11 @@ skrypty w scratchpadzie sesji: arkusz → spany → rotacje → ranking, 20 000 
       Ok. 133 pkt na 48 min to dużo jak na mecz bez ławki — tempo albo skuteczność w trybie piątek
       (Draw Five, daily) mogą być zawyżone. Porównać z ligą (`seasonBaselines`) i ze średnią w
       sezonie pełnych drużyn.
+      - **Krótszy mecz piątek** (2026-10-22, user): 48 minut bez ławki nie ma sensu — skrócić
+        mecz Draw Five (zwykły i daily) do **30 albo 36 minut** (4×7,5 / 4×9). Do decyzji po
+        pomiarze: odsetek wygranych faworyta, średni wynik i rozrzut przy 30 vs 36 vs 48 (krótszy
+        mecz = więcej przypadku), zmęczenie bez zmian; licznik czasu, kwarty, faule (bonus,
+        limit fauli) i komentarz przeliczone na krótsze kwarty.
 - [ ] **Asysty w sezonie idą po pozycji, nie po roli (kalibracja, tydzień 2–3)** — playtest
       2026-10-22, statystyki po sezonie vs karta gracza (prawdziwy okres): Jordan 1987-89 7.0 →
       3.0, Drexler 1987-89 5.8 → 2.9, Durant 2012-14 5.1 → 2.8, Kobe 2007-09 5.1 → 3.9, McGrady
