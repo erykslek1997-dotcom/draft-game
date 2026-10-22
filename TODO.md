@@ -375,6 +375,15 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 
 **Poprawki PC + telefon (po #255, spisywane 2026-10-22)**
+- [ ] **Telefon — zasada „jeden krok = jeden ekran” (dotyczy wszystkich trybów).** Dziś trzeba
+      przewijać, żeby zobaczyć to, co właśnie się dzieje. Propozycja:
+  - każdy stan ekranu ma swój „punkt” (rozdanie → ręka, twój wybór → ręka, tura AI → stół AI,
+    mecz → wynik + feed, przerwa → nagłówek); przy zmianie stanu ekran sam przewija się do niego
+    (płynnie; przy ograniczonym ruchu od razu);
+  - aktywna część + główny przycisk mieszczą się w wysokości ekranu (100svh): mniejsze nagłówki
+    i rzędy kontekstu (np. rząd AI i „Your five” w Draw Five jako jeden pasek);
+  - główna akcja przyklejona na dole ekranu (Draw / Submit / Play), żeby nie trzeba było jej szukać.
+  - Najpierw Draw Five i menu, potem draft (Mini/All-Time), mecz na żywo i sezon.
 - [ ] Menu (telefon): wszystko na jednym ekranie bez przewijania — ciaśniejsza winieta, rzędy trybów,
       dailies i linki na dole.
 - [ ] Menu: pasek „Draft in progress” za ciasny — tekst łamie się na dwie linie, „Continue” wciśnięte
