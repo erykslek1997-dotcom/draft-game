@@ -77,6 +77,7 @@
 
     /* the main action stays in reach: pinned to the bottom while the page above it scrolls
        (a disabled one isn't worth the space) */
+    main > .btn.phone-only.line { background: var(--bg); }
     main > .btn.phone-only:not(.off) { position: sticky; bottom: 10px; z-index: 4; box-shadow: 0 0 0 10px var(--bg), 0 -16px 18px var(--bg); }
     main > .btn2.phone-only, main > .stackb.phone-only, main > div.phone-only:has(> .btn:not(.off)) {
       position: sticky; bottom: 0; z-index: 4; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
@@ -202,6 +203,9 @@
   .nt .prompt:not(.ph-keep) p, .nt .sub-note, .nt h3 > span, .nt .slot.empty small, .nt .slot.active small { display: none; }
   .nt .m2-row div span, .nt .m2-note:not(.loading) { display: none; }
   .nt .m2-row { min-height: 52px; }
+  .nt .dnp-note { display: none; }
+  /* the app bar is the page's top rule: no second double rule under it */
+  .nt .headline, .nt .hero2 { border-top: 0; padding-top: 2px; }
   .nt .feed.moments > .ln, .nt .feed.moments > .q, .nt .feed.moments > .more-btn:not(.ph-full) { display: none; }
 }
 @media (min-width: 601px) { .nt .feed .ph-full { display: none; } }
