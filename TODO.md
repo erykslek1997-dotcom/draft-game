@@ -340,7 +340,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 
 **B. Więcej czasu** (logika / przebudowa na istniejących elementach)
 - [x] Loteria: bęben zostaje 1,5–2 s z kulą, potem wynik wchodzi powoli; dalej „Start the draft”.
-- [ ] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
+- [x] Duże ekrany: ramka szersza niż 1360 px i większa skala (1366 / 1920 / 2560).
 - [x] Aside przyklejony (sticky) na wszystkich ekranach, akcje pod treścią.
 - [x] Rotacja: widoczny uchwyt suwaka na styku (gałka ‖, pole ~24 px, minuty przy przeciąganiu).
 - [x] Final standings → rywal: gdzie lepszy, gdzie ty lepszy, „All metrics ▾” (wszystkie wejścia,

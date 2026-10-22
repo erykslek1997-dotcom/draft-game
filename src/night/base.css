@@ -30,7 +30,11 @@
 aside { display: flex; flex-direction: column; gap: 24px; }
 /* the aside stays in view while a long page scrolls (playtest 2026-10-22: the left column ended a
    fifth of the way down and the rest was empty); taller than the screen, it scrolls on its own */
-@media (min-width: 601px) { aside { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding-top: 0; scrollbar-width: thin; } }
+@media (min-width: 601px) { aside { position: sticky; top: 0; align-self: start; max-height: calc(100vh / var(--z, 1)); overflow-y: auto; padding-top: 0; scrollbar-width: thin; } }
+/* Big screens (playtest 2026-10-22, "gram na dużym ekranie"): the whole frame scales up, type and
+   all, instead of a 1360px strip in the middle of a 1920 or 2560 screen. */
+@media (min-width: 1700px) { .game { --z: 1.2; zoom: 1.2; } }
+@media (min-width: 2200px) { .game { --z: 1.5; zoom: 1.5; } }
 main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 i.note, .it { font-style: italic; }
 
