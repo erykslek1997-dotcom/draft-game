@@ -21,11 +21,14 @@ const PACE = { early: 250, fourth: 420, blowout: 170, clutchPlay: 1500, clutchQu
 const CLUTCH = { seconds: 120, margin: 8 };
 const BLOWOUT_MARGIN = 20;
 // 2026-10-15 (playtest 7: "brakuje szybkości 1/8, 1/4, 1/2"): the slow speeds stay.
-const SPEEDS = [0.25, 0.5, 1, 2, 4, 8] as const;
+const SPEEDS = [0.125, 0.25, 0.5, 1, 2, 4, 8] as const;
 type Speed = (typeof SPEEDS)[number];
 /** The feed shows the newest lines; the rest open on request. */
 const FEED_ROWS = 12;
-const SPEED_LABEL: Record<Speed, string> = { 0.25: '¼', 0.5: '½', 1: '1×', 2: '2×', 4: '4×', 8: '8×' };
+const SPEED_LABEL: Record<Speed, string> = { 0.125: '⅛', 0.25: '¼', 0.5: '½', 1: '1×', 2: '2×', 4: '4×', 8: '8×' };
+/** "Key moments" starts here: the last six minutes of the game. 2026-10-22 (playtest): back from the
+ * pre-night live game, before tip-off and while the game runs. */
+const KEY_MOMENTS_LEFT = 360;
 
 function isClutch(m: GameMoment | undefined): boolean {
   return !!m && m.quarter >= 3 && m.left <= CLUTCH.seconds && Math.abs(m.score[0] - m.score[1]) <= CLUTCH.margin;
@@ -198,6 +201,21 @@ export default function LiveGameNight({
   const [speed, setSpeed] = useState<Speed>(1);
   const [tab, setTab] = useState<'feed' | 'box' | 'teams'>('feed');
   const [boxSide, setBoxSide] = useState<0 | 1>(sides.you);
+  // Who started: the five on the floor for the first trip of the game.
+  const starterIdx = useMemo(
+    () =>
+      ([0, 1] as const).map((side) => {
+        const on = onFloor(game.moments, 0, side).flatMap((x, k) => (x ? [k] : []));
+        // Fall back to the listed order if the first trip doesn't show exactly five.
+        return on.length === 5 ? on : game.labels[side].slice(0, 5).map((_l, k) => k);
+      }) as [number[], number[]],
+    [game],
+  );
+  const benchIdx = (side: 0 | 1, rows: { min: number }[]) =>
+    rows
+      .map((_l, k) => k)
+      .filter((k) => !starterIdx[side].includes(k))
+      .sort((a, b) => rows[b].min - rows[a].min);
   const [period, setPeriod] = useState<'game' | 0 | 1 | 2 | 3>('game');
   const [showAll, setShowAll] = useState(false);
   const timer = useRef<number | null>(null);
@@ -228,6 +246,7 @@ export default function LiveGameNight({
   }, [done, onFinish, autoStart]);
 
   const upto = Math.max(0, Math.min(shown, total));
+  const keyMomentIdx = game.moments.findIndex((m) => m.left <= KEY_MOMENTS_LEFT);
   const now = upto > 0 ? game.moments[upto - 1] : undefined;
   const score = now?.score ?? [0, 0];
   const lines = now?.lines ?? [game.labels[0].map(zeroLine), game.labels[1].map(zeroLine)];
@@ -500,6 +519,11 @@ export default function LiveGameNight({
     done ? null : (
       <div className={cls}>
         <Btn onClick={() => setRunning((r) => !r)}>{running ? 'Pause' : 'Play'}</Btn>
+        {keyMomentIdx > upto && (
+          <Btn kind="line" onClick={() => setShown(keyMomentIdx)}>
+            Key moments
+          </Btn>
+        )}
         <Btn kind="line" onClick={skip}>
           Skip to final
         </Btn>
@@ -694,13 +718,22 @@ export default function LiveGameNight({
                 <th className="c-hide">PF</th>
                 <th>+/−</th>
               </tr>
-              {rows.map((l, k) => {
+              {/* 2026-10-22 (playtest): the five who started first, then a "Bench" line and the bench by
+                  minutes — the rows used to come in position pairs, starters and backups mixed. */}
+              {(benchIdx(boxSide, rows).length ? [...starterIdx[boxSide], -1, ...benchIdx(boxSide, rows)] : starterIdx[boxSide]).map((k) => {
+                if (k < 0)
+                  return (
+                    <tr key="bench" className="grp">
+                      <td colSpan={9}>Bench</td>
+                    </tr>
+                  );
+                const l = rows[k];
                 const label = game.labels[boxSide][k];
                 const name = maskName(game.players[boxSide][k]?.playerName ?? label);
                 const sp = name.indexOf(' ');
                 const nameEl = (
                   <>
-                    <i className={periodBox.floor[boxSide]?.[k] && !done ? undefined : 'off'} />
+                    {!done && <i className={periodBox.floor[boxSide]?.[k] ? undefined : 'off'} />}
                     {sp > 0 ? (
                       <>
                         <span className="fn">{name.slice(0, sp)} </span>
@@ -729,7 +762,7 @@ export default function LiveGameNight({
                     </tr>
                   );
                 return (
-                  <tr key={label} className={k > 4 ? 'bn' : undefined}>
+                  <tr key={label}>
                     <td>{cellName}</td>
                     <td>{Math.round(l.min)}</td>
                     <td className={top > 0 && l.pts === top ? 'k' : undefined}>{l.pts}</td>
@@ -765,7 +798,7 @@ export default function LiveGameNight({
           </table>
         );
       })()}
-      <p className="lb-note">{done ? '○ the game is over' : '● on the floor now · ○ on the bench'}</p>
+      {!done && <p className="lb-note">● on the floor now · ○ on the bench</p>}
     </>
   );
 
@@ -790,6 +823,11 @@ export default function LiveGameNight({
             {pregame?.aside}
             <Actions links={links}>
               <Btn onClick={() => start(0)}>Tip-off</Btn>
+              {keyMomentIdx > 0 && (
+                <Btn kind="line" onClick={() => start(keyMomentIdx)}>
+                  Key moments
+                </Btn>
+              )}
             </Actions>
           </>
         }
@@ -863,6 +901,11 @@ export default function LiveGameNight({
         <Btn className="phone-only" onClick={() => start(0)}>
           Tip-off
         </Btn>
+        {keyMomentIdx > 0 && (
+          <Btn kind="line" className="phone-only" onClick={() => start(keyMomentIdx)}>
+            Key moments
+          </Btn>
+        )}
       </NightGame>
     );
   }
@@ -885,7 +928,7 @@ export default function LiveGameNight({
               <section>
                 <H3>Broadcast</H3>
                 {speedsEl}
-                {controls('btn2')}
+                {controls('stackb')}
               </section>
             )}
             <section>
@@ -902,7 +945,7 @@ export default function LiveGameNight({
           <section className="phone-only">
             <H3>Broadcast</H3>
             {speedsEl}
-            {controls('btn2')}
+            {controls('stackb')}
           </section>
         )}
         {done && <div className="phone-only stackb">{endActions}</div>}

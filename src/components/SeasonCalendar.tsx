@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { BoxLineStats } from '../engine/liveGame';
 import { mvpRaceValue, type LiveSeasonGame, type LiveSeasonResult, type SeasonSnapshot } from '../engine/liveSeason';
@@ -300,7 +300,28 @@ export function SeasonExtras({ season, you, byId, spans }: { season: LiveSeasonR
 
 /** One night of the season (mockup `#simDay`): your last game, your month, tonight's games, the
  * standings and the MVP ladder as of the last break. `day` nights have been played (1..82). */
+/** "Your game" or "All games" on the night view, remembered (playtest 2026-10-22: eight games
+ * flashing every night was too much; your own game first by default). */
+const TONIGHT_ALL_KEY = 'draftverse.tonightAll';
+function readTonightAll(): boolean {
+  try {
+    return window.localStorage.getItem(TONIGHT_ALL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function CalendarDay({ season, day, you, byId, codes, spans }: { season: LiveSeasonResult; day: number; you: Team; byId: Map<string, Team>; codes: Map<string, string>; spans: Map<string, PlayerSpan> }) {
+  const [allGames, setAllGames] = useState(readTonightAll);
+  const [openOthers, setOpenOthers] = useState(false);
+  const setAll = (v: boolean) => {
+    setAllGames(v);
+    try {
+      window.localStorage.setItem(TONIGHT_ALL_KEY, v ? '1' : '0');
+    } catch {
+      // Not remembered; the choice still holds for this visit.
+    }
+  };
   const round = Math.max(0, day - 1);
   const iso = season.dates[round];
   const mine = teamGames(season, you.id).filter((x) => x.game.round < day);
@@ -338,6 +359,33 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
   const tonight = season.games.filter((g) => g.round === round);
   const snap = [...season.snapshots].reverse().find((s) => s.afterRound < day && s.kind === 'month') ?? null;
   const prevSnap = snap ? [...season.snapshots].filter((s) => s.kind === 'month' && s.afterRound < snap.afterRound).pop() ?? null : null;
+  const mineTonight = tonight.find((g) => g.aId === you.id || g.bId === you.id) ?? null;
+  const others = tonight.filter((g) => g !== mineTonight);
+  const nextGame = teamGames(season, you.id).find((x) => x.game.round >= day) ?? null;
+  const gameCell = (g: LiveSeasonGame) => {
+    const yours = g.aId === you.id || g.bId === you.id;
+    const aw = g.final[0] > g.final[1];
+    const t = yours ? g.top[g.aId === you.id ? 0 : 1] : null;
+    return (
+      <div key={`${g.aId}${g.bId}`} className={cx('g8', yours && 'you')}>
+        <span className={cx('tmr', aw && 'w')}>
+          <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} />
+          {nick(byId.get(g.aId))}
+        </span>
+        <span className={cx('sc', aw && 'w')}>{g.final[0]}</span>
+        <span className={cx('tmr', !aw && 'w')}>
+          <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} />
+          {nick(byId.get(g.bId))}
+        </span>
+        <span className={cx('sc', !aw && 'w')}>{g.final[1]}</span>
+        {t && (
+          <span className="np">
+            {spans.get(t.spanId)?.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast
+          </span>
+        )}
+      </div>
+    );
+  };
   return (
     <>
       <div className="prompt">
@@ -369,33 +417,42 @@ export function CalendarDay({ season, day, you, byId, codes, spans }: { season: 
         </div>
       </section>
       <section>
-        <H3 note={`${tonight.length} games · final`}>Tonight</H3>
-        <div className="board8">
-          {tonight.map((g) => {
-            const yours = g.aId === you.id || g.bId === you.id;
-            const aw = g.final[0] > g.final[1];
-            const t = yours ? g.top[g.aId === you.id ? 0 : 1] : null;
-            return (
-              <div key={`${g.aId}${g.bId}`} className={cx('g8', yours && 'you')}>
-                <span className={cx('tmr', aw && 'w')}>
-                  <LeagueMark name={byId.get(g.aId)?.name ?? ''} code={codes.get(g.aId) ?? ''} />
-                  {nick(byId.get(g.aId))}
+        <H3
+          note={
+            <span className="seg">
+              <button type="button" className={cx(!allGames && 'on')} onClick={() => setAll(false)}>
+                Your game
+              </button>
+              <button type="button" className={cx(allGames && 'on')} onClick={() => setAll(true)}>
+                All games
+              </button>
+            </span>
+          }
+        >
+          Tonight
+        </H3>
+        {allGames ? (
+          <div className="board8">{tonight.map(gameCell)}</div>
+        ) : (
+          <>
+            {mineTonight ? (
+              <div className="board8 one">{gameCell(mineTonight)}</div>
+            ) : (
+              <p className="empty-note">
+                No game tonight.{nextGame && ` Next: ${dateLabel(season.dates[nextGame.game.round])}, the ${nick(byId.get(nextGame.opp))}.`}
+              </p>
+            )}
+            {others.length > 0 && (
+              <button type="button" className="fold" onClick={() => setOpenOthers(!openOthers)}>
+                <span>
+                  Other games tonight <b>{others.length}</b>
                 </span>
-                <span className={cx('sc', aw && 'w')}>{g.final[0]}</span>
-                <span className={cx('tmr', !aw && 'w')}>
-                  <LeagueMark name={byId.get(g.bId)?.name ?? ''} code={codes.get(g.bId) ?? ''} />
-                  {nick(byId.get(g.bId))}
-                </span>
-                <span className={cx('sc', !aw && 'w')}>{g.final[1]}</span>
-                {t && (
-                  <span className="np">
-                    {spans.get(t.spanId)?.playerName.split(' ').slice(-1)[0]} {t.line.pts} pts · {t.line.reb} reb · {t.line.ast} ast
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                <span>{openOthers ? '▾' : '▸'}</span>
+              </button>
+            )}
+            {openOthers && <div className="board8">{others.map(gameCell)}</div>}
+          </>
+        )}
       </section>
       <div className="split">
         <StandMoves rows={stand} before={before} byId={byId} codes={codes} youId={you.id} head="Standings" note={`after ${mine.length} games · move this week`} />

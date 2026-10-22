@@ -1956,12 +1956,17 @@ function CalendarChapter({
     if (watching.kind === 'game') {
       const g = watching.game;
       const [a, b] = [byId.get(g.aId), byId.get(g.bId)];
+      // The record before this game, and after it once it's over (it read "3–3 before tonight" on the
+      // final, the day having moved on; playtest 2026-10-22).
+      const prior = mine.filter((x) => x.game.round < g.round);
+      const wonIt = g.aId === you.id ? g.final[0] > g.final[1] : g.final[1] > g.final[0];
       return (
         <GameWatch
           build={() => playLiveSeasonGame(teams, g)}
           sides={{ names: [a?.name ?? '', b?.name ?? ''], short: [mascot(a), mascot(b)], codes: [codes.get(g.aId) ?? '', codes.get(g.bId) ?? ''], you: g.bId === you.id ? 1 : 0 }}
           title={`${dateLabel(season.dates[g.round])} · game ${mine.findIndex((x) => x.game === g) + 1}`}
-          status={`${me.wins}–${me.losses} before tonight`}
+          status={`${prior.filter((x) => x.won).length}–${prior.filter((x) => !x.won).length} before tonight`}
+          finalStatus={`now ${prior.filter((x) => x.won).length + (wonIt ? 1 : 0)}–${prior.filter((x) => !x.won).length + (wonIt ? 0 : 1)}`}
           overlay={overlay}
           onFinish={() => setDay((d) => Math.max(d, g.round + 1))}
           onDone={back}
@@ -2106,6 +2111,7 @@ function GameWatch({
   sides,
   title,
   status,
+  finalStatus,
   overlay,
   onFinish,
   onDone,
@@ -2116,6 +2122,8 @@ function GameWatch({
   sides: { names: [string, string]; short: [string, string]; codes: [string, string]; you: 0 | 1 };
   title: string;
   status: string;
+  /** The line under the title once the game is over; `status` if not given. */
+  finalStatus?: string;
   overlay: ReactNode;
   onFinish?: () => void;
   onDone: () => void;
@@ -2135,7 +2143,7 @@ function GameWatch({
         game={game}
         variant="full"
         sides={sides}
-        mast={{ title, sub: `Final · ${status}`, liveSub: `Live · ${status}`, preSub: `Tip-off · ${status}` }}
+        mast={{ title, sub: `Final · ${finalStatus ?? status}`, liveSub: `Live · ${status}`, preSub: `Tip-off · ${status}` }}
         autoStart
         pregame={{ eb: `${title} · tonight`, now: true, title: `${sides.short[0]} vs ${sides.short[1]}`, line: status }}
         links={{ onMenu: onClose }}

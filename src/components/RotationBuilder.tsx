@@ -557,7 +557,7 @@ function RotationBuilderComponent({
         <p className="empty-note" style={{ marginTop: 10 }}>
           {durabilityOverworked.length > 0
             ? `Allowed, but ${durabilityOverworked.map(({ player, minutes }) => `${maskName(player.playerName).split(' ').slice(-1)[0]} at ${minutes}`).join(', ')} lowers your Rotation score. `
-            : `${GAME_MINUTES} minutes a spot; drag a line to move minutes between two players. `}
+            : `${GAME_MINUTES} minutes a spot; drag the ‖ handle between two players to move minutes. `}
           {rosterComplete && (
             <>
               <button

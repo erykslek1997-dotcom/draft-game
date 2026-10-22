@@ -447,16 +447,23 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .swap { margin: 8px 48px 4px 64px; padding: 8px 14px; background: var(--surf); border-left: 3px solid var(--ink); }
 .r3 { position: relative; display: grid; grid-template-columns: 50px minmax(0, 1fr) 30px; gap: 14px; align-items: center; }
 .r3p { font: 800 24px var(--cond); }
-.r3b { display: flex; height: 48px; border-radius: 3px; overflow: hidden; background: var(--surf2); }
-.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; color: var(--ink2); background: var(--surf2); }
+.r3b { display: flex; height: 48px; border-radius: 3px; background: var(--surf2); }
+.r3b > .sg:first-child { border-radius: 3px 0 0 3px; } .r3b > .sg:last-child { border-radius: 0 3px 3px 0; }
+.sg { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 12px; min-width: 0; overflow: hidden; color: var(--ink2); background: var(--surf2); }
 .sg.st { background: var(--card); color: var(--cink); }
 .sg.third { background: #26272B; }
 .sg.sel { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 .sg b { font: 700 16px var(--cond); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sg i { font: 600 14px var(--num); font-style: normal; }
-.r3b u { flex: none; width: 4px; background: var(--bg); position: relative; cursor: ew-resize; }
-.r3b u.act { width: 6px; background: var(--red); }
-.r3b u.act em { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 11px var(--num); font-style: normal; color: var(--red); }
+/* the handle between two players: a visible grip (‖) with a finger-sized hit area; the minutes
+   show above it while you drag (playtest 2026-10-22: a hidden 4px seam you had to find) */
+.r3b u { flex: none; width: 12px; background: var(--bg); position: relative; cursor: ew-resize; touch-action: none; z-index: 1; }
+.r3b u::before { content: ''; position: absolute; inset: -6px -10px; }
+.r3b u::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 20px; transform: translate(-50%, -50%); border-left: 2px solid var(--ink3); border-right: 2px solid var(--ink3); border-radius: 1px; }
+.r3b u:hover::after, .r3b u:focus-visible::after { border-color: var(--ink); }
+.r3b u.act { background: var(--red); }
+.r3b u.act::after { border-color: var(--ink); }
+.r3b u.act em { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 600 12px var(--num); font-style: normal; color: var(--red); background: var(--bg); padding: 0 4px; }
 .r3x { width: 30px; height: 30px; display: grid; place-items: center; border: 1.5px solid var(--rule3); border-radius: 50%; color: var(--ink2); text-decoration: none; font: 700 16px var(--num); }
 .pop { position: absolute; z-index: 3; top: 54px; right: 44px; width: 470px; background: var(--surf); border: 1.5px solid var(--rule2); padding: 10px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.6); }
 .pop-h { display: block; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 4px; }
@@ -774,6 +781,15 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .g8 .sc { font: 600 15px var(--num); color: var(--ink3); text-align: right; }
 .g8 .sc.w { color: var(--ink); }
 .g8 .np { grid-column: 1 / -1; font-size: 12px; font-style: italic; color: var(--ink3); }
+/* your game alone, bigger; the rest folded (playtest 2026-10-22) */
+.board8.one { grid-template-columns: minmax(0, 1fr); }
+.board8.one .g8 { padding: 14px 16px; border: 1.5px solid var(--rule2); border-radius: 4px; background: transparent; row-gap: 6px; }
+.board8.one .tmr { font-size: 22px; } .board8.one .sc { font-size: 28px; } .board8.one .np { font-size: 14px; margin-top: 4px; }
+.fold { display: flex; justify-content: space-between; width: 100%; margin-top: 12px; padding: 12px 0; border: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: transparent; color: var(--ink2); font: 500 14px var(--sans); cursor: pointer; text-align: left; }
+.fold b { color: var(--ink); }
+h3 .seg { display: inline-flex; border: 1px solid var(--rule3); border-radius: 3px; overflow: hidden; font-style: normal; }
+h3 .seg button { border: 0; background: transparent; padding: 3px 10px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); cursor: pointer; }
+h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .cal { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
 .cal span { display: grid; place-items: center; align-content: center; height: 40px; font: 700 14px var(--cond); color: var(--ink4); border-bottom: 2px solid var(--rule); }
 .cal span small { font: 500 11px var(--num); color: var(--ink3); }
@@ -833,7 +849,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .tabs2 { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule2); margin-bottom: 8px; }
 .tabs2 > :is(span, button) { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
 .tabs2 > :is(span, button).on { color: var(--ink); border-bottom-color: var(--ink); }
-@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); } }
 
 /* live box score by quarter */
 .seg { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 2px 0 10px; }
@@ -849,6 +865,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .lbx td:first-child i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); margin-right: 8px; vertical-align: 2px; }
 .lbx td:first-child i.off { background: transparent; box-shadow: inset 0 0 0 1px var(--ink4); }
 .lbx tr.bn td:first-child { color: var(--ink2); }
+.lbx tr.grp td { padding: 12px 0 4px; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); text-align: left; border-bottom: 1px solid var(--rule2); }
 .lbx td, .lbx th { white-space: nowrap; }
 .lbx td.k { color: var(--ink); font-weight: 600; }
 .lbx td.pos { color: var(--green); } .lbx td.neg { color: var(--red); }
