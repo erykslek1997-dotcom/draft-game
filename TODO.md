@@ -361,13 +361,13 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
       w aside), ten sam board z twarzami (BoardGrid), te same wyniki i karty piątki; „Caps left”.
 
 **C. Nowe plansze** (makieta do akceptacji, potem kod)
-- [ ] Okno drużyny (klik w herb/nazwę wszędzie): bilans, ocena, piątka + ławka z minutami,
+- [x] Okno drużyny (klik w herb/nazwę wszędzie): bilans, ocena, piątka + ławka z minutami,
       statystyki sezonu/PO, ostatnie mecze, „ty vs oni”.
-- [ ] Wyniki draftu po sezonie: blok „Your season” (bilans, PO, mistrz, nagrody, „Open the season”).
-- [ ] Koniec sezonu: wyraźny blok „Champions” (mistrz z 🏆, finał, Finals MVP z twarzą).
-- [ ] Plakat i podsumowanie sezonu: ocena draftu (Rating, miejsce, Talent/Off/Def/Spacing/Fit).
-- [ ] Sezon: duży „twój mecz” w Tonight; „Your month” na przerwie.
-- [ ] Wyniki daily Draw Five — hierarchia: jeden bohater (mecz + werdykt), twoja piątka vs
+- [x] Wyniki draftu po sezonie: blok „Your season” (bilans, PO, mistrz, nagrody, „Open the season”).
+- [x] Koniec sezonu: wyraźny blok „Champions” (mistrz z 🏆, finał, Finals MVP z twarzą).
+- [x] Plakat i podsumowanie sezonu: ocena draftu (Rating, miejsce, Talent/Off/Def/Spacing/Fit).
+- [x] Sezon: duży „twój mecz” w Tonight; „Your month” na przerwie.
+- [x] Wyniki daily Draw Five — hierarchia: jeden bohater (mecz + werdykt), twoja piątka vs
       najlepsza, Film room, profil, Jokery na końcu; jeden nagłówek XXL (sprawdzić też Mini/All-Time).
 - [ ] Mini: turniej NCAA po drafcie (patrz 3.2 Mini Draft).
 
