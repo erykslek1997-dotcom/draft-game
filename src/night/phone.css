@@ -458,3 +458,11 @@
 
 /* roster cards line up: every name takes two lines of room, so minutes and bench rows start at the same height */
 .nt .card:has(> .roles .bn-row) .nm, .nt .card:has(> .roles) .nm { min-height: 2.05em; box-sizing: content-box; display: flex; align-items: center; justify-content: center; line-height: 1; }
+@media (max-width: 600px) {
+  /* five narrow cards: a name size that fits "Antetokounmpo" whole */
+  .nt .card:has(> .roles .bn-row) .nm { font-size: 15px !important; padding: 10px 2px 0; letter-spacing: -0.01em; }
+}
+.nt .card .roles .bn-row .bn-f { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+.nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }
+.nt .card .roles .bn-row .bn-f { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+.nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }
