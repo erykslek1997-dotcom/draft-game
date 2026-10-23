@@ -1157,3 +1157,41 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .po-b .po-ph img { width: min(48px, 100%); margin-bottom: -4px; }
 .po-b b { font-size: 13px; margin-top: 3px; }
 .po-b em { font-size: 11px; margin-top: 1px; }
+
+/* ---- the playoff tree (playtest 2026-10-23: "jak irl NBA") ---- */
+.bk { --h: 352px; --gap: 22px; display: grid; grid-template-columns: repeat(var(--r), minmax(0, 1fr)); column-gap: var(--gap); }
+.bk-col h4 { margin: 0 0 10px; font: 700 11px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.bk-body { position: relative; height: var(--h); display: flex; flex-direction: column; justify-content: space-around; }
+.bk-s { position: relative; height: 66px; border-top: 1.5px solid var(--rule2); }
+.bk-s .tr { display: grid; grid-template-columns: 14px minmax(0, 1fr) 16px; gap: 6px; align-items: center; height: 32px; padding: 0 8px; color: var(--ink3); }
+.bk-s .tr .sd { font: 500 11px var(--num); color: var(--ink3); }
+.bk-s .tr .w { font: 700 15px var(--num); text-align: right; }
+.bk-s .tr.win { color: var(--ink); }
+.bk-s .tr.win .w { color: var(--ink); }
+.bk-s .tr.you { background: var(--you-bg); color: var(--you-ink); }
+.bk-s .tr.you .sd, .bk-s .tr.you .w { color: var(--you-ink); }
+.bk-s.you-path { border-top-color: var(--you); }
+.bk-s.live { border-top-color: var(--red); }
+.bk-col.final .bk-s { border-top-color: var(--gold); }
+.bk-s.tbd { display: grid; place-items: center; font: italic 500 12px var(--sans); color: var(--ink4); }
+.bk-in, .bk-out, .bk-v { position: absolute; background: var(--rule3); pointer-events: none; }
+.bk-in { right: 100%; top: 50%; width: calc(var(--gap) / 2); height: 1.5px; }
+.bk-out { left: 100%; top: 50%; width: calc(var(--gap) / 2); height: 1.5px; }
+.bk-v { left: calc(100% + var(--gap) / 2); width: 1.5px; }
+.bk-v.dn { top: 50%; }
+.bk-v.up { bottom: 50%; }
+.bk-cup { position: absolute; left: 50%; top: calc(50% - 74px); width: 44px; height: 44px; transform: translateX(-50%); color: var(--gold); }
+@media (max-width: 600px) { .bk { --h: 340px; } }
+
+/* ---- the two fives face to face (matchup) ---- */
+.fv-k { font: 700 11px var(--cond); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); margin: 2px 0 4px; }
+.fv-k.you { color: var(--ink); margin: 4px 0 0; }
+.fv-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.fv-pos { height: 22px; align-items: center; font: 700 11px var(--num); color: var(--ink3); text-align: center; }
+.fv-c { background: var(--card); color: var(--cink); border-radius: 4px; text-align: center; overflow: hidden; min-width: 0; padding-bottom: 5px; }
+.fv-c .fv-t { display: block; height: 5px; background: var(--team); }
+.fv-c img, .fv-c .ini { width: 40px; height: 40px; border-radius: 50%; margin: 5px auto 3px; object-fit: cover; background: var(--cface); border: 1px solid var(--cink); display: grid; place-items: center; font: 800 14px var(--cond); color: var(--cink2); }
+.fv-c b { display: block; font: 700 13px/1 var(--cond); text-transform: uppercase; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-c small { display: block; font: 500 11px var(--num); color: var(--cink2); padding-top: 2px; }
+.fv-c .fv-r { font-size: 11px; color: var(--cink3, var(--cink2)); }
+@media (min-width: 601px) { .fv-row { gap: 10px; } .fv-c img, .fv-c .ini { width: 52px; height: 52px; } .fv-c b { font-size: 16px; } }
