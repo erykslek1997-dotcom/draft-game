@@ -1148,3 +1148,12 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 }
 .nt .po-draft { margin-top: 10px; border-top: 1px solid var(--cline); padding-top: 8px; }
 .nt .po-draft .pd-k { display: flex; justify-content: space-between; font: 700 10px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cink2); margin-bottom: 4px; }
+
+/* the poster's bench as small face cards under the five, in the same five columns */
+.po-bench { display: block; }
+.po-bench > .po-bl { display: block; margin-bottom: 6px; }
+.po-bp { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.po-b .po-ph { height: 52px; }
+.po-b .po-ph img { width: min(48px, 100%); margin-bottom: -4px; }
+.po-b b { font-size: 13px; margin-top: 3px; }
+.po-b em { font-size: 11px; margin-top: 1px; }

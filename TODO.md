@@ -325,14 +325,14 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
 - [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
 - [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
-- [ ] Lista draftu (telefon): cap za blisko „Draft”; ucięte statystyki; okno „His stretches”: cap za blisko „Use” (patrz wyżej).
-- [ ] Sezon › Overview: niższe wiersze Standings (~34 px), żeby tabela i „Playoffs →” mieściły się bez przewijania.
-- [ ] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
-- [ ] Mecz na żywo (telefon): boisko „Last basket” na całą szerokość, wyśrodkowane, ~200 px (tylko boisko, reszta ekranu bez zmian).
-- [ ] Playoffy: przycisk „On to the semifinals →” w jednej linii (niski); drabinka w zwartych kartach (seria = jedna karta ~56 px, „Sweep”/„Game 7” w tej samej linii).
+- [x] Lista draftu (telefon): cap za blisko „Draft”; ucięte statystyki; okno „His stretches”: cap za blisko „Use” (patrz wyżej).
+- [x] Sezon › Overview: niższe wiersze Standings (~34 px), żeby tabela i „Playoffs →” mieściły się bez przewijania.
+- [x] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
+- [x] Mecz na żywo (telefon): boisko „Last basket” na całą szerokość, wyśrodkowane, ~200 px (tylko boisko, reszta ekranu bez zmian).
+- [x] Playoffy: przycisk „On to the semifinals →” w jednej linii (niski); drabinka w zwartych kartach (seria = jedna karta ~56 px, „Sweep”/„Game 7” w tej samej linii).
 - [ ] Matchup playoffów: zamiast „Top three” porównanie piątek z facecards (telefon i PC; pod parami pts · reb · ast).
-- [ ] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
-- [ ] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
+- [x] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
+- [x] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
 - [ ] **Przyszły tydzień (tydzień 2):** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
 
 
