@@ -243,7 +243,7 @@
   .nt .plist .mt { margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .nt .plist .mt i { display: none; }
   /* position · years · line in three even columns, the same place on every row */
-  .nt .plist .mt { display: grid; grid-template-columns: 46px 60px minmax(0, 1fr); align-items: baseline; }
+  .nt .plist .mt { display: grid; grid-template-columns: 40px 52px minmax(0, 1fr); align-items: baseline; }
   .nt .plist .mt > b, .nt .plist .mst > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .nt .plist .mt .mt-y { display: none; }
   .nt .plist .mst { display: contents; }
@@ -320,16 +320,16 @@
 }
 @media (max-width: 600px) {
   /* not on the clock: no Draft buttons, so their column goes and the caps reach the right edge */
-  .nt .plist:not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
-  .nt .plist:not(:has(.draft:not(:disabled))) td.act, .nt .plist:not(:has(.draft:not(:disabled))) th:last-child:empty { padding: 0; }
+  .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
+  .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) td.act, .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) th:last-child:empty { padding: 0; }
   .nt .plist td.cap { padding-right: 0; }
 }
 @media (max-width: 600px) {
   /* not on the clock: no Draft buttons, so their column goes and the caps reach the right edge
      (playtest: "caps do prawej") */
-  .nt .plist:not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
-  .nt .plist:not(:has(.draft:not(:disabled))) td.act { padding: 0; }
-  .nt .plist:not(:has(.draft:not(:disabled))) td.cap { padding-right: 0; }
+  .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) col:last-child { width: 0 !important; }
+  .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) td.act { padding: 0; }
+  .nt .plist:not(.roster):not(.spans):not(:has(.draft:not(:disabled))) td.cap { padding-right: 0; }
 }
 @media (max-width: 600px) {
   /* the caps a size down, in proportion to the name (playtest 2026-10-22) */
@@ -342,3 +342,65 @@
 }
 /* the export reads as a button on the computer too, the long label wrapping inside it */
 .nt .btn.team-export-btn { white-space: normal; line-height: 1.2; }
+
+/* ---- phone, playtest 2026-10-23: small fixes ---- */
+@media (max-width: 600px) {
+  /* a wide table scrolls inside its own box, the name column held (live box score, season stats) */
+  .nt .lbx-wrap, .nt .sbox-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; max-width: 100%; }
+  .nt .lbx td:first-child, .nt .lbx th:first-child { position: sticky; left: 0; z-index: 1; background: var(--bg); padding-right: 10px; min-width: 96px; }
+  .nt .lbx tr.grp td, .nt .lbx tr.bn td:first-child { background: var(--bg); }
+  .nt .lbx th:first-child { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .nt .sbox th:not(:first-child), .nt .sbox td:not(:first-child) { white-space: nowrap; }
+  /* the draft's last basket fills the width and sits in the middle */
+  .nt .court { max-width: 100%; margin: 0 auto; }
+  .nt .court-l { text-align: center; }
+}
+@media (max-width: 600px) {
+  /* Stats › Players: every column is there, the box scrolls (the old rule hid everything past the sixth) */
+  .nt .sbox.stats td:nth-child(n+7), .nt .sbox.stats th:nth-child(n+7) { display: table-cell; }
+  .nt .sbox.stats th:first-child { width: auto; min-width: 150px; }
+  /* Overview standings: low rows, so the table and the button fit together */
+  .nt .stand2 td { padding-top: 4px; padding-bottom: 4px; }
+  .nt .stand2 td.nm { font-size: 16px; }
+  /* one main action on its own fills the bar */
+  .nt .btn2.phone-only > .btn:only-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  /* the draft list on the clock: a narrower face and Draft column give the name more room, the caps a gap before the button */
+  .nt .plist:not(.roster):not(.spans):has(.draft:not(:disabled)) col:first-child { width: 40px !important; }
+  .nt .plist:not(.roster):not(.spans):has(.draft:not(:disabled)) col:last-child { width: 64px !important; }
+  .nt .plist:not(.roster):not(.spans):has(.draft:not(:disabled)) col:nth-last-child(4) { width: 66px !important; }
+  .nt .plist td.cap { padding-right: 12px; }
+  .nt .plist td.act { padding-left: 0; }
+  .nt .plist td.f { padding-right: 8px; }
+  .nt .plist .mt .mst > span, .nt .plist .mt > b { text-overflow: clip; }
+}
+@media (max-width: 600px) {
+  /* Team after the draft: the round column goes, the rest fits the screen (it used to push the page left) */
+  .nt .plist.roster { table-layout: fixed; width: 100%; }
+  .nt .plist.roster col:nth-child(1), .nt .plist.roster th:nth-child(1), .nt .plist.roster td.rd { display: none; width: 0; }
+  .nt .plist.roster col:nth-child(2) { width: 40px !important; }
+  .nt .plist.roster col:nth-child(3) { width: 44px !important; }
+  .nt .plist.roster col:last-child { width: 62px !important; }
+  .nt .plist.roster td { padding-right: 6px; }
+  .nt .plist.roster td.f img, .nt .plist.roster td.f .ini { width: 34px; height: 34px; }
+  .nt .plist.roster td.cap { padding-right: 0; }
+  .nt .plist.roster .yrs-btn { white-space: nowrap; }
+  /* His stretches: the caps clear of the Use button */
+  .nt .plist.spans td.cap, .nt .plist.spans th.r:last-of-type { padding-right: 12px; }
+}
+@media (max-width: 600px) {
+  /* a hint that a table scrolls: a soft edge where more columns wait (scrolls away at the end) */
+  .nt .lbx-wrap, .nt .sbox-wrap {
+    background:
+      linear-gradient(to right, var(--bg) 30%, rgba(11, 13, 17, 0)) left / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--bg) 30%, rgba(11, 13, 17, 0)) right / 28px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(236, 230, 215, 0.22), rgba(236, 230, 215, 0)) left / 10px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(236, 230, 215, 0.22), rgba(236, 230, 215, 0)) right / 10px 100% no-repeat scroll;
+  }
+}
+@media (max-width: 600px) {
+  /* the live game's columns never grow past the screen: the box score scrolls inside its own box */
+  .nt .split, .nt .live-split { grid-template-columns: minmax(0, 1fr); }
+  .nt .split > *, .nt .live-split > *, .nt .stack, .nt .stack > * { min-width: 0; }
+}

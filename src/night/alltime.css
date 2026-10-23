@@ -874,7 +874,7 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .lbx td.dnp { width: auto; }
 .lb-note { margin: 8px 0 0; font-size: 13px; font-style: italic; color: var(--ink3); }
 .lbx tr.tot td { border-top: 1.5px solid var(--rule2); color: var(--ink); font-weight: 600; }
-@media (max-width: 600px) { .lbx .c-hide { display: none; } .lbx td, .lbx th { padding-left: 4px; padding-right: 4px; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } }
+@media (max-width: 600px) { .lbx .c-hide { display: table-cell; } .lbx td, .lbx th { padding-left: 5px; padding-right: 5px; white-space: nowrap; } .lbx td:first-child { font-size: 15px; } .lbx .fn { display: none; } }
 }
 .nt {
   .load-bar i.indet { width: 30%; animation: load-indet 1.2s ease-in-out infinite alternate; }
