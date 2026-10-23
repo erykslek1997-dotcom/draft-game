@@ -330,6 +330,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - [x] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
 - [x] Mecz na żywo (telefon): boisko „Last basket” na całą szerokość, wyśrodkowane, ~200 px (tylko boisko, reszta ekranu bez zmian).
 - [x] Playoffy: przycisk „On to the semifinals →” w jednej linii (niski); drabinka w zwartych kartach (seria = jedna karta ~56 px, „Sweep”/„Game 7” w tej samej linii).
+- [ ] **Drabinka playoffów jak w prawdziwej NBA** (2026-10-23, Eryk — referencja: drzewko 8 drużyn z liniami łączącymi rundy, puchar w środku). Makieta A/B: A = kompaktowe drzewko na całą szerokość telefonu (3 kolumny: QF/SF/Finał, herb + seed + skrót + wynik serii, linie łączące, Twoja seria wyróżniona), B = szersze drzewko z pełnymi nazwami i przewijaniem w bok; PC = to samo szerzej. Razem z makietą matchupu playoffów (patrz niżej).
 - [ ] Matchup playoffów: zamiast „Top three” porównanie piątek z facecards (telefon i PC; pod parami pts · reb · ast).
 - [x] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
 - [x] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
