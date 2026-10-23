@@ -1195,3 +1195,5 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .fv-c small { display: block; font: 500 11px var(--num); color: var(--cink2); padding-top: 2px; }
 .fv-c .fv-r { font-size: 11px; color: var(--cink3, var(--cink2)); }
 @media (min-width: 601px) { .fv-row { gap: 10px; } .fv-c img, .fv-c .ini { width: 52px; height: 52px; } .fv-c b { font-size: 16px; } }
+.fv-c .fv-i { display: none; }
+@media (max-width: 600px) { .fv-c .fv-d { display: none; } .fv-c .fv-i { display: inline; } }

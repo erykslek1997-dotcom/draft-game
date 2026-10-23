@@ -359,8 +359,8 @@ function QuickDraftBoard({
   // The tab: the first open position once you have a player (the list shows what you need), all
   // of them before your first pick; tapping a tab or an open slot changes it.
   const [tab, setTab] = useState<Position | 'ALL' | null>(null);
-  const firstOpen = SLOTS.find((s) => !have.has(s));
-  const on: Position | 'ALL' = tab ?? (have.size > 0 && firstOpen ? firstOpen : 'ALL');
+  // After a pick the list goes back to everyone; it no longer jumps to the next open slot (playtest 2026-10-23).
+  const on: Position | 'ALL' = tab ?? 'ALL';
   useEffect(() => setTab(null), [humanTeam.roster.length]);
   const [visible, setVisible] = useState(VISIBLE_STEP);
   useEffect(() => setVisible(VISIBLE_STEP), [on, search, caps]);
@@ -496,7 +496,6 @@ function QuickDraftBoard({
       legal,
       starred: bigBoard.includes(peak.playerName),
       hot: canPick && i === shown.findIndex((e) => isQuickPickLegal(state, (daily ? quickDailyAlternative(state, e.span.id) : null)?.id ?? e.span.id)),
-      ruleNote: ruled,
       title: !canPick
         ? `${teamLabel(currentTeam)} on the clock`
         : ruled

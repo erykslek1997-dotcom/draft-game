@@ -1,6 +1,6 @@
 import type { Team } from './types';
 import { fitScore, type FitScoreResult } from './fit';
-import { offenseScoreBreakdown, teamDefensiveTalentScore } from './scoring';
+import { offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale } from './scoring';
 
 export type TeamMetricValues = Record<string, number>;
 
@@ -8,14 +8,16 @@ export type TeamMetricValues = Record<string, number>;
 export function teamMetricValues(team: Team, fit: FitScoreResult = fitScore(team)): TeamMetricValues {
   const offense = offenseScoreBreakdown(team);
   const c = fit.components;
+  // Same mapping as the Offense details bars, so a team's O-TAL reads the same on every screen.
+  const o = (v: number) => Math.round(calibrateOffenseToDefenseScale(v));
   return {
-    otal: offense.otal,
-    creation: c.creationStructure,
-    spacing: offense.spacing,
-    rim: offense.rimPressure,
-    playmaking: offense.playmaking,
-    selfCreation: offense.selfCreation,
-    mismatch: offense.mismatchStructure,
+    otal: o(offense.otal),
+    creation: o(c.creationStructure),
+    spacing: o(offense.spacing),
+    rim: o(c.rimPressureTeam),
+    playmaking: o(offense.playmaking),
+    selfCreation: o(offense.selfCreation),
+    mismatch: o(offense.mismatchStructure),
     hunting: fit.inputs.huntingPotential,
     dtal: teamDefensiveTalentScore(team),
     roleCoverage: c.defensiveRoleCoverage,

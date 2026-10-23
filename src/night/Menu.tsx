@@ -32,7 +32,7 @@ function ModeMark({ id }: { id: MenuMode }) {
     );
   if (id === 'quickfive')
     return (
-      <span className="m2-mk lot" aria-hidden>
+      <span className="m2-mk redball" aria-hidden>
         <i />
       </span>
     );

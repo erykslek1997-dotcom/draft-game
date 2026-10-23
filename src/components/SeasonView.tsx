@@ -1778,8 +1778,20 @@ function FiveVs({ season, youId, oppId, byId }: { season: LiveSeasonResult; youI
       <i className="fv-t" />
       <NFace name={x.span.playerName} span={x.span} />
       <b>{x.line ? <PlayerName line={x.line}>{lastName(x.span.playerName)}</PlayerName> : lastName(x.span.playerName)}</b>
-      <small>{x.line ? f1(per(x.line, 'pts')) : '—'}</small>
-      <small className="fv-r">{x.line ? `${f1(per(x.line, 'reb'))} · ${f1(per(x.line, 'ast'))}` : ''}</small>
+      <small>
+        {x.line ? (
+          <>
+            <span className="fv-d">
+              {f1(per(x.line, 'pts'))} · {f1(per(x.line, 'reb'))} · {f1(per(x.line, 'ast'))}
+            </span>
+            <span className="fv-i">
+              {Math.round(per(x.line, 'pts'))}/{Math.round(per(x.line, 'reb'))}/{Math.round(per(x.line, 'ast'))}
+            </span>
+          </>
+        ) : (
+          '—'
+        )}
+      </small>
     </div>
   );
   return (
