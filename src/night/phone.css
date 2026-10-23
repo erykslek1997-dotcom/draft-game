@@ -434,3 +434,8 @@
   /* every stat column is there on a phone, the table scrolls in its own box (Your team, playoffs) */
   .nt .sbox td:nth-child(n+7), .nt .sbox th:nth-child(n+7) { display: table-cell; }
 }
+
+/* selected position tab: filled cream chip */
+.nt .ptabs .pt.on { background: var(--card); border-radius: 6px 6px 0 0; border-bottom-color: var(--card); }
+.nt .ptabs .pt.on b { color: var(--cink); }
+.nt .ptabs .pt.on span { color: var(--cink2); }
