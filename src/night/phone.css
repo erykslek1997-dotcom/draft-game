@@ -407,9 +407,9 @@
 @media (max-width: 600px) {
   /* the bracket as compact cards: one series, two rows, its note beside the scores, your row inside the margins */
   .nt .series { position: relative; padding: 4px 0 2px; margin-bottom: 8px; border-top-width: 1px; }
-  .nt .series .tr { padding: 3px 0; }
-  .nt .series .tr.you { margin: 0; padding: 3px 8px; }
-  .nt .series:not(.tbd) .note { position: absolute; right: 40px; top: 50%; transform: translateY(-40%); }
+  /* every row has the same inset, yours included, so seeds, crests, names and scores line up */
+  .nt .series .tr, .nt .series .tr.you { padding: 3px 8px; margin: 0; }
+  .nt .series:not(.tbd) .note { position: absolute; right: 44px; top: 50%; transform: translateY(-40%); }
   .nt .round h4 { margin: 14px 0 6px; }
   .nt .series.tbd { min-height: 0; padding: 8px 0; }
 }
