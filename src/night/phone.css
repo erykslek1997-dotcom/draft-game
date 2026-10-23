@@ -455,3 +455,6 @@
   .nt .card .roles .bn-row i { max-width: 100%; font-size: 11px; }
   .nt .card .roles .bn-row b { font-size: 11px; }
 }
+
+/* roster cards line up: every name takes two lines of room, so minutes and bench rows start at the same height */
+.nt .card:has(> .roles .bn-row) .nm, .nt .card:has(> .roles) .nm { min-height: 2.05em; box-sizing: content-box; display: flex; align-items: center; justify-content: center; line-height: 1; }
