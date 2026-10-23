@@ -54,7 +54,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterCard, Tally, fmtCaps } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterCard, Tally, lastName, fmtCaps } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -1247,7 +1247,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <b>{Math.round(starter.minutes)}m</b>
                   </>
                 }
-                foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{shortenName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
+                foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{lastName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
               />
             ) : (
               <div key={slot} className="slot empty">
@@ -1360,7 +1360,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                                       <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
                                     </>
                                   }
-                                  foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{shortenName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
+                                  foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{lastName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
                                 />
                               );
                             });

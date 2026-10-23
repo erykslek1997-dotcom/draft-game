@@ -448,3 +448,10 @@
 @media (max-width: 600px) {
   .nt main > .btn2.phone-only, .nt main > .stackb.phone-only { padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); gap: 10px; }
 }
+
+@media (max-width: 600px) {
+  /* roster cards are narrow here: the bench player's name over his minutes, centred */
+  .nt .card .roles .bn-row { flex-direction: column; align-items: center; gap: 0; padding: 4px 0; text-align: center; }
+  .nt .card .roles .bn-row i { max-width: 100%; font-size: 11px; }
+  .nt .card .roles .bn-row b { font-size: 11px; }
+}
