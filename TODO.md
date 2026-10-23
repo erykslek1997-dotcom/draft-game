@@ -325,7 +325,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
 - [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
 - [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
-- [ ] **Następna sesja:** brakuje podglądu statystyk od A do F (znikł) — do zbadania i przywrócenia.
+- [ ] **Następna sesja:** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
 
 
 Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
