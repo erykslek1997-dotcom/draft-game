@@ -136,13 +136,18 @@ export function Poster({ d }: { d: PosterData }) {
       </div>
       {d.bench && d.bench.length > 0 && (
         <div className="po-bench">
-          <span>Bench</span>
-          {d.bench.map(({ span, num }) => (
-            <b key={span.id}>
-              {lastName(span.playerName)}
-              <small>{numLabel(num, d.unit)}</small>
-            </b>
-          ))}
+          <span className="po-bl">Bench</span>
+          <div className="po-bp">
+            {d.bench.slice(0, 5).map(({ span, num }) => (
+              <div key={span.id} className="po-p po-b" style={teamVar(span)}>
+                <div className="po-ph">
+                  <NFace name={span.playerName} />
+                </div>
+                <b>{lastName(span.playerName)}</b>
+                <em>{numLabel(num, d.unit)}</em>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <DraftProfile d={d} />

@@ -710,6 +710,7 @@ export default function LiveGameNight({
           <td className={v > 0 ? 'pos' : v < 0 ? 'neg' : undefined}>{v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0'}</td>
         );
         return (
+          <div className="lbx-wrap">
           <table className="lbx">
             <tbody>
               <tr>
@@ -803,6 +804,7 @@ export default function LiveGameNight({
               </tr>
             </tbody>
           </table>
+          </div>
         );
       })()}
       {!done && <p className="lb-note">● on the floor now · ○ on the bench</p>}

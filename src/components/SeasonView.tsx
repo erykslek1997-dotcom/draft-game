@@ -31,7 +31,8 @@ import { overallTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark, TeamContext } from '../night/league';
-import { Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, cx } from '../night/ui';
+import { Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx } from '../night/ui';
+import { primaryStarters } from '../engine/rotation';
 import { SpanCard } from './PlayerPeekModal';
 import { ShareNight, type PosterData } from '../night/Share';
 import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, monthOf, standingsAt, teamGames } from './SeasonCalendar';
@@ -1564,8 +1565,6 @@ function PlayoffsChapter({
     const side = yourSeries.teamAId === youId ? 0 : 1;
     const p = seriesWinProbability(gameWinProbability(side === 0 ? yourSeries.margin : -yourSeries.margin));
     const preview = seriesPreview(season, youId, opp);
-    const top = (id: string) => season.players.filter((l) => l.teamId === id).sort((a, b) => gameScorePerGame(b) - gameScorePerGame(a)).slice(0, 3);
-    const [mine, theirs] = [top(youId), top(opp)];
     const row = (id: string) => season.standings.find((r) => r.teamId === id)!;
     const status = simming && live.game === 6 ? 'Game 7, winner takes it' : yw === ow ? (live.game === 0 ? 'Best of seven' : `Series tied, game ${live.game + 1} next`) : yw > ow ? 'You lead the series' : 'You trail the series';
     const play = () => setWatching({ round: live.round, series: run.index, game: live.game });
@@ -1679,47 +1678,8 @@ function PlayoffsChapter({
             })}
           </section>
           <section>
-            <H3 note="season · pts · reb · ast">Top three</H3>
-            {mine.map((l, i) => {
-              const o = theirs[i];
-              return (
-                <div key={l.span.id} className="duel">
-                  <div className="pl">
-                    <NFace name={l.span.playerName} span={l.span} />
-                    <div>
-                      <b>
-                        <PlayerName line={l}>
-                          <TwoPart name={l.span.playerName} />
-                        </PlayerName>
-                        <small>{l.span.primaryPosition}</small>
-                      </b>
-                      <span className="ln">
-                        {f1(per(l, 'pts'))} · {f1(per(l, 'reb'))} · {f1(per(l, 'ast'))}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="vs">vs</span>
-                  {o ? (
-                    <div className="pl r">
-                      <NFace name={o.span.playerName} span={o.span} />
-                      <div>
-                        <b>
-                          <small>{o.span.primaryPosition}</small>
-                          <PlayerName line={o}>
-                            <TwoPart name={o.span.playerName} />
-                          </PlayerName>
-                        </b>
-                        <span className="ln">
-                          {f1(per(o, 'pts'))} · {f1(per(o, 'reb'))} · {f1(per(o, 'ast'))}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span />
-                  )}
-                </div>
-              );
-            })}
+            <H3 note="season · pts · reb · ast">Starting fives</H3>
+            <FiveVs season={season} youId={youId} oppId={opp} byId={byId} />
           </section>
         </div>
         <section>
@@ -1803,6 +1763,40 @@ function PlayoffsChapter({
 }
 
 /** The bracket (mockup `#playoffs`): a column a round, your series marked, the live one in red. */
+/** The two starting fives face to face (playtest 2026-10-23, mockup "Matchup"): the rival's five on
+ * top, yours below, the slot between each pair, each card a face, a surname and the season line. */
+function FiveVs({ season, youId, oppId, byId }: { season: LiveSeasonResult; youId: string; oppId: string; byId: Map<string, Team> }) {
+  const fiveOf = (id: string) => {
+    const team = byId.get(id);
+    const starters = team ? primaryStarters(team) : [];
+    return starters.map((x) => ({ slot: x.slot as string, span: x.player, line: season.players.find((l) => l.teamId === id && l.span.id === x.player.id) ?? null }));
+  };
+  const theirs = fiveOf(oppId);
+  const mine = fiveOf(youId);
+  const card = (x: { slot: string; span: PlayerSpan; line: SeasonPlayerLine | null }) => (
+    <div key={x.span.id} className="fv-c" style={bandStyle(x.span)}>
+      <i className="fv-t" />
+      <NFace name={x.span.playerName} span={x.span} />
+      <b>{x.line ? <PlayerName line={x.line}>{lastName(x.span.playerName)}</PlayerName> : lastName(x.span.playerName)}</b>
+      <small>{x.line ? f1(per(x.line, 'pts')) : '—'}</small>
+      <small className="fv-r">{x.line ? `${f1(per(x.line, 'reb'))} · ${f1(per(x.line, 'ast'))}` : ''}</small>
+    </div>
+  );
+  return (
+    <div className="fv">
+      <div className="fv-k">{mascot(byId.get(oppId))}</div>
+      <div className="fv-row">{theirs.map(card)}</div>
+      <div className="fv-row fv-pos">
+        {(mine.length ? mine : theirs).map((x) => (
+          <span key={x.slot}>{x.slot}</span>
+        ))}
+      </div>
+      <div className="fv-row">{mine.map(card)}</div>
+      <div className="fv-k you">{mascot(byId.get(youId))}</div>
+    </div>
+  );
+}
+
 function Bracket({
   rounds,
   shown,
@@ -1818,44 +1812,64 @@ function Bracket({
 }) {
   // A round shows its matchups once the round before it is complete on the page.
   const known = (round: number) => round === 0 || rounds[round - 1].every((s) => shown(round - 1, s) >= s.games.length);
+  // The tree (playtest 2026-10-23, "jak irl NBA"): one column a round, a card a series, lines joining each pair
+  // to the series it feeds; the final under a cup.
+  const R = rounds.length;
   return (
-    <div className="bracket">
-      {rounds.map((round, r) => (
-        <div key={r} className={cx('round', r === rounds.length - 1 && 'final')}>
-          <h4>{round[0].roundLabel}</h4>
-          {round.map((s, i) => {
-            if (!known(r))
-              return (
-                <div key={i} className="series tbd">
-                  <div className="note">To be decided</div>
-                </div>
-              );
-            const n = Math.min(s.games.length, shown(r, s));
-            const games = s.games.slice(0, n);
-            const wa = games.filter((g) => g.final[0] > g.final[1]).length;
-            const wb = games.length - wa;
-            const done = n >= s.games.length;
-            const yours = s.teamAId === youId || s.teamBId === youId;
-            const liveNow = !done && n > 0;
-            const tr = (id: string, seed: number, w: number) => (
-              <div className={cx('tr', done && s.winnerId === id && 'win', id === youId && 'you')}>
-                <span className="sd">{seed}</span>
-                {mark(id)}
-                <span>{mascot(byId.get(id))}</span>
-                <span className="w">{w}</span>
-              </div>
-            );
-            const note = done ? (Math.min(s.gamesWonA, s.gamesWonB) === 0 ? 'Sweep' : s.games.length === 7 ? 'Game 7' : null) : liveNow ? `Game ${n + 1} next` : null;
-            return (
-              <div key={i} className={cx('series', yours && 'you-path', liveNow && 'live')}>
-                {tr(s.teamAId, s.teamASeed, wa)}
-                {tr(s.teamBId, s.teamBSeed, wb)}
-                {note && <div className="note">{note}</div>}
-              </div>
-            );
-          })}
-        </div>
-      ))}
+    <div className="bk" style={{ '--r': R } as CSSProperties}>
+      {rounds.map((round, r) => {
+        return (
+          <div key={r} className={cx('bk-col', r === R - 1 && 'final')}>
+            <h4>{round[0].roundLabel}</h4>
+            <div className="bk-body">
+              {r === R - 1 && (
+                <svg className="bk-cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+                  <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+                  <path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8" />
+                </svg>
+              )}
+              {round.map((s, i) => {
+                const lines = (
+                  <>
+                    {r > 0 && <i className="bk-in" />}
+                    {r < R - 1 && <i className="bk-out" />}
+                    {r < R - 1 && <i className={cx('bk-v', i % 2 === 0 ? 'dn' : 'up')} style={{ height: `calc(var(--h) / ${2 * round.length})` }} />}
+                  </>
+                );
+                if (!known(r))
+                  return (
+                    <div key={i} className="bk-s tbd">
+                      <span>To be decided</span>
+                      {lines}
+                    </div>
+                  );
+                const n = Math.min(s.games.length, shown(r, s));
+                const games = s.games.slice(0, n);
+                const wa = games.filter((g) => g.final[0] > g.final[1]).length;
+                const wb = games.length - wa;
+                const done = n >= s.games.length;
+                const yours = s.teamAId === youId || s.teamBId === youId;
+                const liveNow = !done && n > 0;
+                const tr = (id: string, seed: number, w: number) => (
+                  <div className={cx('tr', done && s.winnerId === id && 'win', id === youId && 'you')}>
+                    <span className="sd">{seed}</span>
+                    {mark(id)}
+                    <span className="w">{w}</span>
+                  </div>
+                );
+                const note = done ? (Math.min(s.gamesWonA, s.gamesWonB) === 0 ? 'Sweep' : s.games.length === 7 ? 'Game 7' : '') : liveNow ? `Game ${n + 1} next` : '';
+                return (
+                  <div key={i} className={cx('bk-s', yours && 'you-path', liveNow && 'live')} title={`${mascot(byId.get(s.teamAId))} vs ${mascot(byId.get(s.teamBId))}${note ? ` · ${note}` : ''}`}>
+                    {tr(s.teamAId, s.teamASeed, wa)}
+                    {tr(s.teamBId, s.teamBSeed, wb)}
+                    {lines}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

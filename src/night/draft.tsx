@@ -225,7 +225,7 @@ export function PlayerTable({
                   <span className="mst">
                     <span className="ms-y">{maskYears(s.playerName, s.spanLabel)}</span>
                     <span className="ms-s">
-                      {s.box.ppg.toFixed(1)} / {s.box.rpg.toFixed(1)} / {s.box.apg.toFixed(1)}
+                      {s.box.ppg.toFixed(1)}/{s.box.rpg.toFixed(1)}/{s.box.apg.toFixed(1)}
                     </span>
                   </span>
                 </div>

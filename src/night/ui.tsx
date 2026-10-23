@@ -30,7 +30,10 @@ export function shortName(name: string): string {
 
 export function lastName(name: string): string {
   const shown = maskName(name);
-  return shown.split(' ').slice(-1)[0];
+  const w = shown.split(' ');
+  // "Otto Porter Jr." is "Porter Jr.", never just "Jr." (playtest 2026-10-23)
+  if (w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1])) return w.slice(-2).join(' ');
+  return w[w.length - 1];
 }
 
 function initials(name: string): string {

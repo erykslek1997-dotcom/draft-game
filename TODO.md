@@ -320,6 +320,23 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 
 ### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
 
+**Telefon — drobne poprawki z 2026-10-23 (do zrobienia, kończymy po całej liście):**
+- [ ] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
+- [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
+- [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
+- [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
+- [x] Lista draftu (telefon): cap za blisko „Draft”; ucięte statystyki; okno „His stretches”: cap za blisko „Use” (patrz wyżej).
+- [x] Sezon › Overview: niższe wiersze Standings (~34 px), żeby tabela i „Playoffs →” mieściły się bez przewijania.
+- [x] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
+- [x] Mecz na żywo (telefon): boisko „Last basket” na całą szerokość, wyśrodkowane, ~200 px (tylko boisko, reszta ekranu bez zmian).
+- [x] Playoffy: przycisk „On to the semifinals →” w jednej linii (niski); drabinka w zwartych kartach (seria = jedna karta ~56 px, „Sweep”/„Game 7” w tej samej linii).
+- [ ] **Drabinka playoffów jak w prawdziwej NBA** (2026-10-23, Eryk — referencja: drzewko 8 drużyn z liniami łączącymi rundy, puchar w środku). Makieta A/B: A = kompaktowe drzewko na całą szerokość telefonu (3 kolumny: QF/SF/Finał, herb + seed + skrót + wynik serii, linie łączące, Twoja seria wyróżniona), B = szersze drzewko z pełnymi nazwami i przewijaniem w bok; PC = to samo szerzej. Razem z makietą matchupu playoffów (patrz niżej).
+- [ ] Matchup playoffów: zamiast „Top three” porównanie piątek z facecards (telefon i PC; pod parami pts · reb · ast).
+- [x] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
+- [x] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
+- [ ] **Przyszły tydzień (tydzień 2):** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
+
+
 Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
 trybu); kolumny obok siebie kończą się mniej więcej równo (długie treści zwijane); akcje zaraz pod
 treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy nie przesuwa treści;
