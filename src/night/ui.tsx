@@ -250,8 +250,12 @@ export function Slot({
           <span className="sl-s">{lastName(span.playerName)}</span>
         </div>
         <div className="sb">
-          {maskYears(span.playerName, span.spanLabel)} · <CapI />
-          {fmtCaps(span.fga)}
+          <span className="sb-y">{maskYears(span.playerName, span.spanLabel)}</span>
+          <span className="sb-sep"> · </span>
+          <span className="sb-c">
+            <CapI />
+            {fmtCaps(span.fga)}
+          </span>
         </div>
       </Tag>
     );

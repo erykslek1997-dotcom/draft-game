@@ -172,9 +172,15 @@ export function NineSlots({
               <NFace name={s.playerName} span={s} />
               <div>
                 <b>{shortName(s.playerName)}</b>
-                <span>
-                  {s.primaryPosition} · {maskYears(s.playerName, s.spanLabel)} · <CapI />
-                  {fmtCaps(s.fga)}
+                <span className="bn-l">
+                  <i className="bn-p">{s.primaryPosition}</i>
+                  <i className="bn-sep"> · </i>
+                  <i className="bn-y">{maskYears(s.playerName, s.spanLabel)}</i>
+                  <i className="bn-sep"> · </i>
+                  <i className="bn-c">
+                    <CapI />
+                    {fmtCaps(s.fga)}
+                  </i>
                 </span>
               </div>
             </div>

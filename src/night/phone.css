@@ -284,8 +284,8 @@
 .nt .m2-mk.fan i:nth-child(2) { left: 11px; transform: rotate(-6deg); }
 .nt .m2-mk.fan i:nth-child(3) { left: 18px; transform: rotate(6deg); }
 .nt .m2-mk.fan i:nth-child(4) { left: 25px; transform: rotate(16deg); top: 7px; }
-.nt .m2-mk.lot i { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink3); display: grid; place-items: center; }
-.nt .m2-mk.lot i::after { content: ''; width: 11px; height: 11px; border-radius: 50%; background: var(--red); }
+.nt .m2-mk.redball i { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink3); display: grid; place-items: center; }
+.nt .m2-mk.redball i::after { content: ''; width: 11px; height: 11px; border-radius: 50%; background: var(--red); }
 .nt .m2-ed { display: none; }
 @media (max-width: 600px) {
   .nt .m2-mast { margin: 0; height: auto; display: block; padding: 10px 0 8px; text-align: center; border-top: 5px double var(--rule2); border-bottom: 1.5px solid var(--rule2); }
@@ -412,4 +412,25 @@
   .nt .series:not(.tbd) .note { position: absolute; right: 44px; top: 50%; transform: translateY(-40%); }
   .nt .round h4 { margin: 14px 0 6px; }
   .nt .series.tbd { min-height: 0; padding: 8px 0; }
+}
+@media (max-width: 600px) {
+  /* the nine's cards show years and caps too, on two short lines, with room to breathe (playtest 2026-10-23) */
+  .nt .slot, .nt .slots.compact .slot { height: 104px; }
+  .nt .slot.empty, .nt .slot.active { height: 104px; }
+  .nt .slot.filled { padding-bottom: 4px; justify-content: flex-start; }
+  .nt .slot .sb { display: block; margin-top: 3px; line-height: 1.25; font-size: 11px; text-align: center; }
+  .nt .slot .sb .sb-y, .nt .slot .sb .sb-c { display: block; }
+  .nt .slot .sb .sb-sep { display: none; }
+  .nt .slot .nm { margin-top: 1px; padding-bottom: 1px; }
+  /* the bench says the same: surname, years, caps — one thing a line, nothing broken in two */
+  .nt .bench .b.filled { display: block; padding: 5px 4px 6px; min-height: 0; text-align: center; box-shadow: inset 0 3px 0 var(--team); }
+  .nt .bench .b.filled > div { display: block; min-width: 0; }
+  .nt .bench .b.filled b { font-size: 14px; line-height: 1.15; }
+  .nt .bench .b.filled .bn-l i { display: block; font: 500 11px var(--num); font-style: normal; color: var(--cink2); line-height: 1.25; }
+  .nt .bench .b.filled .bn-p, .nt .bench .b.filled .bn-sep { display: none; }
+  .nt .bench .b.empty { min-height: 66px; }
+}
+@media (max-width: 600px) {
+  /* every stat column is there on a phone, the table scrolls in its own box (Your team, playoffs) */
+  .nt .sbox td:nth-child(n+7), .nt .sbox th:nth-child(n+7) { display: table-cell; }
 }

@@ -951,8 +951,8 @@ export default function DraftBoard({
   );
   useEffect(() => setTab(null), [humanTeam.roster.length]);
   const have = useMemo(() => new Set(STARTER_SLOTS.filter((slot) => humanAssignment[slot])), [humanAssignment]);
-  const firstOpen = STARTER_SLOTS.find((slot) => !humanAssignment[slot]);
-  const on: Position | 'ALL' = tab ?? (have.size > 0 && firstOpen ? firstOpen : 'ALL');
+  // After a pick the list goes back to everyone; it no longer jumps to the next open slot (playtest 2026-10-23).
+  const on: Position | 'ALL' = tab ?? 'ALL';
   const hiddenPositions = useMemo<Set<Position>>(() => (on === 'ALL' ? new Set() : new Set(ALL_POSITIONS.filter((pos) => pos !== on))), [on]);
   const shownPositions = ALL_POSITIONS.filter((pos) => !hiddenPositions.has(pos));
   const roleFits = (role: string) => ROLE_POSITIONS[role]?.some((pos) => shownPositions.includes(pos)) ?? true;
@@ -1622,8 +1622,6 @@ export default function DraftBoard({
         spans: group.spans.length,
       };
     });
-    const hot = rows.find((r) => r.legal);
-    if (hot) hot.hot = true;
     const open = STARTER_SLOTS.filter((sl) => !humanAssignment[sl]);
     main = (
       <>
