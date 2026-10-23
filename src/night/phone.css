@@ -427,7 +427,8 @@
   .nt .bench .b.filled > div { display: block; min-width: 0; }
   .nt .bench .b.filled b { font-size: 14px; line-height: 1.15; }
   .nt .bench .b.filled .bn-l i { display: block; font: 500 11px var(--num); font-style: normal; color: var(--cink2); line-height: 1.25; }
-  .nt .bench .b.filled .bn-p, .nt .bench .b.filled .bn-sep { display: none; }
+  .nt .bench .b.filled .bn-l i.bn-p, .nt .bench .b.filled .bn-l i.bn-sep { display: none; }
+  .nt .bench .b.filled .bn-l i.bn-c { display: flex; align-items: center; justify-content: center; gap: 4px; }
   .nt .bench .b.empty { min-height: 66px; }
 }
 @media (max-width: 600px) {
