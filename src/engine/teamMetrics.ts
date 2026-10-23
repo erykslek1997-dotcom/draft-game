@@ -14,7 +14,7 @@ export function teamMetricValues(team: Team, fit: FitScoreResult = fitScore(team
     otal: o(offense.otal),
     creation: o(c.creationStructure),
     spacing: o(offense.spacing),
-    rim: o(offense.rimPressure),
+    rim: o(c.rimPressureTeam),
     playmaking: o(offense.playmaking),
     selfCreation: o(offense.selfCreation),
     mismatch: o(offense.mismatchStructure),
