@@ -1247,7 +1247,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <b>{Math.round(starter.minutes)}m</b>
                   </>
                 }
-                foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+                foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{shortenName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
               />
             ) : (
               <div key={slot} className="slot empty">
@@ -1360,7 +1360,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                                       <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
                                     </>
                                   }
-                                  foot={others.length ? others.map((o) => `+ ${maskText(o.player.playerName)} · ${Math.round(o.minutes)}m`).join(' ') : 'no one else here'}
+                                  foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><i>{shortenName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
                                 />
                               );
                             });

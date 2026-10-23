@@ -14,6 +14,8 @@ export interface PosterPlayer {
   span: PlayerSpan;
   /** His number on the poster: caps or points a game. */
   num: number;
+  /** Minutes a game, when the poster shows them (the season card). */
+  min?: number;
 }
 
 export interface PosterData {
@@ -121,7 +123,7 @@ export function Poster({ d }: { d: PosterData }) {
                 <small>shown tomorrow</small>
               </div>
             ))
-          : d.five.map(({ span, num }) => (
+          : d.five.map(({ span, num, min }) => (
               <div key={span.id} className="po-p" style={teamVar(span)}>
                 <div className="po-ph">
                   <NFace name={span.playerName} />
@@ -131,6 +133,7 @@ export function Poster({ d }: { d: PosterData }) {
                   {span.primaryPosition} · {maskYears(span.playerName, span.spanLabel)}
                 </small>
                 <em>{numLabel(num, d.unit)}</em>
+                {min != null && <span className="po-m">{span.primaryPosition.split('/')[0]} · {Math.round(min)} min</span>}
               </div>
             ))}
       </div>
@@ -138,13 +141,14 @@ export function Poster({ d }: { d: PosterData }) {
         <div className="po-bench">
           <span className="po-bl">Bench</span>
           <div className="po-bp">
-            {d.bench.slice(0, 5).map(({ span, num }) => (
+            {d.bench.slice(0, 5).map(({ span, num, min }) => (
               <div key={span.id} className="po-p po-b" style={teamVar(span)}>
                 <div className="po-ph">
                   <NFace name={span.playerName} />
                 </div>
                 <b>{lastName(span.playerName)}</b>
                 <em>{numLabel(num, d.unit)}</em>
+                {min != null && <span className="po-m">{span.primaryPosition.split('/')[0]} · {Math.round(min)} min</span>}
               </div>
             ))}
           </div>

@@ -1197,3 +1197,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 @media (min-width: 601px) { .fv-row { gap: 10px; } .fv-c img, .fv-c .ini { width: 52px; height: 52px; } .fv-c b { font-size: 16px; } }
 .fv-c .fv-i { display: none; }
 @media (max-width: 600px) { .fv-c .fv-d { display: none; } .fv-c .fv-i { display: inline; } }
+.po-m { display: block; margin-top: 2px; font: 500 10px var(--num); color: var(--cink2); white-space: nowrap; }
+/* the bench under each starter: one tidy line each, name left and minutes right */
+.nt .card .roles .bn-row { display: flex; justify-content: space-between; gap: 6px; padding: 3px 0; border-top: 1px solid var(--cline); font-style: normal; min-width: 0; }
+.nt .card .roles .bn-row i { font: 500 12px var(--sans); font-style: normal; color: var(--cink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.nt .card .roles .bn-row b { font: 600 12px var(--num); color: var(--cink); flex: none; }

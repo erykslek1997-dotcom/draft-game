@@ -65,6 +65,7 @@ type Watching = { round: number; series: number; game: number };
 const AWARD_MIN_GAMES = 58;
 const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 const ORD_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth'];
+const POS_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 const per = (l: SeasonPlayerLine, k: keyof SeasonPlayerLine['totals']) => l.totals[k] / Math.max(1, l.games);
 const f1 = (x: number) => x.toFixed(1);
 const pct = (made: number, att: number) => (att > 0 ? (100 * made) / att : 0);
@@ -733,8 +734,10 @@ function SeasonBody({
     kick: result ?? `${ord(rank)} seed`,
     head: you.name,
     line: `${record.wins}–${record.losses} · ${ord(rank)} seed${yourRuns.length ? ` · ${poW}–${poL} in the playoffs` : ''}`,
-    five: roster.slice(0, 5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10 })),
-    bench: roster.slice(5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10 })),
+    five: [...roster.slice(0, 5)]
+      .sort((a, b) => POS_ORDER.indexOf(a.span.primaryPosition.split('/')[0]) - POS_ORDER.indexOf(b.span.primaryPosition.split('/')[0]))
+      .map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10, min: per(l, 'min') })),
+    bench: roster.slice(5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10, min: per(l, 'min') })),
     unit: 'ppg',
     prof: draftProf,
     draft: [`The draft · ${ord(yv?.rank ?? 0)} of ${teams.length}`, `Rating ${yv?.overall ?? '—'} · best ${Math.max(...[...views.values()].map((v) => v.overall))}`],
