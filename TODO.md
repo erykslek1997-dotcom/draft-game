@@ -320,6 +320,14 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 
 ### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
 
+**Telefon — drobne poprawki z 2026-10-23 (do zrobienia, kończymy po całej liście):**
+- [ ] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
+- [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
+- [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
+- [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
+- [ ] **Następna sesja:** brakuje podglądu statystyk od A do F (znikł) — do zbadania i przywrócenia.
+
+
 Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
 trybu); kolumny obok siebie kończą się mniej więcej równo (długie treści zwijane); akcje zaraz pod
 treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy nie przesuwa treści;
