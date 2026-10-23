@@ -1818,7 +1818,6 @@ function Bracket({
   return (
     <div className="bk" style={{ '--r': R } as CSSProperties}>
       {rounds.map((round, r) => {
-        const half = 50 / round.length; // half the distance between the centres of a pair, in % of the column
         return (
           <div key={r} className={cx('bk-col', r === R - 1 && 'final')}>
             <h4>{round[0].roundLabel}</h4>
@@ -1834,7 +1833,7 @@ function Bracket({
                   <>
                     {r > 0 && <i className="bk-in" />}
                     {r < R - 1 && <i className="bk-out" />}
-                    {r < R - 1 && <i className={cx('bk-v', i % 2 === 0 ? 'dn' : 'up')} style={{ height: `${half / 2}%` }} />}
+                    {r < R - 1 && <i className={cx('bk-v', i % 2 === 0 ? 'dn' : 'up')} style={{ height: `calc(var(--h) / ${2 * round.length})` }} />}
                   </>
                 );
                 if (!known(r))
