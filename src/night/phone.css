@@ -427,7 +427,8 @@
   .nt .bench .b.filled > div { display: block; min-width: 0; }
   .nt .bench .b.filled b { font-size: 14px; line-height: 1.15; }
   .nt .bench .b.filled .bn-l i { display: block; font: 500 11px var(--num); font-style: normal; color: var(--cink2); line-height: 1.25; }
-  .nt .bench .b.filled .bn-p, .nt .bench .b.filled .bn-sep { display: none; }
+  .nt .bench .b.filled .bn-l i.bn-p, .nt .bench .b.filled .bn-l i.bn-sep { display: none; }
+  .nt .bench .b.filled .bn-l i.bn-c { display: flex; align-items: center; justify-content: center; gap: 4px; }
   .nt .bench .b.empty { min-height: 66px; }
 }
 @media (max-width: 600px) {
@@ -439,3 +440,29 @@
 .nt .ptabs .pt.on { background: var(--card); border-radius: 6px 6px 0 0; border-bottom-color: var(--card); }
 .nt .ptabs .pt.on b { color: var(--cink); }
 .nt .ptabs .pt.on span { color: var(--cink2); }
+
+/* selected position chip: room around the label (the first tab has no left padding when idle) */
+.nt .ptabs .pt.on { padding: 8px 12px 10px; }
+.nt .ptabs .pt:first-child.on { padding-left: 12px; margin-left: 0; }
+/* the bottom bar: a little air above and below the buttons */
+@media (max-width: 600px) {
+  .nt main > .btn2.phone-only, .nt main > .stackb.phone-only { padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); gap: 10px; }
+}
+
+@media (max-width: 600px) {
+  /* roster cards are narrow here: the bench player's name over his minutes, centred */
+  .nt .card .roles .bn-row { flex-direction: column; align-items: center; gap: 0; padding: 4px 0; text-align: center; }
+  .nt .card .roles .bn-row i { max-width: 100%; font-size: 11px; }
+  .nt .card .roles .bn-row b { font-size: 11px; }
+}
+
+/* roster cards line up: every name takes two lines of room, so minutes and bench rows start at the same height */
+.nt .card:has(> .roles .bn-row) .nm, .nt .card:has(> .roles) .nm { min-height: 2.05em; box-sizing: content-box; display: flex; align-items: center; justify-content: center; line-height: 1; }
+@media (max-width: 600px) {
+  /* five narrow cards: a name size that fits "Antetokounmpo" whole */
+  .nt .card:has(> .roles .bn-row) .nm { font-size: 15px !important; padding: 10px 2px 0; letter-spacing: -0.01em; }
+}
+.nt .card .roles .bn-row .bn-f { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+.nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }
+.nt .card .roles .bn-row .bn-f { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+.nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }

@@ -108,7 +108,7 @@ export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot
       <div className="pic">
         <NFace name={span.playerName} span={span} />
       </div>
-      <div className="nm">{maskText(span.playerName)}</div>
+      <div className="nm">{maskText(span.playerName).length > 13 ? shortName(span.playerName) : maskText(span.playerName)}</div>
       <div className="sb">
         <span className="sb-yc">
           {maskYears(span.playerName, span.spanLabel)} · <CapI />
