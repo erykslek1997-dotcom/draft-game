@@ -221,6 +221,9 @@ MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela d
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
 **Tydzień 3 — jedna spójna skala ocen (2026-10-24, decyzja: nie robimy teraz):** Talent 87 przy Offense 70 i Defense 62 wygląda dla nowego gracza jak błąd. Przyczyna: Talent to średnia pięciu starterów, a Offense i Defense są przeliczone na skalę ze średnią 74 i dodają spacing, mismatche, hunt resistance itd. Plan: (1) wszystkie trzy na jednej skali (średnia 74) — rusza progi A–F i dotychczasowe wyniki, więc razem z listą silnika; (2) „droga od talentu do wyniku" przy Offense i Defense (np. talent ofensywny 85 → spacing −6, kosz −5 → 70); (3) podział Talentu na atak i obronę. Punkty 2–3 to głównie wyświetlanie. Etykiety („Star power" / „razem") jako szybka łatka — Eryk: to tylko łatka.
+  - Dwie osobne przyczyny rozjazdu Talent ↔ Offense/Defense: (a) Talent nie jest na skali Offense/Defense (średnia 74, odchylenie ~9; surowy atak jest przeliczany wzorem 74 + (surowy − 85) × 9,3/8,5); (b) atak dokłada ponad talent spacing, mismatche i zbiórki w ataku.
+  - Zbiórki w ataku: kara do −7 pkt (z-score ucięty na 2,5; średnia 8,9, SD 1,2 na piątkę) bije w obwodowe składy, które nie są modelowane w kontrze (powrót do obrony). Teraz: pokazać wiersz „Zbiórki w ataku" w Offense details. Tydzień 3: zmniejszyć karę (np. maks. −3) albo dać kredyt w obronie; po zmianie przeliczyć skalę i testy.
+  - Przypadek testowy: Lillard 2019-21, Ginóbili 2005-07, Durant 2012-14, Green 2015-17, Gasol 2014-16 (+ Chalmers, O'Neale): O-TAL 81, spacing 86, playmaking 89, mismatch 54, kosz 69, bonusy +9 i +6 → surowe 95 → 85 po skali → −7 zbiórki = 78 (u Eryka w grze 70, słabsze okna).
 
 ## Plan na 4 tygodnie (decyzja 2026-10-16) — zastąpiony planem 7 tygodni
 
