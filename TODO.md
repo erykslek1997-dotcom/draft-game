@@ -220,6 +220,8 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
+**Tydzień 3 — jedna spójna skala ocen (2026-10-24, decyzja: nie robimy teraz):** Talent 87 przy Offense 70 i Defense 62 wygląda dla nowego gracza jak błąd. Przyczyna: Talent to średnia pięciu starterów, a Offense i Defense są przeliczone na skalę ze średnią 74 i dodają spacing, mismatche, hunt resistance itd. Plan: (1) wszystkie trzy na jednej skali (średnia 74) — rusza progi A–F i dotychczasowe wyniki, więc razem z listą silnika; (2) „droga od talentu do wyniku" przy Offense i Defense (np. talent ofensywny 85 → spacing −6, kosz −5 → 70); (3) podział Talentu na atak i obronę. Punkty 2–3 to głównie wyświetlanie. Etykiety („Star power" / „razem") jako szybka łatka — Eryk: to tylko łatka.
+
 ## Plan na 4 tygodnie (decyzja 2026-10-16) — zastąpiony planem 7 tygodni
 
 - **Tydzień 1 — dokładne dokończenie UI.** Wszystkie tryby i ekrany do końca: playtesty spójności
