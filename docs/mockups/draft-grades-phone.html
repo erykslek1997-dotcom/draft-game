@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oceny A–F na telefonie</title>
+<style>
+:root{--bg:#eef1f5;--text:#151b26;--muted:#5a6678;--note:#fff6dc;--note-line:#e8d38e;--pin:#2f7fc0;
+ --sans:system-ui,'Segoe UI',Roboto,sans-serif;--num:ui-monospace,Consolas,monospace;
+ --paper:#05070c;--raised:#0b111b;--raised2:#101826;--line:#182433;--edge:#24344a;--ink:#eef4fb;--soft:#9aa8bc;--faint:#66758b;
+ --accent:#3ea8e8;--red:#e0465c;--gold:#f2b84b;--green:#58c28a;--orange:#e8873a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}}
+:root[data-theme=dark]{--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 28px;max-width:720px}
+h2{font:700 17px/1.3 var(--sans);margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px;max-width:760px}
+section{margin:0 0 44px}.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:340px}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}.note b{color:var(--pin)}
+.cap{font:600 11.5px var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+/* the phone */
+.g{width:370px;max-width:100%;background:var(--paper);color:var(--ink);border:1px solid #1a2433;border-radius:20px;padding:14px;font:14px/1.4 var(--sans);position:relative;overflow:hidden;min-height:420px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.li{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.fc{width:40px;height:40px;border-radius:50%;background:var(--raised2);border:1px solid var(--edge);display:grid;place-items:center;font-weight:700;color:var(--soft);font-size:13px}
+.nm{font-weight:700;font-size:15px}.st{color:var(--soft);font-size:12.5px}
+.cost{font:700 13px var(--num);color:var(--gold);margin-right:8px}
+.btn{font:700 12.5px var(--sans);border-radius:999px;padding:7px 13px;background:var(--accent);color:#04121d;border:0}
+.btn.ghost{background:transparent;border:1px solid var(--edge);color:var(--ink)}
+/* letter chips */
+.lt{display:inline-flex;gap:3px;margin-left:6px;vertical-align:1px}
+.lt i{font:800 10.5px var(--num);font-style:normal;border-radius:4px;padding:1px 4px;background:var(--raised2);border:1px solid var(--edge)}
+.A{color:var(--green)}.B{color:#8fd0a0}.C{color:var(--gold)}.D{color:var(--orange)}.F{color:var(--red)}
+/* sheet */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);border-top:1px solid var(--edge);border-radius:18px 18px 0 0;padding:14px}
+.sh-h{display:flex;gap:12px;align-items:center;margin-bottom:12px}.sh-h .fc{width:54px;height:54px}
+.sh-h .nm{font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.gb{background:var(--raised2);border:1px solid var(--edge);border-radius:12px;padding:10px 6px;text-align:center}
+.gb small{display:block;color:var(--faint);font:700 10.5px var(--num);letter-spacing:.08em}
+.gb b{display:block;font:800 28px/1.1 var(--sans);margin-top:2px}
+.gb em{display:block;font-style:normal;color:var(--soft);font-size:11.5px;margin-top:2px}
+.gb.lock b{color:var(--faint);font-size:22px}
+.act{display:flex;gap:8px;margin-top:12px}.act .btn{flex:1;text-align:center;padding:11px}
+.hint{color:var(--faint);font-size:12px;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Oceny A–F na telefonie</h1>
+<p class="lede">Dziś litery OFF · DEF · 3PT są tylko w ukrytej kolumnie listy i pojawiają się po „Scout”. Na telefonie nie widać ich nigdzie. Propozycja: litery w oknie podglądu gracza (po stuknięciu w wiersz), a po zwiadzie dodatkowo małe chipy przy nazwisku na liście.</p>
+
+<section>
+<h2>A. Podgląd z trzema ocenami</h2>
+<p class="sub">Stukasz wiersz: z dołu wysuwa się okno gracza. Trzy kafelki OFF / DEF / 3PT; przed zwiadem zamknięte (kłódka), przycisk „Scout” zużywa jeden raport z puli.</p>
+<div class="row">
+ <div>
+  <p class="cap">Przed zwiadem</p>
+  <div class="g">
+   <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett</div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
+   <div class="li"><div class="fc">DW</div><div><div class="nm">Wade</div><div class="st">SG · 2005-07 · 27.2/5.7/6.7</div></div><div><span class="cost">16.8</span></div></div>
+   <div class="li"><div class="fc">DN</div><div><div class="nm">Nowitzki</div><div class="st">PF · 2005-07 · 25.6/9.2/3.2</div></div><div><span class="cost">15.1</span></div></div>
+   <div class="dim"></div>
+   <div class="sheet">
+    <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
+    <div class="grid">
+     <div class="gb lock"><small>OFF</small><b>?</b></div>
+     <div class="gb lock"><small>DEF</small><b>?</b></div>
+     <div class="gb lock"><small>3PT</small><b>?</b></div>
+    </div>
+    <div class="act"><button class="btn ghost">Scout · 2 left</button><button class="btn">Draft</button></div>
+    <div class="hint">Zwiad odsłania litery do końca draftu.</div>
+   </div>
+  </div>
+ </div>
+ <div>
+  <p class="cap">Po zwiadzie</p>
+  <div class="g">
+   <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett<span class="lt"><i class="B">B</i><i class="A">A</i><i class="F">F</i></span></div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
+   <div class="li"><div class="fc">DW</div><div><div class="nm">Wade</div><div class="st">SG · 2005-07 · 27.2/5.7/6.7</div></div><div><span class="cost">16.8</span></div></div>
+   <div class="li"><div class="fc">DN</div><div><div class="nm">Nowitzki</div><div class="st">PF · 2005-07 · 25.6/9.2/3.2</div></div><div><span class="cost">15.1</span></div></div>
+   <div class="dim"></div>
+   <div class="sheet">
+    <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
+    <div class="grid">
+     <div class="gb"><small>OFF</small><b class="B">B</b><em>1. opcja? nie</em></div>
+     <div class="gb"><small>DEF</small><b class="A">A</b><em>obrona pod koszem</em></div>
+     <div class="gb"><small>3PT</small><b class="F">F</b><em>nie rozciąga</em></div>
+    </div>
+    <div class="act"><button class="btn ghost">Close</button><button class="btn">Draft</button></div>
+   </div>
+  </div>
+ </div>
+ <div class="note">
+  <p><b>Co się zmienia:</b> litery są tam, gdzie decydujesz (okno gracza), a nie w kolumnie, której telefon nie mieści.</p>
+  <p>Po zwiadzie litery zostają też jako trzy małe chipy przy nazwisku na liście (kolejność OFF · DEF · 3PT), więc nie trzeba otwierać okna drugi raz.</p>
+  <p><b>Do ustalenia:</b> opis pod literą (jedna fraza) czy samo A–F? Na makiecie jest fraza; do wyrzucenia, jeśli za gęsto.</p>
+ </div>
+</div>
+</section>
+
+<section>
+<h2>B. Wersja minimalna: sam pasek liter</h2>
+<p class="sub">Bez kafelków: jeden wiersz „OFF B · DEF A · 3PT F” pod nagłówkiem okna. Mniej miejsca, mniej treści; pasuje, jeśli okno gracza jest już gęste.</p>
+<div class="row">
+ <div class="g" style="min-height:300px">
+  <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett<span class="lt"><i class="B">B</i><i class="A">A</i><i class="F">F</i></span></div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
+  <div class="dim"></div>
+  <div class="sheet">
+   <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
+   <div class="num" style="display:flex;gap:16px;font-weight:800;font-size:15px"><span>OFF <span class="B">B</span></span><span>DEF <span class="A">A</span></span><span>3PT <span class="F">F</span></span></div>
+   <div class="act"><button class="btn ghost">Close</button><button class="btn">Draft</button></div>
+  </div>
+ </div>
+ <div class="note"><p>Ta sama zasada co w A, tylko bez opisów i kafelków. Chipy na liście zostają.</p></div>
+</div>
+</section>
+</div>
+</body>
+</html>
