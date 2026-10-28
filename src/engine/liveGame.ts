@@ -1,4 +1,4 @@
-import { ballHandlerCost, ORTG_PER_TS } from './ballHandling';
+import { astPctForSpan, ballHandlerCost, ORTG_PER_TS } from './ballHandling';
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
@@ -137,10 +137,24 @@ function foulChance(freeThrowRate: number): number {
 }
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
-/** Assists go to the real passers: weight by assists per 36 to this power (2026-10-02 — linear
- * weights spread them so evenly that Jokic averaged 5 and the league leader 9). How many makes are
- * assisted at all follows from the set-up shots (`SETUP_TUNING`). */
-const PASSER_POWER = 1.3;
+/** Assists go to the real passers: weight by passing to this power (2026-10-02 — linear weights
+ * spread them so evenly that Jokic averaged 5 and the league leader 9). How many makes are assisted
+ * at all follows from the set-up shots (`SETUP_TUNING`). */
+const PASSER_POWER = 1.15;
+/**
+ * 2026-10-28, step 8 (playtest 2026-10-22: Jordan 1987-89 7.0 assists on his card -> 3.0 in a
+ * season, Bird 6.6 -> 9.0): the passer was picked by his modern assists a minute (`modernBox`),
+ * which reads old-era assists by percentile within the position — LeBron 2012-14 6.8 real -> 9.4,
+ * Bird 1985-87 7.2 -> 10.0, Jordan 1988-90 7.2 -> 6.3 — so wing creators lost their passes to the
+ * point guards. Now by real AST% (the share of teammates' baskets he set up on the floor; BBRef,
+ * before 1973-74 read from assists a 36), Jokic's hub weight kept. `scripts/measureSeasonBox.ts`,
+ * 3 AI drafts' seasons against the players' real assists: each player's share of his team's assists
+ * misses his real share by 1.39 points (was 2.19), no archetype off by more than 1.1 (Primary Ball
+ * Handlers were +3.0 and post scorers -2.6); the leaders still reach 11-12 on stacked teams.
+ */
+function passerWeight(span: PlayerSpan): number {
+  return (astPctForSpan(span) / 10) * (PASSING_HUBS[span.playerName] ?? 1);
+}
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.1;
 /** Offensive share of rebounds off a missed last free throw. */
@@ -1532,7 +1546,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         let joker = shooter.joker;
         const mates = off.filter((x) => x.player !== shooter);
         if (setup) {
-          const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast ** PASSER_POWER + 0.2).player;
+          const passer = pickWeighted(rng, mates, (x) => passerWeight(x.player.span) ** PASSER_POWER + 0.2).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
