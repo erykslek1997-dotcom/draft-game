@@ -722,7 +722,7 @@ function QuickResults({
     poster.line =
       r.out === null
         ? `${teamLabel(human.team)}. Four wins from the #${r.seed} seed.`
-        : `${teamLabel(human.team)}. ${r.wins === 0 ? 'One and done' : ${r.wins === 1 ? "One win" : `${r.wins} wins`}} as the #${r.seed} seed${r.games.length ? `, then the ${r.games[r.games.length - 1].opp}` : ''}.`;
+        : `${teamLabel(human.team)}. ${r.wins === 0 ? 'One and done' : r.wins === 1 ? 'One win' : `${r.wins} wins`} as the #${r.seed} seed${r.games.length ? `, then the ${r.games[r.games.length - 1].opp}` : ''}.`;
     poster.champ = r.out === null;
     poster.ig = true;
     poster.road = MINI_ROUNDS.map((_round, i) => {
