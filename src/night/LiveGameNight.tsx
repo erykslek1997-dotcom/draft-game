@@ -52,17 +52,20 @@ function erf(x: number): number {
 }
 
 /** Side 0's chance to win from the score, the clock and the model's expected margin. */
-function winProbability(moment: GameMoment | undefined, expected: number): number {
-  const left = moment ? moment.left / 2880 : 1;
+function winProbability(moment: GameMoment | undefined, expected: number, gameSeconds = 2880): number {
+  // `expected` is the margin over this game's own length; the spread of a game's last stretch grows
+  // with the real minutes left (12 points over 48).
+  const left = moment ? moment.left / gameSeconds : 1;
   const lead = moment ? moment.score[0] - moment.score[1] : 0;
   if (moment && left <= 0) return lead > 0 ? 1 : 0;
-  const sd = 12 * Math.sqrt(Math.max(left, 0.002));
+  const sd = 12 * Math.sqrt(Math.max((left * gameSeconds) / 2880, 0.002));
   return 0.5 * (1 + erf((lead + expected * left) / (sd * Math.SQRT2)));
 }
 
-function quarterClock(m: GameMoment | undefined): string {
-  if (!m) return '12:00';
-  const quarterLeft = Math.max(0, m.left - (3 - m.quarter) * 720);
+function quarterClock(m: GameMoment | undefined, gameSeconds = 2880): string {
+  const quarterSeconds = gameSeconds / 4;
+  if (!m) return `${Math.floor(quarterSeconds / 60)}:${String(Math.floor(quarterSeconds % 60)).padStart(2, '0')}`;
+  const quarterLeft = Math.max(0, m.left - (3 - m.quarter) * quarterSeconds);
   return `${Math.floor(quarterLeft / 60)}:${String(Math.floor(quarterLeft % 60)).padStart(2, '0')}`;
 }
 
@@ -321,7 +324,7 @@ export default function LiveGameNight({
           key: `p${i}`,
           kind: 'play',
           side,
-          time: quarterClock(m),
+          time: quarterClock(m, game.gameSeconds),
           text: (
             <>
               {withNames(/[.!?)]$/.test(said) ? said : `${said}.`, [...game.labels[0], ...game.labels[1]])}
@@ -365,12 +368,12 @@ export default function LiveGameNight({
       const side = m.play.side;
       const label = game.labels[side].find((l) => m.play!.text.startsWith(l)) ?? '';
       const k = game.labels[side].indexOf(label);
-      return { i, side, zone, label, pts, time: quarterClock(m), text: m.play.text.split(' (')[0].slice(label.length).trim().replace(/\.$/, ''), line: k >= 0 ? m.lines[side][k] : undefined };
+      return { i, side, zone, label, pts, time: quarterClock(m, game.gameSeconds), text: m.play.text.split(' (')[0].slice(label.length).trim().replace(/\.$/, ''), line: k >= 0 ? m.lines[side][k] : undefined };
     }
     return null;
   }, [game.moments, game.labels, upto]);
 
-  const p0 = Math.round(winProbability(now, game.expectedMargin) * 100);
+  const p0 = Math.round(winProbability(now, game.expectedMargin, game.gameSeconds) * 100);
   const wp: [number, number] = [p0, 100 - p0];
   const won = game.final[you] > game.final[them];
 
@@ -400,7 +403,7 @@ export default function LiveGameNight({
       const line = won ? `${maskName(starLabel)} led the way: ${stat}.` : `The ${short[them]} were the better team. ${maskName(starLabel)} did what he could: ${stat}.`;
       return { eb: 'Final', title, line: <>{line}</>, margin };
     }
-    const at = `Live · Q${(now?.quarter ?? 0) + 1} · ${quarterClock(now)}`;
+    const at = `Live · Q${(now?.quarter ?? 0) + 1} · ${quarterClock(now, game.gameSeconds)}`;
     for (let i = upto - 1; i >= Math.max(0, upto - 6); i--) {
       const m = game.moments[i];
       if (!m.play || m.play.quiet || m.play.minor) continue;
@@ -477,7 +480,7 @@ export default function LiveGameNight({
   const tallyEl = (
     <Tally
       you={done || shown >= 0 ? score[0] : '0'}
-      mid={done ? 'Final' : shown < 0 ? 'Tip-off' : quarterClock(now)}
+      mid={done ? 'Final' : shown < 0 ? 'Tip-off' : quarterClock(now, game.gameSeconds)}
       ai={done || shown >= 0 ? score[1] : '0'}
       youK={short[0]}
       midK={done ? `Q4 0:00` : shown < 0 ? 'Q1' : `Q${liveQuarter + 1}`}

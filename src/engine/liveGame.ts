@@ -89,6 +89,8 @@ export interface LiveGameResult {
   box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>];
   /** Expected margin from the model, your side's view. */
   expectedMargin: number;
+  /** The game's length (a five-only game is shorter, `FIVE_GAME_MINUTES`). */
+  gameSeconds: number;
   players: [PlayerSpan[], PlayerSpan[]];
   /** Box-score names, PG→C (last names, full names where two share one). */
   labels: [string[], string[]];
@@ -152,11 +154,19 @@ function teamPace(roster: GameRoster): number {
 }
 /** A team's pace, as the live game reads it (measurement scripts). */
 export const teamPaceFor = (team: Team) => teamPace(rosterFromTeam(team));
-function possessionsFor(rosters: [GameRoster, GameRoster]): number {
+function possessionsFor(rosters: [GameRoster, GameRoster], gameSeconds: number): number {
   const pace = Math.max(TEMPO.range[0], Math.min(TEMPO.range[1], (teamPace(rosters[0]) + teamPace(rosters[1])) / 2));
-  return 2 * Math.round(pace);
+  return 2 * Math.round((pace * gameSeconds) / GAME_SECONDS);
 }
 const GAME_SECONDS = 48 * 60;
+/**
+ * 2026-10-28, step 8 (the user, 2026-10-22: "48 minutes without a bench makes no sense"): a five-only
+ * game (Draw Five, daily) runs 4 x 9 minutes. Measured on 400 games of random TAL-70+ fives: 48
+ * minutes 121 points a team, the favourite (engine margin 3+) winning 90%; 36 minutes 91 points,
+ * 87%; 30 minutes 76 points, 83%. The engine's margin is per 48 minutes, so a short game aims at its
+ * share of it. Full teams keep 48.
+ */
+export const FIVE_GAME_MINUTES = 36;
 /**
  * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
  * and-one adds ~0.02 per shot, so a free-throw rate r (FTA per FGA) comes from a foul on a share
@@ -285,7 +295,9 @@ export function simulateLiveGame(
 ): LiveGameResult {
   // Deterministic retakes: the first game of the seed whose winner agrees with a clear favourite.
   let game = playGame(yours, legends, margin, seed, jokerId);
-  for (let take = 1; take < 40 && Math.abs(margin) >= CLEAR_FAVOURITE && game.final[0] > game.final[1] !== margin > 0; take++) {
+  // The clear-favourite line reads the margin over the game's own (shorter) length, as the odds do.
+  const m = game.expectedMargin;
+  for (let take = 1; take < 40 && Math.abs(m) >= CLEAR_FAVOURITE && game.final[0] > game.final[1] !== m > 0; take++) {
     game = playGame(yours, legends, margin, `${seed}~${take}`, jokerId);
   }
   return game;
@@ -1152,7 +1164,7 @@ function playGame(
   seed: string,
   jokerId?: string,
 ): LiveGameResult {
-  return playRosters([rosterFromFive(yours, (s) => s.id === jokerId), rosterFromFive(legends, () => false)], margin, seed, true);
+  return playRosters([rosterFromFive(yours, (s) => s.id === jokerId), rosterFromFive(legends, () => false)], (margin * FIVE_GAME_MINUTES) / 48, seed, true, undefined, false, FIVE_GAME_MINUTES);
 }
 
 /**
@@ -1196,12 +1208,13 @@ const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
 
 /** Everything decided before tip-off: the whole game's fives (substitutions are deterministic), who
  * tires, and the expected margin of the mechanics at a given shooting tilt (`gapAt`). */
-function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
-  const POSSESSIONS = possessionsFor(rosters);
+function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean, gameMinutes = 48) {
+  const gameSeconds = gameMinutes * 60;
+  const POSSESSIONS = possessionsFor(rosters, gameSeconds);
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
-  const possessionMinutes = GAME_SECONDS / POSSESSIONS / 60;
+  const possessionMinutes = gameSeconds / POSSESSIONS / 60;
   // The substitutions are deterministic, so the whole game's fives are known before tip-off.
   const benches = [new Bench(rosters[0]), new Bench(rosters[1])];
   const schedule: [CourtPlayer[][], CourtPlayer[][]] = [[], []];
@@ -1289,7 +1302,7 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
   };
   const perTeam = POSSESSIONS / 2;
   const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n, 1 - n) - meanPossession(1, 1 - n, 1 + n));
-  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession, possessions: POSSESSIONS };
+  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession, possessions: POSSESSIONS, gameSeconds };
 }
 
 /**
@@ -1318,8 +1331,8 @@ interface PreparedGame {
   margin: number;
 }
 
-function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean): PreparedGame {
-  const setup = gameSetup(rosters, tiring);
+function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean, gameMinutes = 48): PreparedGame {
+  const setup = gameSetup(rosters, tiring, gameMinutes);
   const { gapAt } = setup;
   const target = margin * GARBAGE_TUNING.aim;
   let nudge: number;
@@ -1346,8 +1359,9 @@ function playRosters(
   weakLinks?: [string | null, string | null],
   /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
   tiring = false,
+  gameMinutes = 48,
 ): LiveGameResult {
-  return playPrepared(prepareRosters(rosters, margin, tiring), seed, record, weakLinks);
+  return playPrepared(prepareRosters(rosters, margin, tiring, gameMinutes), seed, record, weakLinks);
 }
 
 function playPrepared(prepared: PreparedGame, seed: string, record: boolean, weakLinks?: [string | null, string | null]): LiveGameResult {
@@ -1355,6 +1369,8 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   const rng = mulberry32(hashSeed(`${seed}:game`));
   const { courts, starting, possessionMinutes, tired, clashFor } = prepared.setup;
   const POSSESSIONS = prepared.setup.possessions;
+  const gameSeconds = prepared.setup.gameSeconds;
+  const gameMinutes = gameSeconds / 60;
   // A foul-out rewrites this game's fives from that trip on, so each game gets its own copy.
   const schedule: GameSetup['schedule'] = [[...prepared.setup.schedule[0]], [...prepared.setup.schedule[1]]];
   const makeScale: [number, number] = [1 + nudge, 1 - nudge];
@@ -1428,7 +1444,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   };
   let garbage = false;
   const garbageCut = (k: number) => {
-    const minutesLeft = 48 - ((k + 1) * 48) / POSSESSIONS;
+    const minutesLeft = gameMinutes - ((k + 1) * gameMinutes) / POSSESSIONS;
     return GARBAGE_TUNING.lead.find(([m]) => minutesLeft >= m)?.[1] ?? Infinity;
   };
 
@@ -1450,7 +1466,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     const def = defCourt.map((c) => c.player);
     const clash = clashFor(off, defCourt);
     const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
-    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / 48) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
+    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / gameMinutes) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
     let play: GamePlay | null = null;
     let pts = 0;
     const onBreak = breakNext[o];
@@ -1467,7 +1483,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         play = { side: o, text: `${fouled.label} ${ft.made}/2 in the bonus`, joker: fouled.joker, quiet: ft.made === 0 };
         score[o] += pts;
         quarters[o][quarter] += pts;
-        if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+        if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
         continue;
       }
     }
@@ -1613,7 +1629,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     }
     score[o] += pts;
     quarters[o][quarter] += pts;
-    if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+    if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
   }
   // Overtime would need more possessions; a tie goes to whoever the model favours, on a last shot.
   if (score[0] === score[1]) {
@@ -1654,6 +1670,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     quarters,
     box,
     expectedMargin: margin,
+    gameSeconds,
     players: [rosters[0].players.map((p) => p.span), rosters[1].players.map((p) => p.span)],
     labels: [rosters[0].players.map((p) => p.label), rosters[1].players.map((p) => p.label)],
     jokerLabel: mine.find((p) => p.joker)?.label ?? null,
