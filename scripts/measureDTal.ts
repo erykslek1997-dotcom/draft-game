@@ -1,9 +1,8 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { draftPool } from '../src/data/draftPool';
-import { normalizePlayerName } from '../src/data/schema';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
-import { spanEndYears } from '../src/engine/era';
+import { realSpan } from '../src/engine/realAdvancedLookup';
 
 /**
  * 2026-10-28, weeks 2-3 step 1, second half: the game's D-TAL against what the real numbers say
@@ -20,58 +19,11 @@ const MIN_MPG = Number(args['min-mpg'] ?? 20);
 const TOP = Number(args.top ?? 25);
 const root = resolve(import.meta.dirname, '..');
 
-function csv(path: string): Record<string, string>[] {
-  const [head, ...lines] = readFileSync(resolve(root, path), 'utf8').trim().split(/\r?\n/);
-  const split = (line: string) => {
-    const out: string[] = [];
-    let cur = '';
-    let q = false;
-    for (const ch of line) {
-      if (ch === '"') q = !q;
-      else if (ch === ',' && !q) {
-        out.push(cur);
-        cur = '';
-      } else cur += ch;
-    }
-    out.push(cur);
-    return out;
-  };
-  const keys = split(head);
-  return lines.map((l) => Object.fromEntries(split(l).map((v, i) => [keys[i], v])));
-}
-const endYear = (season: string) => parseInt(season.slice(0, 4), 10) + 1;
-
-// BBRef: one line a player-season — the multi-team total ("2TM", "3TM", "TOT") when he moved.
-interface Season { mp: number; g: number; dbpm: number; stl: number; blk: number; drb: number }
-const bbref = new Map<string, Season>();
-for (const r of csv('src/data/raw/bbref/player_advanced.csv')) {
-  const k = `${normalizePlayerName(r.name_display)}|${endYear(r.SEASON)}`;
-  const total = /^(\d+TM|TOT)$/.test(r.team_name_abbr);
-  if (bbref.has(k) && !total) continue;
-  const n = (x: string) => (x === '' ? NaN : Number(x));
-  bbref.set(k, { mp: n(r.mp), g: n(r.games), dbpm: n(r.dbpm), stl: n(r.stl_pct), blk: n(r.blk_pct), drb: n(r.drb_pct) });
-}
-// NBA.com hustle: summed over a player's teams that season.
-const hustle = new Map<string, { min: number; defl: number; cont: number }>();
-for (const r of csv('src/data/raw/nbaStats/hustle_player.csv')) {
-  const k = `${normalizePlayerName(r.PLAYER_NAME)}|${endYear(r.SEASON)}`;
-  const h = hustle.get(k) ?? { min: 0, defl: 0, cont: 0 };
-  h.min += Number(r.MIN);
-  h.defl += Number(r.DEFLECTIONS);
-  h.cont += Number(r.CONTESTED_SHOTS);
-  hustle.set(k, h);
-}
-
-interface Row { id: string; name: string; span: string; pos: string; role: string; dtal: number; mpg: number; dbpm: number; stl: number; blk: number; drb: number; defl36: number; cont36: number }
+interface Row { id: string; name: string; span: string; pos: string; role: string; dtal: number; mpg: number; dbpm: number; stl: number; blk: number; drb: number; defl36: number; cont36: number; rim: number; onOffDef: number }
 const rows: Row[] = [];
 for (const s of draftPool) {
-  const name = normalizePlayerName(s.playerName);
-  const seasons = spanEndYears(s.spanLabel).map((y) => bbref.get(`${name}|${y}`)).filter((x): x is Season => Boolean(x) && x!.mp > 0);
-  if (!seasons.length) continue;
-  const mp = seasons.reduce((a, x) => a + x.mp, 0);
-  const w = (f: (x: Season) => number) => seasons.filter((x) => !isNaN(f(x))).reduce((a, x) => a + f(x) * x.mp, 0) / seasons.filter((x) => !isNaN(f(x))).reduce((a, x) => a + x.mp, 0);
-  const hs = spanEndYears(s.spanLabel).map((y) => hustle.get(`${name}|${y}`)).filter((x): x is NonNullable<typeof x> => Boolean(x));
-  const hMin = hs.reduce((a, x) => a + x.min, 0);
+  const r = realSpan(s);
+  if (!r) continue;
   rows.push({
     id: s.id,
     name: s.playerName,
@@ -79,13 +31,15 @@ for (const s of draftPool) {
     pos: s.primaryPosition,
     role: s.defensiveRole,
     dtal: computeDefensiveTalent(s),
-    mpg: mp / seasons.reduce((a, x) => a + x.g, 0),
-    dbpm: w((x) => x.dbpm),
-    stl: w((x) => x.stl),
-    blk: w((x) => x.blk),
-    drb: w((x) => x.drb),
-    defl36: hMin > 500 ? (36 * hs.reduce((a, x) => a + x.defl, 0)) / hMin : NaN,
-    cont36: hMin > 500 ? (36 * hs.reduce((a, x) => a + x.cont, 0)) / hMin : NaN,
+    mpg: r.mpg,
+    dbpm: r.dbpm ?? NaN,
+    stl: r.stl ?? NaN,
+    blk: r.blk ?? NaN,
+    drb: r.drb ?? NaN,
+    defl36: r.deflections36 ?? NaN,
+    cont36: r.contests36 ?? NaN,
+    rim: r.rimDiff ?? NaN,
+    onOffDef: r.onOffDef ?? NaN,
   });
 }
 
@@ -122,6 +76,10 @@ console.log(
   `2016+ spans with hustle (${withH.length}): r(D-TAL, deflections/36) ${corr(withH.map((r) => r.defl36), withH.map((r) => r.dtal)).toFixed(2)}, r(D-TAL, contests/36) ${corr(withH.map((r) => r.cont36), withH.map((r) => r.dtal)).toFixed(2)};` +
     ` r(what BBRef misses, deflections) ${corr(withH.map((r) => r.defl36), withH.map(resid)).toFixed(2)}, (contests) ${corr(withH.map((r) => r.cont36), withH.map(resid)).toFixed(2)}`,
 );
+for (const [label, k] of [['rim FG% saved (2014+)', 'rim'], ['on/off defense (2008+)', 'onOffDef']] as const) {
+  const g = pool.filter((r) => !isNaN(r[k]));
+  console.log(`${label} (${g.length}): r(D-TAL) ${corr(g.map((r) => r[k]), g.map((r) => r.dtal)).toFixed(2)}, r(what BBRef misses) ${corr(g.map((r) => r[k]), g.map(resid)).toFixed(2)}`);
+}
 console.log('\nBy position, mean D-TAL minus what BBRef predicts:');
 for (const p of ['PG', 'SG', 'SF', 'PF', 'C']) {
   const g = pool.filter((r) => r.pos === p);
@@ -142,7 +100,7 @@ console.log(`\nD-TAL BELOW the real numbers (game rates the defense lower), top 
 byPlayer(-1).forEach((r) => console.log(line(r)));
 
 mkdirSync(resolve(root, 'reports'), { recursive: true });
-const cols = ['name', 'span', 'pos', 'role', 'dtal', 'mpg', 'dbpm', 'stl', 'blk', 'drb', 'defl36', 'cont36'] as const;
+const cols = ['name', 'span', 'pos', 'role', 'dtal', 'mpg', 'dbpm', 'stl', 'blk', 'drb', 'defl36', 'cont36', 'rim', 'onOffDef'] as const;
 writeFileSync(
   resolve(root, 'reports/dtal-vs-real.csv'),
   [[...cols, 'bbrefPredicted', 'gap'].join(','), ...rows.map((r) => [...cols.map((c) => (typeof r[c] === 'number' ? (r[c] as number).toFixed(2) : `"${r[c]}"`)), predict(r).toFixed(1), resid(r).toFixed(1)].join(','))].join('\n'),
