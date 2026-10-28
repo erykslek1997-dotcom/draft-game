@@ -243,6 +243,21 @@ function rescaleToFullRange(raw: number, anchors: { worst: number; best: number 
 // display-vs-real unification (see that function's own docstring).
 const STARTER_FLOOR_THRESHOLD = 70;
 const STARTER_FLOOR_PENALTY_PER_POINT = 0.6;
+/**
+ * 2026-10-28, week 2-3 step 5 (the user, 2026-10-24: "Talent 87 przy Offense 70 i Defense 62 wygląda
+ * jak błąd"): Talent is the mean of five starters' TAL, so across 160 AI-drafted teams it sits at
+ * 85.3 with a spread of 3.3, while Offense and Defense are mapped onto a 74.1 mean / 9.31 spread
+ * (`calibrateOffenseToDefenseScale`). A Talent 87 is half a spread above average, not a great team,
+ * but reads like one beside a 70. The DISPLAY of Talent is put on the same scale; the number the
+ * engine blends (`talentScore`) is untouched, and so are the letters, which are graded against the
+ * field. Talent 91 -> 90, 88 -> 82, 85 -> 73, 83 -> 68.
+ */
+const TALENT_RAW_MEAN = 85.3;
+const TALENT_RAW_SD = 3.3;
+export function talentOnDefenseScale(talent: number): number {
+  return Math.max(0, Math.min(100, DEFENSE_MEAN + (talent - TALENT_RAW_MEAN) * (DEFENSE_SD / TALENT_RAW_SD)));
+}
+
 export function talentScore(team: Team): number {
   const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;

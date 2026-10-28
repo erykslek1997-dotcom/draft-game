@@ -1,5 +1,5 @@
 import type { Team } from './types';
-import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, rotationScore } from './scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, rotationScore, talentOnDefenseScale } from './scoring';
 import { rimPressureForFit } from './rimPressure';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { teamSpacingValue } from './midrangeGravity';
@@ -34,7 +34,7 @@ export function exportLeagueText(
     const oddsText = odds === undefined ? '' : ` · title ${odds > 0 && odds < 0.01 ? '<1' : Math.round(odds * 100)}%`;
     lines.push(`#${rank} ${team.name}${team.isHuman ? ' (YOU)' : ''} — overall ${b.overall} (${b.overallExact.toFixed(2)})${oddsText}`);
     lines.push(
-      `Talent ${r(b.talentScore)} · Bench ${r(b.benchDepthScore)} · Offense ${r(b.offenseScore)} · Defense ${r(b.defenseScore)} · Spacing ${r(b.spacingScore)} · Fit ${r(b.fitScore)} · Rotation ${r(b.rotationScore)}`,
+      `Talent ${r(talentOnDefenseScale(b.talentScore))} · Bench ${r(b.benchDepthScore)} · Offense ${r(b.offenseScore)} · Defense ${r(b.defenseScore)} · Spacing ${r(b.spacingScore)} · Fit ${r(b.fitScore)} · Rotation ${r(b.rotationScore)}`,
     );
     const off = offenseScoreBreakdown(team);
     const fit = fitScore(team);
