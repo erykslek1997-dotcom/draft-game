@@ -187,7 +187,9 @@ for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).
   const hubs = rows.map((r) => r.hub).sort((a, b) => a - b);
   const mid = hubs[Math.floor(hubs.length / 2)];
   console.log(`\n6.5 mismatch structure × hub (top ball share: median ${mid.toFixed(3)}, p90 ${hubs[Math.floor(hubs.length * 0.9)].toFixed(3)})`);
-  const X = (r: Row) => [r.otal, r.spacing / 10, r.mm / 10, ((r.hub - mid) * 10) * (r.mm / 10), (r.hub - mid) * 10];
+  const mmMean = mean(rows.map((r) => r.mm));
+  console.log(`  (mismatch centred on its mean ${mmMean.toFixed(0)}: 'hub' reads at an average mismatch)`);
+  const X = (r: Row) => [r.otal, r.spacing / 10, (r.mm - mmMean) / 10, ((r.hub - mid) * 10) * ((r.mm - mmMean) / 10), (r.hub - mid) * 10];
   const names = ['O-TAL bar', 'spacing (per 10)', 'mismatch (per 10)', 'mismatch × hub (per 0.10 share)', 'hub (per 0.10)'];
   report('REAL ORtg', names, X, (r) => r.y);
   report('GAME mechanics', names, X, (r) => r.mech);
