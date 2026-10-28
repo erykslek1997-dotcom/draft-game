@@ -1230,7 +1230,7 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       (`QuickDraftState.capLimit`). Test `scripts/testDailyDraft.ts`. Na później w Mini: narzucony
       gracz, styl dnia.
 - [ ] **Playtest całego trybu + lista poprawek** (S)
-- [ ] **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
+- [x] **(2026-10-28, zrobione: `src/engine/miniTournament.ts`, `MiniTournamentView.tsx`, przycisk „▶ The tournament” na wynikach Mini; zostaje: wynik turnieju w „Copy today's result” daily i na plakacie)** **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
       pucharowy 16 drużyn: rozstawienie 1–16 według oceny draftu (Overall), drabinka 1–16, 8–9,
       5–12, 4–13, 6–11, 3–14, 7–10, 2–15; **jeden mecz** w każdej rundzie, przegrany odpada;
       4 rundy (1/8 → ćwierćfinały → Final Four → finał). Mecz na żywo jak w play-offach (ten sam

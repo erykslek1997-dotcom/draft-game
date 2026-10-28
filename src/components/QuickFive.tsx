@@ -32,6 +32,7 @@ import { challengeVerdict, modeChallengeLink, type ModeChallenge } from '../mode
 import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { lowRimPressure } from './DraftChrome';
+import { MiniTournamentView } from './MiniTournamentView';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
@@ -624,6 +625,8 @@ function QuickResults({
   const [shareOpen, setShareOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [openTeam, setOpenTeam] = useState<string | null>(null);
+  // 2026-10-28: the tournament after the draft (mockup docs/mockups/mini-ncaa.html).
+  const [tourney, setTourney] = useState(false);
   const ranked = useMemo(
     () =>
       state.teams
@@ -740,6 +743,21 @@ function QuickResults({
     </table>
   );
 
+  if (tourney) {
+    return (
+      <MiniTournamentView
+        seeded={ranked.map((r) => r.team)}
+        scores={new Map(ranked.map((r) => [r.team.id, r.score.composite]))}
+        seed={String(state.seed)}
+        codeOf={codeOf}
+        title={title}
+        links={links}
+        onBack={() => setTourney(false)}
+        onNewDraft={onNewDraft}
+      />
+    );
+  }
+
   const aside = (
     <>
       <Mast title={title} daily={Boolean(daily)} sub={daily ? `${dayLabel(daily.day)} · final` : `Final · ${TEAM_COUNT} teams`} />
@@ -784,6 +802,7 @@ function QuickResults({
         </>
       )}
       <Actions links={{ ...links, menuPhoneOnly: true }}>
+        <Btn onClick={() => setTourney(true)}>▶ The tournament</Btn>
         {daily ? (
           <>
             <div className="btn2">
@@ -802,7 +821,7 @@ function QuickResults({
           </>
         ) : (
           <>
-            <Btn onClick={onNewDraft}>New draft</Btn>
+            <Btn kind="line" onClick={onNewDraft}>New draft</Btn>
             <div className="btn2">
               <Btn kind="line" onClick={() => setShareOpen(true)}>
                 Share
