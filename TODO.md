@@ -393,14 +393,14 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
 - [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
       „Watch again” pod „▶ Game N”, bez górnego.
-- [ ] **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
+- [x] **(zrobione w #255, sprawdzone w kodzie 2026-10-28)** **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
       zamiast 2–1). Podtytuł bez powtórzeń („beat the Moles 4–1, by 7.2 a game”; „The Sasquatch
       were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
 - [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
 - [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
 - [x] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
       kremowo; remis „You and the Raccoons had the best month”.
-- [ ] **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
+- [x] **(zrobione w #255; 2026-10-28 test 1000 dni `scripts/testDailyJokers.ts`: 1980 Jokerów, 49,6% legend, 0 błędów)** **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
       14.3). Legenda = wysoki TAL (≈70+ / górne 10% pozycji, nie 6+ All-Star — Sharman ma TAL 56)
       I prawdziwa cena wyraźnie wyższa niż Joker; scrub = dolne 25% TAL I tańszy. Test 1000 dni.
       Okno „Jackpot” z pełnym tłem.
