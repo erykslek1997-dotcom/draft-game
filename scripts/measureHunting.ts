@@ -146,7 +146,12 @@ for (const k of [0, 0.25, 0.5, 0.75, 1, 1.5]) console.log(`  k ${k}: r ${corr(re
 const pens = real.map((r) => r.f.penalty).sort((a, b) => a - b);
 console.log(`penalty on real fives: median ${pens[Math.floor(pens.length / 2)].toFixed(1)}, p90 ${pens[Math.floor(pens.length * 0.9)].toFixed(1)}, max ${pens.at(-1)!.toFixed(1)}`);
 let seed = 7;
-const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+const rnd = () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 const boots = Array.from({ length: 500 }, () => {
   const s = real.map(() => real[Math.floor(rnd() * real.length)]);
   return ols(s.map((r) => [r.f.linear, r.f.penalty]), s.map((r) => r.y))[2];
