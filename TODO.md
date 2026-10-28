@@ -131,7 +131,7 @@ Otwarte tematy silnika — na później (bierzemy, gdy wyjdą w grze albo w symu
       Tucker nadal tier-gated w każdym realnym spanie. Poluzować próg dla realnych drugich pozycji czy
       pozwolić dużym różnicom fit przebić próg?
 - [ ] **Taper mmStruct post-hub** (wymiar „struktury niedopasowania” w offenseScore).
-- [ ] **Audyt etykiet „Fix B”** — kod gotowy, czeka na Twój przegląd (niedoszacowanie obrony).
+- [x] **Audyt etykiet „Fix B”** — (2026-10-28: nie da się ustalić, o jaki kod chodziło; najbliższy jest audyt ról z 2026-10-02, już w grze. Zastąpione krokiem 3 „Obrona (D-TAL)” w kolejności prac tygodni 2–3.)
 - [ ] **Rim pressure całej drużyny w offenseScore** — dziś poprawka per gracz ledwo rusza sumy
       drużynowe (+1).
 - [ ] **Rozszerzenie rejestrów Movement Shooter / rim pressure** — małe, nazwane dodatki.
@@ -220,11 +220,53 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
+**Tydzień 6 — dopracować teksty „Copy result” / udostępniania (Eryk 2026-10-28: „jest ok, ale trzeba je dopracować”):** wszystkie tryby (Draw Five, Mini z linią turnieju i ✅/❌, All-Time, Bomb), jednolity format, długość, emoji, nazwa marki po rebrandzie (Beast Court). Makieta startowa: `docs/mockups/mini-tournament-share.html`.
+
+**Kolejność prac TAL / AI / silnik, tygodnie 2–3 (Claude, 2026-10-28; Eryk: „ułóż tak, żeby tobie było najlepiej”).** Zasada: najpierw pomiar i dane, potem wejścia TAL, potem struktura oceny, na końcu to, co tylko czyta oceny. Każdy krok: przykłady przed/po dla Eryka, test Spearmana z rankingami ludzi, `npm test`.
+1. **Narzędzie pomiaru** „ocena vs symulacja sezonu” (+ raport D-TAL vs DBPM/STL%/BLK%/hustle) — bez niego każda zmiana wag to zgadywanie.
+2. **Wczytanie nowych danych do silnika**: BBRef Advanced (gracze, drużyny 1973-2026), NBA.com (hustle, strefy obrony, on/off) jako pliki danych silnika, tak jak dziś RAPTOR/BPM2.
+3. **Obrona (D-TAL)**: audyt niedoszacowanej i przeszacowanej obrony na nowych danych (zastępuje niejasny „Fix B”), waga danych realnych dla skrzydłowych, statystyki na posiadanie zamiast na mecz, waga wg minut na mecz (próg ~24 mpg), gracze od brudnej roboty / hustle.
+4. **Reszta wejść TAL**: próg gwiazdy w `positionCorrectionFor`, Hartenstein/Tucker, spacing graczy sprzed linii za 3, półdystans sprzed 1997, lista slasherów, rejestry Movement Shooter, ściąganie do średniej wg próby (spacing, TS%, playmaking, rim, FT%, zbiórki).
+5. **Jedna skala** Talent/Offense/Defense + „droga od talentu do wyniku” (po krokach 3–4, bo zmienia się sam talent); przeliczenie progów A–F.
+6. **Struktura oceny**: kara za polowanie z pokryciem przez core, kara za zbiórki w ataku, lift z limitem i dwóch shot-first, gwiazda wymagająca spacingu, rim pressure całej drużyny, taper mmStruct, wpływ playoffów.
+7. **To, co czyta oceny**: detektory i opisy panelu (AST% zamiast APG, obrona vs Cohesion), wybór okna przez AI z kosztem, wykładnik wartości picku AI, siła AI, waga TE-1.
+8. **Symulacja meczu**: punkty w meczu samych piątek / krótszy mecz, asysty wg roli, tempo, mecz na żywo mocniej na silniku, korelacja silnik ↔ symulacja.
+9. **Panel ekspertów** (The room) — na końcu, bo opisuje gotowe oceny; zakres do ustalenia z Erykiem.
+
 **Tydzień 3 — jedna spójna skala ocen (2026-10-24, decyzja: nie robimy teraz):** Talent 87 przy Offense 70 i Defense 62 wygląda dla nowego gracza jak błąd. Przyczyna: Talent to średnia pięciu starterów, a Offense i Defense są przeliczone na skalę ze średnią 74 i dodają spacing, mismatche, hunt resistance itd. Plan: (1) wszystkie trzy na jednej skali (średnia 74) — rusza progi A–F i dotychczasowe wyniki, więc razem z listą silnika; (2) „droga od talentu do wyniku" przy Offense i Defense (np. talent ofensywny 85 → spacing −6, kosz −5 → 70); (3) podział Talentu na atak i obronę. Punkty 2–3 to głównie wyświetlanie. Etykiety („Star power" / „razem") jako szybka łatka — Eryk: to tylko łatka.
   - Dwie osobne przyczyny rozjazdu Talent ↔ Offense/Defense: (a) Talent nie jest na skali Offense/Defense (średnia 74, odchylenie ~9; surowy atak jest przeliczany wzorem 74 + (surowy − 85) × 9,3/8,5); (b) atak dokłada ponad talent spacing, mismatche i zbiórki w ataku.
   - Zbiórki w ataku: kara do −7 pkt (z-score ucięty na 2,5; średnia 8,9, SD 1,2 na piątkę) bije w obwodowe składy, które nie są modelowane w kontrze (powrót do obrony). Teraz: pokazać wiersz „Zbiórki w ataku" w Offense details. Tydzień 3: zmniejszyć karę (np. maks. −3) albo dać kredyt w obronie; po zmianie przeliczyć skalę i testy.
   - Kara za polowanie (hunt penalty) a „pokrycie” przez core (Eryk, 2026-10-24, przykład: Nash 39 min + Sexton, razem 48 min na PG; obok Kawhi D 98, Howard D 94 DPOY, Bell D 84 → Defense 69, po zamianie obu na przeciętnych ~79): słaby obrońca płaci dwa razy (średnia D-TAL + kara nieliniowa), a bonus za mocnych jest ucięty kolanem. Dziś łagodzi to tylko `anchorDampening` — wyłącznie rim protector (D-TAL ≥ 88, maks. −35% kary). Pomysł: uogólnić na „pokrycie”: elitarny wing stopper / obrońca na piłkę (POA) też zmniejsza karę (np. łączny limit ~−55%), do tego mierzenie na symulacji (ten sam skład z Nashem i bez, net rating vs kara w pkt). Do zrobienia razem z listą silnika, tydzień 3.
+  - Konflikty w składzie karane za słabo (Eryk, eksport seed 2230129059): (1) Long Beach #2 z Hardenem 2016-18 i Kobem 2007-09 (obaj „shot-first first option”): Overall 83,6 = 0,5 Quality 86,5 + 0,5 Fit-Offense-Defense 74,8 + obciążenie piłki +0,4 + **lift +2,5**; Aspen #3 (Fit 79, Offense 87) ma lift −1,3 i bez lifta prowadziłby o ~3 pkt. Konflikt kosztuje tylko Fit 67 i karę −4 w składzie (~−0,7 w Overall); obciążenie piłki daje +0,4, bo wzorzec to typowa piątka z draftu. (2) Little Rock #4 z Giannisem (Spacing 51, Offense 73, Defense 88): brak spacingu ≈ −2,5 pkt w Overall (spacing 18% ataku ≈ −1,6, „Spacing caps overall fit” −5 w Fit ≈ −0,9), tonie przy Defense 88; Giannis (atak na kosz 100 przy Spacing 35) wymaga rozstawienia, a silnik liczy brak rzucających osobno od stylu gwiazdy. Do zrobienia: lift z limitem na posiadania (drugi gracz z dużym usage dodaje mało), mocniejsza kara za dwóch shot-first first option (~−2…−3 w Overall), wzorzec usage z realnych drużyn, połączenie „gwiazda wymagająca spacingu” + niski spacing. **Najpierw pomiar na symulacji sezonu** (czy te składy naprawdę wygrywają tyle co wynika z oceny), żeby nie rozjechać oceny i symulacji.
+  - Cheyenne #11 (Eryk, ten sam eksport): (a) Conley wzięty w oknie 2022-24 (TAL 75, D 56, tanie 8,8 caps) zamiast szczytu z All-Defense — AI przy wyborze okna nie liczy, ile słabsze okno kosztuje drużynę; (b) detektory `NO_TRUE_PLAYMAKER` (próg 6,5 APG) i `ELITE_FLOOR_GENERAL` (10,5 APG) czytają surowe asysty na mecz, a silnik daje Conleyowi PM 89 — panel mówi „brak rozgrywającego”, ocena co innego. Zamiana na ten sam wskaźnik playmakingu co w silniku / asysty na 100 posiadań z usage. (c) Panel chwali obronę („ELITE_DEFENSIVE_LAYERING 0,94”), a Defense 68 przy Cohesion 31 — opisy i liczby powinny czytać te same dane.
+  - D-TAL: Dirk 2002-04 (58) wyżej niż Batum 2020-22 (55), choć dane realne mówią odwrotnie (RAPTOR def 1,33 vs 2,04, BPM2 0,71 vs 1,42, nadwyżka −0,37 vs +0,48). Powód: baza to box (wpływ obronny 29,9 vs 15,0 — zbiórki i bloki Dirka), dane realne to tylko mała korekta. Do rozważenia: większa waga danych realnych tam, gdzie są kompletne, zwłaszcza dla wingów (box nie widzi ich obrony).
+  - D-TAL z boxscore'u: dziś `defensiveBoxParts` bierze steals i bloki na MECZ (z korektą tempa ery), a zbiórki wg pozycji — bez minut i posiadań. Propozycja Eryka: na 36 minut / 100 posiadań z uwzględnieniem minut (żeby gracz z 22 min nie tracił do gracza z 36), z zasadą Eryka (2026-10-24): im mniej minut, tym mniejszy wpływ — gracz z 8 min nie jest porównywalny z graczem z 36, ale od ok. 24 min statystyki liczą się już w pełni (na 36 min / 100 posiadań). Wzór główny (lepszy od progów): ściąganie do średniej proporcjonalnie do ŁĄCZNYCH minut w oknie (mecze × mpg): wynik = (minuty × tempo + K × średnia pozycji) / (minuty + K), K ≈ 1500 min do ustawienia na puli; K może być większe dla steals/bloków niż dla zbiórek; prior = dane realne (RAPTOR/BPM2), gdy gracz je ma, zamiast średniej pozycji; wyspecjalizowany obrońca z ławki (blokujący center) nie powinien być spłaszczony — bonus roli osobno. Alternatywa do porównania: klamra((mpg − 8) / (24 − 8), 0, 1) jako waga, progi 8 i 24 do przemierzenia na puli. Sprawdzić na parze Dirk/Batum i na całej puli (rozkład D-TAL po zmianie).
+  - Gdzie jeszcze zastosować ściąganie do średniej wg próby (przegląd 2026-10-24, kolejność wg wartości): (1) **D-TAL**: steals/bloki na mecz w `defensiveBoxParts` — próba = minuty; (2) **Spacing**: 3P% ważone próbą — dziś twardy próg `MIN_VOLUME_FOR_ACCURACY = 1` (3PA/mecz) w spacing.ts; zamiast progu próba = 3PA × mecze, prior = średnia pozycji (+ próg `REAL_VOLUME_FLOOR_FOR_WALKING_GRAVITY` jako płynny); (3) **Efektywność (TS%)** w talent.ts (~920) i portability.ts (255/338/424): dziś `lowUsageEfficiencyFactor(fga)` — twardy czynnik; zamiast tego próba = FGA × mecze; (4) **Playmaking po APG**: `effectivePlaymakingApg`, `passShare`, detektory insights (NO_TRUE_PLAYMAKER, ELITE_FLOOR_GENERAL) — asysty na 100 posiadań + próba = minuty; (5) **Rim pressure**: progi ppg na mecz (rimPressure.ts ~125, 276, `scoringVolumeFactor`) — per-36 + próba; (6) **FT%** (istniejący pomysł FT% w silniku): próba = FTA; (7) zbiórki (talent.ts 723): per-36 + próba. `teamGlass`/`defenderProfile` już liczą per-36 — precedens do skopiowania.
+  - KOREKTA (2026-10-24): minuty i mecze mamy dla WSZYSTKICH lat — `src/data/raw/playerSeasonStats.csv` (25 519 wierszy 1947-2026: games, numMinutes, pts, ast, blk, stl, FGA/3PA/FTA, orb/drb, pf, tov; brak minut tylko w 657 wierszach, głównie lata 40.-60.) + `playerSeasonTeams.csv` (zespół, mecze, minuty). `usage.json` (mpg, USG%) jest tylko od 1996-97. Czyli zmiana „próba = minuty / próby” nie wymaga nowego źródła; do łączenia po `personId`/nazwie jest już resolver. Każda zmiana wejść TAL musi przejść ten sam test na rankingach ludzi co dotąd (Spearman z top-5 TAL), nie tylko test jednostkowy.
+  - **Dane do zebrania (lista dla Eryka, 2026-10-24).** Mamy już: `raw/playerSeasonStats.csv` (1947-2026), `playerSeasonTeams.csv`, `players_bio.csv`, `wingspan.csv`, `teamAdvanced.csv` (tylko 217 drużyn), `leagueAverages.csv`, oraz NBA.com 2015-16+ (`raw/nbaStats`: defense overall/rim/3pt, passing, drives, catch&shoot, pull-up, playtypes gracz i drużyna, team advanced/misc) i awards (RAPTOR, DARKO, BPM2, APM, matchup defense, zone efficiency). Brakuje i dałoby największy zysk: (1) **tempo i ORtg/DRtg/SRS dla KAŻDEJ drużyny i sezonu** (BBRef „Team Misc” / „League Index”, 1950-51+, najlepiej 1973-74+) — baza do posiadań (minuty → posiadania) i do prawdziwych wyników drużyn do kalibracji oceny; (2) **BBRef Advanced per sezon** (USG%, AST%, STL%, BLK%, TRB%, ORB%, DRB%, TS%, BPM, VORP; USG% od 1977-78, BPM od 1973-74); (3) **składy zespołów z minutami** (kto grał ile w prawdziwych drużynach, np. BBRef „Roster/Per Game” per drużyna) — żeby porównywać wynik silnika dla realnych składów z realnym bilansem; (4) **NBA.com on/off i lineups** (5-osobowe jednostki, net rating, minuty) od 2007-08, a play-by-play od 1996-97 — walidacja Fit/hunting/cohesion na prawdziwych piątkach; (5) **NBA.com hustle** (deflections, contested shots, screen assists, loose balls) 2015-16+, **tracking rebounds** (contested/chances), **touches i time of possession**, **speed & distance**, **defense dashboard po strefach** — wymiar obrony i zbiórek dla skrzydłowych (to jest luka Batuma); (6) **clutch** (ostatnie 5 min, różnica ≤5); (7) **wiek** (players_bio ma daty urodzenia, ale brak wieku w oknie) i **stan zdrowia/kontuzje** (liczba meczów jest, ale nie powód nieobecności); (8) **nagrody** poza obecnymi: All-NBA tier, All-Rookie, MIP, 6MOY (sixth man) — do tagów roli.
+  - **Logika do poprawy — zbiorczo (tydzień 3, kolejność wg wartości):** (1) jedna skala Talent/Offense/Defense + „droga od talentu do wyniku”; (2) kara za polowanie z pokryciem przez core (wing stopper i POA, nie tylko rim); (3) kara za zbiórki w ataku (z-score ucięty na 2,5, max −7) — zmniejszyć lub dać kredyt w obronie; (4) lift z limitem na posiadania i mocniejsza kara za dwóch shot-first; (5) gwiazda wymagająca spacingu + niski spacing (Giannis); (6) ściąganie do średniej wg próby (minuty, próby, rzuty wolne) w D-TAL, spacingu, TS%, playmakingu, rim pressure, zbiórkach; (7) większa waga danych realnych dla skrzydłowych (D-TAL Batum/Dirk); (8) detektory i opisy czytają te same oceny co silnik (playmaking, obrona vs Cohesion); (9) wybór okna przez AI uwzględnia koszt słabszego okna (Conley); (10) jedno narzędzie pomiaru „ocena kontra symulacja sezonu” puszczane przed każdą zmianą wag, żeby ocena nie rozjechała się z grą.
+  - **Skrypt NBA.com (tydzień 2/3):** rozszerzyć istniejący `scripts/fetch_nba_stats_browser.js` (konsola przeglądarki na nba.com/stats; Python odpada — stats.nba.com wiesza `requests`), tą samą konstrukcją (`get`, `add`, pauza 800 ms, jeden `nba_stats.json`). Dodać: (4) `leaguedashlineups` (jednostki 5-osobowe, net rating, minuty) i `teamplayeronoffsummary` (on/off graczy) od 2007-08; (5) `leaguehustlestatsplayer` (deflections, contested shots, screen assists, loose balls), `leaguedashptstats` z `Rebounding`, `Possessions`, `SpeedDistance`, `leaguedashptdefend` po strefach — od 2015-16 (część już jest w pliku). **Stan (2026-10-28): napisany `scripts/fetch_nba_stats_extra.js` (osobny plik, drugi zestaw: lineups, on/off, hustle, tracking rebounds/possessions/speed, strefy obrony, clutch; tryb TEST = jeden sezon 2023-24, potem TEST=false na pełne pobranie).** Plan: pisze Claude, Eryk puszcza na jednym sezonie i wkleja pierwsze linie / błąd, poprawka, dopiero wtedy pełne pobranie. Środowisko Claude nie ma dostępu do stats.nba.com (proxy 403), więc nie da się przetestować na miejscu.
   - Przypadek testowy: Lillard 2019-21, Ginóbili 2005-07, Durant 2012-14, Green 2015-17, Gasol 2014-16 (+ Chalmers, O'Neale): O-TAL 81, spacing 86, playmaking 89, mismatch 54, kosz 69, bonusy +9 i +6 → surowe 95 → 85 po skali → −7 zbiórki = 78 (u Eryka w grze 70, słabsze okna).
+
+## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
+
+**Skąd gra:** liga „all-time draft” grana przez znajomych od 2019 roku — start 16 osób, szczyt 32, dziś znów 16. Gra wyrosła z kilku lat prawdziwego draftowania, nie z pomysłu na aplikację. To jest historia założycieli i główny wyróżnik.
+**Pozycjonowanie:** „nie quiz — draft”. Całą grą są decyzje (kogo wziąć, które okno lat, za ile caps, kogo zostawić rywalom), a nie wybór z losowo wyświetlonego składu. Dziewięciu graczy z ławką i rotacją, cap, AI jako GM-owie (16 drużyn), ocena składu (atak, obrona, spacing, fit, ławka) z komentarzem panelu, symulacja sezonu i playoffów, dzienne wyzwania.
+**Konkurenci (z wyszukiwania, wg opisów; Eryk grał w „82-0 Pro Basketball Draft” i ocenia naszą grę jako „inny poziom”):** Draft 82-0 / 82-0 Pro Basketball Draft (piątka, perfekcyjny sezon, tryb salary cap), GOAT Lab (dzienna gra w przeglądarce), Basketball GOAT (App Store), iKnoBall All-Time Sports Draft (dzienne wyzwanie, pojedynki), NBA NOW (większy mobilny GM), Legend Five: Basketball Draft (tylko App Store, opis po chińsku — Eryk: zerowe zagrożenie).
+**Nazwa — stan:** „FBL” odrzucone (opisowe, wprowadza w błąd, krótkie skróty zajęte); „16-0” odrzucone (za bardzo kojarzy się z 82-0); „Greatest 5” — Eryk: nie buduje marki na przyszłość; **„GOATS” — kierunek faworyta Eryka** (można zbudować cały świat: stado, maskotka, „najlepsza drużyna wszech czasów”). Ryzyka GOATS: słowo „GOAT” jest wszędzie w sportowych aplikacjach (trudno się wyróżnić), a GOAT (1661, Inc.) ma zarejestrowane znaki (m.in. odzież, klasa 25) i pilnuje ich (sprzeciw wobec Green Goat LLC, 2022) — dlatego raczej „GOATS” + własny dopisek (np. League/Draft/FC), nie samo słowo. Drugi kierunek: słownictwo kultury lig (War Room, Commissioner, Draft Night, Big Board). Obecna robocza nazwa: Draftverse (w wyszukiwaniu brak kolizji dokładnej, są podobne brzmieniowo: Dragverse, Chronicles of Dragonverse, Draft Battle).
+**Nazwa — runda 2 (2026-10-24):** odrzucone: Goats of War (parodia God of War, „war” nie pasuje do gry), Goats of Ball („ball” niejednoznaczne, skojarzenie wg Eryka), Hoop Gods (zarejestrowany znak THEHOOPGODS, klasa 41, gry koszykarskie), Heat Check (zajęte: aplikacja statystyk i esport Miami Heat), Einherjar/Aristeia/Yuga (zajęte), Greatest 5 (nie buduje marki), Pantheon (pospolite, wymaga dopisku). Z języków starożytnych: Delectus (łac. wybór/pobór — draft; w wyszukiwaniu wolne), Lugal (sum. „wielki człowiek”), Kleroterion (gr. maszyna do losowania — jako nazwa funkcji losowania kolejności, nie marki). **Najważniejsze odkrycie: „Zwierzyniec”** — liga Eryka nazywa tak dyskusje w czasie draftu (mało merytoryki, dużo emocjonalnego pickowania). Daje świat marki razem z GOATS (koza to zwierzę): „your skład is GOAT’ed”, „Get GOATed”. Eryk: poprzednie nazwy nie miały koszykarskiego vibe’u — nazwa ma łączyć zwierzyniec/GOATS z koszykarskim słownictwem (hoop, hardwood, paint, rim, bench). Kandydaci: **Hoop Zoo** (rym, koszykarskie; dokładnej nazwy nie znalazłem), Hardwood Herd (niebezpieczne — Wisconsin Herd, zespół G League), Menagerie (tłum. Zwierzyńca), GOATed (brak dokładnej nazwy, ale w kategorii są GOAT Lab, Basketball GOAT, Goat Draft Fantasy Sports — real-money DFS), Bench Mob (slang koszykarski, „mob” = stado). Hasła: „Get GOATed”, „Your squad is GOATed”, „Settle it”.
+**Nazwa — decyzja robocza (2026-10-24): BEAST COURT** (Eryk: „klasa”). Marka = Beast Court; nazwa funkcji **Beast Board** (zastępuje „Big Board”: własny ranking graczy w drafcie). Wyszło z: Zwierzyniec (nazwa dyskusji w lidze Eryka) → GOATS/„GOATed” → „Beast” (pochwała, bestie = karty graczy) + „Court” (koszykarski, miejsce akcji, gra słów „Beast Court is in session” przy werdykcie). Hasła: „Get GOATed”, „Your squad is GOATed”, „Settle it”. Odrzucone w tej rundzie: Hoop Zoo (nie działa na Eryka), Hoop Titans (generyczne), Hoop Beasts / Hardwood Beasts / Draft Beasts / Beast Draft (zbyt blisko HOOPBEAST), Beast Hoops/Beastball/Beast Break/Beast Paint/Beast Run (słabsze od Court). Sąsiedzi: Beast League: Ball Brawl (Acid Labs, zręcznościowa gra PvP z „Beasts” — inna kategoria, ale pilnować), Beast Board nie występuje, Beast Court nie występuje w wyszukiwaniu.
+**Najważniejsze sprawdzenie przed nazwą:** USPTO — zgłoszenie **HOOPBEAST** (nr 97923151, maj 2023): zakres towarów/usług i właściciel (czy obejmuje gry/rozrywkę, klasy 9, 28, 41); spór Russell Brands (Spalding) kontra firmy MrBeasta o znak „The Beast” dla koszy (sprzęt, nie gry) — pokazuje, że „Beast” w koszykówce bywa pilnowane. Do tego: domeny beastcourt.com / .app / .gg / .io, konta (X, Instagram, TikTok, YouTube, Reddit), App Store i Google Play, EUIPO i WIPO (klasy 9, 28, 41, 25), test „powiedz na głos”, plus sprawdzenie, czy „Court” w znaku nie koliduje z „Beast League”.
+**Archiwum burzy mózgów nazw (2026-10-24; wszystko niesprawdzone prawnie — tylko wyszukiwanie w sieci):**
+- *Starożytne języki:* gr. Kleros (los), Kleroterion (ateńska maszyna losująca — dobra na nazwę funkcji losowania kolejności), Agon (zawody), Arete (doskonałość), Aristeia (zajęte: gra planszowa Corvus Belli), Aeon; łac. Delectus (wybór/pobór; w wyszukiwaniu wolne), Lanista (zarządca gladiatorów; kolizje: Gladiator Manager, gra karciana Lanista, Gladiatory), Princeps (kolizja: gra o Rzymie), Sors, Ludus; sum. Lugal („wielki człowiek”); egip. Maat, Sekhem, Nefer, Sed; sanskr. Vira, Ranga (arena), Krida (gra), Yuga (zajęte: Yuga Labs); staronord. Althing, Saga, Jarl, Valkyrie/Einherjar („wybierająca/wybrani” — Einherjar zajęte przez japońskie gry i God of War); celt. Fianna, Ard Rí; mykeński Wanax, Lawagetas.
+- *Slang koszykarski:* Pick (draft + zasłona — podwójne znaczenie), Heat Check (zajęte: aplikacja statystyk i esport Miami Heat), Dime (magazyn), Buckets, Glue guy, Sixth man, Sauce, Run it back (zbyt popularne), The Run, Winners stay / Call next (wolne), Rafters, Chip, Bench Mob.
+- *Popkultura:* Hoop Dreams, The Last Dance, Moneyball, Draft Day, Space Jam/Monstars, NBA Jam („He’s on fire”, „Boomshakalaka”), Mike Breen „Bang!”, debata GOAT, Ball Knowledge/Ball Knower, Hot Take, Let him cook. Wniosek: filmy i hasła raczej na hasło/głos gry niż nazwę; „Settle it” jako hasło.
+- *Zwierzyniec / zoo:* Menagerie, Bestiary (karty graczy jako wpisy w bestiariuszu), Safari, Jungle, Ark, Habitat, Den, Pen, Barn, The Herd (zajęte: program Colina Cowherda; Wisconsin Herd — G League), Hardwood Herd (odrzucone przez Wisconsin Herd). *Hoops:* court, hardwood, rim, net, glass, paint, key, buckets, baseline.
+- *Beast:* Titans, Behemoths, Colossi, Goliaths, Leviathans, Critters, Beasties, Creatures, Monsters/Monstars, Predators, Apex, Alphas (odpada), Brutes, Bruisers.
+- *Konkurenci z wyszukiwania:* Draft 82-0 / 82-0 Pro Basketball Draft (Vaulty Studios), GOAT Lab, Basketball GOAT, iKnoBall All-Time Sports Draft, NBA NOW, Build a Hooper, Draft Lab, Pocket GM, Ultimate GM Basketball Manager, Legend Five (tylko Apple, opis po chińsku — Eryk: zerowe zagrożenie), Beast League: Ball Brawl.
+- *Pomysł produktowy:* najwyższy werdykt na ekranie wyniku jako „GOATED” (zamiast obecnego zestawu ligowego Wooden Spoon / Lottery Team / Playoff Lock / Contender — te zostają jako niższe poziomy); „Beast Board” zamiast „Big Board”; „Kleroterion” jako nazwa ekranu losowania kolejności; Zwierzyniec jako nazwa czatu/komentarza w drafcie; komentarz na żywo w stylu NBA Jam („He’s on fire”).
+**Pomysł na koniec dnia (Eryk, 2026-10-24): GOATS z „all” zamienionym na synonim** (backronim, żeby nazwa miała własne znaczenie): *Greatest Ones Across Time* (czysty, naturalny), *Greatest Of Ages, Teams & Seasons* (S jako liczba mnoga; dokładnie opisuje grę: ery, drużyny, okna sezonów), *Greatest Of Any Team* (T = Team; skład z dowolnych drużyn), *Greatest Of Ages, Together* (T = Together; drużyna z różnych epok). Uwaga: to nie zmienia ryzyka znaku GOAT (1661, Inc.) ani zatłoczenia słowa; może służyć jako podtytuł pod Beast Court albo wyjaśnienie nazwy w „o grze”.
+**Do sprawdzenia (Eryk, wcześniej niż tydzień 5):** domeny (.com, .app, .gg) dla 4–5 kandydatów; App Store i Google Play; konta (X, Instagram, TikTok, YouTube, Reddit + subreddit); USPTO, EUIPO, WIPO w klasach 9, 28, 41 i 25 (merch); test „powiedz na głos i niech ktoś zapisze”. Wyszukiwanie z agregatorów to nie opinia prawna — przed rejestracją prawnik od znaków towarowych. Środowisko Claude nie sprawdzi domen ani baz znaków (proxy), robi tylko wyszukiwanie w sieci.
 
 ## Plan na 4 tygodnie (decyzja 2026-10-16) — zastąpiony planem 7 tygodni
 
@@ -297,7 +339,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
       Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
     - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
       pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
-      - [ ] **ASG votes — do zrobienia** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
+      - [ ] **ASG votes — pod koniec projektu (Eryk 2026-10-28: mały priorytet, na sam koniec)** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
         kapitanów i mecz już są; **samego głosowania nie ma** — dziś 24 to czysta wartość gry.
         Potrzebny model głosów liczony z silnika (nie wymyślone liczby): np. punkty i wygrane
         drużyny z części sezonu + sława zawodnika (tier/era), z ziarnem sezonu. Wtedy: na
@@ -327,10 +369,10 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 ### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
 
 **Telefon — drobne poprawki z 2026-10-23 (do zrobienia, kończymy po całej liście):**
-- [ ] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
-- [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
-- [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
-- [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
+- [x] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
+- [x] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
+- [x] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
+- [x] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
 - [x] Lista draftu (telefon): cap za blisko „Draft”; ucięte statystyki; okno „His stretches”: cap za blisko „Use” (patrz wyżej).
 - [x] Sezon › Overview: niższe wiersze Standings (~34 px), żeby tabela i „Playoffs →” mieściły się bez przewijania.
 - [x] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
@@ -340,7 +382,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - [ ] Matchup playoffów: zamiast „Top three” porównanie piątek z facecards (telefon i PC; pod parami pts · reb · ast).
 - [x] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
 - [x] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
-- [ ] **Przyszły tydzień (tydzień 2):** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
+- [x] **(2026-10-28, zrobione: okno gracza — nagrody zawsze, 6 ocen w kafelkach „?” przed zwiadem, skład na telefonie z liniami nagród i ocen, chipy na liście; makieta `docs/mockups/draft-grades-phone.html`)** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
 
 
 Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
@@ -349,29 +391,29 @@ treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy n
 złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub słowem.
 
 **A. Szybkie** (style, teksty, drobna logika — jeden PR)
-- [ ] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
+- [x] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
       jedna wielkość i linia bazowa.
-- [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
-- [ ] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
-- [ ] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
-- [ ] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
-- [ ] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
+- [x] **(2026-10-28: bez górnej linii nad tytułem w aside)** Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
+- [x] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
+- [x] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
+- [x] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
+- [x] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
       przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
-- [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
+- [x] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
       on this pick”.
-- [ ] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
-- [ ] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
-- [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
-- [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
+- [x] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
+- [x] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
+- [x] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
+- [x] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
       „Watch again” pod „▶ Game N”, bez górnego.
-- [ ] **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
+- [x] **(zrobione w #255, sprawdzone w kodzie 2026-10-28)** **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
       zamiast 2–1). Podtytuł bez powtórzeń („beat the Moles 4–1, by 7.2 a game”; „The Sasquatch
       were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
-- [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
-- [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
+- [x] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
+- [x] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
 - [x] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
       kremowo; remis „You and the Raccoons had the best month”.
-- [ ] **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
+- [x] **(zrobione w #255; 2026-10-28 test 1000 dni `scripts/testDailyJokers.ts`: 1980 Jokerów, 49,6% legend, 0 błędów)** **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
       14.3). Legenda = wysoki TAL (≈70+ / górne 10% pozycji, nie 6+ All-Star — Sharman ma TAL 56)
       I prawdziwa cena wyraźnie wyższa niż Joker; scrub = dolne 25% TAL I tańszy. Test 1000 dni.
       Okno „Jackpot” z pełnym tłem.
@@ -386,7 +428,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [x] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
       Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.
 - [x] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
-- [ ] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
+- [x] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
 - [x] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
       silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
 - [x] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
@@ -475,7 +517,7 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 - [x] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
       otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
       bez wybierania; powrót do „Start the draft”. Big Board z tego kroku przechodzi do draftu.
-- [ ] **Hunting — przebudowa mechaniki (silnik, tydzień 2–3).** Obecna nie działa tak, jak powinna.
+- [ ] **Hunting — przebudowa mechaniki — PO LAUNCHU (Eryk 2026-10-28: obecną wyrzucić, przebudowa po launchu).** Obecna nie działa tak, jak powinna.
       Użytkownik opisze, jak to wygląda w rzeczywistości; pytania od Claude'a: kto wybiera cel
       (rozgrywający w PnR czy izolacja), jak ofensywa wciąga słabego obrońcę do akcji (zasłona
       gracza, którego kryje, ghost screen, re-screen), jak broni się obrona (switch / drop / hedge /
@@ -483,7 +525,7 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       kosztuje atak (zegar, przewidywalność, mniej ruchu), kto potrafi huntować (izolacja, PnR),
       różnica sezon vs play-offy, przykłady serii (np. Rockets 2018 na Curry'ego) i źródła danych
       (NBA.com matchups od 2017-18, Synergy ISO/PnR PPP).
-- [ ] **Transmisja meczu żywsza (silnik + teksty).** Dziś relacja jest sztywna. Brakuje:
+- [ ] **Transmisja meczu żywsza (silnik + teksty) — na później (Eryk 2026-10-28).** Dziś relacja jest sztywna. Brakuje:
   - a) **Signature moves gwiazd:** „Dirk one-legged fadeaway from 14 ft over the defender's
        hand”. Z play-by-play NBA (od 1996-97) da się wyciągnąć typ rzutu (fadeaway, turnaround,
        step-back, pull-up, driving layup, hook, alley-oop, putback), odległość i udział każdego
@@ -1201,7 +1243,7 @@ share bez spoilerów. Karta ta sama co w draftach (pas drużyn), rozdawana w cie
       (`QuickDraftState.capLimit`). Test `scripts/testDailyDraft.ts`. Na później w Mini: narzucony
       gracz, styl dnia.
 - [ ] **Playtest całego trybu + lista poprawek** (S)
-- [ ] **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
+- [x] **(2026-10-28, zrobione: `src/engine/miniTournament.ts`, `MiniTournamentView.tsx`, przycisk „▶ The tournament” na wynikach Mini; zostaje: wynik turnieju w „Copy today's result” daily i na plakacie)** **Turniej po drafcie, styl NCAA** (2026-10-22, user). Mini dostaje „sezon” jako turniej
       pucharowy 16 drużyn: rozstawienie 1–16 według oceny draftu (Overall), drabinka 1–16, 8–9,
       5–12, 4–13, 6–11, 3–14, 7–10, 2–15; **jeden mecz** w każdej rundzie, przegrany odpada;
       4 rundy (1/8 → ćwierćfinały → Final Four → finał). Mecz na żywo jak w play-offach (ten sam

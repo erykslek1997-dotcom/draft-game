@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oceny A–F na telefonie</title>
+<style>
+:root{--bg:#eef1f5;--text:#151b26;--muted:#5a6678;--note:#fff6dc;--note-line:#e8d38e;--pin:#2f7fc0;
+ --sans:system-ui,'Segoe UI',Roboto,sans-serif;--num:ui-monospace,Consolas,monospace;
+ --paper:#05070c;--raised:#0b111b;--raised2:#101826;--line:#182433;--edge:#24344a;--ink:#eef4fb;--soft:#9aa8bc;--faint:#66758b;
+ --accent:#3ea8e8;--red:#e0465c;--gold:#f2b84b;--green:#58c28a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}}
+:root[data-theme=dark]{--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:1220px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 28px;max-width:760px}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:330px}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}.note b{color:var(--pin)}
+.cap{font:600 11.5px var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+/* the phone window (PlayerPeekModal) */
+.g{width:370px;max-width:100%;background:var(--raised);color:var(--ink);border:1px solid var(--edge);border-radius:20px;padding:14px;font:14px/1.4 var(--sans)}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.hd{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.fc{width:52px;height:52px;border-radius:50%;background:var(--raised2);border:1px solid var(--edge);display:grid;place-items:center;font-weight:700;color:var(--soft)}
+.hd h2{margin:0;font-size:18px}.hd span{color:var(--soft);font-size:12.5px}.hd .x{margin-left:auto;color:var(--soft);font-size:18px}
+.card{background:var(--raised2);border:1px solid var(--edge);border-radius:14px;padding:12px}
+.top{display:flex;align-items:baseline;gap:8px}.eb{font:700 10.5px var(--num);letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.top b{font-size:16px}.coin{margin-left:auto;font:700 14px var(--num);color:var(--gold)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;text-align:center}
+.nums b{display:block;font:800 17px var(--num)}.nums span{font-size:11px;color:var(--faint)}
+.tierline{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.tier{font:800 12px var(--num);letter-spacing:.06em;border:1px solid var(--edge);border-radius:999px;padding:3px 10px;color:var(--ink)}
+.tierline small{color:var(--faint);font-size:12px}
+.gr6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.gr6 div{background:var(--raised);border:1px solid var(--edge);border-radius:10px;padding:7px 4px;text-align:center}
+.gr6 b{display:block;font:800 20px/1.1 var(--sans)}.gr6 span{font-size:11px;color:var(--soft)}
+.gr6.lock b{color:var(--faint)}
+.hi{color:var(--green)}.mid{color:var(--ink)}.lo{color:var(--red)}
+.btn{display:block;width:100%;text-align:center;font:700 14px var(--sans);border-radius:999px;padding:11px;background:var(--accent);color:#04121d;border:0;margin-top:12px}
+.btn.line{background:transparent;border:1px solid var(--edge);color:var(--ink)}
+.scout{margin-top:12px;color:var(--soft);font-size:13px}
+h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h3 span{font-weight:400;color:var(--faint);font-size:12px}
+.oy{width:100%;border-collapse:collapse;font-size:13px}.oy td{padding:8px 4px;border-top:1px solid var(--line)}
+.oy .y{font-weight:700}.oy .t{font:700 11px var(--num);color:var(--soft)}.oy .c{font:700 12.5px var(--num);color:var(--gold);text-align:right}
+.oy .open td{background:var(--raised2)}
+.team .sl{font:800 11px var(--num);color:var(--soft);width:28px}.team .sl.bn{color:var(--faint)}
+.fc.sm{width:34px;height:34px;font-size:11px}
+.team .yr{font-size:12px;color:var(--soft)}
+.tl{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:4px;align-items:center}
+.tier.s{font-size:10px;padding:1px 7px}
+.lt{font:700 10.5px var(--num);color:var(--faint)}.lt b{font-size:12px;margin-left:2px}
+.desk th{font:700 10.5px var(--num);color:var(--faint);text-align:left;padding:4px;letter-spacing:.06em;text-transform:uppercase}.desk .gd{text-align:center;font-size:15px;font-weight:800;width:56px}.desk .gd b{display:inline-block;width:2.4ch;text-align:left;font-family:var(--num)}.desk th:nth-child(n+5):nth-child(-n+8){text-align:center;width:56px}
+.lt b{display:inline-block;width:2.4ch;text-align:left;font-family:var(--num)}
+.gr6 b{font-family:var(--num)}
+.dk2{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;margin-top:10px}
+.gr6.w6{grid-template-columns:repeat(6,1fr)}
+.desk th:nth-child(n+4):nth-child(-n+9){text-align:center}
+.btn.mini{display:inline-block;width:auto;margin:0;padding:5px 12px;font-size:12px}
+.g.dkw{width:760px;padding:16px 18px}
+.dkc{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start;padding:12px 14px}
+.dkl .top b{font-size:15px}.dkl .top .coin{margin-left:0;font-size:13.5px}.dkl .top .coin::before{content:'· ';color:var(--faint)}
+.dkw .oy td,.dkw .oy th{white-space:nowrap}.dkw .tier.s{white-space:nowrap}
+.gr6.w6 div{padding:6px 2px}.gr6.w6 b{font-size:18px}.gr6.w6 span{font-size:10.5px}
+.dkbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}.btn.dkb{display:inline-block;width:auto;margin:0;padding:8px 18px;font-size:13px}
+.dkw h3{margin:12px 0 4px}.dkw .oy td{padding:6px 4px}
+.more{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--soft)}.more b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Okno gracza z ocenami A–F (telefon)</h1>
+<p class="lede">Pełne okno gracza, tak jak dziś w grze: nagłówek, „On the card” z liczbami, tier, sześć ocen (Offense, Defense, Spacing, Portability, Finishing, Durability), Draft, raport zwiadowczy i „Other years”. Zmiany wg TODO: tier osobno nad ocenami, oceny w równej siatce 3×2, ocena A zielona (nie złota — złoto to capy), przed zwiadem zamknięte kafelki zamiast pustego miejsca.</p>
+
+<div class="row">
+ <div>
+  <p class="cap">1 · Przed zwiadem</p>
+  <div class="g">
+   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card">
+    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2 caps</span></div>
+    <div class="nums"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+    <div class="tierline"><span class="tier">ALL-NBA 1ST · MVP</span></div>
+    <div class="gr6 lock">
+     <div><b>?</b><span>Offense</span></div><div><b>?</b><span>Defense</span></div><div><b>?</b><span>Spacing</span></div>
+     <div><b>?</b><span>Portability</span></div><div><b>?</b><span>Finishing</span></div><div><b>?</b><span>Durability</span></div>
+    </div>
+    <button class="btn">Draft 2002-04</button>
+   </div>
+   <div class="scout"><button class="btn line">Scout him · 2 left</button></div>
+   <h3>Other years<span></span></h3>
+   <table class="oy"><tbody>
+    <tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td class="t">ALL-NBA 2ND</td><td class="c">11.6</td><td>▸</td></tr>
+    <tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td class="t">ALL-NBA 2ND</td><td class="c">12.9</td><td>▸</td></tr>
+   </tbody></table>
+  </div>
+ </div>
+
+ <div>
+  <p class="cap">2 · Po zwiadzie</p>
+  <div class="g">
+   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card">
+    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2 caps</span></div>
+    <div class="nums"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+    <div class="tierline"><span class="tier">ALL-NBA 1ST · MVP</span></div>
+    <div class="gr6">
+     <div><b class="mid">B+</b><span>Offense</span></div><div><b class="hi">A</b><span>Defense</span></div><div><b class="lo">D</b><span>Spacing</span></div>
+     <div><b class="hi">A−</b><span>Portability</span></div><div><b class="mid">B</b><span>Finishing</span></div><div><b class="hi">A</b><span>Durability</span></div>
+    </div>
+    <button class="btn">Draft 2002-04</button>
+   </div>
+   <h3>Other years<span></span></h3>
+   <table class="oy"><tbody>
+    <tr class="open"><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td class="t">ALL-NBA 2ND</td><td class="c">11.6</td><td>▾</td></tr>
+    <tr class="open"><td colspan="5">
+     <div class="gr6">
+      <div><b class="mid">B</b><span>Offense</span></div><div><b class="hi">A+</b><span>Defense</span></div><div><b class="lo">C</b><span>Spacing</span></div>
+      <div><b class="hi">A</b><span>Portability</span></div><div><b class="mid">B−</b><span>Finishing</span></div><div><b class="mid">B</b><span>Durability</span></div>
+     </div>
+     <div class="more"><span>FG% <b>49.4</b></span><span>3P% <b>18.0</b></span><span>FT% <b>82.1</b></span><span>STL <b>1.3</b></span><span>BLK <b>1.2</b></span></div>
+     <button class="btn line" style="margin-top:8px">Draft 2007-09 · 11.6</button>
+    </td></tr>
+    <tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td class="t">ALL-NBA 2ND</td><td class="c">12.9</td><td>▸</td></tr>
+   </tbody></table>
+  </div>
+ </div>
+
+ <div>
+  <p class="cap">3a · Skład — telefon</p>
+  <div class="g">
+   <div class="top" style="margin-bottom:8px"><span class="eb">Your team</span><span class="coin">● 87.4 / 90.0</span></div>
+   <table class="oy team"><tbody><tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST · MVP</span></div><div class="tl"><span class="lt">OFF <b class="hi">A</b></span><span class="lt">DEF <b class="lo">D</b></span><span class="lt">3PT <b class="hi">A+</b></span><span class="lt">DUR <b class="mid">B</b></span></div></td><td class="c">15.8</td></tr><tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST · DPOY</span></div><div class="tl"><span class="lt">OFF <b class="hi">A−</b></span><span class="lt">DEF <b class="hi">A+</b></span><span class="lt">3PT <b class="mid">B+</b></span><span class="lt">DUR <b class="lo">C</b></span></div></td><td class="c">16.1</td></tr><tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div><div class="tl"><span class="tier s">ALL-NBA 1ST · MVP</span></div><div class="tl"><span class="lt">OFF <b class="mid">B+</b></span><span class="lt">DEF <b class="hi">A</b></span><span class="lt">3PT <b class="lo">D</b></span><span class="lt">DUR <b class="hi">A</b></span></div></td><td class="c">14.2</td></tr>
+    <tr><td class="sl bn">BN</td><td><div class="fc sm">?</div></td><td><b style="color:var(--faint)">Pick #58</b></td><td></td></tr>
+   </tbody></table>
+   
+  </div>
+ </div>
+ <div style="flex-basis:100%"></div>
+ <div>
+  <p class="cap">3b · Skład — desktop</p>
+  <div class="g" style="width:760px">
+   <div class="top" style="margin-bottom:8px"><span class="eb">Your team</span><span class="coin">● 87.4 / 90.0</span></div>
+   <table class="oy team desk"><thead><tr><th>Slot</th><th></th><th>Player · years</th><th>Tier · awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Dur</th><th>Caps</th></tr></thead><tbody><tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div></td><td><span class="tier s">ALL-NBA 1ST · MVP</span></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="mid">B</b></td><td class="c">15.8</td></tr><tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div></td><td><span class="tier s">ALL-NBA 1ST · DPOY</span></td><td class="gd"><b class="hi">A−</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="lo">C</b></td><td class="c">16.1</td></tr><tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div></td><td><span class="tier s">ALL-NBA 1ST · MVP</span></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="hi">A</b></td><td class="c">14.2</td></tr>
+    <tr><td class="sl bn">BN</td><td><div class="fc sm">?</div></td><td><b style="color:var(--faint)">Pick #58</b></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+   </tbody></table>
+   
+  </div>
+ </div>
+  <div style="flex-basis:100%"></div>
+ <div><p class="cap">4a · Okno gracza — desktop, przed zwiadem</p><div class="g dkw">
+   <div class="hd" style="margin-bottom:10px"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card dkc">
+    <div class="dkl">
+     <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2 caps</span></div>
+     <div class="nums" style="margin-top:8px"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+     <span class="tier s" style="display:inline-block;margin-top:8px">ALL-NBA 1ST · MVP</span>
+    </div>
+    <div><div class="gr6 w6 lock"><div><b class="">?</b><span>Offense</span></div><div><b class="">?</b><span>Defense</span></div><div><b class="">?</b><span>Spacing</span></div><div><b class="">?</b><span>Portability</span></div><div><b class="">?</b><span>Finishing</span></div><div><b class="">?</b><span>Durability</span></div></div><div class="dkbtns"><span class="btn line dkb">Scout him · 2 left</span><span class="btn dkb">Draft 2002-04</span></div></div>
+   </div>
+   <h3>Other years</h3>
+   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND · DPOY</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
+  </div></div>
+ <div style="flex-basis:100%"></div>
+ <div><p class="cap">4b · Okno gracza — desktop, po zwiadzie</p><div class="g dkw">
+   <div class="hd" style="margin-bottom:10px"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card dkc">
+    <div class="dkl">
+     <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2 caps</span></div>
+     <div class="nums" style="margin-top:8px"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+     <span class="tier s" style="display:inline-block;margin-top:8px">ALL-NBA 1ST · MVP</span>
+    </div>
+    <div><div class="gr6 w6"><div><b class="mid">B+</b><span>Offense</span></div><div><b class="hi">A</b><span>Defense</span></div><div><b class="lo">D</b><span>Spacing</span></div><div><b class="hi">A−</b><span>Portability</span></div><div><b class="mid">B</b><span>Finishing</span></div><div><b class="hi">A</b><span>Durability</span></div></div><div class="dkbtns"><span class="btn dkb">Draft 2002-04</span></div></div>
+   </div>
+   <h3>Other years</h3>
+   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND · DPOY</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="lo">C</b></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="mid">B−</b></td><td class="gd"><b class="mid">B</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A−</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
+  </div></div>
+ <div style="flex-basis:100%"></div>
+ <div class="note">
+  <p><b>W składzie dziś:</b> na telefonie kolumny Tier / Off / Def / 3PT / Dur są ukryte, więc przy swoich graczach nie widzisz żadnej litery. Propozycja (telefon): tier i nagrody w osobnej linii, pod nią osobna linia ocen OFF · DEF · 3PT · DUR. Desktop: kolumny jak dziś. Zmiana lat („▾ change”) od razu przelicza litery.</p>
+  <p><b>Co jest w grze dziś:</b> po zwiadzie tier i sześć ocen w jednym zawijanym wierszu; A na złoto (myli się z capami); przed zwiadem ocen nie ma wcale, jest tylko przycisk.</p>
+  <p><b>Zmiana:</b> tier w osobnej linii, sześć ocen w siatce 3×2 (ta sama w „On the card” i w rozwiniętym „Other years”), A zielone, C i niżej czerwone, reszta biała.</p>
+  <p><b>Przed zwiadem:</b> zamknięte kafelki „?”, żeby było widać, co raport odsłoni.</p>
+  <p><b>Lista draftu:</b> po zwiadzie przy nazwisku mogą zostać 3 chipy (OFF · DEF · 3PT) — do decyzji.</p>
+  <p>Wartości ocen na makiecie są przykładowe.</p>
+ </div>
+</div>
+</div>
+</body>
+</html>

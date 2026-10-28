@@ -107,7 +107,7 @@ export function DraftStatus({
         {/* 2026-10-16 (playtest: "na dużym ekranie trudniej zauważyć cap"): your caps sit next to
             whose pick it is, big, instead of small in the far corner. */}
         {slotsLeft > 0 && (
-          <span className="wr-caps" title={`${capLeft.toFixed(1)} of ${capLimit} caps left`}>
+          <span className="wr-caps" title={`${capLeft.toFixed(1)} of ${capLimit.toFixed(1)} caps left`}>
             <CapIcon /> <b className="wr-caps-num at-calm-num">{capLeft.toFixed(1)}</b>
             <span className="wr-caps-of">caps left</span>
             <span className="wr-caps-track" aria-hidden>

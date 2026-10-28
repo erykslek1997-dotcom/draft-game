@@ -42,6 +42,27 @@ export interface PosterData {
   /** The season poster's draft grade over the profile (playtest 2026-10-22, mockup MC5 B):
    * "The draft · 3rd of 16" and "Rating 87 · best 90". */
   draft?: [string, string];
+  /** The Mini tournament's road, a cell a round (2026-10-28, mockup mini-tournament-share.html C):
+   * "R16 · W · #12 · 104–97". */
+  road?: { label: string; result: 'W' | 'L' | '—'; line: string }[];
+  /** An Instagram post's 4:5 frame (2026-10-28, the user: only the posters whose content fills it —
+   * the Mini tournament and the All-Time season). */
+  ig?: boolean;
+}
+
+function Road({ road }: { road?: PosterData['road'] }) {
+  if (!road?.length) return null;
+  return (
+    <div className="po-road">
+      {road.map((r) => (
+        <div key={r.label} className={r.result === 'W' ? 'w' : r.result === 'L' ? 'l' : undefined}>
+          <span>{r.label}</span>
+          <b>{r.result}</b>
+          <em>{r.line}</em>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const longDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -83,7 +104,8 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
           <span>{p.label}</span>
           <b>
             {/* red and green always with a sign (the rule; playtest 2026-10-22) */}
-            {p.tone === 'lo' ? '▼ ' : p.tone === 'hi' ? '▲ ' : ''}
+            {/* the sign in its own fixed slot, so 71 and 86 line up with or without one */}
+            <em className="pp-s">{p.tone === 'lo' ? '▼' : p.tone === 'hi' ? '▲' : ''}</em>
             {p.value}
             {p.tone === 'lo' ? <span className="visually-hidden"> weak</span> : p.tone === 'hi' ? <span className="visually-hidden"> best</span> : null}
           </b>
@@ -101,7 +123,7 @@ const teamVar = (span: PlayerSpan) => ({ '--team': spanBand(span).color }) as CS
 
 export function Poster({ d }: { d: PosterData }) {
   return (
-    <div className={`poster${d.champ ? ' champ-p' : ''}`}>
+    <div className={`poster${d.champ ? ' champ-p' : ''}${d.ig ? ' ig' : ''}`}>
       <div className="po-mast">
         <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{longDate(d.date)}</b>
@@ -154,6 +176,7 @@ export function Poster({ d }: { d: PosterData }) {
           </div>
         </div>
       )}
+      <Road road={d.road} />
       <DraftProfile d={d} />
       <div className="po-strip">
         {d.strip.map(([k, v]) => (
@@ -225,6 +248,12 @@ export function Story({ d }: { d: PosterData }) {
               </div>
             ))}
           </div>
+        </>
+      )}
+      {d.road && (
+        <>
+          <div className="st-sec">The tournament</div>
+          <Road road={d.road} />
         </>
       )}
       <div className="st-sec">{d.draft ? 'The draft' : 'Team profile'}</div>

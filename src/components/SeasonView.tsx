@@ -740,6 +740,7 @@ function SeasonBody({
     bench: roster.slice(5).map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10, min: per(l, 'min') })),
     unit: 'ppg',
     prof: draftProf,
+    ig: true,
     draft: [`The draft · ${ord(yv?.rank ?? 0)} of ${teams.length}`, `Rating ${yv?.overall ?? '—'} · best ${Math.max(...[...views.values()].map((v) => v.overall))}`],
     strip: [
       ['Season', `${record.wins}–${record.losses}`],

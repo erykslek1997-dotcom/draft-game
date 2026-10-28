@@ -287,3 +287,12 @@
 
 @keyframes lot-ball { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
 @keyframes lot-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* 2026-10-28: a scouted player's three letters by his name — phone only (the desktop has the column) */
+.plist .lt-chips { display: none; }
+@media (max-width: 600px) {
+  .plist .lt-chips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: 1px; }
+  .plist .lt-chips i { font: 800 10.5px var(--num); font-style: normal; border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; color: var(--ink); }
+  .plist .lt-chips i.hi { color: var(--green); }
+  .plist .lt-chips i.lo { color: var(--red); }
+}

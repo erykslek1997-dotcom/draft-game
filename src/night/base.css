@@ -39,7 +39,7 @@ main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 i.note, .it { font-style: italic; }
 
 /* masthead + tally */
-.mast { border-top: 1.5px solid var(--rule2); border-bottom: 1.5px solid var(--rule2); padding: 12px 0 8px; }
+.mast { border-bottom: 1.5px solid var(--rule2); padding: 12px 0 8px; }
 .mast b { display: block; font: 800 34px/1 var(--cond); letter-spacing: 0.02em; text-transform: uppercase; }
 .mast b.daily { color: var(--gold); }
 .mast small { display: block; margin-top: 6px; font: italic 500 14px var(--sans); color: var(--ink2); }

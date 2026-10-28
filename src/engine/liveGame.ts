@@ -1512,7 +1512,9 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
             : next === 'putback'
               ? `${shooter.label} putback`
               : `${shooter.label} ${moves[Math.floor(rng() * moves.length)]}`;
-        if (hunting) text = `${shooter.label} attacks ${defender.label} — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
+        // 2026-10-28, the user: hunting stays in the engine but out of the words until its rebuild after
+        // launch — same shot, said plainly (the rng draw is kept so every game plays out the same).
+        if (hunting) text = `${shooter.label} ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
         if (late) text = `${shooter.label} beats the shot clock — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
         if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
           foul(d, defender, k, quarter);
@@ -1593,13 +1595,10 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   const star = { name: starOf.label, line: box[0][starOf.label] };
   const won = score[0] > score[1];
   const labelOf = (side: GameSide, name: string) => rosters[side].players.find((p) => p.span.playerName === name)?.label ?? name;
-  const recap = won
-    ? hunted[0]
-      ? `${star.name} led the way, and your five kept going at ${labelOf(1, hunted[0])} on defense.`
-      : `${star.name} led the way — the five played like one.`
-    : hunted[1]
-      ? `They kept hunting ${labelOf(0, hunted[1])} on defense, and it cost you.`
-      : `They were the better team tonight — ${star.name} did what he could.`;
+  // Hunting is out of the words (2026-10-28, until its rebuild after launch).
+  void hunted;
+  void labelOf;
+  const recap = won ? `${star.name} led the way — the five played like one.` : `They were the better team tonight — ${star.name} did what he could.`;
   return {
     moments,
     final: [score[0], score[1]],

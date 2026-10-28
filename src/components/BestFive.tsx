@@ -363,7 +363,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
                 {daily && streak && <Kv k="Streak" v={`${streak.current} ${streak.current === 1 ? 'day' : 'days'}`} gold />}
                 <Kv k="Your five" v={result.score.composite} />
                 {!daily && <Kv k="AI five" v={scoreLineup(aiLineup).composite} />}
-                {daily ? <Kv k="Jokers taken" v={`${jokers.filter((j) => lineup[j.slot]?.id === j.card.id).length} of ${jokers.length}`} /> : <Kv k="Caps used" v={`${fmtCaps(shotsUsed)} / ${shotsCap}`} />}
+                {daily ? <Kv k="Jokers taken" v={`${jokers.filter((j) => lineup[j.slot]?.id === j.card.id).length} of ${jokers.length}`} /> : <Kv k="Caps used" v={`${fmtCaps(shotsUsed)} / ${fmtCaps(shotsCap)}`} />}
               </section>
             ),
           }}
@@ -434,15 +434,15 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     <>
       <Mast title={title} daily={Boolean(daily)} sub={daily ? `${dayLabel(daily)} · ${filledCount === 0 ? 'one board for everyone' : complete ? 'five set' : `pick ${pickNo} of 5`}` : `${complete ? 'Five set' : `Pick ${pickNo} of 5`} · against the AI (Pro)`} />
       {daily ? (
-        <Tally you={fmtCaps(shotsUsed)} mid={shotsCap} ai={<OppName short={oppShort} />} aiK="Tonight" name />
+        <Tally you={fmtCaps(shotsUsed)} mid={fmtCaps(shotsCap)} ai={<OppName short={oppShort} />} aiK="Tonight" name />
       ) : (
-        <Tally you={shotsUsed.toFixed(1)} mid={shotsCap} ai={aiUsed.toFixed(1)} />
+        <Tally you={shotsUsed.toFixed(1)} mid={fmtCaps(shotsCap)} ai={aiUsed.toFixed(1)} />
       )}
       <CapBar used={shotsUsed} cap={shotsCap} />
       <SubNote>
         {filledCount === 0 ? (
           <>
-            <b className="g">{shotsCap} caps</b> for five spots
+            <b className="g">{fmtCaps(shotsCap)} caps</b> for five spots
           </>
         ) : complete ? (
           <>
@@ -555,11 +555,11 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
       filledCount === 0 ? (
         daily ? (
           <>
-            Today starts at {activeSlot}. <b>{shotsCap} caps</b>, one try.
+            Today starts at {activeSlot}. <b>{fmtCaps(shotsCap)} caps</b>, one try.
           </>
         ) : (
           <>
-            {WORD[hand.length][0].toUpperCase() + WORD[hand.length].slice(1)} cards off the deck. <b>{shotsCap} caps</b> for five spots.
+            {WORD[hand.length][0].toUpperCase() + WORD[hand.length].slice(1)} cards off the deck. <b>{fmtCaps(shotsCap)} caps</b> for five spots.
           </>
         )
       ) : jokerHere ? (
@@ -1193,7 +1193,7 @@ function BestFiveResult({
       ),
     });
     if (explain.standing === 'off' && score.weakLink && explain.weakest.axis !== 'defense')
-      filmLines.push({ glyph: '!', body: <>On defense, <b>{maskName(score.weakLink)}</b> is the one they’ll hunt, every switch, every possession.</> });
+      filmLines.push({ glyph: '!', body: <>On defense, <b>{maskName(score.weakLink)}</b> is the weak link.</> });
   }
 
   const youWin = won === null ? null : won;
@@ -1225,7 +1225,7 @@ function BestFiveResult({
         <section>
           <H3>Your number</H3>
           <Kv k="Your five" v={score.composite} />
-          <Kv k="Caps used" v={`${fmtCaps(yourShots)} / ${shotsCap}`} />
+          <Kv k="Caps used" v={`${fmtCaps(yourShots)} / ${fmtCaps(shotsCap)}`} />
           <Kv k="Matches the best" v={`${hits.length} of 5`} />
           {challenge?.vs != null && <Kv k={`Friend’s five · ${challengeVerdict(score.composite, challenge.vs) === 'won' ? 'you win' : challengeVerdict(score.composite, challenge.vs) === 'lost' ? 'they win' : 'tied'}`} v={challenge.vs} />}
         </section>

@@ -214,6 +214,17 @@ export function PlayerTable({
                 ) : (
                   <div className="nm">{name}</div>
                 )}
+                {/* 2026-10-28: on a phone the grade column hides, so a scouted player keeps his three
+                    letters as chips by the name (OFF · DEF · 3PT) */}
+                {r.grades && (
+                  <span className="lt-chips">
+                    {[r.grades.off, r.grades.def, r.grades.tp].map((v, i) => (
+                      <i key={i} className={v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined}>
+                        {v}
+                      </i>
+                    ))}
+                  </span>
+                )}
                 <div className="mt">
                   <b>
                     {naturalPosition(s.playerName)}

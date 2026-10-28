@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini NCAA Tournament</title>
+<style>
+:root{--bg:#eef1f5;--text:#151b26;--muted:#5a6678;--note:#fff6dc;--note-line:#e8d38e;--pin:#2f7fc0;
+ --sans:system-ui,'Segoe UI',Roboto,sans-serif;--num:ui-monospace,Consolas,monospace;
+ --paper:#0b0c0f;--raised:#121419;--raised2:#181b22;--line:#23262e;--edge:#30343d;--ink:#efe9dc;--soft:#a9a397;--faint:#6f6a61;
+ --red:#e0465c;--gold:#f2b84b;--green:#58c28a;--cream:#efe9dc;--creamink:#16130d}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}}
+:root[data-theme=dark]{--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 26px;max-width:780px}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-bottom:40px}
+.cap{font:600 11.5px var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:330px}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}.note b{color:var(--pin)}
+.g{background:var(--paper);color:var(--ink);border:1px solid #1d2026;border-radius:18px;padding:16px;font:14px/1.4 var(--sans)}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.eb{font:700 11px var(--num);letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.h2{font:800 30px/1.05 var(--sans);text-transform:uppercase;letter-spacing:-.01em;margin:4px 0}
+.sub{color:var(--soft);font-style:italic}
+.h3{font:700 13px var(--sans);text-transform:uppercase;letter-spacing:.08em;border-bottom:1.5px solid var(--edge);padding-bottom:5px;margin:16px 0 8px;display:flex;justify-content:space-between}
+.h3 i{font:italic 400 12px var(--sans);text-transform:none;letter-spacing:0;color:var(--faint)}
+/* bracket */
+.br{display:grid;grid-template-columns:repeat(3,1fr) 1.1fr repeat(3,1fr);gap:10px}
+.cg{display:flex;flex-direction:column;justify-content:space-around;gap:6px;height:100%}
+.col{display:flex;flex-direction:column}
+.br .t{grid-template-columns:18px 1fr auto;padding:4px 6px;font-size:12px}.br .t .nmx{display:none}
+
+.rn{font:700 11px var(--num);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.gm{border:1px solid var(--edge);border-radius:8px;overflow:hidden;background:var(--raised)}
+.t{display:grid;grid-template-columns:22px 36px 1fr auto;gap:6px;align-items:center;padding:5px 8px;font-size:13px}
+.t+.t{border-top:1px solid var(--line)}
+.t .sd{font:700 11px var(--num);color:var(--faint)}.t .cd{font:800 12px var(--num)}
+.t.l{color:var(--faint)}.t.l b{font-weight:500}.t.w b{color:var(--ink)}
+.t.you{background:var(--cream);color:var(--creamink)}.t.you .sd,.t.you b{color:var(--creamink)}
+.t.you.l{opacity:.85}
+.champ{text-align:center;border:1px solid var(--gold);border-radius:10px;padding:10px;margin-top:10px}
+.champ b{display:block;font:800 18px var(--sans);color:var(--gold);text-transform:uppercase}
+/* phone */
+.ph{width:370px;max-width:100%}
+.gm.now{border-color:var(--red)}.gm.tbd .t{color:var(--faint)}
+.arena{background:radial-gradient(120% 80% at 50% 0%,#2a1a1d 0%,var(--paper) 70%);margin:-16px -16px 0;padding:18px 16px 14px;border-radius:18px 18px 0 0}
+.duel{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 6px}
+.crest{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 70%,#fff 10%),var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));display:grid;place-items:center;box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--c),0 10px 30px color-mix(in srgb,var(--c) 45%,transparent);position:relative}
+.crest span{font:900 26px var(--sans);color:#fff;letter-spacing:.02em}.crest small{position:absolute;bottom:-8px;background:var(--paper);border:1px solid var(--edge);border-radius:999px;padding:0 7px;font:800 11px var(--num);color:var(--ink)}
+.vsx{font:900 22px var(--sans);color:var(--red);font-style:italic}
+.duel-n{display:flex;justify-content:space-between;padding:6px 12px 0;font-size:15px}.duel-n.s{font-size:12px;color:var(--soft);padding-top:2px}
+.odds2{height:8px;border-radius:4px;background:#0a7ea8;overflow:hidden;margin:10px 12px 0}.odds2 i{display:block;height:100%;background:#c8102e}
+.stakes{text-align:center;font:italic 500 13px var(--sans);color:var(--ink);margin-top:12px}
+.road{margin:14px 0 4px;position:relative}
+.rs{display:flex;gap:12px;align-items:center;padding:8px 0;position:relative}
+.rs i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--num);font-style:normal;border:1.5px solid var(--edge);color:var(--faint);background:var(--paper);z-index:1}
+.rs:not(:last-child)::after{content:"";position:absolute;left:13px;top:36px;height:calc(100% - 28px);width:2px;background:var(--edge)}
+.rs.done i{background:var(--green);border-color:var(--green);color:#06140c}.rs.done:not(:last-child)::after{background:var(--green)}
+.rs.now i{border-color:var(--red);color:var(--red);box-shadow:0 0 0 4px color-mix(in srgb,var(--red) 25%,transparent)}
+.rs b{display:block;font-size:14px}.rs span{font-size:12.5px;color:var(--soft)}.rs.now b{color:var(--red)}
+.fold{display:flex;justify-content:space-between;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin-top:12px;color:var(--soft)}
+.mtree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}.mc{display:flex;flex-direction:column;justify-content:space-around;gap:5px}.mtree .rn{margin:0}
+.mtree .t{grid-template-columns:14px 1fr auto;gap:4px;padding:3px 5px;font-size:11.5px}.mtree .t .nmx{display:none}.mtree .gm{margin:0}
+.vb{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.vr{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;gap:6px}.vl{font:700 9px var(--num);color:var(--faint);text-transform:uppercase}
+.vg{display:grid;gap:5px;justify-content:center}.vg.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.vg.g2{grid-template-columns:repeat(2,minmax(0,150px))}.vg.g1{grid-template-columns:minmax(0,150px);justify-content:center}
+.vb .t{grid-template-columns:auto 1fr auto;gap:3px;padding:2px 4px;font-size:11px}.vb .g4 .t{font-size:10px;padding:2px 3px;gap:2px}.vb .g4 .t .sd{font-size:8.5px}.vb .t .nmx{display:none}.vb .t .sd{font-size:9.5px}.vb .gm{margin:0;border-radius:6px}
+.vr.fin .vg{grid-template-columns:150px 110px}.champ.sm{margin:0;padding:4px}.champ.sm b{font-size:14px}
+.crest.sm{width:56px;height:56px}.crest.sm span{font-size:15px}.crest.sm small{font-size:10px;bottom:-7px}
+.duel.sm{gap:12px;margin:10px 0 4px}
+.swb{display:grid;grid-auto-flow:column;grid-auto-columns:46%;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:8px -16px 0;padding:0 16px 6px}
+.swb .sc{scroll-snap-align:start;display:flex;flex-direction:column}.scg{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-height:520px}
+.swb .t{grid-template-columns:18px 1fr auto;padding:5px 7px;font-size:12.5px}.swb .t .nmx{display:none}
+.sw-hint{font-size:11.5px;color:var(--faint);margin-top:2px}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:6px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--edge)}.dots i.on{background:var(--ink)}
+.rd{border-top:1px solid var(--line);padding:10px 0}.rdh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.rdh b{font:800 15px var(--sans);text-transform:uppercase;letter-spacing:.04em}.rdh span{font-size:12px;color:var(--faint)}
+.rd.now .rdh b{color:var(--red)}.rd.done .rdh b{color:var(--soft)}.fold1 .rdh{margin:0}
+.sbw{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sbw.one{grid-template-columns:1fr}
+.sbg{border:1px solid var(--edge);border-radius:8px;background:var(--raised);overflow:hidden}.sbg.now{border-color:var(--red);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 18%,transparent)}.sbg.tbd .sbt{display:block;color:var(--faint);font-size:12.5px}
+.sbt{display:grid;grid-template-columns:20px 1fr auto;gap:6px;align-items:center;padding:7px 9px;color:var(--faint)}.sbt+.sbt{border-top:1px solid var(--line)}
+.sbt .sd{font:700 11px var(--num)}.sbt b{font-weight:600}.sbt .num{font-weight:700}.sbt.w{color:var(--ink)}.sbt.you{background:var(--cream);color:var(--creamink)}
+.tabs{display:flex;gap:4px;margin:10px 0}.tabs span{flex:1;text-align:center;font:700 11.5px var(--sans);padding:7px 2px;border-radius:6px;background:var(--raised2);color:var(--soft)}
+.tabs span.on{background:var(--cream);color:var(--creamink)}
+.ph .gm{margin-bottom:8px}.ph .t{font-size:14px;padding:7px 10px}
+.btn{display:block;text-align:center;font:800 14px var(--sans);text-transform:uppercase;letter-spacing:.06em;padding:12px;border-radius:4px;background:var(--cream);color:var(--creamink);margin-top:10px}
+.btn.line{background:transparent;border:1.5px solid var(--edge);color:var(--ink)}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}.kv b{font-family:var(--num)}
+.next{border:1.5px solid var(--red);border-radius:10px;padding:12px;margin-top:8px}
+.next .vs{display:flex;justify-content:space-between;align-items:center;font:800 18px var(--sans);margin:6px 0}
+.next .vs small{display:block;font:500 12px var(--sans);color:var(--soft)}
+.odds{height:6px;border-radius:3px;background:var(--edge);overflow:hidden}.odds i{display:block;height:100%;width:44%;background:var(--cream)}
+.two{display:grid;grid-template-columns:260px 1fr;gap:20px}
+</style></head><body><div class="wrap">
+<h1>Mini Draft: turniej NCAA po drafcie</h1>
+<p class="lede">Po drafcie Mini zamiast sezonu: 16 drużyn rozstawionych 1–16 według oceny draftu (Overall), drabinka 1–16, 8–9, 5–12, 4–13, 6–11, 3–14, 7–10, 2–15. Jeden mecz na rundę, przegrany odpada. Cztery rundy: Round of 16, Elite Eight, Final Four, finał. Twój mecz na żywo (ten sam komponent co play-offy All-Time), reszta rundy liczona i do obejrzenia. Na makiecie jesteś <b>#5 Crawdads</b> (kremowy) i odpadasz w Final Four.</p>
+
+<p class="cap">1 · Desktop — przed twoim meczem (Final Four)</p>
+<div class="row"><div class="g" style="width:1180px;max-width:100%">
+ <div class="two">
+  <div>
+   <div style="border-bottom:1.5px solid var(--edge);padding-bottom:8px"><div class="h2" style="font-size:26px">Mini Draft</div><div class="sub">Tournament · Final Four</div></div>
+   <div class="kv"><span>Seed</span><b>#5 of 16</b></div>
+   <div class="kv"><span>Overall</span><b>86.4</b></div>
+   <div class="kv"><span>Record</span><b>2–0</b></div>
+   <div class="next"><div class="eb">Final Four · tonight</div>
+    <div class="duel sm"><div class="crest sm" style="--c:#c8102e"><span>BTR</span><small>#5</small></div><div class="vsx" style="font-size:16px">VS</div><div class="crest sm" style="--c:#0a7ea8"><span>MIA</span><small>#1</small></div></div>
+    <div class="duel-n" style="padding:4px 0 0;font-size:13px"><b>Crawdads</b><b>Comets</b></div><div class="duel-n s" style="padding:0 0 8px"><span>86.4</span><span>90.1</span></div>
+    <div class="odds2" style="margin:0"><i style="width:44%"></i></div><div class="duel-n s" style="padding:3px 0 0"><span>you 44%</span><span>56%</span></div>
+   </div>
+   <span class="btn">▶ Play the Final Four</span><span class="btn line">Sim the game</span>
+   <div class="sub" style="margin-top:10px;font-size:13px">← Menu · How to play · Settings</div>
+  </div>
+  <div>
+   <div class="eb">Tournament · one game a round</div>
+   <div class="h2">The bracket</div>
+   <div class="h3">Sixteen teams, seeded by the draft <i>tap a game for its box score</i></div>
+   <div class="br"><div class="col"><div class="rn">Round of 16</div><div class="cg"><div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">96</b></div><div class="t l"><span class="sd">16</span><span class="cd">MOB</span><span class="nmx">Moles</span><b class="num">88</b></div></div><div class="gm"><div class="t l"><span class="sd">8</span><span class="cd">CHY</span><span class="nmx">Broncs</span><b class="num">84</b></div><div class="t w"><span class="sd">9</span><span class="cd">TUL</span><span class="nmx">Drillers</span><b class="num">94</b></div></div><div class="gm"><div class="t w you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">104</b></div><div class="t l"><span class="sd">12</span><span class="cd">FAR</span><span class="nmx">Bison</span><b class="num">97</b></div></div><div class="gm"><div class="t l"><span class="sd">4</span><span class="cd">RIC</span><span class="nmx">Crows</span><b class="num">96</b></div><div class="t w"><span class="sd">13</span><span class="cd">OMA</span><span class="nmx">Kings</span><b class="num">98</b></div></div></div></div><div class="col"><div class="rn">Elite Eight</div><div class="cg"><div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">93</b></div><div class="t l"><span class="sd">9</span><span class="cd">TUL</span><span class="nmx">Drillers</span><b class="num">82</b></div></div><div class="gm"><div class="t w you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">104</b></div><div class="t l"><span class="sd">13</span><span class="cd">OMA</span><span class="nmx">Kings</span><b class="num">97</b></div></div></div></div><div class="col"><div class="rn">Final Four</div><div class="cg"><div class="gm now"><div class="t"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">–</b></div><div class="t you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">–</b></div></div></div></div><div class="col mid"><div class="rn">Final</div><div class="cg"><div class="gm tbd"><div class="t"><span class="sd"></span><span class="cd">TBD</span><span class="nmx"></span><b></b></div><div class="t"><span class="sd"></span><span class="cd">TBD</span><span class="nmx"></span><b></b></div></div><div class="champ"><span class="eb" style="color:var(--gold)">Champions</span><b style="color:var(--faint)">?</b></div></div></div><div class="col"><div class="rn">Final Four</div><div class="cg"><div class="gm"><div class="t"><span class="sd">6</span><span class="cd">ASP</span><span class="nmx">Elks</span><b class="num">–</b></div><div class="t"><span class="sd">7</span><span class="cd">LBG</span><span class="nmx">Gulls</span><b class="num">–</b></div></div></div></div><div class="col"><div class="rn">Elite Eight</div><div class="cg"><div class="gm"><div class="t w"><span class="sd">6</span><span class="cd">ASP</span><span class="nmx">Elks</span><b class="num">96</b></div><div class="t l"><span class="sd">3</span><span class="cd">LRK</span><span class="nmx">Boulders</span><b class="num">90</b></div></div><div class="gm"><div class="t w"><span class="sd">7</span><span class="cd">LBG</span><span class="nmx">Gulls</span><b class="num">109</b></div><div class="t l"><span class="sd">15</span><span class="cd">TAC</span><span class="nmx">Tides</span><b class="num">106</b></div></div></div></div><div class="col"><div class="rn">Round of 16</div><div class="cg"><div class="gm"><div class="t w"><span class="sd">6</span><span class="cd">ASP</span><span class="nmx">Elks</span><b class="num">105</b></div><div class="t l"><span class="sd">11</span><span class="cd">REN</span><span class="nmx">Aces</span><b class="num">102</b></div></div><div class="gm"><div class="t w"><span class="sd">3</span><span class="cd">LRK</span><span class="nmx">Boulders</span><b class="num">109</b></div><div class="t l"><span class="sd">14</span><span class="cd">SPO</span><span class="nmx">Owls</span><b class="num">101</b></div></div><div class="gm"><div class="t w"><span class="sd">7</span><span class="cd">LBG</span><span class="nmx">Gulls</span><b class="num">110</b></div><div class="t l"><span class="sd">10</span><span class="cd">BOI</span><span class="nmx">Pines</span><b class="num">107</b></div></div><div class="gm"><div class="t l"><span class="sd">2</span><span class="cd">ORL</span><span class="nmx">Flamingos</span><b class="num">100</b></div><div class="t w"><span class="sd">15</span><span class="cd">TAC</span><span class="nmx">Tides</span><b class="num">112</b></div></div></div></div></div>
+  </div>
+ </div>
+</div></div>
+
+<p class="cap">2 · Telefon — „Road to the title” (immersyjnie)</p>
+<div class="row">
+ <div class="g ph imm">
+  <div class="arena">
+   <div class="eb" style="text-align:center">Final Four · tonight</div>
+   <div class="duel">
+    <div class="crest" style="--c:#c8102e"><span>BTR</span><small>#5</small></div>
+    <div class="vsx">VS</div>
+    <div class="crest" style="--c:#0a7ea8"><span>MIA</span><small>#1</small></div>
+   </div>
+   <div class="duel-n"><b>Crawdads</b><b>Comets</b></div>
+   <div class="duel-n s"><span>Overall 86.4</span><span>Overall 90.1</span></div>
+   <div class="odds2"><i style="width:44%"></i></div>
+   <div class="duel-n s"><span>you 44%</span><span>56%</span></div>
+  </div>
+  <div class="road">
+   <div class="rs done"><i>✓</i><div><b>Round of 16</b><span>beat #12 Bison 104–97</span></div></div>
+   <div class="rs done"><i>✓</i><div><b>Elite Eight</b><span>beat #13 Kings 104–97</span></div></div>
+   <div class="rs now"><i>3</i><div><b>Final Four</b><span>#1 Comets · tonight</span></div></div>
+   <div class="rs"><i>4</i><div><b>Final</b><span>#6 Elks or #7 Gulls</span></div></div>
+  </div>
+  <span class="btn">▶ Tip-off</span><span class="btn line">Sim the game</span>
+  <div class="fold">The whole bracket <span>▸</span></div>
+ </div>
+ <div class="g ph imm">
+  <div class="eb">The tournament</div>
+  <div class="rd now"><div class="rdh"><b>Final Four</b><span>tonight</span></div><div class="sbw"><div class="sbg now"><div class="sbt"><span class="sd">1</span><b>Comets</b><span class="num">–</span></div><div class="sbt you"><span class="sd">5</span><b>Crawdads</b><span class="num">–</span></div></div><div class="sbg"><div class="sbt"><span class="sd">6</span><b>Elks</b><span class="num">–</span></div><div class="sbt"><span class="sd">7</span><b>Gulls</b><span class="num">–</span></div></div></div></div>
+  <div class="rd"><div class="rdh"><b>Final</b><span>after the Final Four</span></div><div class="sbw one"><div class="sbg tbd"><div class="sbt"><b>Winner MIA / BTR</b></div><div class="sbt"><b>Winner ASP / LBG</b></div></div></div></div>
+  <div class="rd done"><div class="rdh"><b>Elite Eight</b><span>4 games ▾</span></div><div class="sbw"><div class="sbg"><div class="sbt w"><span class="sd">1</span><b>Comets</b><span class="num">93</span></div><div class="sbt"><span class="sd">9</span><b>Drillers</b><span class="num">82</span></div></div><div class="sbg"><div class="sbt w you"><span class="sd">5</span><b>Crawdads</b><span class="num">104</span></div><div class="sbt"><span class="sd">13</span><b>Kings</b><span class="num">97</span></div></div><div class="sbg"><div class="sbt w"><span class="sd">6</span><b>Elks</b><span class="num">96</span></div><div class="sbt"><span class="sd">3</span><b>Boulders</b><span class="num">90</span></div></div><div class="sbg"><div class="sbt w"><span class="sd">7</span><b>Gulls</b><span class="num">109</span></div><div class="sbt"><span class="sd">15</span><b>Tides</b><span class="num">106</span></div></div></div></div>
+  <div class="rd done fold1"><div class="rdh"><b>Round of 16</b><span>8 games ▸</span></div></div>
+
+ </div>
+ <div class="note"><p><b>Ekran meczu:</b> zamiast listy wyników — „pojedynek”: dwa herby w kolorach drużyn, VS i szanse silnika.</p><p><b>Droga do tytułu:</b> 4 stopnie, odhaczane po każdej wygranej; przyszły rywal w finale już widoczny („#6 Elks or #7 Gulls”).</p><p><b>Drabinka bez drzewka:</b> rundy jedna pod drugą, od bieżącej w górę — jak tablica wyników. Twoja runda na górze (czerwona), finał jako „Winner MIA / BTR”, rozegrane rundy zwinięte niżej (rozwijasz Elite Eight, R16). Pełne nazwy drużyn, duże wiersze, nic się nie ściska.</p><p>Do rozważenia: krótka animacja „wejścia” herbów i dźwięk buzzera przy tip-off.</p></div>
+</div>
+
+<p class="cap">3 · Koniec turnieju — odpadasz / mistrz</p>
+<div class="row">
+ <div class="g ph">
+  <div class="eb">Tournament · final</div><div class="h2" style="font-size:26px">Out in the Final Four</div>
+  <div class="sub">Comets 104, Crawdads 97. Two wins as the #5 seed — one past your seed.</div>
+  <div class="h3">Your run</div>
+  <div class="kv"><span>R16 · #12 Bison</span><b>W 104–97</b></div>
+  <div class="kv"><span>Elite 8 · #13 Kings</span><b>W 104–97</b></div>
+  <div class="kv"><span>Final 4 · #1 Comets</span><b style="color:var(--red)">L 97–104</b></div>
+  <div class="champ"><span class="eb" style="color:var(--gold)">Champions</span><b>#1 Miami Comets</b></div>
+  <span class="btn">Share</span><span class="btn line">New draft</span><span class="btn line">Main menu</span>
+ </div>
+ <div class="note"><p><b>Wynik</b> mówi miejsce względem rozstawienia („one past your seed”). Ten sam ton co „Ton wyniku według miejsca”.</p><p><b>Daily Mini:</b> turniej z ziarna dnia, ten sam dla wszystkich; „Copy today's result” = runda, do której doszedłeś.</p></div>
+</div>
+</div></body></html>
