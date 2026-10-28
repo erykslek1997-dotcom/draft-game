@@ -20,13 +20,19 @@ export const BALL_HANDLER_TUNING = { from: 0.12, perTen: 1.6 };
 const POSITION_SHIFT: Record<string, number> = { PG: 0.04444, SG: 0.00562, SF: 0, PF: -0.0103, C: -0.0103 };
 const shareCache = new WeakMap<PlayerSpan, number>();
 
+/** Real AST% of the window (BBRef), or one read from assists a 36 minutes where it has none. */
+export function astPctForSpan(span: PlayerSpan): number {
+  const real = realSpan(span);
+  const mpg = Math.max(10, real?.mpg ?? 34);
+  return real?.ast ?? Math.min(55, (4.2 * span.box.apg * 36) / mpg);
+}
+
 export function ballShare(span: PlayerSpan): number {
   let share = shareCache.get(span);
   if (share !== undefined) return share;
   const real = realSpan(span);
   const usg = real?.usg ?? 20;
-  const mpg = Math.max(10, real?.mpg ?? 34);
-  const ast = real?.ast ?? Math.min(55, (4.2 * span.box.apg * 36) / mpg);
+  const ast = astPctForSpan(span);
   share = Math.max(0.02, -0.01139 + 0.00174 * usg + 0.00445 * ast - (0.00194 * usg * ast) / 100 + (POSITION_SHIFT[span.primaryPosition] ?? 0));
   shareCache.set(span, share);
   return share;

@@ -86,6 +86,8 @@ export interface PlayerTeamFeature {
   // actually did (assists, steals, blocks, free throws) and when he played.
   ppg?: number;
   apg?: number;
+  /** Real AST% (BBRef, the window's seasons), or one read from assists a 36 minutes before 1973-74. */
+  astPct?: number;
   spg?: number;
   bpg?: number;
   ftPct?: number;
@@ -1569,23 +1571,29 @@ export const DETECTORS: RosterInsightDetector[] = [
   // ---- 2026-09-25, descriptions part 2: detectors that read real box-score lines, so the text can
   // say what a player actually did. Bars measured on 192 AI-drafted teams (12 seeded drafts).
   {
-    // Best rotation passer at 10.5+ assists: ~22% of teams (median best passer: 8.8).
+    // 2026-10-28, step 7 (Conley 2022-24: PM 89 in the engine, "no true playmaker" here at 5.6
+    // assists): assists a game follow pace and minutes, so the passing detectors read AST% — the
+    // share of his teammates' baskets he set up while on the floor (BBRef; before 1973-74 read from
+    // assists a 36 minutes). Bars on the same 192 AI-drafted teams: best 28+ minute passer at 47%+,
+    // ~22% of teams (median 38.6); nobody in the rotation at 27%, ~1% — under 30% caught Conley
+    // 2022-24 (28.9%, 6.3 assists), a real if modest lead passer, on ~8% of teams.
     id: 'ELITE_FLOOR_GENERAL', type: 'strength', category: 'creation',
     evaluate: t => {
-      const passer = [...t.players].filter(p => p.minutes >= 28).sort((a, b) => (b.apg ?? 0) - (a.apg ?? 0))[0];
-      return passer && (passer.apg ?? 0) >= 10.5
-        ? hit(0.70 + Math.min(0.2, ((passer.apg ?? 0) - 10.5) / 15), 0.88, teamConfidence(t), `${passer.playerName} runs the show — ${(passer.apg ?? 0).toFixed(1)} assists a game, so your scorers get easy looks.`, { players: [passer.playerName], values: { apg: passer.apg ?? 0 } }, 0.94)
+      const passer = [...t.players].filter(p => p.minutes >= 28).sort((a, b) => (b.astPct ?? 0) - (a.astPct ?? 0))[0];
+      const ast = passer?.astPct ?? 0;
+      return passer && ast >= 47
+        ? hit(0.70 + Math.min(0.2, (ast - 47) / 40), 0.88, teamConfidence(t), `${passer.playerName} runs the show — he set up ${Math.round(ast)}% of his teammates' baskets on the floor (${(passer.apg ?? 0).toFixed(1)} assists a game), so your scorers get easy looks.`, { players: [passer.playerName], values: { astPct: ast, apg: passer.apg ?? 0 } }, 0.94)
         : inactive;
     }
   },
   {
-    // Nobody in the rotation above 6.5 assists: ~8% of teams.
     id: 'NO_TRUE_PLAYMAKER', type: 'concern', category: 'creation',
     evaluate: t => {
       const rotation = t.players.filter(p => p.minutes >= 18);
-      const best = [...rotation].sort((a, b) => (b.apg ?? 0) - (a.apg ?? 0))[0];
-      return best && (best.apg ?? 0) < 6.5
-        ? hit(0.74, 0.88, teamConfidence(t), `Your best passer, ${best.playerName}, averaged just ${(best.apg ?? 0).toFixed(1)} assists — expect a lot of one-on-one basketball.`, { players: [best.playerName], values: { bestApg: best.apg ?? 0 } }, 0.94)
+      const best = [...rotation].sort((a, b) => (b.astPct ?? 0) - (a.astPct ?? 0))[0];
+      const ast = best?.astPct ?? 0;
+      return best && ast < 27
+        ? hit(0.74, 0.88, teamConfidence(t), `Your best passer, ${best.playerName}, set up just ${Math.round(ast)}% of his teammates' baskets — expect a lot of one-on-one basketball.`, { players: [best.playerName], values: { bestAstPct: ast } }, 0.94)
         : inactive;
     }
   },
@@ -1781,6 +1789,16 @@ const COMMONPLACE_STRENGTHS = new Set<DetectorId>([
   
 ]);
 
+/**
+ * 2026-10-28, step 7 (the user's export, Cheyenne #11: "ELITE_DEFENSIVE_LAYERING 0.94" in the panel
+ * next to Defense 68): a strength that calls a TEAM area elite needs the area's own score to say so
+ * (a player claim — "X runs the show" — stays true whatever the team's offense reads) —
+ * 75, where the chips start to read as a strength of the team (the concern side's bar), not the 55
+ * every other strength needs.
+ */
+const ELITE_TEAM_CLAIMS = new Set<string>(['ELITE_STARTING_SPACING', 'ELITE_PERIMETER_DEFENSE', 'ELITE_RIM_PROTECTION', 'ELITE_DEFENSIVE_LAYERING', 'ELITE_TWO_WAY_CORE', 'ELITE_DEFENSE_LOW_FGA_COST', 'DEFENSIVE_COVERAGE_CAPACITY_ELITE']);
+const ELITE_CLAIM_MIN_CHIP = 75;
+
 const topicOf = (i: RosterInsight): InsightTopic => TOPIC_OVERRIDE[i.id] ?? CATEGORY_TOPIC[i.category];
 const broadTopicOf = (i: RosterInsight): string => {
   const topic = topicOf(i);
@@ -1818,7 +1836,7 @@ function selectForDisplay(eligible: RosterInsight[], config: typeof DEFAULT_INSI
     .filter(i => {
       const chip = chipFor(i);
       if (chip == null) return true;
-      return i.type === 'strength' ? chip >= 55 : chip < 75;
+      return i.type === 'strength' ? chip >= (ELITE_TEAM_CLAIMS.has(i.id) ? ELITE_CLAIM_MIN_CHIP : 55) : chip < 75;
     })
     .map(i => ({ insight: i, priority: priority(i) }))
     .sort((a, b) => b.priority - a.priority);

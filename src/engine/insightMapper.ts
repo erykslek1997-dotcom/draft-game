@@ -19,6 +19,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { fitScore, shadowRoleProfileForDiagnostics } from './fit';
 import { buildTeamModelExtension } from './teamModel';
 import { buildClosingLineups } from './closingLineups';
+import { astPctForSpan } from './ballHandling';
 import { movementShare, cutShare, movementMeasured, cutMeasured } from './offBallProfile';
 
 /**
@@ -141,6 +142,7 @@ function toPlayerFeature(
     movementShootingEvidence: movement.evidence || undefined,
     ppg: p.box.ppg,
     apg: p.box.apg,
+    astPct: astPctForSpan(p),
     spg: p.box.spg,
     bpg: p.box.bpg,
     ftPct: p.box.ftPct,
