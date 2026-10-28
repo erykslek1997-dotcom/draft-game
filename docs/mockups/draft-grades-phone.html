@@ -8,115 +8,113 @@
 :root{--bg:#eef1f5;--text:#151b26;--muted:#5a6678;--note:#fff6dc;--note-line:#e8d38e;--pin:#2f7fc0;
  --sans:system-ui,'Segoe UI',Roboto,sans-serif;--num:ui-monospace,Consolas,monospace;
  --paper:#05070c;--raised:#0b111b;--raised2:#101826;--line:#182433;--edge:#24344a;--ink:#eef4fb;--soft:#9aa8bc;--faint:#66758b;
- --accent:#3ea8e8;--red:#e0465c;--gold:#f2b84b;--green:#58c28a;--orange:#e8873a}
+ --accent:#3ea8e8;--red:#e0465c;--gold:#f2b84b;--green:#58c28a}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}}
 :root[data-theme=dark]{--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
-.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
-h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 28px;max-width:720px}
-h2{font:700 17px/1.3 var(--sans);margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px;max-width:760px}
-section{margin:0 0 44px}.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
-.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:340px}
+.wrap{max-width:1220px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 28px;max-width:760px}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:330px}
 .note p{margin:0 0 6px}.note p:last-child{margin:0}.note b{color:var(--pin)}
 .cap{font:600 11.5px var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
-/* the phone */
-.g{width:370px;max-width:100%;background:var(--paper);color:var(--ink);border:1px solid #1a2433;border-radius:20px;padding:14px;font:14px/1.4 var(--sans);position:relative;overflow:hidden;min-height:420px}
+/* the phone window (PlayerPeekModal) */
+.g{width:370px;max-width:100%;background:var(--raised);color:var(--ink);border:1px solid var(--edge);border-radius:20px;padding:14px;font:14px/1.4 var(--sans)}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums}
-.li{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
-.fc{width:40px;height:40px;border-radius:50%;background:var(--raised2);border:1px solid var(--edge);display:grid;place-items:center;font-weight:700;color:var(--soft);font-size:13px}
-.nm{font-weight:700;font-size:15px}.st{color:var(--soft);font-size:12.5px}
-.cost{font:700 13px var(--num);color:var(--gold);margin-right:8px}
-.btn{font:700 12.5px var(--sans);border-radius:999px;padding:7px 13px;background:var(--accent);color:#04121d;border:0}
-.btn.ghost{background:transparent;border:1px solid var(--edge);color:var(--ink)}
-/* letter chips */
-.lt{display:inline-flex;gap:3px;margin-left:6px;vertical-align:1px}
-.lt i{font:800 10.5px var(--num);font-style:normal;border-radius:4px;padding:1px 4px;background:var(--raised2);border:1px solid var(--edge)}
-.A{color:var(--green)}.B{color:#8fd0a0}.C{color:var(--gold)}.D{color:var(--orange)}.F{color:var(--red)}
-/* sheet */
-.dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);border-top:1px solid var(--edge);border-radius:18px 18px 0 0;padding:14px}
-.sh-h{display:flex;gap:12px;align-items:center;margin-bottom:12px}.sh-h .fc{width:54px;height:54px}
-.sh-h .nm{font-size:17px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.gb{background:var(--raised2);border:1px solid var(--edge);border-radius:12px;padding:10px 6px;text-align:center}
-.gb small{display:block;color:var(--faint);font:700 10.5px var(--num);letter-spacing:.08em}
-.gb b{display:block;font:800 28px/1.1 var(--sans);margin-top:2px}
-.gb em{display:block;font-style:normal;color:var(--soft);font-size:11.5px;margin-top:2px}
-.gb.lock b{color:var(--faint);font-size:22px}
-.act{display:flex;gap:8px;margin-top:12px}.act .btn{flex:1;text-align:center;padding:11px}
-.hint{color:var(--faint);font-size:12px;text-align:center;margin-top:8px}
+.hd{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.fc{width:52px;height:52px;border-radius:50%;background:var(--raised2);border:1px solid var(--edge);display:grid;place-items:center;font-weight:700;color:var(--soft)}
+.hd h2{margin:0;font-size:18px}.hd span{color:var(--soft);font-size:12.5px}.hd .x{margin-left:auto;color:var(--soft);font-size:18px}
+.card{background:var(--raised2);border:1px solid var(--edge);border-radius:14px;padding:12px}
+.top{display:flex;align-items:baseline;gap:8px}.eb{font:700 10.5px var(--num);letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.top b{font-size:16px}.coin{margin-left:auto;font:700 14px var(--num);color:var(--gold)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;text-align:center}
+.nums b{display:block;font:800 17px var(--num)}.nums span{font-size:11px;color:var(--faint)}
+.tierline{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.tier{font:800 12px var(--num);letter-spacing:.06em;border:1px solid var(--edge);border-radius:999px;padding:3px 10px;color:var(--ink)}
+.tierline small{color:var(--faint);font-size:12px}
+.gr6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.gr6 div{background:var(--raised);border:1px solid var(--edge);border-radius:10px;padding:7px 4px;text-align:center}
+.gr6 b{display:block;font:800 20px/1.1 var(--sans)}.gr6 span{font-size:11px;color:var(--soft)}
+.gr6.lock b{color:var(--faint)}
+.hi{color:var(--green)}.mid{color:var(--ink)}.lo{color:var(--red)}
+.btn{display:block;width:100%;text-align:center;font:700 14px var(--sans);border-radius:999px;padding:11px;background:var(--accent);color:#04121d;border:0;margin-top:12px}
+.btn.line{background:transparent;border:1px solid var(--edge);color:var(--ink)}
+.scout{margin-top:12px;color:var(--soft);font-size:13px}
+h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h3 span{font-weight:400;color:var(--faint);font-size:12px}
+.oy{width:100%;border-collapse:collapse;font-size:13px}.oy td{padding:8px 4px;border-top:1px solid var(--line)}
+.oy .y{font-weight:700}.oy .t{font:700 11px var(--num);color:var(--soft)}.oy .c{font:700 12.5px var(--num);color:var(--gold);text-align:right}
+.oy .open td{background:var(--raised2)}
+.more{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--soft)}.more b{color:var(--ink)}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Oceny A–F na telefonie</h1>
-<p class="lede">Dziś litery OFF · DEF · 3PT są tylko w ukrytej kolumnie listy i pojawiają się po „Scout”. Na telefonie nie widać ich nigdzie. Propozycja: litery w oknie podglądu gracza (po stuknięciu w wiersz), a po zwiadzie dodatkowo małe chipy przy nazwisku na liście.</p>
+<h1>Okno gracza z ocenami A–F (telefon)</h1>
+<p class="lede">Pełne okno gracza, tak jak dziś w grze: nagłówek, „On the card” z liczbami, tier, sześć ocen (Offense, Defense, Spacing, Portability, Finishing, Durability), Draft, raport zwiadowczy i „Other years”. Zmiany wg TODO: tier osobno nad ocenami, oceny w równej siatce 3×2, ocena A zielona (nie złota — złoto to capy), przed zwiadem zamknięte kafelki zamiast pustego miejsca.</p>
 
-<section>
-<h2>A. Podgląd z trzema ocenami</h2>
-<p class="sub">Stukasz wiersz: z dołu wysuwa się okno gracza. Trzy kafelki OFF / DEF / 3PT; przed zwiadem zamknięte (kłódka), przycisk „Scout” zużywa jeden raport z puli.</p>
 <div class="row">
  <div>
-  <p class="cap">Przed zwiadem</p>
+  <p class="cap">1 · Przed zwiadem</p>
   <div class="g">
-   <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett</div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
-   <div class="li"><div class="fc">DW</div><div><div class="nm">Wade</div><div class="st">SG · 2005-07 · 27.2/5.7/6.7</div></div><div><span class="cost">16.8</span></div></div>
-   <div class="li"><div class="fc">DN</div><div><div class="nm">Nowitzki</div><div class="st">PF · 2005-07 · 25.6/9.2/3.2</div></div><div><span class="cost">15.1</span></div></div>
-   <div class="dim"></div>
-   <div class="sheet">
-    <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
-    <div class="grid">
-     <div class="gb lock"><small>OFF</small><b>?</b></div>
-     <div class="gb lock"><small>DEF</small><b>?</b></div>
-     <div class="gb lock"><small>3PT</small><b>?</b></div>
+   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card">
+    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
+    <div class="nums"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+    <div class="tierline"><span class="tier">TIER ?</span><small>raport pokaże tier i 6 ocen</small></div>
+    <div class="gr6 lock">
+     <div><b>?</b><span>Offense</span></div><div><b>?</b><span>Defense</span></div><div><b>?</b><span>Spacing</span></div>
+     <div><b>?</b><span>Portability</span></div><div><b>?</b><span>Finishing</span></div><div><b>?</b><span>Durability</span></div>
     </div>
-    <div class="act"><button class="btn ghost">Scout · 2 left</button><button class="btn">Draft</button></div>
-    <div class="hint">Zwiad odsłania litery do końca draftu.</div>
+    <button class="btn">Draft 2002-04</button>
    </div>
+   <div class="scout">A scouting report shows his tier and six grades for every stretch.
+    <button class="btn line">Scout him · 2 left</button></div>
+   <h3>Other years<span>tap to compare</span></h3>
+   <table class="oy"><tbody>
+    <tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td class="t">—</td><td class="c">11.6</td><td>▸</td></tr>
+    <tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td class="t">—</td><td class="c">12.9</td><td>▸</td></tr>
+   </tbody></table>
   </div>
  </div>
+
  <div>
-  <p class="cap">Po zwiadzie</p>
+  <p class="cap">2 · Po zwiadzie</p>
   <div class="g">
-   <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett<span class="lt"><i class="B">B</i><i class="A">A</i><i class="F">F</i></span></div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
-   <div class="li"><div class="fc">DW</div><div><div class="nm">Wade</div><div class="st">SG · 2005-07 · 27.2/5.7/6.7</div></div><div><span class="cost">16.8</span></div></div>
-   <div class="li"><div class="fc">DN</div><div><div class="nm">Nowitzki</div><div class="st">PF · 2005-07 · 25.6/9.2/3.2</div></div><div><span class="cost">15.1</span></div></div>
-   <div class="dim"></div>
-   <div class="sheet">
-    <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
-    <div class="grid">
-     <div class="gb"><small>OFF</small><b class="B">B</b><em>1. opcja? nie</em></div>
-     <div class="gb"><small>DEF</small><b class="A">A</b><em>obrona pod koszem</em></div>
-     <div class="gb"><small>3PT</small><b class="F">F</b><em>nie rozciąga</em></div>
+   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card">
+    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
+    <div class="nums"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+    <div class="tierline"><span class="tier">ALL-NBA 1ST</span><small>tier tego okna</small></div>
+    <div class="gr6">
+     <div><b class="mid">B+</b><span>Offense</span></div><div><b class="hi">A</b><span>Defense</span></div><div><b class="lo">D</b><span>Spacing</span></div>
+     <div><b class="hi">A−</b><span>Portability</span></div><div><b class="mid">B</b><span>Finishing</span></div><div><b class="hi">A</b><span>Durability</span></div>
     </div>
-    <div class="act"><button class="btn ghost">Close</button><button class="btn">Draft</button></div>
+    <button class="btn">Draft 2002-04</button>
    </div>
+   <h3>Other years<span>tap to compare</span></h3>
+   <table class="oy"><tbody>
+    <tr class="open"><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td class="t">ALL-NBA 2ND</td><td class="c">11.6</td><td>▾</td></tr>
+    <tr class="open"><td colspan="5">
+     <div class="gr6">
+      <div><b class="mid">B</b><span>Offense</span></div><div><b class="hi">A+</b><span>Defense</span></div><div><b class="lo">C</b><span>Spacing</span></div>
+      <div><b class="hi">A</b><span>Portability</span></div><div><b class="mid">B−</b><span>Finishing</span></div><div><b class="mid">B</b><span>Durability</span></div>
+     </div>
+     <div class="more"><span>FG% <b>49.4</b></span><span>3P% <b>18.0</b></span><span>FT% <b>82.1</b></span><span>STL <b>1.3</b></span><span>BLK <b>1.2</b></span></div>
+     <button class="btn line" style="margin-top:8px">Draft 2007-09 · 11.6</button>
+    </td></tr>
+    <tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td class="t">ALL-NBA 2ND</td><td class="c">12.9</td><td>▸</td></tr>
+   </tbody></table>
   </div>
  </div>
+
  <div class="note">
-  <p><b>Co się zmienia:</b> litery są tam, gdzie decydujesz (okno gracza), a nie w kolumnie, której telefon nie mieści.</p>
-  <p>Po zwiadzie litery zostają też jako trzy małe chipy przy nazwisku na liście (kolejność OFF · DEF · 3PT), więc nie trzeba otwierać okna drugi raz.</p>
-  <p><b>Do ustalenia:</b> opis pod literą (jedna fraza) czy samo A–F? Na makiecie jest fraza; do wyrzucenia, jeśli za gęsto.</p>
+  <p><b>Co jest w grze dziś:</b> po zwiadzie tier i sześć ocen w jednym zawijanym wierszu; A na złoto (myli się z capami); przed zwiadem ocen nie ma wcale, jest tylko przycisk.</p>
+  <p><b>Zmiana:</b> tier w osobnej linii, sześć ocen w siatce 3×2 (ta sama w „On the card” i w rozwiniętym „Other years”), A zielone, C i niżej czerwone, reszta biała.</p>
+  <p><b>Przed zwiadem:</b> zamknięte kafelki „?”, żeby było widać, co raport odsłoni.</p>
+  <p><b>Lista draftu:</b> po zwiadzie przy nazwisku mogą zostać 3 chipy (OFF · DEF · 3PT) — do decyzji.</p>
+  <p>Wartości ocen na makiecie są przykładowe.</p>
  </div>
 </div>
-</section>
-
-<section>
-<h2>B. Wersja minimalna: sam pasek liter</h2>
-<p class="sub">Bez kafelków: jeden wiersz „OFF B · DEF A · 3PT F” pod nagłówkiem okna. Mniej miejsca, mniej treści; pasuje, jeśli okno gracza jest już gęste.</p>
-<div class="row">
- <div class="g" style="min-height:300px">
-  <div class="li"><div class="fc">KG</div><div><div class="nm">Garnett<span class="lt"><i class="B">B</i><i class="A">A</i><i class="F">F</i></span></div><div class="st">PF · 2002-04 · 23.0/13.4/5.6</div></div><div><span class="cost">14.2</span></div></div>
-  <div class="dim"></div>
-  <div class="sheet">
-   <div class="sh-h"><div class="fc">KG</div><div><div class="nm">Kevin Garnett</div><div class="st">PF · 2002-04 · 14.2 caps</div></div></div>
-   <div class="num" style="display:flex;gap:16px;font-weight:800;font-size:15px"><span>OFF <span class="B">B</span></span><span>DEF <span class="A">A</span></span><span>3PT <span class="F">F</span></span></div>
-   <div class="act"><button class="btn ghost">Close</button><button class="btn">Draft</button></div>
-  </div>
- </div>
- <div class="note"><p>Ta sama zasada co w A, tylko bez opisów i kafelków. Chipy na liście zostają.</p></div>
-</div>
-</section>
 </div>
 </body>
 </html>
