@@ -6,7 +6,7 @@ import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { spanEndYears } from '../src/engine/era';
 import { realSeason } from '../src/engine/realAdvancedLookup';
 import { autoAssignRotation } from '../src/engine/rotation';
-import { offenseScore } from '../src/engine/scoring';
+import { offenseScore, offenseScoreBreakdown } from '../src/engine/scoring';
 import { computeOffensiveTalent } from '../src/engine/talent';
 import { rimPressureForFit } from '../src/engine/rimPressure';
 import { teamSpacingValue } from '../src/engine/midrangeGravity';
@@ -74,13 +74,13 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
+type Row = { otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
 const rows: Row[] = [];
 const yard = (benchTeams as { teams: { ids: string[] }[] }[]).slice(0, 4).map((lg, L) => {
   const ts = lg.teams.map((t, i) => teamOf(t.ids.map(spanById).filter(Boolean) as PlayerSpan[], `y${L}-${i}`));
   return ts.sort((a, b) => scoreTeam(a).overallExact - scoreTeam(b).overallExact)[Math.floor(ts.length / 2)];
 });
-const cache = new Map<string, { offense: number; mech: number }>();
+const cache = new Map<string, { offense: number; mech: number; otal: number; spacing: number }>();
 // rim star: rim pressure 0-100 scaled from 50 -> 0 to 80 -> 1, times his own spacing deficit (spacing 60 -> 0, 30 -> 1).
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 // Team-seasons (BBRef, 1973-74 on): the five with the most minutes on that team.
@@ -102,13 +102,14 @@ for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]
   let c = cache.get(key);
   if (!c) {
     const t = teamOf(five, key);
-    c = { offense: offenseScore(t), mech: yard.reduce((sum, y) => sum + mechanicsPer100(t, y)[0], 0) / yard.length };
+    const bd = offenseScoreBreakdown(t);
+    c = { offense: offenseScore(t), mech: yard.reduce((sum, y) => sum + mechanicsPer100(t, y)[0], 0) / yard.length, otal: bd.otal, spacing: bd.spacing };
     cache.set(key, c);
   }
   const star = [...five].sort((p, q) => computeOffensiveTalent(q) - computeOffensiveTalent(p))[0];
   const rimStar = clamp01((rimPressureForFit(star) - 50) / 30) * clamp01((60 - teamSpacingValue(star)) / 30) * clamp01((computeOffensiveTalent(star) - 75) / 15);
   const mates = mean(five.filter((x) => x !== star).map(teamSpacingValue));
-  rows.push({ offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
+  rows.push({ otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
 }
 console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
 function wols(X: number[][], y: number[], w: number[]) {
@@ -142,3 +143,11 @@ const X = (r: Row) => [r.offense, r.rimStar, (r.mates - 50) / 10, r.rimStar * ((
 const names = ['Offense', 'rim star', 'mates spacing (per 10)', 'rim star × mates spacing deficit (per 10)'];
 report('REAL ORtg over league', names, X, (r) => r.y);
 report('GAME mechanics offense a 100 trips', names, X, (r) => r.mech);
+
+// Does spacing matter at all? Real ORtg on the five's offensive talent alone, then with its spacing (per 10).
+report('SPACING AT ALL — real ORtg ~ O-TAL bar + team spacing (per 10)', ['O-TAL bar', 'spacing (per 10)'], (r) => [r.otal, r.spacing / 10], (r) => r.y);
+report('… game mechanics', ['O-TAL bar', 'spacing (per 10)'], (r) => [r.otal, r.spacing / 10], (r) => r.mech);
+{
+  const sp = rows.map((r) => r.spacing).sort((a, b) => a - b);
+  console.log(`team spacing on these teams: p10 ${sp[Math.floor(sp.length * 0.1)].toFixed(0)}, median ${sp[Math.floor(sp.length / 2)].toFixed(0)}, p90 ${sp[Math.floor(sp.length * 0.9)].toFixed(0)}`);
+}
