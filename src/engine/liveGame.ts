@@ -1,3 +1,4 @@
+import { ballHandlerCost, ORTG_PER_TS } from './ballHandling';
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
@@ -1051,7 +1052,9 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const usageGain = lines.map((l, i) => contextGain(l.usageDelta * (l.usageDelta < 0 ? usageCost[i] : giveUp[i])));
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
-    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
+    // 2026-10-28, step 6.2: a second player holding the ball (`ballHandling.ts`), on every shot.
+    const handlers = -ballHandlerCost(five.map((p) => p.span)) / ORTG_PER_TS;
+    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload + handlers;
     // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
     const lifted = fiveLiftShifts(five.map((p) => p.span));
     court = five.map((player, i) => ({

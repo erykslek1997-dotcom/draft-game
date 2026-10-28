@@ -61,7 +61,7 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { offense: number; b1: number; b2: number; b3: number; u2: number; iso2: boolean; y: number; w: number; who: string };
+type Row = { offense: number; b1: number; b2: number; b3: number; u2: number; iso2: boolean; e1: number; e2: number; e3: number; y: number; w: number; who: string };
 const rows: Row[] = [];
 let skipped = 0;
 const offenseCache = new Map<string, number>();
@@ -85,6 +85,14 @@ for (const u of csv('lineups_advanced.csv')) {
   if (offense === undefined) offenseCache.set(key, (offense = offenseScore(teamOf(five as PlayerSpan[], key))));
   const order = balls.map((b, i) => ({ ...b!, i })).sort((a, b) => b.share - a.share);
   // Real USG% of each (BBRef, that season), to separate a second scorer from a second handler.
+  // Tracked share ~ USG%, AST% and position, fit on 3,283 player-seasons 2013-14+ (1000+ min), R² 0.83.
+  const est = (b: { name: string }, pos: string) => {
+    const r = realSeason(normalizePlayerName(b.name), end);
+    const u = Number(r?.usg ?? 18);
+    const a = Number(r?.ast ?? 12);
+    return -0.01139 + 0.00174 * u + 0.00445 * a - 0.00194 * (u * a) / 100 + (pos === 'PG' ? 0.04444 : pos === 'SG' ? 0.00562 : pos === 'PF' || pos === 'C' ? -0.0103 : 0);
+  };
+  const e = balls.map((b, i) => est(b!, five[i]!.primaryPosition)).sort((a, b) => b - a);
   const usg = balls.map((b) => Number(realSeason(normalizePlayerName(b!.name), end)?.usg ?? 18) / 100).sort((a, b) => b - a);
   rows.push({
     offense,
@@ -93,6 +101,9 @@ for (const u of csv('lineups_advanced.csv')) {
     b3: order[2].share,
     u2: usg[1],
     iso2: false,
+    e1: e[0],
+    e2: e[1],
+    e3: e[2],
     y: Number(u.OFF_RATING) - leagueOrtg.get(u.SEASON)!,
     w: Number(u.POSS) || min,
     who: `${u.SEASON} ${u.TEAM_ABBREVIATION} ${order[0].name.split(' ').at(-1)}(${order[0].share.toFixed(2)})+${order[1].name.split(' ').at(-1)}(${order[1].share.toFixed(2)}) ${Math.round(min)}min`,
@@ -135,6 +146,18 @@ report('… only units whose top handler is ball-dominant (20%+): does a second 
 report('… a second high-usage SCORER (2nd-highest USG%, per 0.05) beside the handlers', ['Offense', 'top handler', 'second handler', '2nd-highest usage'], (r) => [r.offense, r.b1 * 10, r.b2 * 10, r.u2 * 20]);
 report('… a second scorer at 27%+ usage (0/1)', ['Offense', 'top handler', 'second handler', '2nd usage 27%+'], (r) => [r.offense, r.b1 * 10, r.b2 * 10, r.u2 >= 0.27 ? 1 : 0]);
 console.log(`  (units with a second scorer at 27%+: ${rows.filter((r) => r.u2 >= 0.27).length})`);
+
+// The same with ball shares ESTIMATED from USG% and AST% (what the engine can read in every era).
+for (const t of [0.08, 0.1, 0.12, 0.14])
+  report(`ESTIMATED ball share: 2nd and 3rd handler past ${t} (per 0.10)`, ['Offense', 'top handler', `2nd past ${t}`, `3rd past ${t}`], (r) => [r.offense, r.e1 * 10, Math.max(0, r.e2 - t) * 10, Math.max(0, r.e3 - t) * 10]);
+report('ESTIMATED: 2nd + 3rd handler summed past 0.10', ['Offense', 'top handler', '2nd+3rd past 0.10'], (r) => [r.offense, r.e1 * 10, (Math.max(0, r.e2 - 0.1) + Math.max(0, r.e3 - 0.1)) * 10]);
+
+report('TRACKED vs ESTIMATED 2nd handler together: holding the ball beyond what his assists explain?', ['Offense', 'top handler (tracked)', '2nd tracked', '2nd estimated'], (r) => [r.offense, r.b1 * 10, r.b2 * 10, r.e2 * 10]);
+report('… 2nd handler at 18%+ tracked, with his estimate held', ['Offense', 'top handler (tracked)', '2nd at 18%+ (tracked)', '2nd estimated'], (r) => [r.offense, r.b1 * 10, r.b2 >= 0.18 ? 1 : 0, r.e2 * 10]);
+{
+  const t = rows.filter((r) => r.b2 >= 0.18);
+  console.log(`  2nd handlers at 18%+: tracked mean ${mean(t.map((r) => r.b2)).toFixed(3)}, estimated mean ${mean(t.map((r) => r.e2)).toFixed(3)}`);
+}
 
 // The two-handler units, by how far they beat or miss the fit on Offense and the top handler alone.
 const b = wols(rows.map((r) => [r.offense, r.b1 * 10]), rows.map((r) => r.y), rows.map((r) => r.w));

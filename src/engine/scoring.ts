@@ -1,3 +1,4 @@
+import { ballHandlerCost } from './ballHandling';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
@@ -1768,6 +1769,18 @@ export function topFiveUsageLoad(team: Team): number {
   if (top.length < 5) return BALL_LOAD_TUNING.ref;
   return top.reduce((sum, { p }) => sum + realUsageShare(p), 0);
 }
+export function ballHandlerAdjustment(team: Team): number {
+  return -(ballHandlerCost(primaryStarters(team).map((s) => s.player)) - BALL_HANDLER_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+/**
+ * Overall points per ORtg point of the starters' cost, and the drafted starters' typical cost (so
+ * the league's Overall stays put). Set on the game's own mechanics, 160 bench-league teams with and
+ * without the cost (2026-10-28): at 1/0.85 an Overall point of it moved the league margin 0.73 a
+ * 100 trips against the ~0.97 the rest of Overall delivers, so 0.75 of that; mean cost 0.54.
+ */
+export const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
+const BALL_HANDLER_REF = 0.54;
+
 export function ballLoadAdjustment(team: Team): number {
   return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));
 }
@@ -1786,7 +1799,10 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     ballLoadAdjustment(team) +
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
     // game plays it, so the team's number carries it too.
-    liftAdjustment(team);
+    liftAdjustment(team) +
+    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
+    // for the five on the floor; the team's number takes it for the starters.
+    ballHandlerAdjustment(team);
   const overall = Math.round(overallExact);
   return {
     talentScore: talent,
