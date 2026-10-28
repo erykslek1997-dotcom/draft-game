@@ -245,7 +245,8 @@ Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po l
    - **Krok 6 — wyniki 2026-10-28 (na branchu, nie na main):** sędziowie: 962 sezony NBA (ORtg/SRS), 955 piątek NBA.com 2013+, ligi testowe w mechanice meczu.
      - 6.1 polowanie: krycie także przez elitarnego obrońcę obwodowego (D-TAL 88+, łącznie maks. −55%), ławka 0,4→0,7, headroom najsłabszego startera ±3→±6. Polowania nie usuwamy (bez kary gorzej z meczem: R² 0,58→0,55). Nash+Kawhi+Howard: Defense 75→78.
      - 6.2 zmienione na **dwóch graczy z piłką** (czas z piłką NBA.com; drugi 18%+ = −2,3 ORtg; drugi strzelec z usage 27%+ = +0,9): `ballHandling.ts`, ta sama kara w meczu i w Overall. Harden+Westbrook/Paul/Nash −1,5…−1,8 Overall, Harden+Kobe −0,3.
-     - 6.3 kara „gwiazda potrzebuje spacingu” — dane na nie. Zamiast tego **spacing do realnej wagi**: Offense 0,17→0,04, mecz `SPACING_TUNING.strength` 1→0,3 (10 pkt spacingu = 0,9 pkt O-TAL w realu, było 1,8 w meczu).
+     - 6.3 kara „gwiazda potrzebuje spacingu” — dane na nie. Obcięcie spacingu (0,17→0,04, mecz 1→0,3) **cofnięte**: liczone na wszystkich erach; od 1996-97 (Eryk: mierzyć od 96-97, wcześniej brak dokładności) 10 pkt spacingu = ~1,9 pkt O-TAL w realu, mecz daje ~0,6 → w kroku 8 podnieść, zależnie od ery/archetypu (gwiazda podkoszowa +0,12, rozgrywający +0,44, kreator +0,67, strzelec +0,39 ORtg na 10 pkt spacingu kolegów). Test postu (`measurePostSpacing.ts`): ten sam center ze strzelcami obok dostaje piłkę w poście rzadziej (−0,28/36), skuteczność bez zmian.
+     - Zasada pomiaru od teraz: real od sezonu 1996-97 (`FROM=1997`).
      - 6.4 rim pressure drużyny w Offense 0,085→0 (+0,06 ORtg/10 pkt w realu); mecz bez zmian.
      - 6.5 taper mismatch przy hubie — dane odwrotnie, bez zmian.
      - 6.6 składnik playoffów w TAL ×⅓ (powtarzalność między oknami r 0,15); FMVP bez zmian; rankingi ludzi bez pogorszenia (Backpicks 0,795→0,809).
