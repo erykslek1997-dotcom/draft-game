@@ -489,10 +489,14 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // ~0, O-TAL and rim pressure about right. Spacing stays (the user: the game's spacing is too weak,
 // step 7.5); the others rescaled to keep the sum. Was: O-TAL .46, rim .10, playmaking .10,
 // self-creation .07, mismatch .09.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.432;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.18;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.09;
-const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.18;
+// 2026-10-28, attack audit (`scripts/measureOffense.ts`): against the points a 100 trips of 372 real
+// five-man units and of the game's own mechanics, the mismatch-structure part earned more than its
+// 0.118 and the offensive-glass term (halved below) pointed the wrong way in the mechanics. Mismatch
+// x1.5, the rest scaled back to a sum of 1 so the Offense scale stays where it was.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.408;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.17;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.085;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
 // (0.001 a point on 960 teams), so its share moves to O-TAL. Was .032 (O-TAL .40).
 const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0;
@@ -507,7 +511,7 @@ const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0;
  * skill rating. Reads `fitScore` here (already computed elsewhere in `scoreTeam`, but not
  * threaded through this function) rather than recomputing the underlying shadow-role-profile
  * machinery a second time. */
-const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.118;
+const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.167;
 
 /** The 6 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
  * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
@@ -934,6 +938,8 @@ const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
 /** Single source of truth for the weighted blend — `offenseScore` (the number every other
  * consumer reads) and `offenseScoreBreakdown` (the UI's per-dimension view) both build on this so
  * the two can never drift apart. */
+/** Share of the offensive-glass points the Offense score keeps (attack audit: negative in the game's mechanics, ~0 in real fives). */
+const OFFENSIVE_GLASS_SHARE = 0.5;
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -947,7 +953,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
   const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
-  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints)));
+  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE)));
   return { ...components, score, raw };
 }
 

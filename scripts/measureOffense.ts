@@ -172,3 +172,6 @@ const sb = standardized(real, PARTS);
 const sc = standardized(real.map((r) => ({ f: r.f, y: r.mech })), PARTS);
 console.log(`\nWeight each part earns on its own (standardized), R²: A ${sa.r2.toFixed(2)} (score alone ${(corr(game.map((g) => g.f.score), game.map((g) => g.y)) ** 2).toFixed(2)}), B real ${sb.r2.toFixed(2)} (score alone ${(corr(real.map((r) => r.f.score), real.map((r) => r.y)) ** 2).toFixed(2)}), B mechanics ${sc.r2.toFixed(2)}`);
 PARTS.forEach((k, i) => console.log(`${k.padEnd(18)} ${sa.beta[i].toFixed(2).padStart(8)}  ${sb.beta[i].toFixed(2).padStart(15)}  ${sc.beta[i].toFixed(2).padStart(20)}`));
+
+// R2_LINE: the one-line summary the sweeps read.
+console.log(`R2_LINE score-only R2 A ${(corr(game.map((g) => g.f.score), game.map((g) => g.y)) ** 2).toFixed(3)} B real ${(corr(real.map((r) => r.f.score), real.map((r) => r.y)) ** 2).toFixed(3)} B mech ${(corr(real.map((r) => r.f.score), real.map((r) => r.mech)) ** 2).toFixed(3)}`);
