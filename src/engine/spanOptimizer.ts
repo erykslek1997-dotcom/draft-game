@@ -1,3 +1,4 @@
+import { autoAssignRotation, totalMinutesForPlayer } from './rotation';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
@@ -84,6 +85,20 @@ function positionBoundedOptions(options: PlayerSpan[], draftedSpan: PlayerSpan):
  * to recover which span was chosen for each player. `n` (roster size, 9) x `capUnits` (~1010) x
  * average options per player (~10-15) is a few hundred thousand operations at most — trivial.
  */
+/**
+ * 2026-10-28, step 7 (the user's export, Cheyenne #11: Conley taken at his 2022-24 window, TAL 75,
+ * instead of his All-Defense peak): the knapsack summed TAL over all nine alike, so a starter's
+ * window was traded down to buy points for the 8th and 9th men. Each player's TAL now counts by his
+ * minutes in the drafted roster's own rotation (over 36, at least 0.1). On 64 AI-drafted teams the
+ * post-draft windows cost -0.64 Overall against the drafted ones before, 0.00 now. A local search
+ * on Overall itself finds ~+1.4 more, but at ~2 s a team it would freeze the screen after the draft
+ * (TODO: in a worker).
+ */
+function minuteWeights(roster: PlayerSpan[]): number[] {
+  const rotation = autoAssignRotation(roster);
+  return roster.map((p) => Math.max(0.1, totalMinutesForPlayer(rotation, p.id) / 36));
+}
+
 export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT): PlayerSpan[] {
   const n = roster.length;
   const allOptionsPerPlayer = roster.map((p) => spanOptionsFor(p.playerName));
@@ -91,12 +106,13 @@ export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT
     positionBoundedOptions(options, roster[i]),
   );
   const capUnits = Math.round(capLimit * FGA_SCALE);
+  const weights = minuteWeights(roster);
 
   function solve(optionsPerPlayer: PlayerSpan[][]): PlayerSpan[] | null {
     if (optionsPerPlayer.some((options) => options.length === 0)) return null;
 
     const NEG_INF = -Infinity;
-    // dp[i][w]: max total TAL using the first i players, with total discretized FGA <= w.
+    // dp[i][w]: max minutes-weighted TAL using the first i players, with total discretized FGA <= w.
     const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(NEG_INF));
     const choice: number[][] = Array.from({ length: n + 1 }, () => new Array(capUnits + 1).fill(-1));
     dp[0].fill(0); // 0 players chosen: 0 value, valid at every capacity level.
@@ -109,7 +125,7 @@ export function optimizeSpans(roster: PlayerSpan[], capLimit: number = CAP_LIMIT
           if (cost > w) continue;
           const prev = dp[i - 1][w - cost];
           if (prev === NEG_INF) continue;
-          const value = prev + effectiveTalent(options[oi]);
+          const value = prev + weights[i - 1] * effectiveTalent(options[oi]);
           if (value > dp[i][w]) {
             dp[i][w] = value;
             choice[i][w] = oi;
