@@ -369,7 +369,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 - [ ] Matchup playoffów: zamiast „Top three” porównanie piątek z facecards (telefon i PC; pod parami pts · reb · ast).
 - [x] Plakat sezonu (Post/Story): ławka jako facecards (twarz, nazwisko, ppg), kontrola przy 4 osobach.
 - [x] Team po drafcie (telefon): tabela rozpycha stronę, cap poza ekranem — zmieścić tabelę, resztę przewijać wewnątrz.
-- [ ] **Przyszły tydzień (tydzień 2):** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
+- [x] **(2026-10-28, zrobione: okno gracza — nagrody zawsze, 6 ocen w kafelkach „?” przed zwiadem, skład na telefonie z liniami nagród i ocen, chipy na liście; makieta `docs/mockups/draft-grades-phone.html`)** brakuje podglądu statystyk od A do F (znikł po zmianie UI) — do zbadania i przywrócenia. Trop: oceny literowe OFF · DEF · 3PT z listy draftu (`src/night/draft.tsx`, `r.grades`, PR #214 „grade tips”) — dziś pokazują się tylko po „Scout”, a na telefonie kolumna jest ukryta (`.plist .c-hide`). Do sprawdzenia z Erykiem, czy chodzi o to, czy o litery w wynikach.
 
 
 Zasady z playtestu: **Mini wygląda dokładnie jak All-Time, tylko krótszy** (różnice tylko z zasad
@@ -388,7 +388,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
       przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
 - [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
       on this pick”.
-- [ ] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
+- [x] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
 - [ ] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
 - [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
 - [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno

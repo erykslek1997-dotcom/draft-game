@@ -1,3 +1,4 @@
+import { spanAwards } from '../engine/spanAwards';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
@@ -1160,6 +1161,7 @@ export default function DraftBoard({
   const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
   const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size;
   const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
+  const gradeTone = (v: string) => (v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   const gradesOf = (sp: PlayerSpan) => ({
     off: offensiveGrade(computeOffensiveTalent(sp), computeUncappedOffensiveTalent(sp)),
     def: defensiveGrade(computeDefensiveTalent(sp)),
@@ -1431,12 +1433,39 @@ export default function DraftBoard({
                             <span className="yrs-plain">{eff.spanLabel}</span>
                           )}
                         </div>
+                        {/* 2026-10-28 (mockup draft-grades-phone.html): the phone hides the grade columns, so
+                            the awards and tier get their own line and the four grades another one */}
+                        {!masked && (
+                          <>
+                            <div className="rs-ph rs-t">
+                              {spanAwards(eff.playerName, eff.spanLabel).length > 0 && <span className="pk2-aw">{spanAwards(eff.playerName, eff.spanLabel).join(' · ')}</span>}
+                              <span>{displayedOverallTier(eff)}</span>
+                            </div>
+                            <div className="rs-ph rs-g">
+                              {(
+                                [
+                                  ['OFF', g.off],
+                                  ['DEF', g.def],
+                                  ['3PT', g.tp],
+                                  ['DUR', g.dur],
+                                ] as const
+                              ).map(([k, v]) => (
+                                <span key={k}>
+                                  {k} <b className={gradeTone(v)}>{v}</b>
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
                       </td>
-                      <td className="tier c-hide">{masked ? '?' : displayedOverallTier(eff)}</td>
-                      <td className="num c-hide">{masked ? '' : g.off}</td>
-                      <td className="num c-hide">{masked ? '' : g.def}</td>
-                      <td className="num c-hide">{masked ? '' : g.tp}</td>
-                      <td className="num c-hide">{masked ? '' : g.dur}</td>
+                      <td className="tier c-hide">
+                        {masked ? '?' : displayedOverallTier(eff)}
+                        {!masked && spanAwards(eff.playerName, eff.spanLabel).length > 0 && <span className="rs-aw">{spanAwards(eff.playerName, eff.spanLabel).join(' · ')}</span>}
+                      </td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.off)}>{masked ? '' : g.off}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.def)}>{masked ? '' : g.def}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.tp)}>{masked ? '' : g.tp}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.dur)}>{masked ? '' : g.dur}</b></td>
                       <td className="cap num">{fmtCaps(eff.fga)}</td>
                     </tr>
                   );

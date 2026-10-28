@@ -15,6 +15,7 @@ import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
 import { spacingUngraded, type GradeKey } from './gradeHelp';
 import { draftButtonTitle } from './DraftBoard';
+import { spanAwards } from '../engine/spanAwards';
 
 /** Every career window the database has for a player, including the ones this draft's lean pool
  * leaves out (a star keeps only his peak windows there). Built once, on first open. */
@@ -68,12 +69,14 @@ function gradeList(span: PlayerSpan): Array<[string, Grade, GradeKey]> {
   ];
 }
 
-/** The six grades as printed marks: an A in gold, a C or lower in red (mockup `#peekScouted`). */
-function Grades({ span }: { span: PlayerSpan }) {
+/** The six grades as printed marks: an A in green, a C or lower in red (mockup `#peekScouted`).
+ * 2026-10-28 (mockup `draft-grades-phone.html`): equal tiles, 3×2 on a phone and one row on a
+ * desktop; before a scouting report the tiles show "?" so it is clear what the report opens. */
+function Grades({ span, locked = false }: { span: PlayerSpan; locked?: boolean }) {
   return (
-    <>
+    <div className={`pk2-g6${locked ? ' lock' : ''}`}>
       {gradeList(span).map(([label, grade, key]) => {
-        const shown = key === '3PT' && spacingUngraded(span) ? NOT_YET : grade;
+        const shown = locked ? '?' : key === '3PT' && spacingUngraded(span) ? NOT_YET : grade;
         const tone = shown.startsWith('A') ? 'hi' : /^[CDF]/.test(shown) ? 'lo' : undefined;
         return (
           <span key={label} className="gr">
@@ -82,8 +85,14 @@ function Grades({ span }: { span: PlayerSpan }) {
           </span>
         );
       })}
-    </>
+    </div>
   );
+}
+
+/** The real awards of a stretch — public record, so shown before any scouting report. */
+function Awards({ span }: { span: PlayerSpan }) {
+  const list = spanAwards(span.playerName, span.spanLabel);
+  return list.length ? <span className="pk2-aw">{list.join(' · ')}</span> : null;
 }
 
 const tierOf = (span: PlayerSpan) => overallTierForSpan(tierContextFor(span));
@@ -179,7 +188,7 @@ export function PlayerPeekModal({
               <b>{cardSpan.spanLabel}</b>
               <span className="coin2">
                 <CapI />
-                {fmtCaps(cardSpan.fga)}
+                {fmtCaps(cardSpan.fga)} caps
               </span>
             </div>
             <div className="pk2-nums">
@@ -190,12 +199,11 @@ export function PlayerPeekModal({
                 </div>
               ))}
             </div>
-            {scouted && (
-              <div className="pk2-grades">
-                <span className="pk2-tier">{tierOf(cardSpan)}</span>
-                <Grades span={cardSpan} />
-              </div>
-            )}
+            <div className="pk2-grades">
+              <Awards span={cardSpan} />
+              {scouted && <span className="pk2-tier">{tierOf(cardSpan)}</span>}
+              {(scouted || !readOnly) && <Grades span={cardSpan} locked={!scouted} />}
+            </div>
             {!readOnly && (
               <button
                 type="button"
@@ -212,7 +220,6 @@ export function PlayerPeekModal({
 
           {!scouted && !readOnly && onScout && scoutsLeft !== undefined && (
             <div className="pk2-scout">
-              <span>A scouting report shows his tier and six grades for every stretch.</span>
               <button
                 type="button"
                 className={`btn ${scoutsLeft > 0 ? 'line' : 'off'}`}
@@ -228,7 +235,7 @@ export function PlayerPeekModal({
           {others.length > 0 && (
             <>
               <h3>
-                Other years<span>tap to compare</span>
+                Other years
               </h3>
               <table className="pk2-rows">
                 <tbody>
@@ -239,9 +246,10 @@ export function PlayerPeekModal({
                         <tr className="pk2-r" onClick={() => setOpenId(open ? null : span.id)} aria-expanded={open}>
                           <td className="y">{span.spanLabel}</td>
                           <td>
-                            {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
+                            <span className="pk2-bx">{span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}</span>
+                            <Awards span={span} />
                           </td>
-                          <td className="t">{scouted ? tierOf(span) : '—'}</td>
+                          <td className="t">{scouted ? tierOf(span) : ''}</td>
                           <td className="cap">
                             <CapI />
                             {fmtCaps(span.fga)}
