@@ -28,7 +28,11 @@
         const res = await fetch(path, { credentials: 'omit' });
         if (res.status === 429) throw new Error('HTTP 429 (too many requests)');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const html = (await res.text()).replace(/<!--/g, '').replace(/-->/g, '');
+        // The comment marks are built from pieces: written whole, a browser console reads them as the
+        // start of an HTML comment and drops the rest of the line.
+        const open = '<' + '!' + '--';
+        const close = '--' + '>';
+        const html = (await res.text()).split(open).join('').split(close).join('');
         await sleep(PAUSE_MS);
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const t = doc.getElementById(id);
