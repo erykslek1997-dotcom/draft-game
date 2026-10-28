@@ -8,6 +8,8 @@ import data from './draftPool.json';
 import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/roleFitShadow';
 import { runtimeAvailabilityForSpan } from '../engine/runtimeSpanLookups';
 import { applyRoleAudit } from './roleAudit';
+import { personNameFor } from './personNames';
+import { applyPositionDecision } from './positionDecisions';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
 // visible immediately without reselecting the entire talent-sensitive pool (a full rebuild churns
@@ -68,8 +70,20 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   return span;
 }
 
-const positionCorrectedPool = (data as PlayerSpan[]).map(applyRuntimeParity);
+// Two people sharing a name are two players (`personNames.ts`); then the reviewed all-time
+// positions (`positionDecisions.ts`).
+const positionCorrectedPool = (data as PlayerSpan[])
+  .map((span) => {
+    const playerName = personNameFor(span.id, span.playerName);
+    return playerName === span.playerName ? span : { ...span, playerName };
+  })
+  .map(applyRuntimeParity)
+  .map(applyPositionDecision);
 const defensiveRoleAuditContext = buildRoleFitContext(positionCorrectedPool);
+
+/** Every pool span before the availability filter below — what `scripts/buildRuntimeSpanLookups.ts`
+ * measures, so a span the filter drops keeps its availability entry and stays dropped. */
+export const draftPoolBeforeAvailability: PlayerSpan[] = positionCorrectedPool;
 
 /** Legacy Anchor/Mobile tags are replaced at load time by the audited physical/statistical
  * primary role. The full multi-role profile is still calculated separately by FIT. */
