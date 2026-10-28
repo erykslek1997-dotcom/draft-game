@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import competenceData from '../src/data/positionCompetence.json';
 import { draftPool } from '../src/data/draftPool';
-import { getHeightInches } from '../src/data/heightLookup';
+import { getBodyWeightLbs, getHeightInches } from '../src/data/heightLookup';
 import { normalizePlayerName, type PlayerSpan, type Position } from '../src/data/schema';
 import { resolveSourceName } from '../src/data/sourceNameResolver';
 import { spanEndYears } from '../src/engine/era';
@@ -48,10 +48,18 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
-// Player-seasons (the multi-team total when he moved; position from his first team line).
-const FEATURES = ['height', 'drb_pct', 'orb_pct', 'ast_pct', 'blk_pct', 'stl_pct', 'usg_pct', 'fg3a_per_fga_pct'] as const;
-interface Season { key: string; end: number; mp: number; pos?: number; raw: Record<string, number>; z: number[] }
-const seasons = new Map<string, Season>();
+// Two models, one per source, both fitted on 1980-2008 against BBRef's season position:
+//  A (1973-74 on): height, weight and the BBRef Advanced rates.
+//  B (every season, for the years before A): height, weight and the box per game — rebounds,
+//    assists, points — from `raw/playerSeasonStats.csv`.
+// Each feature is a z-score within its own season, so a 1965 rebounding line and a 2024 one are
+// read against their own league.
+const FEATURES_A = ['height', 'weight', 'drb_pct', 'orb_pct', 'ast_pct', 'blk_pct', 'stl_pct', 'usg_pct', 'fg3a_per_fga_pct'] as const;
+const FEATURES_B = ['height', 'weight', 'rpg', 'apg', 'ppg'] as const;
+interface Season { end: number; mp: number; pos?: number; raw: Record<string, number>; z: number[] }
+const body = (name: string) => ({ height: getHeightInches(name) ?? NaN, weight: getBodyWeightLbs(name) ?? NaN });
+
+const seasonsA = new Map<string, Season>();
 {
   const [head, ...lines] = readFileSync(resolve(root, 'src/data/raw/bbref/player_advanced.csv'), 'utf8').split(/\r?\n/).filter(Boolean);
   const cols = parseCsvLine(head);
@@ -62,88 +70,132 @@ const seasons = new Map<string, Season>();
     const key = `${name}|${end}`;
     const total = /^(\d+TM|TOT)$/.test(f.team_name_abbr);
     const pos = POS.includes(f.pos as Position) ? num(f.pos as Position) : undefined;
-    const prior = seasons.get(key);
+    const prior = seasonsA.get(key);
     if (prior && !total) {
       prior.pos ??= pos;
       continue;
     }
-    const raw: Record<string, number> = { height: getHeightInches(name) ?? NaN };
-    for (const c of FEATURES.slice(1)) raw[c] = f[c] === '' ? NaN : Number(f[c]);
-    seasons.set(key, { key, end, mp: Number(f.mp) || 0, pos: prior?.pos ?? pos, raw, z: [] });
+    const raw: Record<string, number> = body(name);
+    for (const c of FEATURES_A.slice(2)) raw[c] = f[c] === '' ? NaN : Number(f[c]);
+    seasonsA.set(key, { end, mp: Number(f.mp) || 0, pos: prior?.pos ?? pos, raw, z: [] });
   }
 }
-// z-scores within each season (players with 500+ minutes set the mean and spread).
-for (const [end, group] of Object.entries(Object.groupBy([...seasons.values()], (s) => String(s.end)))) {
-  void end;
-  const ref = group!.filter((s) => s.mp >= 500);
-  const stats = FEATURES.map((f) => {
-    const v = ref.map((s) => s.raw[f]).filter((x) => !Number.isNaN(x));
-    const m = v.reduce((a, b) => a + b, 0) / v.length;
-    const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
-    return { m, sd };
+const seasonsB = new Map<string, Season>();
+{
+  const [head, ...lines] = readFileSync(resolve(root, 'src/data/raw/playerSeasonStats.csv'), 'utf8').split(/\r?\n/).filter(Boolean);
+  const cols = head.split(',');
+  for (const line of lines) {
+    const f = Object.fromEntries(line.split(',').map((v, i) => [cols[i], v]));
+    const end = Number(f.seasonEnd);
+    const g = Number(f.games);
+    if (!g) continue;
+    const name = resolveSourceName(f.name, end);
+    const key = `${name}|${end}`;
+    const prior = seasonsB.get(key);
+    const add = { reb: Number(f.reboundsTotal) || 0, ast: Number(f.assists) || 0, pts: Number(f.points) || 0, g, mp: Number(f.numMinutes) || 0 };
+    // A player traded mid-season has a line a team; summed.
+    const acc = prior ? { reb: prior.raw.reb + add.reb, ast: prior.raw.ast + add.ast, pts: prior.raw.pts + add.pts, g: prior.raw.g + add.g, mp: prior.mp + add.mp } : add;
+    seasonsB.set(key, { end, mp: acc.mp, pos: seasonsA.get(key)?.pos, raw: { ...body(name), reb: acc.reb, ast: acc.ast, pts: acc.pts, g: acc.g, rpg: acc.reb / acc.g, apg: acc.ast / acc.g, ppg: acc.pts / acc.g }, z: [] });
+  }
+}
+
+function zScore(map: Map<string, Season>, features: readonly string[], inReference: (s: Season) => boolean) {
+  for (const group of Object.values(Object.groupBy([...map.values()], (s) => String(s.end)))) {
+    const ref = group!.filter(inReference);
+    const stats = features.map((f) => {
+      const v = ref.map((s) => s.raw[f]).filter((x) => !Number.isNaN(x));
+      const m = v.reduce((a, b) => a + b, 0) / (v.length || 1);
+      const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length || 1)) || 1;
+      return { m, sd };
+    });
+    for (const s of group!) s.z = features.map((f, i) => (Number.isNaN(s.raw[f]) ? 0 : (s.raw[f] - stats[i].m) / stats[i].sd));
+  }
+}
+zScore(seasonsA, FEATURES_A, (s) => s.mp >= 500);
+zScore(seasonsB, FEATURES_B, (s) => s.raw.g >= 40);
+
+/** Least squares on 1980-2008, then the line's output mapped back onto 1-5 through each position's
+ * mean read — a straight line pulls both ends toward the middle (every PG reads a little SG, every
+ * C a little PF). */
+function fitModel(label: string, map: Map<string, Season>, features: readonly string[], enough: (s: Season) => boolean) {
+  const train = [...map.values()].filter((s) => s.end >= 1980 && s.end <= 2008 && enough(s) && s.pos !== undefined && !Number.isNaN(s.raw.height));
+  const X = train.map((s) => [1, ...s.z]);
+  const y = train.map((s) => s.pos!);
+  const k = X[0].length;
+  const A = Array.from({ length: k }, (_, i) => [...Array.from({ length: k }, (_, j) => X.reduce((s, r) => s + r[i] * r[j], 0)), X.reduce((s, r, n) => s + r[i] * y[n], 0)]);
+  for (let i = 0; i < k; i++) {
+    const p = A[i][i];
+    for (let j = i; j <= k; j++) A[i][j] /= p;
+    for (let r = 0; r < k; r++) if (r !== i) for (let j = k; j >= i; j--) A[r][j] -= A[r][i] * A[i][j];
+  }
+  const beta = A.map((r) => r[k]);
+  const linear = (z: number[]) => [1, ...z].reduce((s, x, i) => s + x * beta[i], 0);
+  const lin = train.map((s) => linear(s.z));
+  const anchors = POS.map((_, i) => {
+    const v = lin.filter((_, n) => train[n].pos === i + 1);
+    return v.reduce((a, b) => a + b, 0) / v.length;
   });
-  for (const s of group!) s.z = FEATURES.map((f, i) => (Number.isNaN(s.raw[f]) ? 0 : (s.raw[f] - stats[i].m) / stats[i].sd));
+  const predict = (z: number[]) => {
+    const x = linear(z);
+    if (x <= anchors[0]) return 1 + (x - anchors[0]) / (anchors[1] - anchors[0]);
+    for (let i = 1; i < 5; i++) if (x <= anchors[i]) return i + (x - anchors[i - 1]) / (anchors[i] - anchors[i - 1]);
+    return 5 + (x - anchors[4]) / (anchors[4] - anchors[3]);
+  };
+  const fitted = train.map((s) => predict(s.z));
+  const my = y.reduce((a, b) => a + b, 0) / y.length;
+  const r2 = 1 - fitted.reduce((s, f, i) => s + (y[i] - f) ** 2, 0) / y.reduce((s, v) => s + (v - my) ** 2, 0);
+  const exact = fitted.filter((f, i) => Math.max(1, Math.min(5, Math.round(f))) === y[i]).length / y.length;
+  console.log(`Model ${label}: ${train.length} seasons 1980-2008, R² ${r2.toFixed(2)}, ${(100 * exact).toFixed(0)}% exact; weights ${['const', ...features].map((f, i) => `${f} ${beta[i].toFixed(2)}`).join(', ')}`);
+  return predict;
 }
+const predictA = fitModel('A (BBRef Advanced)', seasonsA, FEATURES_A, (s) => s.mp >= 1000);
+const predictB = fitModel('B (box, every era)', seasonsB, FEATURES_B, (s) => s.raw.g >= 50 && (s.mp >= 1000 || s.mp === 0));
 
-// Least squares on the classic era.
-const train = [...seasons.values()].filter((s) => s.end >= 1980 && s.end <= 2008 && s.mp >= 1000 && s.pos !== undefined && !Number.isNaN(s.raw.height));
-const X = train.map((s) => [1, ...s.z]);
-const y = train.map((s) => s.pos!);
-const k = X[0].length;
-const A = Array.from({ length: k }, (_, i) => [...Array.from({ length: k }, (_, j) => X.reduce((s, r) => s + r[i] * r[j], 0)), X.reduce((s, r, n) => s + r[i] * y[n], 0)]);
-for (let i = 0; i < k; i++) {
-  const p = A[i][i];
-  for (let j = i; j <= k; j++) A[i][j] /= p;
-  for (let r = 0; r < k; r++) if (r !== i) for (let j = k; j >= i; j--) A[r][j] -= A[r][i] * A[i][j];
-}
-const beta = A.map((r) => r[k]);
-const linear = (z: number[]) => [1, ...z].reduce((s, x, i) => s + x * beta[i], 0);
-// A straight line pulls both ends toward the middle (every PG reads a little SG, every C a little
-// PF), so the line's output is mapped back onto the scale through each position's classic-era
-// mean read: piecewise linear, PG's mean -> 1 … C's mean -> 5.
-const linearFit = train.map((s) => linear(s.z));
-const anchors = POS.map((_, i) => {
-  const v = linearFit.filter((_, n) => train[n].pos === i + 1);
-  return v.reduce((a, b) => a + b, 0) / v.length;
-});
-const predict = (z: number[]) => {
-  const x = linear(z);
-  if (x <= anchors[0]) return 1 + (x - anchors[0]) / (anchors[1] - anchors[0]);
-  for (let i = 1; i < 5; i++) if (x <= anchors[i]) return i + (x - anchors[i - 1]) / (anchors[i] - anchors[i - 1]);
-  return 5 + (x - anchors[4]) / (anchors[4] - anchors[3]);
-};
-const fitted = train.map((s) => predict(s.z));
-const my = y.reduce((a, b) => a + b, 0) / y.length;
-const r2 = 1 - fitted.reduce((s, f, i) => s + (y[i] - f) ** 2, 0) / y.reduce((s, v) => s + (v - my) ** 2, 0);
-const exact = fitted.filter((f, i) => Math.round(f) === y[i]).length / y.length;
-console.log(`Classic-era mean read by position: ${POS.map((p, i) => `${p} ${anchors[i].toFixed(2)}`).join(', ')}`);
-console.log(`Fit on ${train.length} seasons 1980-2008 (1000+ min): R² ${r2.toFixed(2)}, ${(100 * exact).toFixed(0)}% exact, weights: ${['const', ...FEATURES].map((f, i) => `${f} ${beta[i].toFixed(2)}`).join(', ')}`);
-
-// Every pool span: minutes-weighted over its seasons.
+// Every pool span: each season read by A where BBRef has it, else by B; weighted by games.
 const competence = competenceData as Record<string, { nat: Position[]; pos: Partial<Record<Position, number>> }>;
-interface Row { span: PlayerSpan; tag: number; pred: number; functional: Position; nat: Position[]; eff: number; height?: number; bbrefPos: number }
+interface Row { span: PlayerSpan; tag: number; pred: number; functional: Position; nat: Position[]; eff: number; height?: number; bbrefPos: number; byB: number; seasons: number }
 const rows: Row[] = [];
 for (const s of draftPool) {
   const name = normalizePlayerName(s.playerName);
-  const ss = spanEndYears(s.spanLabel).map((e) => seasons.get(`${name}|${e}`)).filter((x): x is Season => Boolean(x && x.mp > 0));
-  if (!ss.length || getHeightInches(s.playerName) === undefined) continue;
-  const mp = ss.reduce((a, x) => a + x.mp, 0);
-  const pred = ss.reduce((a, x) => a + x.mp * predict(x.z), 0) / mp;
-  const withPos = ss.filter((x) => x.pos !== undefined);
+  if (getHeightInches(s.playerName) === undefined) continue;
+  let sum = 0;
+  let w = 0;
+  let wB = 0;
+  let posSum = 0;
+  let posW = 0;
+  for (const e of spanEndYears(s.spanLabel)) {
+    const a = seasonsA.get(`${name}|${e}`);
+    const b = seasonsB.get(`${name}|${e}`);
+    const games = b?.raw.g ?? (a?.mp ? a.mp / 30 : 0);
+    if (!games) continue;
+    if (a && a.mp > 0) sum += games * predictA(a.z);
+    else if (b) {
+      sum += games * predictB(b.z);
+      wB += games;
+    } else continue;
+    w += games;
+    if (a?.pos !== undefined) {
+      posSum += games * a.pos;
+      posW += games;
+    }
+  }
+  if (!w) continue;
   rows.push({
     span: s,
     tag: num(s.primaryPosition),
-    pred,
+    pred: sum / w,
     functional: functionalPosition(s),
     nat: competence[name]?.nat ?? [],
     eff: effectiveTalent(s),
     height: getHeightInches(s.playerName),
-    bbrefPos: withPos.length ? withPos.reduce((a, x) => a + x.mp * x.pos!, 0) / withPos.reduce((a, x) => a + x.mp, 0) : NaN,
+    bbrefPos: posW ? posSum / posW : NaN,
+    byB: wB / w,
+    seasons: w,
   });
 }
 
-console.log(`\n${rows.length} pool spans (1973-74 on, with a height). Pool tag minus all-time position, by era (+ = tagged bigger than he plays):`);
-for (const [label, lo, hi] of [['1974-1989', 1974, 1989], ['1990-1999', 1990, 1999], ['2000-2009', 2000, 2009], ['2010-2017', 2010, 2017], ['2018-2026', 2018, 2026]] as const) {
+console.log(`\n${rows.length} of ${draftPool.length} pool spans read (${rows.filter((r) => r.byB > 0.5).length} mostly by model B). Pool tag minus all-time position, by era (+ = tagged bigger than he plays):`);
+for (const [label, lo, hi] of [['1947-1973', 1947, 1973], ['1974-1989', 1974, 1989], ['1990-1999', 1990, 1999], ['2000-2009', 2000, 2009], ['2010-2017', 2010, 2017], ['2018-2026', 2018, 2026]] as const) {
   const g = rows.filter((r) => {
     const e = spanEndYears(r.span.spanLabel).at(-1)!;
     return e >= lo && e <= hi;
@@ -205,3 +257,42 @@ writeFileSync(
   resolve(root, 'reports/position-audit.csv'),
   ['name,span,tag,functional,natural,allTime,allTimePos,bbrefPos,gap,tal,height', ...rows.map((r) => `"${r.span.playerName}",${r.span.spanLabel},${r.span.primaryPosition},${r.functional},${r.nat.join('/')},${r.pred.toFixed(2)},${nameOf(r.pred)},${r.bbrefPos.toFixed(2)},${gapOf(r).toFixed(2)},${r.eff.toFixed(0)},${r.height ?? ''}`)].join('\n'),
 );
+
+// The proposal the user reviews (`--review`): each span's all-time position where it sits GAP+ of a
+// position from its tag, except a tagged PG who runs the offense (Primary Ball Handler, or an AST%
+// in his season's top ~7%) — size alone doesn't make Magic or Luka a wing.
+if ('review' in args) {
+  const evidence = (s: PlayerSpan) => {
+    const name = normalizePlayerName(s.playerName);
+    const as = spanEndYears(s.spanLabel).map((e) => seasonsA.get(`${name}|${e}`)).filter((x): x is Season => Boolean(x && x.mp > 0));
+    const bs = spanEndYears(s.spanLabel).map((e) => seasonsB.get(`${name}|${e}`)).filter((x): x is Season => Boolean(x));
+    const avg = (xs: Season[], f: string, z = false) => {
+      const v = xs.map((x) => (z ? x.z[FEATURES_A.indexOf(f as never)] : x.raw[f])).filter((x) => !Number.isNaN(x));
+      return v.length ? Math.round((10 * v.reduce((a, b) => a + b, 0)) / v.length) / 10 : null;
+    };
+    return { drb: avg(as, 'drb_pct'), ast: avg(as, 'ast_pct'), astZ: avg(as, 'ast_pct', true), blk: avg(as, 'blk_pct'), three: as.length ? avg(as, 'fg3a_per_fga_pct') : null, rpg: avg(bs, 'rpg'), apg: avg(bs, 'apg'), listed: [...new Set(as.map((x) => x.pos).filter((p): p is number => p !== undefined).map((p) => POS[p - 1]))] };
+  };
+  const out = new Map<string, { name: string; height?: number; weight?: number; natural: Position[]; tal: number; spans: unknown[] }>();
+  for (const r of rows) {
+    const c = Math.max(1, Math.min(5, r.pred));
+    const ev = evidence(r.span);
+    let proposal: Position = Math.abs(r.tag - c) >= GAP ? nameOf(c) : r.span.primaryPosition;
+    let reason = proposal === r.span.primaryPosition ? '' : 'profile';
+    if (r.span.primaryPosition === 'PG' && proposal !== 'PG' && (r.span.offensiveArchetype === 'Primary Ball Handler' || (ev.astZ ?? 0) >= 1.5)) {
+      proposal = 'PG';
+      reason = 'kept: runs the offense';
+    }
+    const p = out.get(r.span.playerName) ?? { name: r.span.playerName, height: r.height, weight: getBodyWeightLbs(r.span.playerName), natural: r.nat, tal: 0, spans: [] };
+    p.tal = Math.max(p.tal, Math.round(r.eff));
+    p.spans.push({ label: r.span.spanLabel, tag: r.span.primaryPosition, secondary: r.span.secondaryPositions, read: Math.round(100 * r.pred) / 100, proposal, reason, tal: Math.round(r.eff), role: r.span.offensiveArchetype, def: r.span.defensiveRole, ...ev });
+    out.set(r.span.playerName, p);
+  }
+  const changed = [...out.values()].filter((p) => (p.spans as { proposal: string; tag: string }[]).some((s) => s.proposal !== s.tag));
+  for (const p of changed) (p.spans as { label: string }[]).sort((a, b) => a.label.localeCompare(b.label));
+  changed.sort((a, b) => b.tal - a.tal);
+  writeFileSync(resolve(root, 'reports/position-review.json'), JSON.stringify(changed));
+  const spans = changed.flatMap((p) => p.spans as { proposal: string; tag: string }[]);
+  console.log(`\nreview: ${changed.length} players, ${spans.filter((s) => s.proposal !== s.tag).length} span changes proposed (TAL 70+: ${changed.filter((p) => p.tal >= 70).length} players, 55+: ${changed.filter((p) => p.tal >= 55).length}) -> reports/position-review.json`);
+  const moves = Object.groupBy(spans.filter((s) => s.proposal !== s.tag), (s) => `${s.tag}->${s.proposal}`);
+  console.log('  ' + Object.entries(moves).sort((a, b) => b[1]!.length - a[1]!.length).map(([k, v]) => `${k} ${v!.length}`).join(', '));
+}

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import teamSeasons from '../src/data/awards/teamSeasons.json';
 import { draftPool } from '../src/data/draftPool';
-import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
+import { normalizePlayerName, type PlayerSpan, type Position } from '../src/data/schema';
 import { resolveSourceName } from '../src/data/sourceNameResolver';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { spanEndYears } from '../src/engine/era';
@@ -38,12 +38,27 @@ for (const s of draftPool) {
   const k = normalizePlayerName(s.playerName);
   byName.set(k, [...(byName.get(k) ?? []), s]);
 }
-const spanFor = (name: string, end: number) => {
+// `--positions=reports/position-review.json`: rate each span at the position proposed there instead
+// of its tag (a copy of the span under a new id, so nothing cached for the tagged one is reused).
+const proposed = new Map<string, Position>();
+if (args.positions)
+  for (const p of JSON.parse(readFileSync(resolve(root, args.positions), 'utf8')) as { name: string; spans: { label: string; proposal: Position }[] }[])
+    for (const s of p.spans) proposed.set(`${p.name}|${s.label}`, s.proposal);
+const asProposed = (s: PlayerSpan): PlayerSpan => {
+  const to = proposed.get(`${s.playerName}|${s.spanLabel}`);
+  if (!to || to === s.primaryPosition) return s;
+  return { ...s, id: `${s.id}~${to}`, primaryPosition: to, secondaryPositions: [s.primaryPosition, ...s.secondaryPositions.filter((p) => p !== to && p !== s.primaryPosition)] };
+};
+const spanForTagged = (name: string, end: number) => {
   const offCentre = (s: PlayerSpan) => {
     const ys = spanEndYears(s.spanLabel);
     return Math.abs(ys[Math.floor(ys.length / 2)] - end);
   };
   return (byName.get(name) ?? []).filter((s) => spanEndYears(s.spanLabel).includes(end)).sort((a, b) => offCentre(a) - offCentre(b))[0];
+};
+const spanFor = (name: string, end: number) => {
+  const s = spanForTagged(name, end);
+  return s && asProposed(s);
 };
 
 // Player minutes by team-season.
@@ -119,7 +134,7 @@ const byD = corr(teams.map((t) => t.dtal), y);
 const byB = corr(teams.map((t) => t.dbpm), y);
 console.log(`${teams.length} team-seasons ${FROM}+ (${skipped} skipped: under ${100 * MIN_COVERED}% of minutes in the pool)`);
 console.log(`Team defense (DRtg over league, lower = better) vs minutes-weighted:`);
-console.log(`  D-TAL  r ${(-byD.r).toFixed(2)}  (${byD.slope.toFixed(2)} DRtg a D-TAL point)`);
+console.log(`  D-TAL  r ${(-byD.r).toFixed(3)}  (${byD.slope.toFixed(2)} DRtg a D-TAL point)${proposed.size ? `; player-seasons rated at a proposed position: ${teams.reduce((n, t) => n + t.players.filter((p) => p.span.id.includes('~')).length, 0)}` : ''}`);
 console.log(`  DBPM   r ${(-byB.r).toFixed(2)}`);
 for (const [label, lo, hi] of [['1974-1996', 1974, 1996], ['1997-2013', 1997, 2013], ['2014-2026', 2014, 2026]] as const) {
   const g = teams.filter((t) => {

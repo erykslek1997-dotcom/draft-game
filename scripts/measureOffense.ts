@@ -2,7 +2,9 @@ import benchTeams from '../src/data/benchTeams.json';
 import lineups from '../src/data/awards/lineups5.json';
 import teamSeasons from '../src/data/awards/teamSeasons.json';
 import { draftPool } from '../src/data/draftPool';
-import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { normalizePlayerName, type PlayerSpan, type Position } from '../src/data/schema';
 import { spanById } from '../src/engine/bestFive';
 import { spanEndYears } from '../src/engine/era';
 import { mechanicsPer100 } from '../src/engine/liveGame';
@@ -88,6 +90,16 @@ const spanFor = (name: string, endYear: number) => {
     return mid(a) - mid(b);
   })[0];
 };
+// `--positions=reports/position-review.json`: each span at the position proposed there (a copy under a new id).
+const proposed = new Map<string, Position>();
+if (args.positions)
+  for (const p of JSON.parse(readFileSync(resolve(import.meta.dirname, '..', args.positions), 'utf8')) as { name: string; spans: { label: string; proposal: Position }[] }[])
+    for (const sp of p.spans) proposed.set(`${p.name}|${sp.label}`, sp.proposal);
+const asProposed = (s: PlayerSpan | undefined): PlayerSpan | undefined => {
+  const to = s && proposed.get(`${s.playerName}|${s.spanLabel}`);
+  if (!s || !to || to === s.primaryPosition) return s;
+  return { ...s, id: `${s.id}~${to}`, primaryPosition: to, secondaryPositions: [s.primaryPosition, ...s.secondaryPositions.filter((p) => p !== to && p !== s.primaryPosition)] };
+};
 const leagueOrtg = new Map<string, number>();
 for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { season: string; ortg: number }[], (r) => r.season)))
   leagueOrtg.set(season, rows!.reduce((s, r) => s + r.ortg, 0) / rows!.length);
@@ -96,7 +108,7 @@ let missing = 0;
 for (const u of lineups as { season: string; team: string; players: string[]; min: number; ortg: number }[]) {
   if (u.min < MIN_UNIT_MINUTES) continue;
   const end = parseInt(u.season.slice(0, 4), 10) + 1;
-  const five = u.players.map((n) => spanFor(n, end));
+  const five = u.players.map((n) => asProposed(spanFor(n, end)));
   if (five.some((s) => !s) || !leagueOrtg.has(u.season)) {
     missing++;
     continue;
