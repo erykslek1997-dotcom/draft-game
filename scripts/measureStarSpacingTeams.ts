@@ -113,6 +113,8 @@ for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]
   rows.push({ rim: c.rim, mm: c.mm, hub: Math.max(...five.map(ballShare)), arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
 }
 console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
+// `FROM=<year>`: keep only seasons ending that year or later (an era check of every result below).
+if (process.env.FROM) rows.splice(0, rows.length, ...rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= Number(process.env.FROM)));
 function wols(X: number[][], y: number[], w: number[]) {
   const rowsX = X.map((r) => [1, ...r]);
   const k = rowsX[0].length;

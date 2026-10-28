@@ -136,5 +136,5 @@ function audit(label: string, data: { ovr: number; parts: number[]; y: number }[
     console.log(`  ${p.padEnd(15)} ${corr(data.map((d) => d.parts[j]), data.map((d) => d.y)).toFixed(2).padStart(7)}   ${inOverall[j].toFixed(3).padStart(10)}          ${jw.toFixed(3).padStart(10)}              ${v[10].toFixed(3)} … ${v[190].toFixed(3)}   ${(jw / inOverall[j]).toFixed(2).padStart(6)}`);
   });
 }
-audit('REAL team-seasons (SRS)', rows.map((r) => ({ ovr: r.ovr, parts: r.parts, y: r.srs })));
+audit(`REAL team-seasons (SRS)${process.env.FROM ? ` from ${process.env.FROM}` : ''}`, rows.filter((r) => r.end >= Number(process.env.FROM ?? 0)).map((r) => ({ ovr: r.ovr, parts: r.parts, y: r.srs })));
 audit('GAME bench leagues (margin a 100 trips)', game);

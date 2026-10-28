@@ -38,6 +38,10 @@ const corr = (xs: number[], ys: number[]) => {
 };
 console.log(`${pairs.length} pairs of non-overlapping windows, both with 300+ playoff minutes`);
 console.log(`repeatability (window -> next window): total r ${corr(pairs.map((p) => p.a), pairs.map((p) => p.b)).toFixed(3)}, offense r ${corr(pairs.map((p) => p.ao), pairs.map((p) => p.bo)).toFixed(3)}, defense r ${corr(pairs.map((p) => p.ad), pairs.map((p) => p.bd)).toFixed(3)}`);
+for (const [label, lo, hi] of [['windows starting before 1997', 0, 1996], ['1997 on', 1997, 9999], ['2010 on', 2010, 9999]] as const) {
+  const g = pairs.filter((p) => { const y = Number(p.who.match(/(\d{4})-\d{2} ->/)?.[1] ?? 0); return y >= lo && y <= hi; });
+  if (g.length > 20) console.log(`  ${label} (${g.length}): total r ${corr(g.map((p) => p.a), g.map((p) => p.b)).toFixed(3)}`);
+}
 const big = pairs.filter((p) => p.mins >= 800);
 console.log(`  both 800+ playoff minutes (${big.length}): total r ${corr(big.map((p) => p.a), big.map((p) => p.b)).toFixed(3)}`);
 
