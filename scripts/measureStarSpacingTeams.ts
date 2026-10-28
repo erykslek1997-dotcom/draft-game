@@ -10,6 +10,7 @@ import { offenseScore, offenseScoreBreakdown } from '../src/engine/scoring';
 import { computeOffensiveTalent } from '../src/engine/talent';
 import { rimPressureForFit } from '../src/engine/rimPressure';
 import { teamSpacingValue } from '../src/engine/midrangeGravity';
+import { ballShare } from '../src/engine/ballHandling';
 import { mechanicsPer100 } from '../src/engine/liveGame';
 import benchTeams from '../src/data/benchTeams.json';
 import { spanById } from '../src/engine/bestFive';
@@ -74,13 +75,13 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
+type Row = { mm: number; hub: number; arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
 const rows: Row[] = [];
 const yard = (benchTeams as { teams: { ids: string[] }[] }[]).slice(0, 4).map((lg, L) => {
   const ts = lg.teams.map((t, i) => teamOf(t.ids.map(spanById).filter(Boolean) as PlayerSpan[], `y${L}-${i}`));
   return ts.sort((a, b) => scoreTeam(a).overallExact - scoreTeam(b).overallExact)[Math.floor(ts.length / 2)];
 });
-const cache = new Map<string, { offense: number; mech: number; otal: number; spacing: number }>();
+const cache = new Map<string, { offense: number; mech: number; otal: number; spacing: number; mm: number }>();
 // rim star: rim pressure 0-100 scaled from 50 -> 0 to 80 -> 1, times his own spacing deficit (spacing 60 -> 0, 30 -> 1).
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 // Team-seasons (BBRef, 1973-74 on): the five with the most minutes on that team.
@@ -103,13 +104,13 @@ for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]
   if (!c) {
     const t = teamOf(five, key);
     const bd = offenseScoreBreakdown(t);
-    c = { offense: offenseScore(t), mech: yard.reduce((sum, y) => sum + mechanicsPer100(t, y)[0], 0) / yard.length, otal: bd.otal, spacing: bd.spacing };
+    c = { offense: offenseScore(t), mech: yard.reduce((sum, y) => sum + mechanicsPer100(t, y)[0], 0) / yard.length, otal: bd.otal, spacing: bd.spacing, mm: bd.mismatchStructure };
     cache.set(key, c);
   }
   const star = [...five].sort((p, q) => computeOffensiveTalent(q) - computeOffensiveTalent(p))[0];
   const rimStar = clamp01((rimPressureForFit(star) - 50) / 30) * clamp01((60 - teamSpacingValue(star)) / 30) * clamp01((computeOffensiveTalent(star) - 75) / 15);
   const mates = mean(five.filter((x) => x !== star).map(teamSpacingValue));
-  rows.push({ arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
+  rows.push({ mm: c.mm, hub: Math.max(...five.map(ballShare)), arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
 }
 console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
 function wols(X: number[][], y: number[], w: number[]) {
@@ -178,4 +179,16 @@ for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).
   };
   const real = rows.map((x) => x.y);
   console.log(`SWEEP score~real r ${r(rows.map((x) => x.offense), real).toFixed(4)}  game~real r ${r(rows.map((x) => x.mech), real).toFixed(4)}  score~game r ${r(rows.map((x) => x.offense), rows.map((x) => x.mech)).toFixed(4)}`);
+}
+
+// Step 6.5: does the mismatch-structure part pay off less when one player holds the ball (a hub)?
+// hub = the five's top ball share (ballHandling.ts); per 10 points of mismatch structure.
+{
+  const hubs = rows.map((r) => r.hub).sort((a, b) => a - b);
+  const mid = hubs[Math.floor(hubs.length / 2)];
+  console.log(`\n6.5 mismatch structure × hub (top ball share: median ${mid.toFixed(3)}, p90 ${hubs[Math.floor(hubs.length * 0.9)].toFixed(3)})`);
+  const X = (r: Row) => [r.otal, r.spacing / 10, r.mm / 10, ((r.hub - mid) * 10) * (r.mm / 10), (r.hub - mid) * 10];
+  const names = ['O-TAL bar', 'spacing (per 10)', 'mismatch (per 10)', 'mismatch × hub (per 0.10 share)', 'hub (per 0.10)'];
+  report('REAL ORtg', names, X, (r) => r.y);
+  report('GAME mechanics', names, X, (r) => r.mech);
 }
