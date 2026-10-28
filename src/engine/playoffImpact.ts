@@ -31,11 +31,20 @@ import finalsMvpData from '../data/awards/finalsMvp.json';
  *   `FINALS_MVP_POINTS` per season in the window (capped) — team success counts only there, where
  *   the award itself names the player (the project's no-ring-counting rule otherwise stands).
  */
-const TAL_POINTS_PER_BPM = 4;
+/**
+ * 2026-10-28, step 6.6 (the user: "B, realne zmiany"): the whole term at a third (points per BPM,
+ * both caps). `scripts/auditPlayoffTerm.ts`: across 2,167 pairs of a player's windows that share
+ * no season (300+ playoff minutes each), the term repeats at r 0.15 (0.23 at 800+ minutes) — most
+ * of it is the noise of 10-20 games, and it moved TAL by up to 17 (Kobe 2008-10 97 -> 80 without
+ * it). At a third: Backpicks GOAT Spearman 0.795 -> 0.809, Taylor top 10 0.818 (same), WOWYR 0.462
+ * -> 0.453, RAPM 0.711 -> 0.709; the top peaks hold (the greatest-peaks calibration). Finals MVP
+ * points unchanged.
+ */
+const TAL_POINTS_PER_BPM = 4 / 3;
 const RELIABILITY_MINUTES = 400;
 /** The per-side cap grows with the playoff sample: full `MAX_COMPONENT` from this many minutes. */
 const FULL_CAP_MINUTES = 800;
-const MAX_COMPONENT = 10;
+const MAX_COMPONENT = 10 / 3;
 /**
  * 2026-09-27: a playoff drop is shrunk and capped harder than a playoff rise. Measured on this
  * data, a player's playoff residual barely repeats from one year to the next (r 0.03-0.05; 0.13-0.14
@@ -44,7 +53,7 @@ const MAX_COMPONENT = 10;
  * positive one) and tops out at 5 TAL instead of 10.
  */
 const NEGATIVE_RELIABILITY_MINUTES = 2000;
-const MAX_NEGATIVE_COMPONENT = 5;
+const MAX_NEGATIVE_COMPONENT = 5 / 3;
 const MIN_SEASON_MINUTES_FOR_FIT = 150;
 const SHIELD_START_BPM = 4;
 const SHIELD_FULL_BPM = 8;
