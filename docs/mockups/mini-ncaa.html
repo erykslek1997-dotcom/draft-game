@@ -41,6 +41,24 @@ h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:
 /* phone */
 .ph{width:370px;max-width:100%}
 .gm.now{border-color:var(--red)}.gm.tbd .t{color:var(--faint)}
+.arena{background:radial-gradient(120% 80% at 50% 0%,#2a1a1d 0%,var(--paper) 70%);margin:-16px -16px 0;padding:18px 16px 14px;border-radius:18px 18px 0 0}
+.duel{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 6px}
+.crest{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 70%,#fff 10%),var(--c) 60%,color-mix(in srgb,var(--c) 60%,#000));display:grid;place-items:center;box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--c),0 10px 30px color-mix(in srgb,var(--c) 45%,transparent);position:relative}
+.crest span{font:900 26px var(--sans);color:#fff;letter-spacing:.02em}.crest small{position:absolute;bottom:-8px;background:var(--paper);border:1px solid var(--edge);border-radius:999px;padding:0 7px;font:800 11px var(--num);color:var(--ink)}
+.vsx{font:900 22px var(--sans);color:var(--red);font-style:italic}
+.duel-n{display:flex;justify-content:space-between;padding:6px 12px 0;font-size:15px}.duel-n.s{font-size:12px;color:var(--soft);padding-top:2px}
+.odds2{height:8px;border-radius:4px;background:#0a7ea8;overflow:hidden;margin:10px 12px 0}.odds2 i{display:block;height:100%;background:#c8102e}
+.stakes{text-align:center;font:italic 500 13px var(--sans);color:var(--ink);margin-top:12px}
+.road{margin:14px 0 4px;position:relative}
+.rs{display:flex;gap:12px;align-items:center;padding:8px 0;position:relative}
+.rs i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--num);font-style:normal;border:1.5px solid var(--edge);color:var(--faint);background:var(--paper);z-index:1}
+.rs:not(:last-child)::after{content:"";position:absolute;left:13px;top:36px;height:calc(100% - 28px);width:2px;background:var(--edge)}
+.rs.done i{background:var(--green);border-color:var(--green);color:#06140c}.rs.done:not(:last-child)::after{background:var(--green)}
+.rs.now i{border-color:var(--red);color:var(--red);box-shadow:0 0 0 4px color-mix(in srgb,var(--red) 25%,transparent)}
+.rs b{display:block;font-size:14px}.rs span{font-size:12.5px;color:var(--soft)}.rs.now b{color:var(--red)}
+.fold{display:flex;justify-content:space-between;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin-top:12px;color:var(--soft)}
+.mtree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}.mc{display:flex;flex-direction:column;justify-content:space-around;gap:5px}.mtree .rn{margin:0}
+.mtree .t{grid-template-columns:14px 1fr auto;gap:4px;padding:3px 5px;font-size:11.5px}.mtree .t .nmx{display:none}.mtree .gm{margin:0}
 .tabs{display:flex;gap:4px;margin:10px 0}.tabs span{flex:1;text-align:center;font:700 11.5px var(--sans);padding:7px 2px;border-radius:6px;background:var(--raised2);color:var(--soft)}
 .tabs span.on{background:var(--cream);color:var(--creamink)}
 .ph .gm{margin-bottom:8px}.ph .t{font-size:14px;padding:7px 10px}
@@ -80,20 +98,41 @@ h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:
  </div>
 </div></div>
 
-<p class="cap">2 · Telefon — drabinka po rundach</p>
+<p class="cap">2 · Telefon — „Road to the title” (immersyjnie)</p>
 <div class="row">
- <div class="g ph">
-  <div class="eb">Tournament · Final Four</div><div class="h2" style="font-size:24px">Comets vs Crawdads</div>
-  <div class="sub">You're the #5 seed, two wins in.</div>
-  <div class="tabs"><span>R16</span><span>Elite 8</span><span class="on">Final 4</span><span>Final</span></div>
-  <div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">104</b></div><div class="t l you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">97</b></div></div><div class="gm"><div class="t w"><span class="sd">6</span><span class="cd">ASP</span><span class="nmx">Elks</span><b class="num">110</b></div><div class="t l"><span class="sd">7</span><span class="cd">LBG</span><span class="nmx">Gulls</span><b class="num">99</b></div></div>
-  <span class="btn">▶ Play the Final Four</span><span class="btn line">Sim the game</span>
+ <div class="g ph imm">
+  <div class="arena">
+   <div class="eb" style="text-align:center">Final Four · tonight</div>
+   <div class="duel">
+    <div class="crest" style="--c:#c8102e"><span>BTR</span><small>#5</small></div>
+    <div class="vsx">VS</div>
+    <div class="crest" style="--c:#0a7ea8"><span>MIA</span><small>#1</small></div>
+   </div>
+   <div class="duel-n"><b>Crawdads</b><b>Comets</b></div>
+   <div class="duel-n s"><span>Overall 86.4</span><span>Overall 90.1</span></div>
+   <div class="odds2"><i style="width:44%"></i></div>
+   <div class="duel-n s"><span>you 44%</span><span>56%</span></div>
+   <div class="stakes">Win and you play for the title. Lose and the run ends here.</div>
+  </div>
+  <div class="road">
+   <div class="rs done"><i>✓</i><div><b>Round of 16</b><span>beat #12 Bison 104–97</span></div></div>
+   <div class="rs done"><i>✓</i><div><b>Elite Eight</b><span>beat #13 Kings 104–97</span></div></div>
+   <div class="rs now"><i>3</i><div><b>Final Four</b><span>#1 Comets · tonight</span></div></div>
+   <div class="rs"><i>4</i><div><b>Final</b><span>#6 Elks or #7 Gulls</span></div></div>
+  </div>
+  <span class="btn">▶ Tip-off</span><span class="btn line">Sim the game</span>
+  <div class="fold">The whole bracket <span>▸</span></div>
  </div>
- <div class="g ph">
-  <div class="tabs"><span class="on">R16</span><span>Elite 8</span><span>Final 4</span><span>Final</span></div>
-  <div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">96</b></div><div class="t l"><span class="sd">16</span><span class="cd">MOB</span><span class="nmx">Moles</span><b class="num">88</b></div></div><div class="gm"><div class="t l"><span class="sd">8</span><span class="cd">CHY</span><span class="nmx">Broncs</span><b class="num">84</b></div><div class="t w"><span class="sd">9</span><span class="cd">TUL</span><span class="nmx">Drillers</span><b class="num">94</b></div></div><div class="gm"><div class="t w you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">104</b></div><div class="t l"><span class="sd">12</span><span class="cd">FAR</span><span class="nmx">Bison</span><b class="num">97</b></div></div><div class="gm"><div class="t l"><span class="sd">4</span><span class="cd">RIC</span><span class="nmx">Crows</span><b class="num">96</b></div><div class="t w"><span class="sd">13</span><span class="cd">OMA</span><span class="nmx">Kings</span><b class="num">98</b></div></div><div class="gm"><div class="t w"><span class="sd">6</span><span class="cd">ASP</span><span class="nmx">Elks</span><b class="num">105</b></div><div class="t l"><span class="sd">11</span><span class="cd">REN</span><span class="nmx">Aces</span><b class="num">102</b></div></div><div class="gm"><div class="t w"><span class="sd">3</span><span class="cd">LRK</span><span class="nmx">Boulders</span><b class="num">109</b></div><div class="t l"><span class="sd">14</span><span class="cd">SPO</span><span class="nmx">Owls</span><b class="num">101</b></div></div><div class="gm"><div class="t w"><span class="sd">7</span><span class="cd">LBG</span><span class="nmx">Gulls</span><b class="num">110</b></div><div class="t l"><span class="sd">10</span><span class="cd">BOI</span><span class="nmx">Pines</span><b class="num">107</b></div></div><div class="gm"><div class="t l"><span class="sd">2</span><span class="cd">ORL</span><span class="nmx">Flamingos</span><b class="num">100</b></div><div class="t w"><span class="sd">15</span><span class="cd">TAC</span><span class="nmx">Tides</span><b class="num">112</b></div></div>
+ <div class="g ph imm">
+  <div class="eb">The bracket · your half</div>
+  <div class="mtree"><div class="rn">R16</div><div class="rn">Elite 8</div><div class="rn">Final 4</div>
+   <div class="mc"><div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">96</b></div><div class="t l"><span class="sd">16</span><span class="cd">MOB</span><span class="nmx">Moles</span><b class="num">88</b></div></div><div class="gm"><div class="t l"><span class="sd">8</span><span class="cd">CHY</span><span class="nmx">Broncs</span><b class="num">84</b></div><div class="t w"><span class="sd">9</span><span class="cd">TUL</span><span class="nmx">Drillers</span><b class="num">94</b></div></div><div class="gm"><div class="t w you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">104</b></div><div class="t l"><span class="sd">12</span><span class="cd">FAR</span><span class="nmx">Bison</span><b class="num">97</b></div></div><div class="gm"><div class="t l"><span class="sd">4</span><span class="cd">RIC</span><span class="nmx">Crows</span><b class="num">96</b></div><div class="t w"><span class="sd">13</span><span class="cd">OMA</span><span class="nmx">Kings</span><b class="num">98</b></div></div></div>
+   <div class="mc"><div class="gm"><div class="t w"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">93</b></div><div class="t l"><span class="sd">9</span><span class="cd">TUL</span><span class="nmx">Drillers</span><b class="num">82</b></div></div><div class="gm"><div class="t w you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">104</b></div><div class="t l"><span class="sd">13</span><span class="cd">OMA</span><span class="nmx">Kings</span><b class="num">97</b></div></div></div>
+   <div class="mc"><div class="gm now"><div class="t"><span class="sd">1</span><span class="cd">MIA</span><span class="nmx">Comets</span><b class="num">–</b></div><div class="t you"><span class="sd">5</span><span class="cd">BTR</span><span class="nmx">Crawdads</span><b class="num">–</b></div></div></div>
+  </div>
+  <div class="tabs"><span class="on">Your half</span><span>Other half</span><span>Final</span></div>
  </div>
- <div class="note"><p><b>Telefon:</b> zakładki rund zamiast drzewka (8 meczów nie mieści się w 4 kolumnach). Domyślnie runda, którą teraz grasz.</p><p><b>Desktop:</b> całe drzewko w 4 kolumnach; twoja drużyna kremowa w każdej rundzie.</p><p>Mecz na żywo, box score, Key moments, Skip — z play-offów All-Time, bez zmian.</p></div>
+ <div class="note"><p><b>Ekran meczu:</b> zamiast listy wyników — „pojedynek”: dwa herby w kolorach drużyn, VS, szanse silnika i stawka meczu („Win and you play for the title”).</p><p><b>Droga do tytułu:</b> 4 stopnie, odhaczane po każdej wygranej; przyszły rywal w finale już widoczny („#6 Elks or #7 Gulls”).</p><p><b>Drabinka:</b> pod „The whole bracket” — twoja połówka jako małe drzewko w 3 kolumnach (mieści się na 370 px), druga połówka i finał w zakładkach.</p><p>Do rozważenia: krótka animacja „wejścia” herbów i dźwięk buzzera przy tip-off.</p></div>
 </div>
 
 <p class="cap">3 · Koniec turnieju — odpadasz / mistrz</p>
