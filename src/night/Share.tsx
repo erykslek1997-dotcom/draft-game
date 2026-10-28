@@ -42,6 +42,24 @@ export interface PosterData {
   /** The season poster's draft grade over the profile (playtest 2026-10-22, mockup MC5 B):
    * "The draft · 3rd of 16" and "Rating 87 · best 90". */
   draft?: [string, string];
+  /** The Mini tournament's road, a cell a round (2026-10-28, mockup mini-tournament-share.html C):
+   * "R16 · W · #12 · 104–97". */
+  road?: { label: string; result: 'W' | 'L' | '—'; line: string }[];
+}
+
+function Road({ road }: { road?: PosterData['road'] }) {
+  if (!road?.length) return null;
+  return (
+    <div className="po-road">
+      {road.map((r) => (
+        <div key={r.label} className={r.result === 'W' ? 'w' : r.result === 'L' ? 'l' : undefined}>
+          <span>{r.label}</span>
+          <b>{r.result}</b>
+          <em>{r.line}</em>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const longDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -154,6 +172,7 @@ export function Poster({ d }: { d: PosterData }) {
           </div>
         </div>
       )}
+      <Road road={d.road} />
       <DraftProfile d={d} />
       <div className="po-strip">
         {d.strip.map(([k, v]) => (
@@ -225,6 +244,12 @@ export function Story({ d }: { d: PosterData }) {
               </div>
             ))}
           </div>
+        </>
+      )}
+      {d.road && (
+        <>
+          <div className="st-sec">The tournament</div>
+          <Road road={d.road} />
         </>
       )}
       <div className="st-sec">{d.draft ? 'The draft' : 'Team profile'}</div>

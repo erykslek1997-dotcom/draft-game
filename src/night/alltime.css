@@ -444,6 +444,15 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 .po-p small { font: 500 9px var(--num); color: var(--cink2); }
 .po-strip { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 12px; border-top: 1.5px solid var(--cink); border-bottom: 1.5px solid var(--cink); }
 .po-strip div { text-align: center; padding: 7px 0; }
+/* the Mini tournament's road on the poster: four rounds, W green, L red */
+.po-road { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 10px; border-top: 1.5px solid var(--cink); border-bottom: 1px solid var(--cline); }
+.po-road div { text-align: center; padding: 6px 2px; }
+.po-road div + div { border-left: 1px solid var(--cline); }
+.po-road span { display: block; font: 700 9px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
+.po-road b { display: block; font: 800 18px var(--cond); color: var(--cink2); }
+.po-road .w b { color: var(--cgreen); }
+.po-road .l b { color: var(--cred); }
+.po-road em { display: block; font: 600 10px var(--num); font-style: normal; color: var(--cink2); white-space: nowrap; }
 .po-strip div + div { border-left: 1px solid var(--cline); }
 .po-strip span { display: block; font: 700 9px var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cink2); }
 .po-strip b { font: 800 24px var(--cond); }
