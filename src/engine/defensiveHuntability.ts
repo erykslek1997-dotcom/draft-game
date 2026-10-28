@@ -219,11 +219,22 @@ const ANCHOR_DTAL_GATE = 88;
 const ANCHOR_DTAL_FULL = 100;
 const ANCHOR_MINUTES_FOR_FULL = 30;
 const MAX_ANCHOR_DAMPENING = 0.35;
+/**
+ * 2026-10-28, step 6.1 (the user: Nash beside Kawhi, Howard and Bell reads Defense 69 — "the weak
+ * defender pays twice"): an elite perimeter stopper covers too, not only a rim protector. Real
+ * five-man units (`scripts/measureHunting.ts`, 372 units 2007-08+) show a five's DRtg follows its
+ * mean D-TAL and the weakest link adds about nothing on top (−0.25 DRtg per SD), and a strong
+ * defender beside him leans the right way (gap×cover −0.44). The same gate and ramp as the anchor,
+ * for a Point of Attack / Wing Stopper / Chaser; the stronger of the two covers gives its full
+ * share, the other half of its own, together at most `MAX_COVER_DAMPENING`.
+ */
+const PERIMETER_COVER_ROLES = ['Point of Attack', 'Wing Stopper', 'Chaser'];
+const MAX_COVER_DAMPENING = 0.55;
 
-function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): number {
+function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: readonly string[]): number {
   let best = 0;
   for (const player of team.roster) {
-    if (!RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) continue;
+    if (!roles.includes(player.defensiveRole)) continue;
     const minutes = minutesByPlayer.get(player.id) ?? 0;
     if (minutes <= 0) continue;
     const dtal = computeDefensiveTalent(player);
@@ -232,7 +243,13 @@ function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): numb
     const minutesFactor = Math.min(1, minutes / ANCHOR_MINUTES_FOR_FULL);
     best = Math.max(best, dtalFactor * minutesFactor);
   }
-  return 1 - MAX_ANCHOR_DAMPENING * best;
+  return best;
+}
+
+function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): number {
+  const rim = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, RIM_PROTECTOR_ROLES);
+  const perimeter = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, PERIMETER_COVER_ROLES);
+  return 1 - Math.min(MAX_COVER_DAMPENING, Math.max(rim, perimeter) + 0.5 * Math.min(rim, perimeter));
 }
 
 /**
