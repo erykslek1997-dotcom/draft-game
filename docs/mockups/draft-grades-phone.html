@@ -57,6 +57,12 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
 .gr6.w6{grid-template-columns:repeat(6,1fr)}
 .desk th:nth-child(n+4):nth-child(-n+9){text-align:center}
 .btn.mini{display:inline-block;width:auto;margin:0;padding:5px 12px;font-size:12px}
+.g.dkw{width:760px;padding:16px 18px}
+.dkc{display:grid;grid-template-columns:250px 1fr;gap:18px;align-items:start;padding:12px 14px}
+.dkl .top b{font-size:15px}
+.gr6.w6 div{padding:6px 2px}.gr6.w6 b{font-size:18px}.gr6.w6 span{font-size:10.5px}
+.dkbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}.btn.dkb{display:inline-block;width:auto;margin:0;padding:8px 18px;font-size:13px}
+.dkw h3{margin:12px 0 4px}.dkw .oy td{padding:6px 4px}
 .more{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--soft)}.more b{color:var(--ink)}
 </style>
 </head>
@@ -141,30 +147,32 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
   </div>
  </div>
   <div style="flex-basis:100%"></div>
- <div><p class="cap">4a · Okno gracza — desktop, przed zwiadem</p><div class="g" style="width:900px">
-   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
-   <div class="card">
-    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
-    <div class="dk2"><div class="nums" style="margin:0"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
-    <div><div class="tierline" style="border:0;margin:0;padding:0"><span class="tier">ALL-NBA 1ST · MVP</span></div><div class="gr6 w6 lock"><div><b class="">?</b><span>Offense</span></div><div><b class="">?</b><span>Defense</span></div><div><b class="">?</b><span>Spacing</span></div><div><b class="">?</b><span>Portability</span></div><div><b class="">?</b><span>Finishing</span></div><div><b class="">?</b><span>Durability</span></div></div></div></div>
-    <span class="btn" style="width:220px;margin-left:auto">Draft 2002-04</span>
+ <div><p class="cap">4a · Okno gracza — desktop, przed zwiadem</p><div class="g dkw">
+   <div class="hd" style="margin-bottom:10px"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card dkc">
+    <div class="dkl">
+     <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
+     <div class="nums" style="margin-top:8px"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+     <span class="tier s" style="display:inline-block;margin-top:8px">ALL-NBA 1ST · MVP</span>
+    </div>
+    <div><div class="gr6 w6 lock"><div><b class="">?</b><span>Offense</span></div><div><b class="">?</b><span>Defense</span></div><div><b class="">?</b><span>Spacing</span></div><div><b class="">?</b><span>Portability</span></div><div><b class="">?</b><span>Finishing</span></div><div><b class="">?</b><span>Durability</span></div></div><div class="dkbtns"><span class="btn line dkb">Scout him · 2 left</span><span class="btn dkb">Draft 2002-04</span></div></div>
    </div>
-   <div class="scout" style="display:flex;gap:12px;align-items:center"><span style="flex:1"></span><span class="btn line" style="width:auto;margin:0;padding:9px 16px">Scout him · 2 left</span></div>
-   <h3>Other years<span></span></h3>
-   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Tier · awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
+   <h3>Other years</h3>
+   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND · DPOY</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="gd"><b class="">?</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
   </div></div>
  <div style="flex-basis:100%"></div>
- <div><p class="cap">4b · Okno gracza — desktop, po zwiadzie</p><div class="g" style="width:900px">
-   <div class="hd"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
-   <div class="card">
-    <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
-    <div class="dk2"><div class="nums" style="margin:0"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
-    <div><div class="tierline" style="border:0;margin:0;padding:0"><span class="tier">ALL-NBA 1ST · MVP</span></div><div class="gr6 w6"><div><b class="mid">B+</b><span>Offense</span></div><div><b class="hi">A</b><span>Defense</span></div><div><b class="lo">D</b><span>Spacing</span></div><div><b class="hi">A−</b><span>Portability</span></div><div><b class="mid">B</b><span>Finishing</span></div><div><b class="hi">A</b><span>Durability</span></div></div></div></div>
-    <span class="btn" style="width:220px;margin-left:auto">Draft 2002-04</span>
+ <div><p class="cap">4b · Okno gracza — desktop, po zwiadzie</p><div class="g dkw">
+   <div class="hd" style="margin-bottom:10px"><div class="fc">KG</div><div><h2>Kevin Garnett</h2><span>PF · MIN · BOS · BRK · 1996–2016</span></div><span class="x">✕</span></div>
+   <div class="card dkc">
+    <div class="dkl">
+     <div class="top"><span class="eb">On the card</span><b>2002-04</b><span class="coin">● 14.2</span></div>
+     <div class="nums" style="margin-top:8px"><div><b>23.0</b><span>PTS</span></div><div><b>13.4</b><span>REB</span></div><div><b>5.6</b><span>AST</span></div><div><b>81</b><span>TAL</span></div></div>
+     <span class="tier s" style="display:inline-block;margin-top:8px">ALL-NBA 1ST · MVP</span>
+    </div>
+    <div><div class="gr6 w6"><div><b class="mid">B+</b><span>Offense</span></div><div><b class="hi">A</b><span>Defense</span></div><div><b class="lo">D</b><span>Spacing</span></div><div><b class="hi">A−</b><span>Portability</span></div><div><b class="mid">B</b><span>Finishing</span></div><div><b class="hi">A</b><span>Durability</span></div></div><div class="dkbtns"><span class="btn dkb">Draft 2002-04</span></div></div>
    </div>
-   
-   <h3>Other years<span></span></h3>
-   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Tier · awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND · DPOY</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="lo">C</b></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="mid">B−</b></td><td class="gd"><b class="mid">B</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A−</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
+   <h3>Other years</h3>
+   <table class="oy team desk"><thead><tr><th>Years</th><th>PTS · REB · AST</th><th>Awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Por</th><th>Fin</th><th>Dur</th><th>Caps</th><th></th></tr></thead><tbody><tr><td class="y">2007-09</td><td>18.8 · 9.2 · 3.6</td><td><span class="tier s">ALL-NBA 2ND · DPOY</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="lo">C</b></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="mid">B−</b></td><td class="gd"><b class="mid">B</b></td><td class="c">11.6</td><td><span class="btn line mini">Draft</span></td></tr><tr><td class="y">1999-01</td><td>21.6 · 11.6 · 5.0</td><td><span class="tier s">ALL-NBA 2ND</span></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A−</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="mid">B</b></td><td class="gd"><b class="hi">A</b></td><td class="c">12.9</td><td><span class="btn line mini">Draft</span></td></tr></tbody></table>
   </div></div>
  <div style="flex-basis:100%"></div>
  <div class="note">
