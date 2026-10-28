@@ -261,6 +261,23 @@ writeFileSync(
 // The proposal the user reviews (`--review`): each span's all-time position where it sits GAP+ of a
 // position from its tag, except a tagged PG who runs the offense (Primary Ball Handler, or an AST%
 // in his season's top ~7%) — size alone doesn't make Magic or Luka a wing.
+/**
+ * 2026-10-28, fitted to the user's 2,032 reviewed windows (212 players, TAL 55+): he stays at the tag
+ * until the read leaves it by a threshold of its own for each position and direction, and moves one
+ * position at a time (a model jump of two — C -> SF, PF -> SG — he always cut to one step). The
+ * thresholds came out at the old 0.75 almost everywhere; the exceptions are SG -> PG at 0.55 and PF ->
+ * C at 0.9, and a Stretch Big stays a PF. Validated by player: 82.7% of his picks against 81.6% for
+ * the plain 0.75 rule — the rest is a call about the player, not a number.
+ */
+const STEP_UP: Partial<Record<Position, number>> = { PG: 0.85, SG: 0.75, SF: 0.75, PF: 0.9 };
+const STEP_DOWN: Partial<Record<Position, number>> = { SG: 0.55, SF: 0.75, PF: 0.75, C: 0.75 };
+function proposeStep(tag: Position, read: number, archetype: string): Position {
+  const t = num(tag);
+  const d = read - t;
+  if (d > 0 && d > (STEP_UP[tag] ?? 9) && !(tag === 'PF' && archetype === 'Stretch Big')) return POS[t];
+  if (d < 0 && -d > (STEP_DOWN[tag] ?? 9)) return POS[t - 2];
+  return tag;
+}
 if ('review' in args) {
   const evidence = (s: PlayerSpan) => {
     const name = normalizePlayerName(s.playerName);
@@ -276,7 +293,7 @@ if ('review' in args) {
   for (const r of rows) {
     const c = Math.max(1, Math.min(5, r.pred));
     const ev = evidence(r.span);
-    let proposal: Position = Math.abs(r.tag - c) >= GAP ? nameOf(c) : r.span.primaryPosition;
+    let proposal = proposeStep(r.span.primaryPosition, c, r.span.offensiveArchetype);
     let reason = proposal === r.span.primaryPosition ? '' : 'profile';
     if (r.span.primaryPosition === 'PG' && proposal !== 'PG' && (r.span.offensiveArchetype === 'Primary Ball Handler' || (ev.astZ ?? 0) >= 1.5)) {
       proposal = 'PG';
