@@ -8,6 +8,7 @@ import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { spanEndYears } from '../src/engine/era';
 import '../src/engine/fit'; // registers the neighbour windows D-TAL blends with
 import { realSpan } from '../src/engine/realAdvancedLookup';
+import { HUSTLE_DEFENDERS } from '../src/data/hustleDefenders';
 
 /**
  * 2026-10-28, weeks 2-3 step 3 (the D-TAL audit, replacing the unclear "Fix B"): D-TAL against the
@@ -199,7 +200,13 @@ for (const q of players.values()) {
 }
 // In D-TAL points: a full-time player (share 1) moves the team average by d/5, worth slope·d/5 DRtg.
 const toDtal = (adj: number) => (5 * adj) / byD.slope;
-const regular = [...players.values()].filter((q) => q.exposure >= 3);
+// `--skip-named`: leave out players whose D-TAL carries a hand-made adjustment (named bonus or floor,
+// the hustle-defender list) — the team results can't see the reasons behind those, and for some of
+// them (Marion: weak Phoenix defenses around him) team results are the wrong judge by construction.
+const NAMED = new Set(
+  ['Shawn Marion', 'Klay Thompson', 'Toumani Camara', 'Bill Russell', 'Wilt Chamberlain', ...HUSTLE_DEFENDERS.map((h) => h.playerName)].map(normalizePlayerName),
+);
+const regular = [...players.values()].filter((q) => q.exposure >= 3 && !('skip-named' in args && NAMED.has(normalizePlayerName(q.name))));
 {
   // Exposure in each half, so only players seen in both count.
   const half = new Map<string, [number, number]>();
