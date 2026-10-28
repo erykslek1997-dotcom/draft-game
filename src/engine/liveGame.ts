@@ -16,6 +16,7 @@ import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
+import spanPaceData from '../data/spanPace.json';
 import { teamSpacingValue } from './midrangeGravity';
 import { fiveSwitchability, fitScore, FIT_WEIGHTS } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
@@ -125,7 +126,36 @@ export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
   return Math.max(-25, Math.min(25, projectMatchup(lineupTeam(yours), lineupTeam(theirs)).marginA));
 }
 
-const POSSESSIONS = 200;
+/**
+ * 2026-10-28, step 8 (tempo; the user's 2026-10-08 call: the era counts, gently). A game's
+ * possessions follow its two teams' pace instead of a flat 200: each team's pace is today's league
+ * (`TEMPO.base`) plus `TEMPO.style` times its players' style — how much faster than their league
+ * their own teams played (`spanPace.json`; a team's pace over its league follows its players' paces
+ * elsewhere at r 0.62, slope 1.78, `scripts/measurePace.ts`) — plus `TEMPO.era` of how far their
+ * leagues' pace sat from today's (the 1960s ran ~125, the 2000s ~91). Minutes-weighted over the
+ * rotation; the game is twice the mean of the two teams, an even count, inside `TEMPO.range`. The
+ * margin the engine expects is unchanged — only the number of trips moves.
+ */
+export const TEMPO = { base: 99, style: 1.78, era: 0.25, range: [88, 112] as [number, number] };
+const SPAN_PACE = spanPaceData as unknown as Record<string, [number, number]>;
+function teamPace(roster: GameRoster): number {
+  let w = 0;
+  let pace = 0;
+  for (const slot of Object.values(roster.slotMinutes))
+    for (const { player, minutes } of slot) {
+      if (minutes <= 0) continue;
+      const [style, era] = SPAN_PACE[player.span.id] ?? [0, TEMPO.base * 10];
+      pace += minutes * (TEMPO.base + TEMPO.style * (style / 10) + TEMPO.era * (era / 10 - TEMPO.base));
+      w += minutes;
+    }
+  return w > 0 ? pace / w : TEMPO.base;
+}
+/** A team's pace, as the live game reads it (measurement scripts). */
+export const teamPaceFor = (team: Team) => teamPace(rosterFromTeam(team));
+function possessionsFor(rosters: [GameRoster, GameRoster]): number {
+  const pace = Math.max(TEMPO.range[0], Math.min(TEMPO.range[1], (teamPace(rosters[0]) + teamPace(rosters[1])) / 2));
+  return 2 * Math.round(pace);
+}
 const GAME_SECONDS = 48 * 60;
 /**
  * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
@@ -1167,6 +1197,7 @@ const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
 /** Everything decided before tip-off: the whole game's fives (substitutions are deterministic), who
  * tires, and the expected margin of the mechanics at a given shooting tilt (`gapAt`). */
 function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
+  const POSSESSIONS = possessionsFor(rosters);
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
@@ -1258,7 +1289,7 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
   };
   const perTeam = POSSESSIONS / 2;
   const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n, 1 - n) - meanPossession(1, 1 - n, 1 + n));
-  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession };
+  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession, possessions: POSSESSIONS };
 }
 
 /**
@@ -1323,6 +1354,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   const { rosters, nudge, margin } = prepared;
   const rng = mulberry32(hashSeed(`${seed}:game`));
   const { courts, starting, possessionMinutes, tired, clashFor } = prepared.setup;
+  const POSSESSIONS = prepared.setup.possessions;
   // A foul-out rewrites this game's fives from that trip on, so each game gets its own copy.
   const schedule: GameSetup['schedule'] = [[...prepared.setup.schedule[0]], [...prepared.setup.schedule[1]]];
   const makeScale: [number, number] = [1 + nudge, 1 - nudge];
