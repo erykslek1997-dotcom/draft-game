@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turniej Mini: wynik i plakat</title>
+<style>
+:root{--bg:#eef1f5;--text:#151b26;--muted:#5a6678;--note:#fff6dc;--note-line:#e8d38e;--pin:#2f7fc0;
+ --sans:system-ui,'Segoe UI',Roboto,sans-serif;--num:ui-monospace,Consolas,monospace;--cond:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+ --paper:#0b0c0f;--ink:#efe9dc;--soft:#a9a397;--faint:#6f6a61;--edge:#30343d;--line:#23262e;
+ --cream:#f1ebdd;--cink:#1e1c18;--cink2:#5b564c;--cline:#d6cfbf;--red:#c8323f;--green:#2e7a4c;--gold:#b8862b}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}}
+:root[data-theme=dark]{--bg:#0d1117;--text:#e6ebf2;--muted:#93a0b2;--note:#2a2412;--note-line:#5d4c1d;--pin:#6fb4e8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:0 0 26px;max-width:760px}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-bottom:40px}
+.cap{font:600 11.5px var(--num);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:11px 14px;font-size:13.5px;max-width:330px}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}.note b{color:var(--pin)}
+/* copied text */
+.msg{width:300px;background:#1f2c34;color:#e9edef;border-radius:10px;padding:10px 12px;font:14px/1.45 var(--sans);white-space:pre-wrap;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.msg small{display:block;text-align:right;color:#8696a0;font-size:11px;margin-top:4px}
+/* poster */
+.poster{width:400px;background:var(--cream);color:var(--cink);padding:18px 20px 14px;border-radius:4px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.mast{display:flex;justify-content:space-between;font:700 10.5px var(--num);letter-spacing:.08em;text-transform:uppercase;border-bottom:1.5px solid var(--cink);padding-bottom:6px}
+.kick{display:block;margin-top:12px;font:700 11px var(--num);letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.poster h2{margin:2px 0 4px;font:900 38px/0.95 var(--cond);text-transform:uppercase;letter-spacing:-.01em}
+.poster p{margin:0 0 12px;font:italic 14px/1.4 var(--sans);color:var(--cink2)}
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.five div{text-align:center}.five i{display:block;height:58px;border-radius:3px;background:color-mix(in srgb,var(--t) 26%,#e7dfcd);box-shadow:inset 0 -3px 0 var(--t)}
+.five b{display:block;font:800 13px var(--cond);text-transform:uppercase;margin-top:4px}.five small{font:600 10px var(--num);color:var(--cink2)}
+.road{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1.5px solid var(--cink);border-bottom:1px solid var(--cline);margin-bottom:10px}
+.road div{padding:7px 4px;text-align:center;border-left:1px solid var(--cline)}.road div:first-child{border-left:0}
+.road span{display:block;font:700 9.5px var(--num);letter-spacing:.06em;text-transform:uppercase;color:var(--cink2)}
+.road b{display:block;font:800 15px var(--cond);text-transform:uppercase}.road em{display:block;font:600 11px var(--num);font-style:normal;color:var(--cink2)}
+.road .w b{color:var(--green)}.road .l b{color:var(--red)}.road .n b{color:var(--cink2)}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.strip div{border:1px solid var(--cline);border-radius:3px;padding:6px;text-align:center}
+.strip span{display:block;font:700 9.5px var(--num);letter-spacing:.06em;text-transform:uppercase;color:var(--cink2)}.strip b{font:800 17px var(--cond)}
+.foot{display:flex;justify-content:space-between;font:600 10.5px var(--num);color:var(--cink2);border-top:1px solid var(--cline);padding-top:6px}
+.path{display:flex;align-items:center;gap:6px;margin-bottom:12px;border-top:1.5px solid var(--cink);padding-top:10px}
+.path .st{flex:1;border:1px solid var(--cline);border-radius:3px;padding:5px;text-align:center}
+.path .st b{display:block;font:800 13px var(--cond);text-transform:uppercase}.path .st em{font:600 10.5px var(--num);font-style:normal;color:var(--cink2)}
+.path .st.w{border-color:var(--green)}.path .st.l{border-color:var(--red);background:color-mix(in srgb,var(--red) 8%,transparent)}
+.path .ar{color:var(--cink2);font-weight:800}
+.trophy{font:900 13px var(--cond);text-transform:uppercase;color:var(--gold);text-align:center;border:1.5px solid var(--gold);border-radius:3px;padding:6px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Turniej Mini: „Copy today's result” i plakat</h1>
+<p class="lede">Dwie rzeczy z TODO do turnieju: (1) tekst, który kopiuje Daily Mini, ma mówić, jak daleko zaszedłeś w turnieju, nie tylko miejsce w ocenie draftu; (2) plakat Mini (Post / Story) dostaje twoją drogę w turnieju. Drużyna z makiety: #5 seed, odpada w Final Four.</p>
+
+<p class="cap">1 · Tekst „Copy today's result” (Daily Mini)</p>
+<div class="row">
+ <div><p class="cap">Dziś</p><div class="msg">Draftverse Daily · Mini · 2026-10-28
+70.0 caps · No Lakers today
+5th / 16 · 84<small>21:14</small></div></div>
+ <div><p class="cap">A · z turniejem</p><div class="msg">Draftverse Daily · Mini · 2026-10-28
+70.0 caps · No Lakers today
+Draft 5th / 16 · 84
+🏀 Final Four · #5 seed
+✅✅❌<small>21:14</small></div></div>
+ <div><p class="cap">A · mistrz</p><div class="msg">Draftverse Daily · Mini · 2026-10-28
+70.0 caps · No Lakers today
+Draft 2nd / 16 · 88
+🏆 Champions · #2 seed
+✅✅✅✅<small>21:14</small></div></div>
+ <div class="note"><p><b>Linia turnieju:</b> runda, w której odpadłeś (albo „Champions”) i rozstawienie. Pod spodem ✅/❌ za każdy mecz, jak w Wordle: widać drogę bez spoilera drużyn.</p><p>Jeśli nie zagrałeś turnieju, linii nie ma (tekst jak dziś).</p></div>
+</div>
+
+<p class="cap">2 · Plakat Mini (Post) z turniejem</p>
+<div class="row">
+ <div><p class="cap">A · pasek rund</p>
+ <div class="poster">
+  <div class="mast"><span>Draftverse</span><span>Tuesday, October 28</span><span>Mini Draft</span></div>
+  <span class="kick">Tournament · #5 seed</span>
+  <h2>Out in the Final Four</h2>
+  <p>Baton Rouge Crawdads. Two wins as the #5 seed, then the Comets.</p>
+  <div class="five">
+   <div style="--t:#5a2d82"><i></i><b>Nash</b><small>15.8</small></div>
+   <div style="--t:#007a33"><i></i><b>Pierce</b><small>14.1</small></div>
+   <div style="--t:#ce1141"><i></i><b>Pippen</b><small>13.9</small></div>
+   <div style="--t:#0c2340"><i></i><b>Duncan</b><small>17.2</small></div>
+   <div style="--t:#002b5c"><i></i><b>Gobert</b><small>9.0</small></div>
+  </div>
+  <div class="road">
+   <div class="w"><span>R16</span><b>W</b><em>vs #12 · 104–97</em></div>
+   <div class="w"><span>Elite 8</span><b>W</b><em>vs #13 · 99–91</em></div>
+   <div class="l"><span>Final 4</span><b>L</b><em>vs #1 · 97–104</em></div>
+   <div class="n"><span>Final</span><b>—</b><em>Comets won</em></div>
+  </div>
+  <div class="strip"><div><span>Seed</span><b>#5</b></div><div><span>Record</span><b>2–1</b></div><div><span>Draft</span><b>84</b></div><div><span>Champion</span><b>MIA</b></div></div>
+  <div class="foot"><span>DV</span><span>Same 16 teams, your turn · challenge link</span></div>
+ </div></div>
+ <div><p class="cap">B · ścieżka ze strzałkami</p>
+ <div class="poster">
+  <div class="mast"><span>Draftverse</span><span>Tuesday, October 28</span><span>Mini Draft</span></div>
+  <span class="kick">Tournament · #5 seed</span>
+  <h2>Out in the Final Four</h2>
+  <p>Baton Rouge Crawdads. Two wins as the #5 seed, then the Comets.</p>
+  <div class="five">
+   <div style="--t:#5a2d82"><i></i><b>Nash</b><small>15.8</small></div>
+   <div style="--t:#007a33"><i></i><b>Pierce</b><small>14.1</small></div>
+   <div style="--t:#ce1141"><i></i><b>Pippen</b><small>13.9</small></div>
+   <div style="--t:#0c2340"><i></i><b>Duncan</b><small>17.2</small></div>
+   <div style="--t:#002b5c"><i></i><b>Gobert</b><small>9.0</small></div>
+  </div>
+  <div class="path">
+   <div class="st w"><b>#12 Bison</b><em>W 104–97</em></div><span class="ar">›</span>
+   <div class="st w"><b>#13 Kings</b><em>W 99–91</em></div><span class="ar">›</span>
+   <div class="st l"><b>#1 Comets</b><em>L 97–104</em></div>
+  </div>
+  <div class="strip"><div><span>Seed</span><b>#5</b></div><div><span>Record</span><b>2–1</b></div><div><span>Draft</span><b>84</b></div><div><span>Place</span><b>5th</b></div></div>
+  <div class="foot"><span>DV</span><span>Same 16 teams, your turn · challenge link</span></div>
+ </div></div>
+ <div><p class="cap">B · mistrz</p>
+ <div class="poster">
+  <div class="mast"><span>Draftverse</span><span>Tuesday, October 28</span><span>Mini Draft</span></div>
+  <span class="kick" style="color:var(--gold)">Tournament · champions</span>
+  <h2>Cut down the nets</h2>
+  <p>Baton Rouge Crawdads. Four wins from the #5 seed.</p>
+  <div class="five">
+   <div style="--t:#5a2d82"><i></i><b>Nash</b><small>15.8</small></div>
+   <div style="--t:#007a33"><i></i><b>Pierce</b><small>14.1</small></div>
+   <div style="--t:#ce1141"><i></i><b>Pippen</b><small>13.9</small></div>
+   <div style="--t:#0c2340"><i></i><b>Duncan</b><small>17.2</small></div>
+   <div style="--t:#002b5c"><i></i><b>Gobert</b><small>9.0</small></div>
+  </div>
+  <div class="trophy">🏆 Mini Draft champions</div>
+  <div class="path">
+   <div class="st w"><b>#12</b><em>W</em></div><span class="ar">›</span>
+   <div class="st w"><b>#13</b><em>W</em></div><span class="ar">›</span>
+   <div class="st w"><b>#1</b><em>W</em></div><span class="ar">›</span>
+   <div class="st w"><b>#6</b><em>W</em></div>
+  </div>
+  <div class="strip"><div><span>Seed</span><b>#5</b></div><div><span>Record</span><b>4–0</b></div><div><span>Draft</span><b>84</b></div><div><span>Place</span><b>5th</b></div></div>
+  <div class="foot"><span>DV</span><span>Same 16 teams, your turn · challenge link</span></div>
+ </div></div>
+ <div class="note"><p><b>Nagłówek:</b> wynik turnieju zamiast werdyktu draftu („Out in the Final Four”, „Cut down the nets”). Ocena draftu i miejsce zostają w pasku liczb.</p><p><b>A:</b> pasek 4 rund jak tabela (W/L, rywal, wynik). <b>B:</b> ścieżka rywali ze strzałkami — krótsza, mniej liczb.</p><p>Bez turnieju plakat zostaje jak dziś. Profil drużyny (5 pasków) wypada z plakatu turnieju, żeby się zmieścił — do decyzji.</p></div>
+</div>
+</div>
+</body>
+</html>
