@@ -326,7 +326,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
       Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
     - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
       pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
-      - [ ] **ASG votes — do zrobienia** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
+      - [ ] **ASG votes — mały priorytet (Eryk 2026-10-28)** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
         kapitanów i mecz już są; **samego głosowania nie ma** — dziś 24 to czysta wartość gry.
         Potrzebny model głosów liczony z silnika (nie wymyślone liczby): np. punkty i wygrane
         drużyny z części sezonu + sława zawodnika (tier/era), z ziarnem sezonu. Wtedy: na
@@ -380,7 +380,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 **A. Szybkie** (style, teksty, drobna logika — jeden PR)
 - [x] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
       jedna wielkość i linia bazowa.
-- [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
+- [x] **(2026-10-28: bez górnej linii nad tytułem w aside)** Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
 - [x] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
 - [x] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
 - [x] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
@@ -504,7 +504,7 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
 - [x] **Loteria → dwa przyciski:** „Start the draft” i „Study the board” (nazwa robocza). Drugi
       otwiera listę graczy przed draftem: przeglądanie, filtry, gwiazdka na Big Board (wishlista),
       bez wybierania; powrót do „Start the draft”. Big Board z tego kroku przechodzi do draftu.
-- [ ] **Hunting — przebudowa mechaniki (silnik, tydzień 2–3).** Obecna nie działa tak, jak powinna.
+- [ ] **Hunting — przebudowa mechaniki — PO LAUNCHU (Eryk 2026-10-28: obecną wyrzucić, przebudowa po launchu).** Obecna nie działa tak, jak powinna.
       Użytkownik opisze, jak to wygląda w rzeczywistości; pytania od Claude'a: kto wybiera cel
       (rozgrywający w PnR czy izolacja), jak ofensywa wciąga słabego obrońcę do akcji (zasłona
       gracza, którego kryje, ghost screen, re-screen), jak broni się obrona (switch / drop / hedge /
@@ -512,7 +512,7 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       kosztuje atak (zegar, przewidywalność, mniej ruchu), kto potrafi huntować (izolacja, PnR),
       różnica sezon vs play-offy, przykłady serii (np. Rockets 2018 na Curry'ego) i źródła danych
       (NBA.com matchups od 2017-18, Synergy ISO/PnR PPP).
-- [ ] **Transmisja meczu żywsza (silnik + teksty).** Dziś relacja jest sztywna. Brakuje:
+- [ ] **Transmisja meczu żywsza (silnik + teksty) — na później (Eryk 2026-10-28).** Dziś relacja jest sztywna. Brakuje:
   - a) **Signature moves gwiazd:** „Dirk one-legged fadeaway from 14 ft over the defender's
        hand”. Z play-by-play NBA (od 1996-97) da się wyciągnąć typ rzutu (fadeaway, turnaround,
        step-back, pull-up, driving layup, hook, alley-oop, putback), odległość i udział każdego
