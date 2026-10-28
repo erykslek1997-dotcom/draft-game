@@ -74,7 +74,7 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
+type Row = { arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
 const rows: Row[] = [];
 const yard = (benchTeams as { teams: { ids: string[] }[] }[]).slice(0, 4).map((lg, L) => {
   const ts = lg.teams.map((t, i) => teamOf(t.ids.map(spanById).filter(Boolean) as PlayerSpan[], `y${L}-${i}`));
@@ -109,7 +109,7 @@ for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]
   const star = [...five].sort((p, q) => computeOffensiveTalent(q) - computeOffensiveTalent(p))[0];
   const rimStar = clamp01((rimPressureForFit(star) - 50) / 30) * clamp01((60 - teamSpacingValue(star)) / 30) * clamp01((computeOffensiveTalent(star) - 75) / 15);
   const mates = mean(five.filter((x) => x !== star).map(teamSpacingValue));
-  rows.push({ otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
+  rows.push({ arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
 }
 console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
 function wols(X: number[][], y: number[], w: number[]) {
@@ -150,4 +150,20 @@ report('… game mechanics', ['O-TAL bar', 'spacing (per 10)'], (r) => [r.otal, 
 {
   const sp = rows.map((r) => r.spacing).sort((a, b) => a - b);
   console.log(`team spacing on these teams: p10 ${sp[Math.floor(sp.length * 0.1)].toFixed(0)}, median ${sp[Math.floor(sp.length / 2)].toFixed(0)}, p90 ${sp[Math.floor(sp.length * 0.9)].toFixed(0)}`);
+}
+
+// By the star's offensive archetype: how much spacing (per 10) is worth to his team, real and in the game.
+console.log('\nSpacing per 10 by the star\'s archetype (O-TAL bar held): real ORtg | game');
+for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).sort((a, b) => b[1]!.length - a[1]!.length)) {
+  if (group!.length < 25) continue;
+  const fit = (yf: (r: Row) => number) => {
+    const b = wols(group!.map((r) => [r.otal, r.spacing / 10]), group!.map(yf), group!.map(() => 1));
+    const boots = Array.from({ length: 300 }, () => {
+      const s2 = group!.map(() => group![Math.floor(rnd() * group!.length)]);
+      return wols(s2.map((r) => [r.otal, r.spacing / 10]), s2.map(yf), s2.map(() => 1))[2];
+    }).sort((p, q) => p - q);
+    return `${b[2].toFixed(2).padStart(6)} (${boots[15].toFixed(2)}…${boots[285].toFixed(2)})`;
+  };
+  const names = [...new Set(group!.map((r) => r.who.split(' ').slice(-6, -3).join(' ')))].slice(0, 5).join(', ');
+  console.log(`  ${arch.padEnd(24)} n ${String(group!.length).padStart(3)}  real ${fit((r) => r.y)}  game ${fit((r) => r.mech)}   e.g. ${names}`);
 }
