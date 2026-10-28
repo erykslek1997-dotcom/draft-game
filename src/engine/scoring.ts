@@ -518,8 +518,12 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // team-seasons it adds +0.06 ORtg per 10 points beyond the five's talent and spacing (90% −0.04…
 // +0.15) — what a rim attack is worth is already in its players' own scoring. Offense vs real ORtg
 // r 0.634 -> 0.640, Overall vs the bench leagues' margin R² 0.58 -> 0.59. The bar stays on screen.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.623;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.04;
+// 2026-10-28, later (the user: measure from 1996-97 only): the step 6.3 cut above was read off all
+// eras together, and the 1970s-80s (little spacing to tell apart) dragged it down. From 1996-97 on
+// 10 points of spacing are worth +0.29 ORtg (90% +0.22…+0.35), ~1.9 O-TAL points; back to 0.17.
+// Offense vs real ORtg from 2000 on r 0.650 -> 0.660. An era-aware weight is step 8's.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.493;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.17;
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
