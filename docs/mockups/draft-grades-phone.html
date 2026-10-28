@@ -44,6 +44,12 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
 .oy{width:100%;border-collapse:collapse;font-size:13px}.oy td{padding:8px 4px;border-top:1px solid var(--line)}
 .oy .y{font-weight:700}.oy .t{font:700 11px var(--num);color:var(--soft)}.oy .c{font:700 12.5px var(--num);color:var(--gold);text-align:right}
 .oy .open td{background:var(--raised2)}
+.team .sl{font:800 11px var(--num);color:var(--soft);width:28px}.team .sl.bn{color:var(--faint)}
+.fc.sm{width:34px;height:34px;font-size:11px}
+.team .yr{font-size:12px;color:var(--soft)}
+.tl{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:4px;align-items:center}
+.tier.s{font-size:10px;padding:1px 7px}
+.lt{font:700 10.5px var(--num);color:var(--faint)}.lt b{font-size:12px;margin-left:2px}
 .more{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--soft)}.more b{color:var(--ink)}
 </style>
 </head>
@@ -107,7 +113,22 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
   </div>
  </div>
 
+ <div>
+  <p class="cap">3 · Zawodnik w składzie (Team po drafcie)</p>
+  <div class="g">
+   <div class="top" style="margin-bottom:8px"><span class="eb">Your team</span><span class="coin">● 87.4 / 90.0</span></div>
+   <table class="oy team"><tbody>
+    <tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="hi">A</b></span><span class="lt">DEF <b class="lo">D</b></span><span class="lt">3PT <b class="hi">A+</b></span><span class="lt">DUR <b class="mid">B</b></span></div></td><td class="c">15.8</td></tr>
+    <tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="hi">A−</b></span><span class="lt">DEF <b class="hi">A+</b></span><span class="lt">3PT <b class="mid">B+</b></span><span class="lt">DUR <b class="lo">C</b></span></div></td><td class="c">16.1</td></tr>
+    <tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="mid">B+</b></span><span class="lt">DEF <b class="hi">A</b></span><span class="lt">3PT <b class="lo">D</b></span><span class="lt">DUR <b class="hi">A</b></span></div></td><td class="c">14.2</td></tr>
+    <tr><td class="sl bn">BN</td><td><div class="fc sm">?</div></td><td><b style="color:var(--faint)">Pick #58</b></td><td></td></tr>
+   </tbody></table>
+   <p class="scout">Stuknięcie w twarz otwiera to samo okno co wyżej (pkt 2), od razu z ocenami — w składzie zwiad nie jest potrzebny.</p>
+  </div>
+ </div>
+
  <div class="note">
+  <p><b>W składzie dziś:</b> na telefonie kolumny Tier / Off / Def / 3PT / Dur są ukryte, więc przy swoich graczach nie widzisz żadnej litery. Propozycja: trzecia linia pod latami — tier + 4 oceny (te same co w kolumnach na PC). Zmiana lat („▾ change”) od razu przelicza litery.</p>
   <p><b>Co jest w grze dziś:</b> po zwiadzie tier i sześć ocen w jednym zawijanym wierszu; A na złoto (myli się z capami); przed zwiadem ocen nie ma wcale, jest tylko przycisk.</p>
   <p><b>Zmiana:</b> tier w osobnej linii, sześć ocen w siatce 3×2 (ta sama w „On the card” i w rozwiniętym „Other years”), A zielone, C i niżej czerwone, reszta biała.</p>
   <p><b>Przed zwiadem:</b> zamknięte kafelki „?”, żeby było widać, co raport odsłoni.</p>
