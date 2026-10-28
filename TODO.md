@@ -378,26 +378,26 @@ treścią, nigdy dociśnięte do dołu i nigdy zdublowane; twoje = krem, nigdy n
 złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub słowem.
 
 **A. Szybkie** (style, teksty, drobna logika — jeden PR)
-- [ ] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
+- [x] Licznik w aside (Cap/Teams/Rounds, Caps left/Cap/Round, Won/Seed/Lost): trzy równe kolumny,
       jedna wielkość i linia bazowa.
 - [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
-- [ ] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
-- [ ] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
+- [x] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
+- [x] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
 - [x] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
-- [ ] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
+- [x] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
       przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
-- [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
+- [x] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
       on this pick”.
 - [x] Okno gracza: tier osobno, oceny w równej siatce (6 / 3×2); ocena A nie złota.
-- [ ] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
-- [ ] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
-- [ ] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
+- [x] Plakat: „Daily” tylko po daily; przygaszone kolory drużyn za zdjęciami (też karty „Your roster”).
+- [x] Nagrody: „big four” bez pustego miejsca przed finałami (3 karty albo przygaszone Finals MVP).
+- [x] Mecz na żywo: odstęp prędkości → przyciski; Play pełny, Skip obrysem; po meczu jedno
       „Watch again” pod „▶ Game N”, bez górnego.
 - [x] **(zrobione w #255, sprawdzone w kodzie 2026-10-28)** **Błąd:** po meczu play-offów nagłówek nie liczy właśnie skończonego meczu („lead 2–0”
       zamiast 2–1). Podtytuł bez powtórzeń („beat the Moles 4–1, by 7.2 a game”; „The Sasquatch
       were the better team. Curry did what he could: …”). Score by quarter pod wynikiem w aside.
-- [ ] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
-- [ ] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
+- [x] Procenty przy kilku próbach („—” zamiast 3P% 50.0 przy 2 próbach).
+- [x] Koniec gry: wyraźne „New draft” i „Main menu” (dziś tylko mały link „← Menu”).
 - [x] Przerwa miesięczna: bez kolumny ruchu przy pierwszej przerwie; twoi gracze w MVP ladder na
       kremowo; remis „You and the Raccoons had the best month”.
 - [x] **(zrobione w #255; 2026-10-28 test 1000 dni `scripts/testDailyJokers.ts`: 1980 Jokerów, 49,6% legend, 0 błędów)** **Daily Draw Five — błąd Jokera:** legenda droższa jako Joker niż face up (Magic 14.4 vs
@@ -415,7 +415,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [x] Wyniki: The room zwijany (4–5 wypowiedzi + „Read the rest”), kolumny równe; „More”:
       Title structure do krótszej kolumny, „Size vs. position” bez mikropasków.
 - [x] Sezon „Tonight”: domyślnie tylko twój mecz, reszta zwinięta, przełącznik Your / All games.
-- [ ] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
+- [x] Przerwa miesięczna: MVP ladder do prawej kolumny, „Your month” w aside.
 - [x] Statystyki w trakcie symulacji sezonu (Standings / Stats / Leaders „through <data>”, pauza);
       silnik: sumy po każdej nocy zamiast tylko na koniec miesiąca.
 - [x] Statystyki play-offów w trakcie (Regular season / Playoffs „so far”, bez spoilerów).
