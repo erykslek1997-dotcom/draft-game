@@ -1732,9 +1732,14 @@ const QUALITY_FIT_SPLIT = 0.5;
  */
 // 2026-10-07, stage 2b step 7: bench depth halfway toward the live game's measure (1.26x the
 // engine's), within the same .48 bucket. Was .30 / .10 / .08.
-const QUALITY_TALENT_WEIGHT = 0.289 / 0.48;
-const QUALITY_BENCH_WEIGHT = 0.113 / 0.48;
-const QUALITY_ROTATION_WEIGHT = 0.078 / 0.48;
+// 2026-10-28, metrics audit (`scripts/auditMetrics.ts`; the user: "ok"): against 600 real
+// team-seasons (SRS) and the bench leagues in the game's mechanics, bench depth earned 3.2x / 1.6x
+// its weight and rotation less than nothing / 0.5x — the only two parts both judges agree on. Bench
+// .113 -> .17, rotation .078 -> .039, talent takes the rest: Overall vs real SRS r 0.752 -> 0.758,
+// vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
+const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
+const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
+const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.17 / 0.52;
 const FIT_DEFENSE_WEIGHT = 0.17 / 0.52;
