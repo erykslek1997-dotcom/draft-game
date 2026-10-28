@@ -32,7 +32,8 @@ import { challengeVerdict, modeChallengeLink, type ModeChallenge } from '../mode
 import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { lowRimPressure } from './DraftChrome';
-import { MiniTournamentView } from './MiniTournamentView';
+import { MiniTournamentView, type MiniTournamentSummary } from './MiniTournamentView';
+import { MINI_ROUNDS } from '../engine/miniTournament';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
@@ -627,6 +628,7 @@ function QuickResults({
   const [openTeam, setOpenTeam] = useState<string | null>(null);
   // 2026-10-28: the tournament after the draft (mockup docs/mockups/mini-ncaa.html).
   const [tourney, setTourney] = useState(false);
+  const [tourneyResult, setTourneyResult] = useState<MiniTournamentSummary | null>(null);
   const ranked = useMemo(
     () =>
       state.teams
@@ -652,7 +654,12 @@ function QuickResults({
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily) return;
-    const text = [`Draftverse Daily · Mini · ${daily.day}`, `${daily.cap} caps · ${daily.title}`, `${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`].join('\n');
+    const lines = [`Draftverse Daily · Mini · ${daily.day}`, `${daily.cap} caps · ${daily.title}`];
+    if (tourneyResult) {
+      const r = tourneyResult;
+      lines.push(`Draft ${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`, r.out === null ? `🏆 Champions · #${r.seed} seed` : `🏀 ${MINI_ROUNDS[r.out]} · #${r.seed} seed`, r.games.map((g) => (g.won ? '✅' : '❌')).join(''));
+    } else lines.push(`${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`);
+    const text = lines.join('\n');
     if (await copyLink(text)) {
       setDailyCopied(true);
       setTimeout(() => setDailyCopied(false), 2000);
@@ -706,6 +713,30 @@ function QuickResults({
     ],
     foot: daily ? 'One board for everyone today' : `Same ${TEAM_COUNT} teams, your turn · challenge link`,
   };
+  // 2026-10-28 (mockup mini-tournament-share.html C/D): once the tournament is played the poster
+  // leads with it — the round you went out in, your road, then the draft's grade and profile.
+  if (tourneyResult) {
+    const r = tourneyResult;
+    poster.kick = `Tournament · #${r.seed} seed`;
+    poster.head = r.out === null ? 'Cut down the nets' : `Out in the ${MINI_ROUNDS[r.out]}`;
+    poster.line =
+      r.out === null
+        ? `${teamLabel(human.team)}. Four wins from the #${r.seed} seed.`
+        : `${teamLabel(human.team)}. ${r.wins === 0 ? 'One and done' : `${r.wins} ${r.wins === 1 ? 'win' : 'wins'}`} as the #${r.seed} seed${r.games.length ? `, then the ${r.games[r.games.length - 1].opp}` : ''}.`;
+    poster.champ = r.out === null;
+    poster.road = MINI_ROUNDS.map((_round, i) => {
+      const g = r.games.find((x) => x.round === i);
+      const short = ['R16', 'Elite 8', 'Final 4', 'Final'][i];
+      return g ? { label: short, result: g.won ? 'W' : 'L', line: `#${g.oppSeed} · ${g.score[0]}–${g.score[1]}` } : { label: short, result: '—', line: i === MINI_ROUNDS.length - 1 ? `${r.championName} won` : '' };
+    });
+    poster.draft = [`The draft · ${ordinal(humanRank)} of ${TEAM_COUNT}`, `Score ${human.score.composite} · best ${best.score.composite}`];
+    poster.strip = [
+      ['Seed', `#${r.seed}`],
+      ['Record', `${r.wins}–${r.losses}`],
+      ['Caps', fmtCaps(capsUsed)],
+      ['Champion', r.championCode],
+    ];
+  }
 
   const whoOf = (team: Team) =>
     [...team.roster]
@@ -754,6 +785,9 @@ function QuickResults({
         links={links}
         onBack={() => setTourney(false)}
         onNewDraft={onNewDraft}
+        onFinished={setTourneyResult}
+        onShare={() => setShareOpen(true)}
+        overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team))} fileName={teamLabel(human.team)} onClose={() => setShareOpen(false)} /> : undefined}
       />
     );
   }

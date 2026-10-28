@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import { MINI_ROUNDS, exitRound, playMiniGame, simulateMiniTournament, type MiniGame } from '../engine/miniTournament';
 import { gameWinProbability } from '../engine/matchup';
@@ -7,6 +7,19 @@ import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt, cx } from '../night/ui';
 import { leagueColors } from '../night/league';
 import LiveGameNight from '../night/LiveGameNight';
 import { TeamLogo } from './TeamLogo';
+
+/** What the results' poster and the daily's copied line say about your tournament. */
+export interface MiniTournamentSummary {
+  seed: number;
+  wins: number;
+  losses: number;
+  /** The round you went out in, or null for the champions. */
+  out: number | null;
+  championName: string;
+  championCode: string;
+  /** Your games in order: round, result, opponent's seed and nickname, your score first. */
+  games: { round: number; won: boolean; oppSeed: number; opp: string; score: [number, number] }[];
+}
 
 /**
  * The Mini's tournament screens (mockup `docs/mockups/mini-ncaa.html`, the user 2026-10-28): the
@@ -24,6 +37,9 @@ export function MiniTournamentView({
   links,
   onBack,
   onNewDraft,
+  onFinished,
+  onShare,
+  overlay,
 }: {
   /** The sixteen teams, best draft grade first: index 0 is the 1 seed. */
   seeded: Team[];
@@ -35,6 +51,10 @@ export function MiniTournamentView({
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
   onBack: () => void;
   onNewDraft: () => void;
+  /** Called once the whole bracket has been shown. */
+  onFinished?: (summary: MiniTournamentSummary) => void;
+  onShare?: () => void;
+  overlay?: ReactNode;
 }) {
   const t = useMemo(() => simulateMiniTournament(seeded, seed), [seeded, seed]);
   const byId = useMemo(() => new Map(seeded.map((x) => [x.id, x])), [seeded]);
@@ -54,6 +74,16 @@ export function MiniTournamentView({
   const code = (id: string) => codeOf(byId.get(id)!);
   const wins = t.rounds.slice(0, shown).filter((r) => r.some((g) => g.winnerId === you.id)).length;
   const losses = out !== null && out < shown ? 1 : 0;
+  useEffect(() => {
+    if (shown < MINI_ROUNDS.length || !onFinished) return;
+    const games = t.rounds.flatMap((r) => r.filter((g) => g.teamAId === you.id || g.teamBId === you.id)).map((g) => {
+      const a = g.teamAId === you.id;
+      return { round: g.round, won: g.winnerId === you.id, oppSeed: a ? g.teamBSeed : g.teamASeed, opp: teamNickname(byId.get(a ? g.teamBId : g.teamAId)?.name ?? ''), score: (a ? g.final : [g.final[1], g.final[0]]) as [number, number] };
+    });
+    const champ = byId.get(t.championId)!;
+    onFinished({ seed: yourSeed, wins: games.filter((g) => g.won).length, losses: games.filter((g) => !g.won).length, out, championName: teamNickname(champ.name), championCode: codeOf(champ), games });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown]);
 
   if (watching) {
     const game = playMiniGame(seeded, watching);
@@ -265,7 +295,10 @@ export function MiniTournamentView({
 
   const buttons: ReactNode = finished ? (
     <>
-      <Btn onClick={onNewDraft}>New draft</Btn>
+      {onShare && <Btn onClick={onShare}>Share</Btn>}
+      <Btn kind={onShare ? 'line' : 'go'} onClick={onNewDraft}>
+        New draft
+      </Btn>
       <Btn kind="line" onClick={onBack}>
         Back to the results
       </Btn>
@@ -301,7 +334,7 @@ export function MiniTournamentView({
   );
 
   return (
-    <NightGame aside={aside}>
+    <NightGame aside={aside} overlay={overlay}>
       <Prompt eb={headline[0]} title={headline[1]} now={alive && !finished}>
         {headline[2]}
       </Prompt>
