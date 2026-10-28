@@ -37,7 +37,7 @@ for (let d = 0; d < drafts; d++) {
     const card = modernBox(l.span);
     const realMpg = (l.span as unknown as { box: { mpg?: number } }).box.mpg ?? 34;
     const scale = mpg / Math.max(20, realMpg);
-    rows.push({ team: `${d}-${l.teamId}`, name: l.span.playerName, label: l.span.spanLabel, pos: l.span.primaryPosition, arch: l.span.offensiveArchetype, ast: l.totals.ast / l.games, astCard: (process.env.CARD === 'real' ? l.span.box.apg : card.apg) * scale, pts: l.totals.pts / l.games, ptsCard: card.ppg * scale, reb: l.totals.reb / l.games, rebCard: card.rpg * scale, min: mpg, astPct: astPctForSpan(l.span) });
+    rows.push({ team: `${d}-${l.teamId}`, name: l.span.playerName, label: l.span.spanLabel, pos: l.span.primaryPosition, arch: l.span.offensiveArchetype, ast: l.totals.ast / l.games, astCard: (process.env.CARD === 'real' ? l.span.box.apg : card.apg) * scale, pts: l.totals.pts / l.games, ptsCard: (process.env.CARD === 'real' ? l.span.box.ppg : card.ppg) * scale, reb: l.totals.reb / l.games, rebCard: (process.env.CARD === 'real' ? l.span.box.rpg : card.rpg) * scale, min: mpg, astPct: astPctForSpan(l.span) });
   }
   console.error(`draft ${d + 1}/${drafts}`);
 }
@@ -81,6 +81,17 @@ console.log('assist leaders (season apg):', [...rows].sort((a, b) => b.ast - a.a
 for (const n of (process.env.NAMES ?? '').split(',').filter(Boolean)) {
   const g = rows.filter((r) => r.name.includes(n));
   if (g.length) console.log(`  ${n}: ${g.map((r) => `${r.label} ${r.ast.toFixed(1)} vs ${r.astCard.toFixed(1)}`).join('; ')}`);
+}
+for (const stat of ['pts', 'reb'] as const) {
+  const card = (r: R) => (stat === 'pts' ? r.ptsCard : r.rebCard);
+  const teams = Object.values(Object.groupBy(rows, (r) => r.team));
+  const share = teams.flatMap((g) => {
+    const ts = g!.reduce((a, r) => a + r[stat], 0), tc = g!.reduce((a, r) => a + card(r), 0);
+    return g!.map((r) => ({ r, d: r[stat] / ts - card(r) / tc }));
+  });
+  console.log(`${stat}: mean |share miss| ${(100 * mean(share.map((x) => Math.abs(x.d)))).toFixed(2)} points; by archetype:`, Object.entries(Object.groupBy(share, (x) => x.r.arch)).filter(([, g]) => g!.length >= 15).map(([k, g]) => `${k} ${(100 * mean(g!.map((x) => x.d))).toFixed(1)}`).join(', '));
+  console.log(`  by position:`, Object.entries(Object.groupBy(share, (x) => x.r.pos)).map(([k, g]) => `${k} ${(100 * mean(g!.map((x) => x.d))).toFixed(1)}`).join(', '));
+  console.log(`  biggest ${stat} share misses:`, [...share].sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 8).map((x) => `${x.r.name} ${x.r.label} ${x.r[stat].toFixed(1)} vs ${card(x.r).toFixed(1)}`).join('; '));
 }
 console.log('biggest assist misses:');
 [...rows].sort((a, b) => Math.abs(b.ast - b.astCard) - Math.abs(a.ast - a.astCard)).slice(0, 14).forEach((r) => console.log(`  ${(r.ast - r.astCard).toFixed(1).padStart(5)}  ${r.name} ${r.label} ${r.pos} ${r.arch}: season ${r.ast.toFixed(1)} vs card ${r.astCard.toFixed(1)} (${r.min.toFixed(0)} mpg)`));
