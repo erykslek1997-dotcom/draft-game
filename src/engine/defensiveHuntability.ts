@@ -268,8 +268,12 @@ function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): numb
  * 2026-09-05, user's explicit follow-up call: 0.7 was too little relief for how one-sided bench
  * play actually is — tightened to 0.4 (bench weak-link minutes now count for less than half their
  * real minutes toward the penalty).
+ *
+ * 2026-10-28, step 6.1 (the user: "wdrażaj"): back to 0.7. On the 160 bench-league teams the game's
+ * own mechanics charge a weak bench defender more than 0.4 did — Defense vs points allowed a 100
+ * trips r 0.901 -> 0.908, Overall vs league margin R² 0.566 -> 0.570, on both halves of the leagues.
  */
-const BENCH_COMPETITION_DISCOUNT = 0.4;
+const BENCH_COMPETITION_DISCOUNT = 0.7;
 
 export interface DefensiveHuntabilityOffender {
   playerId: string;
@@ -329,7 +333,12 @@ const DISPLAY_HEADROOM_FULL_MARGIN = 20;
 /** ...and one sitting right at the huntable line costs this many shown points. */
 const DISPLAY_HEADROOM_SPAN = 15;
 /** Defense points the weakest starter's headroom swings, centred (±half). */
-const HEADROOM_DEFENSE_POINTS = 3;
+const HEADROOM_DEFENSE_POINTS = 6;
+/** The headroom that costs nothing: 2026-10-28, step 6.1, with the swing doubled (3 -> 6, the
+ * game's mechanics charge a weakest starter near the bar more) — moved from the middle so the
+ * league's mean Defense stays put (76.0 -> 75.6). Together with the bench discount: Defense vs
+ * points allowed r 0.901 -> 0.908, Overall vs margin R² 0.566 -> 0.575. */
+const HEADROOM_NEUTRAL = 0.35;
 const REAL_SHOT_BLOCKER_BPG = 1.5;
 function isRealShotBlocker(player: PlayerSpan): boolean {
   return (
@@ -384,7 +393,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   // 2026-10-02, the user ("dlaczego się nie liczą"): the same headroom reaches the Defense score,
   // centred on a typical five so the scale doesn't move — a weakest starter right at the bar costs
   // up to `HEADROOM_DEFENSE_POINTS / 2`, real headroom earns as much back.
-  const headroomPenalty = (0.5 - headroom) * HEADROOM_DEFENSE_POINTS;
+  const headroomPenalty = (HEADROOM_NEUTRAL - headroom) * HEADROOM_DEFENSE_POINTS;
   return {
     penalty: penalty + headroomPenalty,
     resistance,
