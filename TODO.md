@@ -131,7 +131,7 @@ Otwarte tematy silnika — na później (bierzemy, gdy wyjdą w grze albo w symu
       Tucker nadal tier-gated w każdym realnym spanie. Poluzować próg dla realnych drugich pozycji czy
       pozwolić dużym różnicom fit przebić próg?
 - [ ] **Taper mmStruct post-hub** (wymiar „struktury niedopasowania” w offenseScore).
-- [ ] **Audyt etykiet „Fix B”** — kod gotowy, czeka na Twój przegląd (niedoszacowanie obrony).
+- [x] **Audyt etykiet „Fix B”** — (2026-10-28: nie da się ustalić, o jaki kod chodziło; najbliższy jest audyt ról z 2026-10-02, już w grze. Zastąpione krokiem 3 „Obrona (D-TAL)” w kolejności prac tygodni 2–3.)
 - [ ] **Rim pressure całej drużyny w offenseScore** — dziś poprawka per gracz ledwo rusza sumy
       drużynowe (+1).
 - [ ] **Rozszerzenie rejestrów Movement Shooter / rim pressure** — małe, nazwane dodatki.
@@ -221,6 +221,17 @@ MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela d
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
 **Tydzień 6 — dopracować teksty „Copy result” / udostępniania (Eryk 2026-10-28: „jest ok, ale trzeba je dopracować”):** wszystkie tryby (Draw Five, Mini z linią turnieju i ✅/❌, All-Time, Bomb), jednolity format, długość, emoji, nazwa marki po rebrandzie (Beast Court). Makieta startowa: `docs/mockups/mini-tournament-share.html`.
+
+**Kolejność prac TAL / AI / silnik, tygodnie 2–3 (Claude, 2026-10-28; Eryk: „ułóż tak, żeby tobie było najlepiej”).** Zasada: najpierw pomiar i dane, potem wejścia TAL, potem struktura oceny, na końcu to, co tylko czyta oceny. Każdy krok: przykłady przed/po dla Eryka, test Spearmana z rankingami ludzi, `npm test`.
+1. **Narzędzie pomiaru** „ocena vs symulacja sezonu” (+ raport D-TAL vs DBPM/STL%/BLK%/hustle) — bez niego każda zmiana wag to zgadywanie.
+2. **Wczytanie nowych danych do silnika**: BBRef Advanced (gracze, drużyny 1973-2026), NBA.com (hustle, strefy obrony, on/off) jako pliki danych silnika, tak jak dziś RAPTOR/BPM2.
+3. **Obrona (D-TAL)**: audyt niedoszacowanej i przeszacowanej obrony na nowych danych (zastępuje niejasny „Fix B”), waga danych realnych dla skrzydłowych, statystyki na posiadanie zamiast na mecz, waga wg minut na mecz (próg ~24 mpg), gracze od brudnej roboty / hustle.
+4. **Reszta wejść TAL**: próg gwiazdy w `positionCorrectionFor`, Hartenstein/Tucker, spacing graczy sprzed linii za 3, półdystans sprzed 1997, lista slasherów, rejestry Movement Shooter, ściąganie do średniej wg próby (spacing, TS%, playmaking, rim, FT%, zbiórki).
+5. **Jedna skala** Talent/Offense/Defense + „droga od talentu do wyniku” (po krokach 3–4, bo zmienia się sam talent); przeliczenie progów A–F.
+6. **Struktura oceny**: kara za polowanie z pokryciem przez core, kara za zbiórki w ataku, lift z limitem i dwóch shot-first, gwiazda wymagająca spacingu, rim pressure całej drużyny, taper mmStruct, wpływ playoffów.
+7. **To, co czyta oceny**: detektory i opisy panelu (AST% zamiast APG, obrona vs Cohesion), wybór okna przez AI z kosztem, wykładnik wartości picku AI, siła AI, waga TE-1.
+8. **Symulacja meczu**: punkty w meczu samych piątek / krótszy mecz, asysty wg roli, tempo, mecz na żywo mocniej na silniku, korelacja silnik ↔ symulacja.
+9. **Panel ekspertów** (The room) — na końcu, bo opisuje gotowe oceny; zakres do ustalenia z Erykiem.
 
 **Tydzień 3 — jedna spójna skala ocen (2026-10-24, decyzja: nie robimy teraz):** Talent 87 przy Offense 70 i Defense 62 wygląda dla nowego gracza jak błąd. Przyczyna: Talent to średnia pięciu starterów, a Offense i Defense są przeliczone na skalę ze średnią 74 i dodają spacing, mismatche, hunt resistance itd. Plan: (1) wszystkie trzy na jednej skali (średnia 74) — rusza progi A–F i dotychczasowe wyniki, więc razem z listą silnika; (2) „droga od talentu do wyniku" przy Offense i Defense (np. talent ofensywny 85 → spacing −6, kosz −5 → 70); (3) podział Talentu na atak i obronę. Punkty 2–3 to głównie wyświetlanie. Etykiety („Star power" / „razem") jako szybka łatka — Eryk: to tylko łatka.
   - Dwie osobne przyczyny rozjazdu Talent ↔ Offense/Defense: (a) Talent nie jest na skali Offense/Defense (średnia 74, odchylenie ~9; surowy atak jest przeliczany wzorem 74 + (surowy − 85) × 9,3/8,5); (b) atak dokłada ponad talent spacing, mismatche i zbiórki w ataku.
