@@ -101,7 +101,8 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
           <span>{p.label}</span>
           <b>
             {/* red and green always with a sign (the rule; playtest 2026-10-22) */}
-            {p.tone === 'lo' ? '▼ ' : p.tone === 'hi' ? '▲ ' : ''}
+            {/* the sign in its own fixed slot, so 71 and 86 line up with or without one */}
+            <em className="pp-s">{p.tone === 'lo' ? '▼' : p.tone === 'hi' ? '▲' : ''}</em>
             {p.value}
             {p.tone === 'lo' ? <span className="visually-hidden"> weak</span> : p.tone === 'hi' ? <span className="visually-hidden"> best</span> : null}
           </b>

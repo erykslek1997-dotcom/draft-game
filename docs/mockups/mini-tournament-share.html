@@ -46,13 +46,13 @@ h1{font:800 24px/1.2 var(--sans);margin:0 0 6px}.lede{color:var(--muted);margin:
 .path .ar{color:var(--cink2);font-weight:800}
 .dk{display:flex;justify-content:space-between;font:700 10.5px var(--num);letter-spacing:.06em;text-transform:uppercase;color:var(--cink2);margin:4px 0 6px}
 .prof{display:grid;gap:5px;margin-bottom:12px}.prof div{display:grid;grid-template-columns:64px 44px 1fr;align-items:center;gap:6px;font-size:12px}
-.prof b{font:800 14px var(--num)}.prof i{height:6px;background:#e2dacb;border-radius:3px;overflow:hidden}.prof u{display:block;height:100%;background:var(--cink)}
+.prof b{font:800 14px var(--num);white-space:nowrap}.prof b s{display:inline-block;width:1.3em;text-decoration:none;font-size:.8em}.prof i{height:6px;background:#e2dacb;border-radius:3px;overflow:hidden}.prof u{display:block;height:100%;background:var(--cink)}
 .prof .lo b{color:var(--red)}.prof .lo u{background:var(--red)}.prof .hi b{color:var(--green)}.prof .hi u{background:var(--green)}
 .poster.ig{width:432px;height:540px;display:flex;flex-direction:column;padding:16px 18px 10px;overflow:hidden}
 .ig h2{font-size:28px;white-space:nowrap}.ig p{margin-bottom:8px;font-size:13px}.ig .five{margin-bottom:8px}.ig .five i{height:116px}.ig .road{margin-bottom:8px}.ig .road div{padding:5px 2px}
-.ig .two{display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:start;flex:1}
+.ig .two{display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:stretch}
 .ig .prof{gap:6px;margin:0}.ig .prof div{grid-template-columns:52px 38px 1fr;font-size:11px}.ig .prof b{font-size:12px}.ig .dk{margin:0 0 4px}
-.strip.s2{grid-template-columns:1fr 1fr;margin:0}.strip.s2 b{font-size:15px}
+.strip.s2{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;margin:0;height:100%}.strip.s2 div{display:flex;flex-direction:column;justify-content:center}.strip.s2 b{font-size:17px}
 .ig .foot{margin-top:auto}
 .trophy{font:900 13px var(--cond);text-transform:uppercase;color:var(--gold);text-align:center;border:1.5px solid var(--gold);border-radius:3px;padding:6px;margin-bottom:10px}
 </style>
@@ -170,11 +170,11 @@ Draft 2nd / 16 · 88
   </div>
   <div class="dk"><span>The draft · 5th of 16</span><span>Score 84 · best 88</span></div>
   <div class="prof">
-   <div><span>Talent</span><b>86</b><i><u style="width:86%"></u></i></div>
-   <div class="lo"><span>Offense</span><b>▼ 71</b><i><u style="width:71%"></u></i></div>
-   <div class="hi"><span>Defense</span><b>▲ 89</b><i><u style="width:89%"></u></i></div>
-   <div><span>Spacing</span><b>78</b><i><u style="width:78%"></u></i></div>
-   <div><span>Fit</span><b>80</b><i><u style="width:80%"></u></i></div>
+   <div><span>Talent</span><b><s></s>86</b><i><u style="width:86%"></u></i></div>
+   <div class="lo"><span>Offense</span><b><s>▼</s>71</b><i><u style="width:71%"></u></i></div>
+   <div class="hi"><span>Defense</span><b><s>▲</s>89</b><i><u style="width:89%"></u></i></div>
+   <div><span>Spacing</span><b><s></s>78</b><i><u style="width:78%"></u></i></div>
+   <div><span>Fit</span><b><s></s>80</b><i><u style="width:80%"></u></i></div>
   </div>
   <div class="strip"><div><span>Seed</span><b>#5</b></div><div><span>Record</span><b>2–1</b></div><div><span>Caps</span><b>70.0</b></div><div><span>Champion</span><b>MIA</b></div></div>
   <div class="foot"><span>DV</span><span>Same 16 teams, your turn · challenge link</span></div>
@@ -204,11 +204,11 @@ Draft 2nd / 16 · 88
    <div>
     <div class="dk"><span>The draft · 5th of 16</span></div>
     <div class="prof">
-     <div><span>Talent</span><b>86</b><i><u style="width:86%"></u></i></div>
-     <div class="lo"><span>Offense</span><b>▼ 71</b><i><u style="width:71%"></u></i></div>
-     <div class="hi"><span>Defense</span><b>▲ 89</b><i><u style="width:89%"></u></i></div>
-     <div><span>Spacing</span><b>78</b><i><u style="width:78%"></u></i></div>
-     <div><span>Fit</span><b>80</b><i><u style="width:80%"></u></i></div>
+     <div><span>Talent</span><b><s></s>86</b><i><u style="width:86%"></u></i></div>
+     <div class="lo"><span>Offense</span><b><s>▼</s>71</b><i><u style="width:71%"></u></i></div>
+     <div class="hi"><span>Defense</span><b><s>▲</s>89</b><i><u style="width:89%"></u></i></div>
+     <div><span>Spacing</span><b><s></s>78</b><i><u style="width:78%"></u></i></div>
+     <div><span>Fit</span><b><s></s>80</b><i><u style="width:80%"></u></i></div>
     </div>
    </div>
    <div class="strip s2"><div><span>Seed</span><b>#5</b></div><div><span>Record</span><b>2–1</b></div><div><span>Score</span><b>84</b></div><div><span>Champion</span><b>MIA</b></div></div>
