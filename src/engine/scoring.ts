@@ -514,9 +514,13 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // ORtg (90% +0.11…+0.21), ~0.9 O-TAL points — the game played ~1.8 and the Offense score more.
 // Spacing 0.17 -> 0.04, the difference to O-TAL: Offense vs real ORtg r 0.622 -> 0.634, Overall vs
 // the bench leagues' margin R² 0.57 -> 0.58 (with the game's spacing cut, contextStats.ts).
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.538;
+// 2026-10-28, step 6.4 (the user: "ok"): team rim pressure 0.085 -> 0, to O-TAL. On the same 962
+// team-seasons it adds +0.06 ORtg per 10 points beyond the five's talent and spacing (90% −0.04…
+// +0.15) — what a rim attack is worth is already in its players' own scoring. Offense vs real ORtg
+// r 0.634 -> 0.640, Overall vs the bench leagues' margin R² 0.58 -> 0.59. The bar stays on screen.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.623;
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.04;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.085;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
 // (0.001 a point on 960 teams), so its share moves to O-TAL. Was .032 (O-TAL .40).
