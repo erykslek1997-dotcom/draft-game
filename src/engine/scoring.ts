@@ -509,8 +509,13 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // five-man units and of the game's own mechanics, the mismatch-structure part earned more than its
 // 0.118 and the offensive-glass term (halved below) pointed the wrong way in the mechanics. Mismatch
 // x1.5, the rest scaled back to a sum of 1 so the Offense scale stays where it was.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.408;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.17;
+// 2026-10-28, step 6.3 (`scripts/measureStarSpacingTeams.ts`, 962 real team-seasons 1973-74 on, ORtg
+// over the league's): beyond the five's offensive talent, 10 points of team spacing are worth +0.15
+// ORtg (90% +0.11…+0.21), ~0.9 O-TAL points — the game played ~1.8 and the Offense score more.
+// Spacing 0.17 -> 0.04, the difference to O-TAL: Offense vs real ORtg r 0.622 -> 0.634, Overall vs
+// the bench leagues' margin R² 0.57 -> 0.58 (with the game's spacing cut, contextStats.ts).
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.538;
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.04;
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.085;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL

@@ -86,7 +86,10 @@ function modernSpacing(mates: PlayerSpan[]): number {
 const ENGINE_SPACING_PER_RATE = { base: 7.4, slope: 66.1 };
 /** `center`: drafted fives out-space anyone's real teammates by this much on average; taken off so
  * the league's scoring stays where it was and only the differences between fives remain. */
-export const SPACING_TUNING = { strength: 1, sagFrom: 35, sag: 0.6, center: 17 };
+/** `strength` 2026-10-28, step 6.3: 1 -> 0.3. On 962 real team-seasons the game made 10 points of
+ * spacing worth 1.8 O-TAL points of offense, real teams 0.9 (`scripts/measureStarSpacingTeams.ts`);
+ * at 0.3 the game plays 0.86 — the real ratio. Game offense vs real ORtg r 0.610 -> 0.617. */
+export const SPACING_TUNING = { strength: 0.3, sagFrom: 35, sag: 0.6, center: 17 };
 const sagged = (value: number) => value - SPACING_TUNING.sag * Math.max(0, SPACING_TUNING.sagFrom - value);
 const spacingValueCache = new WeakMap<PlayerSpan, number>();
 function spacingValue(span: PlayerSpan): number {

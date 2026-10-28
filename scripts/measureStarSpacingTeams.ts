@@ -167,3 +167,15 @@ for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).
   const names = [...new Set(group!.map((r) => r.who.split(' ').slice(-6, -3).join(' ')))].slice(0, 5).join(', ');
   console.log(`  ${arch.padEnd(24)} n ${String(group!.length).padStart(3)}  real ${fit((r) => r.y)}  game ${fit((r) => r.mech)}   e.g. ${names}`);
 }
+
+// One line for sweeps: how well the Offense score and the game's offense follow real ORtg, and each other.
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  const real = rows.map((x) => x.y);
+  console.log(`SWEEP score~real r ${r(rows.map((x) => x.offense), real).toFixed(4)}  game~real r ${r(rows.map((x) => x.mech), real).toFixed(4)}  score~game r ${r(rows.map((x) => x.offense), rows.map((x) => x.mech)).toFixed(4)}`);
+}
