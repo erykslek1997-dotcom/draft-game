@@ -53,6 +53,7 @@ const summary = (g: R[]) => ({
 });
 const line = (k: string, s: ReturnType<typeof summary>) => `  ${k.padEnd(24)} n ${String(s.n).padStart(4)}  ast ${s.ast.toFixed(2).padStart(6)} (|${s.astAbs.toFixed(2)}|)  pts ${s.pts.toFixed(2).padStart(6)} (|${s.ptsAbs.toFixed(2)}|)  reb ${s.reb.toFixed(2).padStart(6)} (|${s.rebAbs.toFixed(2)}|)`;
 const all = summary(rows);
+{ const a = teamLines.map((t) => t.ast).sort((x, y) => x - y), sh = teamLines.map((t) => t.ast / t.fgm).sort((x, y) => x - y); console.log(`team assists range: min ${a[0].toFixed(1)}, p10 ${a[Math.floor(a.length * 0.1)].toFixed(1)}, p90 ${a[Math.floor(a.length * 0.9)].toFixed(1)}, max ${a.at(-1)!.toFixed(1)}; assisted share p10 ${sh[Math.floor(sh.length * 0.1)].toFixed(2)} p90 ${sh[Math.floor(sh.length * 0.9)].toFixed(2)} max ${sh.at(-1)!.toFixed(2)}`); }
 console.log(`teams: ${(teamLines.reduce((a, t) => a + t.ast, 0) / teamLines.length).toFixed(1)} assists, ${(teamLines.reduce((a, t) => a + t.fgm, 0) / teamLines.length).toFixed(1)} makes, ${(teamLines.reduce((a, t) => a + t.pts, 0) / teamLines.length).toFixed(1)} points a game; assisted share ${(teamLines.reduce((a, t) => a + t.ast / t.fgm, 0) / teamLines.length).toFixed(3)}`);
 console.log(`${rows.length} player-seasons (40+ games, 20+ mpg); season minus card, per game (mean, and |mean abs|):`);
 console.log(line('all', all));
