@@ -328,7 +328,7 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
       Dalej przyciskiem; w ustawieniach można wyłączyć przystanki.
     - **Głosowanie do All-Star Game:** wyniki głosowania co miesiąc przed ASG (prowadzący na
       pozycjach), w lutym przerwa All-Star: wybór 24 (głosy + wartość gry), draft kapitanów, mecz.
-      - [ ] **ASG votes — mały priorytet (Eryk 2026-10-28)** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
+      - [ ] **ASG votes — pod koniec projektu (Eryk 2026-10-28: mały priorytet, na sam koniec)** (2026-10-22, user). Przerwa All-Star, wybór 24, draft
         kapitanów i mecz już są; **samego głosowania nie ma** — dziś 24 to czysta wartość gry.
         Potrzebny model głosów liczony z silnika (nie wymyślone liczby): np. punkty i wygrane
         drużyny z części sezonu + sława zawodnika (tier/era), z ziarnem sezonu. Wtedy: na
