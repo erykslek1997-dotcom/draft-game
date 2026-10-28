@@ -935,10 +935,17 @@ export const DETECTORS: RosterInsightDetector[] = [
         .sort((a, b) => (b.defensiveImpact ?? 0) - (a.defensiveImpact ?? 0))[0];
       return s >= ELITE_BARS.defensiveLayering
         ? hit(s, 0.98, teamConfidence(t), perimeter && rim
-          ? vary(t, 'layering', [
+          // 2026-10-28 (the user's export: "Pippen at the point of attack" — he is the wing stopper):
+          // the ball-handler lines only for a Point of Attack defender; a wing stopper takes the
+          // best scorer.
+          ? vary(t, 'layering', perimeter.defensiveRole === 'Point of Attack' ? [
             `${perimeter.playerName} out front and ${rim.playerName} behind him make you very hard to score on.`,
             `${perimeter.playerName} takes the ball handler and ${rim.playerName} cleans up behind him (${one(rim.bpg)} blocks a game).`,
             `Two layers: ${perimeter.playerName} at the point of attack, ${rim.playerName} at the rim. Opponents get little at either level.`,
+          ] : [
+            `${perimeter.playerName} on the best scorer and ${rim.playerName} behind him make you very hard to score on.`,
+            `${perimeter.playerName} takes the other team's best wing and ${rim.playerName} cleans up behind him (${one(rim.bpg)} blocks a game).`,
+            `Two layers: ${perimeter.playerName} on the wing, ${rim.playerName} at the rim. Opponents get little at either level.`,
           ])
           : `${perimeter?.playerName ?? 'Strong perimeter defense'} out front and ${rim?.playerName ?? 'a real rim protector'} behind him make you very hard to score on.`, { players: [perimeter?.playerName, rim?.playerName].filter((name): name is string => Boolean(name)), values: { defensiveLayeringScore: s } })
         : inactive;

@@ -20,7 +20,10 @@ const ROTATION_MINUTES = 15;
 /** 2015+ perimeter cut shares: 0.12 is the top twentieth (Bruce Brown 0.25, Tony Allen 0.21). */
 const CUTTER_SHARE = 0.12;
 /** A passer who will find a cutter: 7.5+ assists a game (Kidd, Stockton, Nash, Jokic). */
-const PASSER_APG = 7.5;
+/** 2026-10-28 (the user's export: "no real passer" beside Curry and Pippen at 7.0 assists): a real
+ * passer is read by AST% — the share of his teammates' baskets he set up — as the passing
+ * detectors are (`insights.ts`), not by assists a game. */
+const PASSER_AST_PCT = 30;
 
 const pct = (share: number | undefined) => `${Math.round(100 * (share ?? 0))}%`;
 const surname = (name: string) => name.split(' ').slice(-1)[0];
@@ -45,7 +48,7 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
   const movers = rotation.filter((p) => p.offensiveArchetype === 'Movement Shooter' || p.offensiveArchetype === 'Off Screen Shooter');
   const corners = rotation.filter((p) => p.offensiveArchetype === 'Stationary Shooter' && (p.threePA ?? 0) >= 3);
   const cutters = rotation.filter((p) => (p.cutShare ?? 0) >= CUTTER_SHARE);
-  const passer = rotation.filter((p) => (p.apg ?? 0) >= PASSER_APG).sort((a, b) => (b.apg ?? 0) - (a.apg ?? 0))[0];
+  const passer = rotation.filter((p) => (p.astPct ?? 0) >= PASSER_AST_PCT).sort((a, b) => (b.astPct ?? 0) - (a.astPct ?? 0))[0];
   const out: StyleLine[] = [];
 
   const runners = movers.filter((p) => p.offensiveArchetype === 'Movement Shooter');
@@ -122,7 +125,7 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
       id: 'CUTTERS_NO_PASSER',
       players: names,
       text: pick(team, [
-        `${listNames(names)} cut all night, but nobody here averages ${PASSER_APG} assists to throw them the ball.`,
+        `${listNames(names)} cut all night, but nobody here is a real passer to throw them the ball.`,
         `Plenty of cutting from ${listNames(names.map(surname))}, and no real passer to hit them.`,
       ], 'cutters-no-passer'),
     });
@@ -133,7 +136,9 @@ export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
 /** The style line the Scout reads, if any: the first one, the shooters before the cutters. Shooter
  * lines give way when the report already credits the same movement (`MOVEMENT_SHOOTING_GRAVITY`). */
 export function scoutStyleLine(team: TeamFeatureSnapshot, shownIds: readonly string[] = []): StyleLine | null {
-  const lines = styleLines(team).filter((l) => !(shownIds.includes('MOVEMENT_SHOOTING_GRAVITY') && l.id === 'MOVERS'));
+  // The Scout's line is read out as praise (`desk.ts`), so the cutters-without-a-passer line — a
+  // concern — never takes that slot (2026-10-28, the user's export).
+  const lines = styleLines(team).filter((l) => l.id !== 'CUTTERS_NO_PASSER' && !(shownIds.includes('MOVEMENT_SHOOTING_GRAVITY') && l.id === 'MOVERS'));
   return lines[0] ?? null;
 }
 

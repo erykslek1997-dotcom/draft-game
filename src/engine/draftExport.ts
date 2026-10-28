@@ -2,6 +2,7 @@ import type { DraftHistoryEntry, Team } from './types';
 import type { BoxLineStats } from './liveGame';
 import type { LivePlayoffResult, LiveSeasonResult, SeasonPlayerLine } from './liveSeason';
 import { rankTeams } from './scoring';
+import { spanById as poolSpanById } from './bestFive';
 import { exportLeagueText } from './teamExport';
 import { generateRosterInsights, insightContextFor } from './insights';
 import { buildTeamFeatureSnapshot } from './insightMapper';
@@ -46,11 +47,14 @@ export function exportFullDraft(input: {
   h('DRAFT · every pick in order');
   const perRound = teams.length;
   for (const e of [...history].sort((a, b) => a.pickNumber - b.pickNumber)) {
-    const p = spanById.get(e.playerId);
+    // The rosters hold the windows after the post-draft optimizer; a pick drafted at another window
+    // of the same player is read from the pool, with the window he ended up playing.
+    const p = spanById.get(e.playerId) ?? poolSpanById(e.playerId);
     const team = byId.get(e.teamId);
+    const played = p && !spanById.has(e.playerId) ? team?.roster.find((r) => r.playerName === p.playerName) : undefined;
     const round = Math.floor((e.pickNumber - 1) / perRound) + 1;
     out.push(
-      `R${round} #${String(e.pickNumber).padStart(3)}  ${code(e.teamId).padEnd(4)} ${team?.isHuman ? '(YOU) ' : ''}${p ? `${p.playerName} ${p.spanLabel} (${p.primaryPosition}) · ${p.fga.toFixed(1)} caps` : e.playerId}`,
+      `R${round} #${String(e.pickNumber).padStart(3)}  ${code(e.teamId).padEnd(4)} ${team?.isHuman ? '(YOU) ' : ''}${p ? `${p.playerName} ${p.spanLabel} (${p.primaryPosition}) · ${p.fga.toFixed(1)} caps${played ? ` → played ${played.spanLabel}` : ''}` : e.playerId}`,
     );
   }
 
