@@ -1193,7 +1193,7 @@ function BestFiveResult({
       ),
     });
     if (explain.standing === 'off' && score.weakLink && explain.weakest.axis !== 'defense')
-      filmLines.push({ glyph: '!', body: <>On defense, <b>{maskName(score.weakLink)}</b> is the one they’ll hunt, every switch, every possession.</> });
+      filmLines.push({ glyph: '!', body: <>On defense, <b>{maskName(score.weakLink)}</b> is the weak link.</> });
   }
 
   const youWin = won === null ? null : won;

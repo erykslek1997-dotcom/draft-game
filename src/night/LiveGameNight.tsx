@@ -352,25 +352,6 @@ export default function LiveGameNight({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, upto, done, short[0], short[1], callsAt, you]);
 
-  // Who gets hunted on defense: "X attacks Nash" plays so far, by defender.
-  const hunted = useMemo(() => {
-    const counts = new Map<string, { side: 0 | 1; label: string; n: number; made: number; by: Set<string> }>();
-    for (let i = 0; i < upto; i++) {
-      const play = game.moments[i].play;
-      if (!play) continue;
-      const hit = /^(\S+(?: \S+)?) attacks (\S+(?:-\S+)?)/.exec(play.text);
-      if (!hit) continue;
-      const defenderSide = (1 - play.side) as 0 | 1;
-      const key = `${defenderSide}:${hit[2]}`;
-      const entry = counts.get(key) ?? { side: defenderSide, label: hit[2], n: 0, made: 0, by: new Set<string>() };
-      entry.n += 1;
-      const before = i > 0 ? game.moments[i - 1].score : [0, 0];
-      if (game.moments[i].score[play.side] > before[play.side]) entry.made += 1;
-      entry.by.add(hit[1]);
-      counts.set(key, entry);
-    }
-    return [...counts.values()].sort((a, b) => b.n - a.n)[0];
-  }, [game.moments, upto]);
 
   const lastShot = useMemo(() => {
     for (let i = upto - 1; i >= 0; i--) {
@@ -646,15 +627,6 @@ export default function LiveGameNight({
     </div>
   );
 
-  const huntEl = hunted && hunted.n >= 3 && (
-    <div className="hunt">
-      <i>!</i>
-      <p>
-        <b>{hunted.side === you ? `They're hunting ${maskName(hunted.label)}.` : `${short[you] === 'You' ? "You're" : `${short[you]} are`} hunting ${maskName(hunted.label)}.`}</b> {[...hunted.by].map((n) => maskName(n)).join(' and ')}{' '}
-        {hunted.by.size > 1 ? 'have' : 'has'} gone at him {hunted.n} times; {hunted.made} scored.
-      </p>
-    </div>
-  );
 
   const court = (
     <svg className="court" viewBox="0 0 300 200" aria-hidden="true">
@@ -1055,7 +1027,6 @@ export default function LiveGameNight({
     >
       {prompt}
       {done && <div className="phone-only stackb">{endActions}</div>}
-      {huntEl}
       <div className="split live-split">
         <section>
           <div className="tabs2" role="tablist">

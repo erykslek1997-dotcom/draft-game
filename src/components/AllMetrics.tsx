@@ -21,7 +21,6 @@ const OFFENSE_METRICS: MetricDef[] = [
   { key: 'playmaking', label: 'Playmaking', hint: 'Passing and organising the offense.' },
   { key: 'selfCreation', label: 'Self-creation', hint: 'Players who can make their own shot.' },
   { key: 'mismatch', label: 'Mismatch structure', hint: 'An initiator paired with a screener who forces a switch, surrounded by spacing.' },
-  { key: 'hunting', label: 'Hunting potential', hint: 'How dangerous this five is at hunting a mismatch on offense.' },
 ];
 
 const DEFENSE_METRICS: MetricDef[] = [
