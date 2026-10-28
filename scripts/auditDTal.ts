@@ -4,7 +4,7 @@ import teamSeasons from '../src/data/awards/teamSeasons.json';
 import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName, type PlayerSpan, type Position } from '../src/data/schema';
 import { resolveSourceName } from '../src/data/sourceNameResolver';
-import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeDefensiveTalent as computeDefensiveTalentFull, computeDefensiveTalentRegularSeason } from '../src/engine/defensiveTalent';
 import { spanEndYears } from '../src/engine/era';
 import '../src/engine/fit'; // registers the neighbour windows D-TAL blends with
 import { realSpan } from '../src/engine/realAdvancedLookup';
@@ -25,6 +25,9 @@ import { HUSTLE_DEFENDERS } from '../src/data/hustleDefenders';
  */
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const LAMBDA = Number(args.lambda ?? 4);
+// `--regular`: judge the regular-season D-TAL only (before the playoff term, the recognized-defender
+// floor, the neighbour blend and the hustle bonus) — the team defenses it is held against are regular season.
+const computeDefensiveTalent = 'regular' in args ? computeDefensiveTalentRegularSeason : computeDefensiveTalentFull;
 const TOP = Number(args.top ?? 25);
 const FROM = Number(args.from ?? 1974);
 const MIN_COVERED = 0.8;
@@ -143,6 +146,30 @@ for (const [label, lo, hi] of [['1974-1996', 1974, 1996], ['1997-2013', 1997, 20
     return e >= lo && e <= hi;
   });
   console.log(`  ${label}: D-TAL r ${(-corr(g.map((t) => t.dtal), g.map((t) => t.relDrtg)).r).toFixed(2)}, DBPM r ${(-corr(g.map((t) => t.dbpm), g.map((t) => t.relDrtg)).r).toFixed(2)}  (${g.length})`);
+}
+
+// Do bigs weigh more for a team's defense than guards and wings? Team DRtg on two minutes-weighted
+// D-TALs: the bigs' (PF/C) and the perimeter's (PG/SG/SF), each as a share of five players.
+{
+  const bigShare = (t: TeamRow) => t.players.filter((p) => p.span.primaryPosition === 'C' || p.span.primaryPosition === 'PF');
+  const rows = teams.map((t) => {
+    const f = (ps: typeof t.players) => ps.reduce((s, p) => s + p.share * computeDefensiveTalent(p.span), 0) / 5;
+    const bigs = bigShare(t);
+    return { y: t.relDrtg, big: f(bigs), per: f(t.players.filter((p) => !bigs.includes(p))), bigMin: bigs.reduce((s, p) => s + p.share, 0) / 5 };
+  });
+  // two-variable least squares with intercept
+  const X = rows.map((r) => [1, r.big, r.per]);
+  const A = [0, 1, 2].map((i) => [...[0, 1, 2].map((j) => X.reduce((s, x) => s + x[i] * x[j], 0)), X.reduce((s, x, n) => s + x[i] * rows[n].y, 0)]);
+  for (let i = 0; i < 3; i++) {
+    const p = A[i][i];
+    for (let j = i; j <= 3; j++) A[i][j] /= p;
+    for (let r = 0; r < 3; r++) if (r !== i) for (let j = 3; j >= i; j--) A[r][j] -= A[r][i] * A[i][j];
+  }
+  const [, wBig, wPer] = A.map((r) => r[3]);
+  // wBig / wPer are per D-TAL point of the minutes-weighted group sum, so a full-time player of either
+  // group is worth w x his minute share (0.2): near-equal weights mean a big's D-TAL point is worth
+  // about what a guard's is for the team's defense.
+  console.log(`\nTeam DRtg on D-TAL by group (a D-TAL point of the group's minutes-weighted sum): bigs ${wBig.toFixed(2)}, perimeter ${wPer.toFixed(2)}`);
 }
 
 // Ridge, per player over his whole career: the team defense beyond what D-TAL predicted.
