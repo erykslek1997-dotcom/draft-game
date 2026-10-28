@@ -136,3 +136,22 @@ console.log(`\nPlayers whose teams most MISSED the engine (SRS points per full-m
 order.slice(0, 25).forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
 console.log('\nPlayers whose teams most BEAT the engine:');
 order.slice(-25).reverse().forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
+
+// Era check: SRS is measured against the team's own league, Overall on one all-time scale. If the
+// later leagues are simply stronger, the same Overall is worth less SRS there and the era gap is
+// the league's, not a rating error. Centre each season's Overall on that season's teams and look again.
+{
+  const bySeason = Object.groupBy(rows, (x) => String(x.end));
+  const centred = rows.map((x) => {
+    const g = bySeason[String(x.end)]!;
+    return { x, c: x.ovr - mean(g.map((q) => q.ovr)), n: g.length };
+  }).filter((q) => q.n >= 4);
+  const cr = corr(centred.map((q) => q.c), centred.map((q) => q.x.srs));
+  const cs = (cr * sd(centred.map((q) => q.x.srs))) / sd(centred.map((q) => q.c));
+  console.log(`\nSeason-centred Overall (seasons with 4+ covered teams, n ${centred.length}): r ${cr.toFixed(3)}, ${cs.toFixed(2)} SRS per point`);
+  for (const [k, g] of Object.entries(Object.groupBy(centred, (q) => `${Math.floor((q.x.end - 1) / 10) * 10}s`)).sort())
+    if (g!.length >= 15) {
+      const res2 = g!.map((q) => q.x.srs - cs * q.c);
+      console.log(`  ${k.padEnd(8)} n ${String(g!.length).padStart(4)}  miss ${mean(res2).toFixed(2).padStart(6)}  slope here ${((corr(g!.map((q) => q.c), g!.map((q) => q.x.srs)) * sd(g!.map((q) => q.x.srs))) / sd(g!.map((q) => q.c))).toFixed(2)}  mean Overall ${mean(g!.map((q) => q.x.ovr)).toFixed(1)}`);
+    }
+}
