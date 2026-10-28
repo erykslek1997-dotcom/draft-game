@@ -1314,3 +1314,13 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 }
 .pp b em.pp-s { display: inline-block; width: 1.2em; font-style: normal; font-size: 0.8em; }
 
+
+/* 2026-10-28, the user: the posters whose content fills it take an Instagram post's 4:5 frame (the
+   Mini tournament, the All-Time season); the photos take the height the rest leaves, within reason. */
+.poster.ig { aspect-ratio: 4 / 5; display: flex; flex-direction: column; overflow: hidden; }
+.poster.ig .po-five { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.poster.ig .po-p { display: flex; flex-direction: column; min-height: 0; }
+.poster.ig .po-ph { flex: 1 1 auto; height: auto; min-height: 56px; max-height: 150px; }
+.poster.ig .po-ph img { width: min(100px, 100%); }
+.poster.ig .po-foot { margin-top: auto; }
+.poster.ig .po-head h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(28px, 7.2vw, 40px); }

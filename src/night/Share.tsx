@@ -45,6 +45,9 @@ export interface PosterData {
   /** The Mini tournament's road, a cell a round (2026-10-28, mockup mini-tournament-share.html C):
    * "R16 · W · #12 · 104–97". */
   road?: { label: string; result: 'W' | 'L' | '—'; line: string }[];
+  /** An Instagram post's 4:5 frame (2026-10-28, the user: only the posters whose content fills it —
+   * the Mini tournament and the All-Time season). */
+  ig?: boolean;
 }
 
 function Road({ road }: { road?: PosterData['road'] }) {
@@ -120,7 +123,7 @@ const teamVar = (span: PlayerSpan) => ({ '--team': spanBand(span).color }) as CS
 
 export function Poster({ d }: { d: PosterData }) {
   return (
-    <div className={`poster${d.champ ? ' champ-p' : ''}`}>
+    <div className={`poster${d.champ ? ' champ-p' : ''}${d.ig ? ' ig' : ''}`}>
       <div className="po-mast">
         <span>{d.daily ? `${BRAND} Daily` : BRAND}</span>
         <b>{longDate(d.date)}</b>
