@@ -198,3 +198,31 @@ for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).
 // Step 6.4: the team's rim pressure (offenseScoreBreakdown.rimPressure, 0-100), per 10, over the five's talent and spacing.
 report('6.4 REAL ORtg ~ O-TAL bar + spacing + rim pressure', ['O-TAL bar', 'spacing (per 10)', 'rim pressure (per 10)'], (r) => [r.otal, r.spacing / 10, r.rim / 10], (r) => r.y);
 report('6.4 GAME mechanics', ['O-TAL bar', 'spacing (per 10)', 'rim pressure (per 10)'], (r) => [r.otal, r.spacing / 10, r.rim / 10], (r) => r.mech);
+
+// 2026-10-28 (the user: a post scorer should need shooters MOST): the same question done properly —
+// only the four teammates' spacing (the star's own shooting left out), only 1979-80 on (the three-
+// point line), per 10 points of the four's mean spacing value, the five's O-TAL bar held.
+{
+  const modern = rows.filter((r) => Number(r.who.slice(0, 4)) + 1 >= 1980);
+  const fitArch = (g: Row[], yf: (r: Row) => number) => {
+    const b = wols(g.map((r) => [r.otal, r.mates / 10]), g.map(yf), g.map(() => 1));
+    const boots = Array.from({ length: 400 }, () => {
+      const s2 = g.map(() => g[Math.floor(rnd() * g.length)]);
+      return wols(s2.map((r) => [r.otal, r.mates / 10]), s2.map(yf), s2.map(() => 1))[2];
+    }).sort((p, q) => p - q);
+    return `${b[2].toFixed(2).padStart(6)} (${boots[20].toFixed(2)}…${boots[380].toFixed(2)})`;
+  };
+  console.log(`\nTEAMMATES' spacing only, 1980 on (${modern.length} team-seasons): all  real ${fitArch(modern, (r) => r.y)}  game ${fitArch(modern, (r) => r.mech)}`);
+  const groups: Record<string, string[]> = {
+    'post / interior stars': ['Post Scorer', 'Versatile Big'],
+    'ball handlers': ['Primary Ball Handler', 'Secondary Ball Handler'],
+    'creators / slashers': ['Shot Creator', 'Slasher'],
+    'shooters / stretch': ['Stationary Shooter', 'Stretch Big', 'Off Screen Shooter', 'Movement Shooter'],
+  };
+  for (const [label, archs] of Object.entries(groups)) {
+    const g = modern.filter((r) => archs.includes(r.arch));
+    if (g.length < 25) continue;
+    const ms = g.map((r) => r.mates).sort((a, b) => a - b);
+    console.log(`  ${label.padEnd(22)} n ${String(g.length).padStart(3)}  real ${fitArch(g, (r) => r.y)}  game ${fitArch(g, (r) => r.mech)}  mates spacing p10-p90 ${ms[Math.floor(ms.length * 0.1)].toFixed(0)}-${ms[Math.floor(ms.length * 0.9)].toFixed(0)}`);
+  }
+}
