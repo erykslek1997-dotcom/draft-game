@@ -1280,7 +1280,7 @@ export default function DraftBoard({
             !state.complete
               ? `Finish drafting all ${ROSTER_SIZE} picks first.`
               : chosenRosterOverCap
-                ? `Your chosen years cost ${chosenRosterFga.toFixed(1)} caps, over the ${capLimit} cap. Pick cheaper years in the roster.`
+                ? `Your chosen years cost ${fmtCaps(chosenRosterFga)} caps, over the ${fmtCaps(capLimit)} cap. Pick cheaper years in the roster.`
                 : undefined
           }
           submitRef={submitRef}

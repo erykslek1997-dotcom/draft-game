@@ -356,10 +356,10 @@ gry + język drukowanego programu meczowego. Makiety wszystkich 9 ekranów Draw 
 ### Playtest wydania nocnego 2026-10-22 — spisane, do zrobienia
 
 **Telefon — drobne poprawki z 2026-10-23 (do zrobienia, kończymy po całej liście):**
-- [ ] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
-- [ ] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
-- [ ] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
-- [ ] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
+- [x] Lista draftu na zegarze: cap za blisko przycisku „Draft” — odstęp.
+- [x] Lista draftu: ucięte statystyki w drugiej linii („27.0 / 1…”) — zwęzić pozycję/lata albo skrócić zapis.
+- [x] Okno „His stretches”: cap za blisko przycisku „Use” — odstęp ~12 px.
+- [x] Team (po drafcie): tabela rozpycha stronę w lewo, cap poza ekranem — zmieścić tabelę (węższy slot, mniejsze zdjęcie, „change” pod latami), reszta przewija się wewnątrz tabeli.
 - [x] Lista draftu (telefon): cap za blisko „Draft”; ucięte statystyki; okno „His stretches”: cap za blisko „Use” (patrz wyżej).
 - [x] Sezon › Overview: niższe wiersze Standings (~34 px), żeby tabela i „Playoffs →” mieściły się bez przewijania.
 - [x] Sezon › Stats › Players i box score meczu na żywo: przewijanie w bok w swoim pudełku, przyklejona kolumna nazwisk, cień sygnalizujący więcej kolumn (FG, 3P, FT, STL, BLK, TOV, PF).
@@ -383,7 +383,7 @@ złoto tylko capy / Joker / trofea; czerwony i zielony zawsze ze znakiem lub sł
 - [ ] Jedna linia u góry w obu kolumnach (dziś podwójne po lewej i nad kartami „big four”/„Finals”).
 - [ ] Kremowy wiersz „twój” nie przesuwa treści (`.order16 li.you` padding — i wszystkie inne).
 - [ ] Loteria: okrągły błysk w obrębie bębna zamiast prostokąta na całym canvasie.
-- [ ] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
+- [x] Capy zawsze z jednym miejscem po przecinku („19.0”, nie „19”) — `fmtCaps`.
 - [ ] Teksty: „about 11.2 a pick” bez sierotki; „tap to show” → „show list” na komputerze; kropka
       przy latach w liście („2012-14 ·”) — wyjaśnić albo usunąć.
 - [ ] Twój pick: bez podpowiedzi „X fits best / Y is still on the board”, zostaje „Up to N caps
