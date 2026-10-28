@@ -218,7 +218,12 @@ check(
 );
 
 const jrue = pick('Jrue Holiday', '2017-19');
-check(jrue.secondaryPositions.includes('PG'), 'Jrue Holiday 2017-19 is a real secondary PG and avoids an artificial PG penalty');
+// 2026-10-28: the position review made Holiday's point-guard windows PG outright (2017-19 included);
+// either way he covers the point without a penalty.
+check(
+  jrue.primaryPosition === 'PG' || jrue.secondaryPositions.includes('PG'),
+  'Jrue Holiday 2017-19 is a real PG (primary or secondary) and avoids an artificial PG penalty',
+);
 
 const hakeemRoleProfile = shadowRoleProfileForDiagnostics(pick('Hakeem Olajuwon', '1991-93'));
 check(
