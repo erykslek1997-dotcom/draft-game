@@ -50,6 +50,7 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
 .tl{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:4px;align-items:center}
 .tier.s{font-size:10px;padding:1px 7px}
 .lt{font:700 10.5px var(--num);color:var(--faint)}.lt b{font-size:12px;margin-left:2px}
+.desk th{font:700 10.5px var(--num);color:var(--faint);text-align:left;padding:4px;letter-spacing:.06em;text-transform:uppercase}.desk .gd{text-align:center;font-size:15px;font-weight:800}
 .more{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12px;color:var(--soft)}.more b{color:var(--ink)}
 </style>
 </head>
@@ -114,21 +115,28 @@ h3{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between}h
  </div>
 
  <div>
-  <p class="cap">3 · Zawodnik w składzie (Team po drafcie)</p>
+  <p class="cap">3a · Skład — telefon</p>
   <div class="g">
    <div class="top" style="margin-bottom:8px"><span class="eb">Your team</span><span class="coin">● 87.4 / 90.0</span></div>
-   <table class="oy team"><tbody>
-    <tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="hi">A</b></span><span class="lt">DEF <b class="lo">D</b></span><span class="lt">3PT <b class="hi">A+</b></span><span class="lt">DUR <b class="mid">B</b></span></div></td><td class="c">15.8</td></tr>
-    <tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="hi">A−</b></span><span class="lt">DEF <b class="hi">A+</b></span><span class="lt">3PT <b class="mid">B+</b></span><span class="lt">DUR <b class="lo">C</b></span></div></td><td class="c">16.1</td></tr>
-    <tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div><div class="tl"><span class="tier s">ALL-NBA 1ST</span><span class="lt">OFF <b class="mid">B+</b></span><span class="lt">DEF <b class="hi">A</b></span><span class="lt">3PT <b class="lo">D</b></span><span class="lt">DUR <b class="hi">A</b></span></div></td><td class="c">14.2</td></tr>
+   <table class="oy team"><tbody><tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST · MVP</span></div><div class="tl"><span class="lt">OFF <b class="hi">A</b></span><span class="lt">DEF <b class="lo">D</b></span><span class="lt">3PT <b class="hi">A+</b></span><span class="lt">DUR <b class="mid">B</b></span></div></td><td class="c">15.8</td></tr><tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div><div class="tl"><span class="tier s">ALL-NBA 1ST · DPOY</span></div><div class="tl"><span class="lt">OFF <b class="hi">A−</b></span><span class="lt">DEF <b class="hi">A+</b></span><span class="lt">3PT <b class="mid">B+</b></span><span class="lt">DUR <b class="lo">C</b></span></div></td><td class="c">16.1</td></tr><tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div><div class="tl"><span class="tier s">ALL-NBA 1ST · MVP</span></div><div class="tl"><span class="lt">OFF <b class="mid">B+</b></span><span class="lt">DEF <b class="hi">A</b></span><span class="lt">3PT <b class="lo">D</b></span><span class="lt">DUR <b class="hi">A</b></span></div></td><td class="c">14.2</td></tr>
     <tr><td class="sl bn">BN</td><td><div class="fc sm">?</div></td><td><b style="color:var(--faint)">Pick #58</b></td><td></td></tr>
    </tbody></table>
-   <p class="scout">Stuknięcie w twarz otwiera to samo okno co wyżej (pkt 2), od razu z ocenami — w składzie zwiad nie jest potrzebny.</p>
+   <p class="scout">Linia 1: nazwisko · linia 2: lata · linia 3: tier i nagrody · linia 4: oceny. Stuknięcie w twarz otwiera pełne okno z ocenami.</p>
   </div>
  </div>
-
+ <div style="flex-basis:100%"></div>
+ <div>
+  <p class="cap">3b · Skład — desktop</p>
+  <div class="g" style="width:760px">
+   <div class="top" style="margin-bottom:8px"><span class="eb">Your team</span><span class="coin">● 87.4 / 90.0</span></div>
+   <table class="oy team desk"><thead><tr><th>Slot</th><th></th><th>Player · years</th><th>Tier · awards</th><th>Off</th><th>Def</th><th>3PT</th><th>Dur</th><th>Caps</th></tr></thead><tbody><tr><td class="sl">PG</td><td><div class="fc sm">SN</div></td><td><b>Steve Nash</b><div class="yr">2005-07 ▾ change</div></td><td><span class="tier s">ALL-NBA 1ST · MVP</span></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="mid">B</b></td><td class="c">15.8</td></tr><tr><td class="sl">SF</td><td><div class="fc sm">KL</div></td><td><b>Kawhi Leonard</b><div class="yr">2016-18 ▾ change</div></td><td><span class="tier s">ALL-NBA 1ST · DPOY</span></td><td class="gd"><b class="hi">A−</b></td><td class="gd"><b class="hi">A+</b></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="lo">C</b></td><td class="c">16.1</td></tr><tr><td class="sl">PF</td><td><div class="fc sm">KG</div></td><td><b>Kevin Garnett</b><div class="yr">2002-04</div></td><td><span class="tier s">ALL-NBA 1ST · MVP</span></td><td class="gd"><b class="mid">B+</b></td><td class="gd"><b class="hi">A</b></td><td class="gd"><b class="lo">D</b></td><td class="gd"><b class="hi">A</b></td><td class="c">14.2</td></tr>
+    <tr><td class="sl bn">BN</td><td><div class="fc sm">?</div></td><td><b style="color:var(--faint)">Pick #58</b></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+   </tbody></table>
+   <p class="scout">Na desktopie zostają kolumny (jak dziś), tylko z kolorem liter i tierem z nagrodami w jednej kolumnie.</p>
+  </div>
+ </div>
  <div class="note">
-  <p><b>W składzie dziś:</b> na telefonie kolumny Tier / Off / Def / 3PT / Dur są ukryte, więc przy swoich graczach nie widzisz żadnej litery. Propozycja: trzecia linia pod latami — tier + 4 oceny (te same co w kolumnach na PC). Zmiana lat („▾ change”) od razu przelicza litery.</p>
+  <p><b>W składzie dziś:</b> na telefonie kolumny Tier / Off / Def / 3PT / Dur są ukryte, więc przy swoich graczach nie widzisz żadnej litery. Propozycja (telefon): tier i nagrody w osobnej linii, pod nią osobna linia ocen OFF · DEF · 3PT · DUR. Desktop: kolumny jak dziś. Zmiana lat („▾ change”) od razu przelicza litery.</p>
   <p><b>Co jest w grze dziś:</b> po zwiadzie tier i sześć ocen w jednym zawijanym wierszu; A na złoto (myli się z capami); przed zwiadem ocen nie ma wcale, jest tylko przycisk.</p>
   <p><b>Zmiana:</b> tier w osobnej linii, sześć ocen w siatce 3×2 (ta sama w „On the card” i w rozwiniętym „Other years”), A zielone, C i niżej czerwone, reszta biała.</p>
   <p><b>Przed zwiadem:</b> zamknięte kafelki „?”, żeby było widać, co raport odsłoni.</p>
