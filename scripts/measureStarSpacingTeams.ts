@@ -231,3 +231,40 @@ report('6.4 GAME mechanics', ['O-TAL bar', 'spacing (per 10)', 'rim pressure (pe
     console.log(`  ${label.padEnd(22)} n ${String(g.length).padStart(3)}  real ${fitArch(g, (r) => r.y)}  game ${fitArch(g, (r) => r.mech)}  mates spacing p10-p90 ${ms[Math.floor(ms.length * 0.1)].toFixed(0)}-${ms[Math.floor(ms.length * 0.9)].toFixed(0)}`);
   }
 }
+
+// 2026-10-28 (the user: "korelacja między jakością spacingu a jakością ataku"): plain correlations of
+// team spacing with real ORtg over the league's, all seasons and 1980 on, and the same with the
+// five's offensive talent held (partial r).
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  const partial = (g: Row[], x: (q: Row) => number) => {
+    const rxy = r(g.map(x), g.map((q) => q.y)), rxz = r(g.map(x), g.map((q) => q.otal)), ryz = r(g.map((q) => q.y), g.map((q) => q.otal));
+    return (rxy - rxz * ryz) / Math.sqrt((1 - rxz ** 2) * (1 - ryz ** 2));
+  };
+  for (const [label, g] of [['all seasons', rows], ['1980 on', rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= 1980)], ['2000 on', rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= 2000)]] as const) {
+    console.log(`\nSPACING vs real ORtg, ${label} (n ${g.length}): team spacing r ${r(g.map((q) => q.spacing), g.map((q) => q.y)).toFixed(3)} (talent held ${partial(g, (q) => q.spacing).toFixed(3)}); teammates' spacing r ${r(g.map((q) => q.mates), g.map((q) => q.y)).toFixed(3)} (held ${partial(g, (q) => q.mates).toFixed(3)}); O-TAL bar r ${r(g.map((q) => q.otal), g.map((q) => q.y)).toFixed(3)}; spacing vs O-TAL r ${r(g.map((q) => q.spacing), g.map((q) => q.otal)).toFixed(3)}`);
+  }
+}
+for (const from of [1974, 1980, 1990, 2000, 2010]) {
+  const g = rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= from);
+  const b = wols(g.map((q) => [q.otal, q.spacing / 10]), g.map((q) => q.y), g.map(() => 1));
+  const bm = wols(g.map((q) => [q.otal, q.spacing / 10]), g.map((q) => q.mech), g.map(() => 1));
+  console.log(`SPACING ${from} on (n ${g.length}): real ORtg per 10 spacing ${b[2].toFixed(3)} (= ${(b[2] / b[1]).toFixed(2)} O-TAL points); game ${bm[2].toFixed(3)} (= ${(bm[2] / bm[1]).toFixed(2)} O-TAL points)`);
+}
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  for (const from of [1974, 1990, 2000]) {
+    const g = rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= from);
+    console.log(`SWEEP${from} score~real r ${r(g.map((q) => q.offense), g.map((q) => q.y)).toFixed(4)}  game~real r ${r(g.map((q) => q.mech), g.map((q) => q.y)).toFixed(4)}`);
+  }
+}
