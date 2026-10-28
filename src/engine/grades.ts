@@ -17,6 +17,7 @@ import {
   cp3TwoWayExemptionShare,
   hackLiabilityPenalty,
 } from './talent';
+import { computeDefensiveTalent } from './defensiveTalent';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing, computeRawSpacing } from './spacing';
 import { computeFinishing, namedFinishingS } from './finishing';
@@ -167,6 +168,45 @@ export function defensiveGrade(value: number): Grade {
       precomputedSThreshold('defense') ?? computeSThreshold(draftPool.map((p) => computeDefensiveTalentBase(p)));
   }
   return value >= defensiveSThreshold ? 'S' : letterForDefensiveTalent(value);
+}
+
+/**
+ * 2026-10-28, week 2-3 step 5 (the user: lowering guards would leave them odd letters, "może liczone
+ * względem pozycji"): the letter shown for D-TAL is the span's PERCENTILE among the pool's spans of
+ * his own position, not a fixed cutoff on the number. With fixed cutoffs the median defender read D
+ * at PG/SG/SF (27-30), D+ at PF (36) and C at C (50); the D-TAL points are a ranking within position
+ * but the pool's centres sit ~20 points higher, so an average centre graded two steps above an
+ * average guard. By percentile the median of every position is C, the top 1% A+ and the same share
+ * of each position reads A. S stays what it was (the three best in the whole pool). DISPLAY only:
+ * `defensiveGrade` above still feeds the tier pipeline (`sixthMan.ts`, the tier context), so no
+ * player's tier moves.
+ */
+const DEFENSIVE_PERCENTILE_LETTERS: [number, Exclude<Grade, 'S'>][] = [
+  [99, 'A+'], [96, 'A'], [92, 'A-'], [86, 'B+'], [78, 'B'], [68, 'B-'], [56, 'C+'], [44, 'C'], [32, 'C-'], [22, 'D+'], [12, 'D'], [5, 'D-'], [0, 'F'],
+];
+let defensiveByPosition: Map<Position, number[]> | null = null;
+function defensiveValuesFor(position: Position): number[] {
+  if (!defensiveByPosition) {
+    defensiveByPosition = new Map();
+    for (const p of draftPool) {
+      const list = defensiveByPosition.get(p.primaryPosition) ?? [];
+      list.push(computeDefensiveTalent(p));
+      defensiveByPosition.set(p.primaryPosition, list);
+    }
+    for (const list of defensiveByPosition.values()) list.sort((a, b) => a - b);
+  }
+  return defensiveByPosition.get(position) ?? [];
+}
+export function defensiveGradeForSpan(span: PlayerSpan, value: number): Grade {
+  if (defensiveGrade(value) === 'S') return 'S';
+  const values = defensiveValuesFor(span.primaryPosition);
+  if (values.length === 0) return defensiveGrade(value);
+  let lo = 0;
+  while (lo < values.length && values[lo] < value) lo++;
+  let hi = lo;
+  while (hi < values.length && values[hi] === value) hi++;
+  const percentile = (100 * (lo + hi)) / 2 / values.length;
+  return DEFENSIVE_PERCENTILE_LETTERS.find(([t]) => percentile >= t)![1];
 }
 
 /**

@@ -1,7 +1,7 @@
 /** Precomputes immutable per-span zone totals and draft-pool availability for the browser. */
 import { writeFileSync } from 'node:fs';
 import { players } from '../src/data/players';
-import { draftPool } from '../src/data/draftPool';
+import { draftPoolBeforeAvailability } from '../src/data/draftPool';
 import { availabilityForSpan } from '../src/engine/availabilityLookup';
 import { buildZoneYearMap, zoneTotalsForSpan } from '../src/engine/zoneEfficiencyLookup';
 
@@ -23,8 +23,11 @@ for (const span of players) {
   ];
 }
 
+// 2026-10-28: measured on the pool BEFORE the availability filter. Built from the filtered pool,
+// every rebuild dropped the entries of the spans the last build had filtered out, and the next
+// load let them back in (Embiid 2023-25, 58 of 164 games, came back this way).
 const availabilityById: Record<string, AvailabilityTuple> = {};
-for (const span of draftPool) {
+for (const span of draftPoolBeforeAvailability) {
   const entry = availabilityForSpan(span);
   if (!entry) continue;
   availabilityById[span.id] = [entry.availability, entry.games, entry.possibleGames, entry.exact ? 1 : 0];

@@ -23,7 +23,7 @@ import { gameWinProbability, projectMatchup, seriesWinProbability } from '../eng
 import { seasonStory, seriesPreview, seriesVerdict } from '../engine/seasonStory';
 import { generateRosterInsights, insightContextFor, type RosterInsight } from '../engine/insights';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
-import { rankTeams, scoreTeam } from '../engine/scoring';
+import { rankTeams, scoreTeam, talentOnDefenseScale } from '../engine/scoring';
 import { teamMetricValues } from '../engine/teamMetrics';
 import { RivalEdge } from './AllMetrics';
 import { teamNickname } from '../engine/teamNames';
@@ -162,7 +162,7 @@ function TeamWindow({
   const nick = mascot(team);
   const edge = (
     [
-      ['Talent', scores.them.talentScore, scores.me.talentScore],
+      ['Talent', talentOnDefenseScale(scores.them.talentScore), talentOnDefenseScale(scores.me.talentScore)],
       ['Offense', scores.them.offenseScore, scores.me.offenseScore],
       ['Defense', scores.them.defenseScore, scores.me.defenseScore],
       ['Spacing', scores.them.spacingScore, scores.me.spacingScore],

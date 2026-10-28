@@ -9,7 +9,7 @@ import { CapI, NFace, fmtCaps } from '../night/ui';
 import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { teamsForSpan } from '../engine/spanTeams';
 import { draftPool as fullDraftPool } from '../data/draftPool';
-import { offensiveGrade, defensiveGrade, portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, overallTierForSpan, type Grade } from '../engine/grades';
+import { offensiveGrade, defensiveGradeForSpan, portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, overallTierForSpan, type Grade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -61,7 +61,7 @@ const pct = (v: number) => (v * 100).toFixed(1);
 function gradeList(span: PlayerSpan): Array<[string, Grade, GradeKey]> {
   return [
     ['Offense', offensiveGrade(computeOffensiveTalent(span), computeUncappedOffensiveTalent(span)), 'OFF'],
-    ['Defense', defensiveGrade(computeDefensiveTalent(span)), 'DEF'],
+    ['Defense', defensiveGradeForSpan(span, computeDefensiveTalent(span)), 'DEF'],
     ['Spacing', spacingGrade(computeSpacing(span), span), '3PT'],
     ['Portability', portabilityGrade(span), 'POR'],
     ['Finishing', finishingGrade(computeFinishing(span), span), 'FIN'],

@@ -1,6 +1,7 @@
 import { normalizePlayerName } from './schema';
 import { spanEndYears } from '../engine/era';
 import poolData from './draftPool.json';
+import { personNameFor } from './personNames';
 
 /**
  * 2026-09-25, full audit of every name-keyed source against the draft pool (the user: "dokładny
@@ -65,6 +66,11 @@ const EXPLICIT: Record<string, string> = {
   'Wayne Rollins': 'Tree Rollins',
   'Don Watts': 'Slick Watts',
   'George T. Johnson': 'George Johnson',
+  // 2026-10-28, the height audit: the bio file's spellings for the last pool players it missed.
+  'Ike Austin': 'Isaac Austin',
+  'Slava Medvedenko': 'Stanislav Medvedenko',
+  'Michael Sweetney': 'Mike Sweetney',
+  'Jianlian Yi': 'Yi Jianlian',
 };
 
 export function canonicalPlayerName(name: string): string {
@@ -79,14 +85,17 @@ export function canonicalPlayerName(name: string): string {
 const YEAR_SLACK = 2;
 const poolYears = new Map<string, Set<number>>();
 const poolByCanon = new Map<string, string[]>();
-for (const span of poolData as { playerName: string; spanLabel: string }[]) {
-  const key = normalizePlayerName(span.playerName);
+for (const span of poolData as { id: string; playerName: string; spanLabel: string }[]) {
+  // A player renamed apart from a namesake (`personNames.ts`) is keyed by his own name but filed
+  // under the shared name's canonical form, so "Mike Dunleavy" in 1980 still finds the father.
+  const name = personNameFor(span.id, span.playerName);
+  const key = normalizePlayerName(name);
   let years = poolYears.get(key);
   if (!years) {
     years = new Set();
     poolYears.set(key, years);
-    const canon = canonicalPlayerName(span.playerName);
-    poolByCanon.set(canon, [...(poolByCanon.get(canon) ?? []), key]);
+    for (const canon of new Set([canonicalPlayerName(name), canonicalPlayerName(span.playerName)]))
+      poolByCanon.set(canon, [...(poolByCanon.get(canon) ?? []), key]);
   }
   for (const y of spanEndYears(span.spanLabel)) years.add(y);
 }

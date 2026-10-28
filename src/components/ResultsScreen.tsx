@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, type ScoreBreakdown } from '../engine/scoring';
+import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
 import { STARTER_SLOTS } from '../engine/positions';
@@ -807,7 +807,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     };
   }, [ranked]);
   const profileRows = (b: ScoreBreakdown): ProfileRow[] => [
-    { label: 'Talent', value: b.talentScore, grade: fieldGrade(b.talentScore, fieldScores.talent) },
+    { label: 'Talent', value: talentOnDefenseScale(b.talentScore), grade: fieldGrade(b.talentScore, fieldScores.talent) },
     { label: 'Offense', value: b.offenseScore, grade: fieldGrade(b.offenseScore, fieldScores.offense) },
     { label: 'Defense', value: b.defenseScore, grade: fieldGrade(b.defenseScore, fieldScores.defense) },
     { label: 'Spacing', value: b.spacingScore, grade: fieldGrade(b.spacingScore, fieldScores.spacing) },

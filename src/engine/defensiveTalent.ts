@@ -692,13 +692,27 @@ export function computeDefensiveTalentRegularSeason(rawSpan: PlayerSpan): number
   const span = ratingSpan(rawSpan);
   const cached = defensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
+  const result = regularSeasonParts(span).final;
+  defensiveTalentCache.set(span.id, result);
+  return result;
+}
+
+/** Every term the regular-season D-TAL is made of, for `scripts/traceDTal.ts` (2026-10-28, the D-TAL
+ * audit: which mechanism lifts a perimeter defender above his ladder read). Not cached, not used by
+ * the game. */
+export function defensiveTalentTrace(rawSpan: PlayerSpan) {
+  return regularSeasonParts(ratingSpan(rawSpan));
+}
+
+function regularSeasonParts(span: PlayerSpan) {
   const accoladeRate = individualDefenseRate(span);
   const corroborationStrength = Math.min(
     1,
     accoladeRate + (darkoDefenseBonus(span) / DARKO_CORROBORATION_NORMALIZER) * DARKO_CORROBORATION_WEIGHT,
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
-  const base = Math.min(ladderPoints(functionalPosition(span), displayDefenseRaw(span)), corroborationCeiling);
+  const ladder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
+  const base = Math.min(ladder, corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
     base + (100 - base) * accoladeRate * INDIVIDUAL_DEFENSE_HEADROOM_SHARE - undersizedBigMalus(span),
@@ -707,21 +721,20 @@ export function computeDefensiveTalentRegularSeason(rawSpan: PlayerSpan): number
     NAMED_DTAL_FLOOR.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0,
     NAMED_DTAL_FLOOR_ALL_SPANS.get(normalizePlayerName(span.playerName)) ?? 0,
   );
-  const withoutConsensus = Math.max(
-    credited,
-    namedFloor,
-    onOffDefenseFloor(span),
-    teamDefenseCorroborationFloor(span),
-    perimeterStopperFloor(span),
-    corroboratedAllDefenseFloor(span),
-    consistentRealDefenseFloor(span),
-  );
+  const floors = {
+    named: namedFloor,
+    onOff: onOffDefenseFloor(span),
+    teamDefense: teamDefenseCorroborationFloor(span),
+    perimeterStopper: perimeterStopperFloor(span),
+    corroboratedAllD: corroboratedAllDefenseFloor(span),
+    consistentReal: consistentRealDefenseFloor(span),
+  };
+  const withoutConsensus = Math.max(credited, ...Object.values(floors));
   // The consensus floor only rescues spans the other paths read as BELOW average; an already
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
-  const floored = withoutConsensus < CONSENSUS_FLOOR_BASE ? Math.max(withoutConsensus, consensusPositiveFloor(span)) : withoutConsensus;
-  const result = Math.max(0, Math.min(100, Math.round(floored)));
-  defensiveTalentCache.set(span.id, result);
-  return result;
+  const consensus = withoutConsensus < CONSENSUS_FLOOR_BASE ? consensusPositiveFloor(span) : 0;
+  const final = Math.max(0, Math.min(100, Math.round(Math.max(withoutConsensus, consensus))));
+  return { accoladeRate, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 
 /**

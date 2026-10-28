@@ -18,7 +18,7 @@ import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
 import {
   offensiveGrade,
-  defensiveGrade,
+  defensiveGradeForSpan,
   spacingGrade,
   durabilityGrade,
   overallTierForSpan,
@@ -1164,7 +1164,7 @@ export default function DraftBoard({
   const gradeTone = (v: string) => (v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   const gradesOf = (sp: PlayerSpan) => ({
     off: offensiveGrade(computeOffensiveTalent(sp), computeUncappedOffensiveTalent(sp)),
-    def: defensiveGrade(computeDefensiveTalent(sp)),
+    def: defensiveGradeForSpan(sp, computeDefensiveTalent(sp)),
     tp: spacingUngraded(sp) ? '—' : spacingGrade(computeSpacing(sp), sp),
     dur: durabilityGrade(computeDurability(sp)),
   });
