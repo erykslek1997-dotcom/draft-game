@@ -36,8 +36,13 @@ check(calibrateSeasonProfileScore(86, { p10: 66, median: 76, p90: 82, elite: 86 
 check(effectiveTalent(pick('Pau Gasol', '2008-10')) >= 80, 'playoff-validated Pau Gasol earns the All-NBA talent floor');
 check(playoffBpmDraftBonus(pick('Marc Gasol', '2011-13')) > 1, 'Marc Gasol receives a reliable playoff-value draft bonus');
 check(playoffBpmDraftBonus(pick('Gilbert Arenas', '2005-07')) === 0, 'weak-defense perimeter scorers do not receive a playoff BPM draft bonus');
+// 2026-10-28: the position review (`positionDecisions.ts`) put the title-window Gasol at C; the
+// older rule had him PF with C second. Either way he is a real PF/C: one of the two primary, the
+// other kept as his second position.
+const gasolTitle = pick('Pau Gasol', '2008-10');
 check(
-  pick('Pau Gasol', '2008-10').primaryPosition === 'PF' && pick('Pau Gasol', '2008-10').secondaryPositions.includes('C'),
+  (gasolTitle.primaryPosition === 'PF' && gasolTitle.secondaryPositions.includes('C')) ||
+    (gasolTitle.primaryPosition === 'C' && gasolTitle.secondaryPositions.includes('PF')),
   'title-window Pau Gasol is represented as a real PF/C rather than a center-only player',
 );
 check(!pick('Ben Wallace', '2001-03').secondaryPositions.includes('PF'), 'Ben Wallace remains center-only');
