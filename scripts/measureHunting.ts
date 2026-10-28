@@ -190,3 +190,29 @@ worst.forEach((r) => console.log(`  pen ${r.f.penalty.toFixed(1)}  bar ${r.f.lin
     console.log(`  with cover: gap ${b2[2].toFixed(2)}, cover ${b2[3].toFixed(2)}, gap×cover ${b2[4].toFixed(2)} (90% ${boot[20].toFixed(2)} … ${boot[380].toFixed(2)}; negative = cover shrinks the gap's cost)`);
   }
 }
+
+// By position of the weakest defender (guards / wings / bigs): does a weak big cost a real five
+// more DRtg than a weak guard at the same gap? y ~ mean D-TAL + gap×[guard, wing, big].
+{
+  const grp = (p: PlayerSpan) => (p.primaryPosition === 'PG' || p.primaryPosition === 'SG' ? 0 : p.primaryPosition === 'SF' ? 1 : 2);
+  const rows = real.map((r) => {
+    const d = r.five.map(computeDefensiveTalent);
+    const w = d.indexOf(Math.min(...d));
+    const gap = mean(d.filter((_, i) => i !== w)) - d[w];
+    const g = grp(r.five[w]);
+    return { x: [mean(d), g === 0 ? gap : 0, g === 1 ? gap : 0, g === 2 ? gap : 0], y: r.y, mech: r.mech, g };
+  });
+  for (const [label, key] of [['real DRtg', 'y'], ['mechanics', 'mech']] as const) {
+    const b = ols(rows.map((r) => r.x), rows.map((r) => r[key]));
+    const boot = Array.from({ length: 400 }, () => {
+      const s = rows.map(() => rows[Math.floor(rnd() * rows.length)]);
+      return ols(s.map((r) => r.x), s.map((r) => r[key]));
+    });
+    const ci = (j: number) => {
+      const v = boot.map((c) => c[j]).sort((p, q) => p - q);
+      return `${v[20].toFixed(3)}…${v[380].toFixed(3)}`;
+    };
+    console.log(`\n${label}, per D-TAL point of the weakest link's gap (n guard ${rows.filter((r) => r.g === 0).length}, wing ${rows.filter((r) => r.g === 1).length}, big ${rows.filter((r) => r.g === 2).length}); per mean D-TAL point ${b[1].toFixed(3)}`);
+    console.log(`  guard ${b[2].toFixed(3)} (${ci(2)})  wing ${b[3].toFixed(3)} (${ci(3)})  big ${b[4].toFixed(3)} (${ci(4)})`);
+  }
+}
