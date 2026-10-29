@@ -2012,8 +2012,9 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const reduced = Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
   preCreditCache.set(span.id, reduced);
   const credited = reduced + defenseCreditLift(span, reduced);
-  const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span);
-  const result = Math.max(0, Math.min(100, Math.round(lifted + roleResumeAdjustment(span, lifted))));
+  const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span) - oldSchoolPointPenalty(span, credited);
+  const resumed = lifted + roleResumeAdjustment(span, lifted);
+  const result = Math.max(0, Math.min(100, Math.round(Math.min(resumed, smallRoleCap(span)))));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2047,14 +2048,45 @@ function lowUsageLift(span: PlayerSpan, tal: number): number {
  */
 const ROLE_RESUME = { perStrong: 1.1, perPlayoff: 0.5, base: 2, max: 6, talCap: 69 };
 const ROLE_RESUME_DATA = roleResumeData as unknown as Record<string, [number, number]>;
-function roleResumeAdjustment(span: PlayerSpan, tal: number): number {
-  if (tal > ROLE_RESUME.talCap) return 0;
+function roleResumeRaw(span: PlayerSpan): number {
   const r = ROLE_RESUME_DATA[normalizePlayerName(span.playerName).replace(/[^a-z0-9]+/g, ' ').trim()];
   if (!r) return 0;
   const [strong, playoff] = r;
-  const raw = ROLE_RESUME.perStrong * strong + ROLE_RESUME.perPlayoff * Math.max(0, playoff - 3) - ROLE_RESUME.base;
-  const adj = Math.max(-ROLE_RESUME.base, Math.min(ROLE_RESUME.max, raw));
+  return ROLE_RESUME.perStrong * strong + ROLE_RESUME.perPlayoff * Math.max(0, playoff - 3) - ROLE_RESUME.base;
+}
+function roleResumeAdjustment(span: PlayerSpan, tal: number): number {
+  if (tal > ROLE_RESUME.talCap) return 0;
+  const adj = Math.max(-ROLE_RESUME.base, Math.min(ROLE_RESUME.max, roleResumeRaw(span)));
   return adj > 0 ? Math.min(adj, Math.max(0, ROLE_RESUME.talCap - tal)) : adj;
+}
+
+/**
+ * 2026-10-29 (the user: "Prigioni at 55 is too much — a 3-FGA role player should not have that
+ * TAL", compared against starters): a window played in a small role tops out where the role does —
+ * `SMALL_ROLE_CAP` TAL under each minutes mark (real minutes a game of the window). A player who
+ * proved himself on strong teams (`roleResumeRaw` above 0: Manu, Caruso, Fisher, Horry) keeps his.
+ * The user's reviewed list: 31 windows (Prigioni 2012-14 56 -> 50, Robert Williams 2020-22 72 -> 58).
+ */
+const SMALL_ROLE_CAP: ReadonlyArray<[mpgUnder: number, cap: number]> = [[20, 50], [25, 58]];
+function smallRoleCap(span: PlayerSpan): number {
+  const mpg = realSpan(span)?.mpg;
+  if (mpg === undefined || roleResumeRaw(span) > 0) return 100;
+  return SMALL_ROLE_CAP.find(([under]) => mpg < under)?.[1] ?? 100;
+}
+
+/**
+ * 2026-10-29 (the user: point guards of the old school "simply scale poorly to modern basketball,
+ * so they should be weaker"): a point guard window that ends by 1979-80, before the three-point
+ * line, loses up to `OLD_SCHOOL_POINT.points` TAL, faded out over TAL 80-90 like the other role
+ * terms (Oscar, Archibald, West and Frazier keep theirs). The user's reviewed list: 61 players
+ * (Van Lier 69 -> 65, Cheeks 67 -> 63, Westphal 87 -> 86).
+ */
+const OLD_SCHOOL_POINT = { lastSeason: 1980, points: 4, fadeFrom: 80, fadeTo: 90 };
+function oldSchoolPointPenalty(span: PlayerSpan, tal: number): number {
+  if (span.primaryPosition !== 'PG') return 0;
+  const ys = spanEndYears(span.spanLabel);
+  if (!ys.length || Math.max(...ys) > OLD_SCHOOL_POINT.lastSeason) return 0;
+  return OLD_SCHOOL_POINT.points * clamp01((OLD_SCHOOL_POINT.fadeTo - tal) / (OLD_SCHOOL_POINT.fadeTo - OLD_SCHOOL_POINT.fadeFrom));
 }
 
 /**
