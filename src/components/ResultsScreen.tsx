@@ -1332,6 +1332,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                           const rows = allAssignments(shown);
                           return (
                             <RosterList
+                              compact
                               rows={primaryStarters(shown).map((x) => {
                                 const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
                                 const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((p, q) => q.minutes - p.minutes);

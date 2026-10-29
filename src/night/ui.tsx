@@ -121,7 +121,38 @@ const shortYears = (label: string) => label.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2
  * minutes) on the left, who comes in for him on the right in the same form, smaller when two share
  * the slot; the starter's team colour is the row's edge.
  */
-export function RosterList({ rows }: { rows: { slot: string; starter?: { span: PlayerSpan; minutes: number }; bench: { span: PlayerSpan; minutes: number }[] }[] }) {
+export function RosterList({ rows, compact }: { rows: { slot: string; starter?: { span: PlayerSpan; minutes: number }; bench: { span: PlayerSpan; minutes: number }[] }[]; compact?: boolean }) {
+  // 2026-10-29 (the user: a rival's roster inside the standings "looks squeezed"; option b): a rival
+  // reads as one line a slot — small face, surname, years and minutes, his bench as text after it.
+  if (compact)
+    return (
+      <div className="rlist compact">
+        {rows.map(({ slot, starter, bench }) => (
+          <div key={slot} className="rc-row" style={starter ? bandStyle(starter.span) : undefined}>
+            <span className="rl-slot">{slot}</span>
+            {starter ? (
+              <>
+                <span className="rl-face">
+                  <NFace name={starter.span.playerName} span={starter.span} />
+                </span>
+                <span className="rc-main">
+                  <b>{lastName(maskText(starter.span.playerName))}</b> <em>{shortYears(maskYears(starter.span.playerName, starter.span.spanLabel))}</em> {Math.round(starter.minutes)}m
+                </span>
+                <span className="rc-bench">
+                  {bench.map((b) => (
+                    <span key={b.span.id}>
+                      {lastName(maskText(b.span.playerName))} {Math.round(b.minutes)}m
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : (
+              <span className="rl-none">empty</span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   return (
     <div className="rlist">
       {rows.map(({ slot, starter, bench }) => (

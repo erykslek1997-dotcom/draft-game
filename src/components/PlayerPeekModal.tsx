@@ -77,7 +77,8 @@ function Grades({ span, locked = false }: { span: PlayerSpan; locked?: boolean }
     <div className={`pk2-g6${locked ? ' lock' : ''}`}>
       {gradeList(span).map(([label, grade, key]) => {
         const shown = locked ? '?' : key === '3PT' && spacingUngraded(span) ? NOT_YET : grade;
-        const tone = shown.startsWith('A') ? 'hi' : /^[CDF]/.test(shown) ? 'lo' : undefined;
+        // 2026-10-29 (the user: the card "looks like crap"; S read like a B): S and A green, B and C plain, D and F red.
+        const tone = /^[SA]/.test(shown) ? 'hi' : /^[DF]/.test(shown) ? 'lo' : undefined;
         return (
           <span key={label} className="gr">
             <b className={tone}>{shown}</b>
@@ -173,8 +174,8 @@ export function PlayerPeekModal({
             <div>
               <h2>{group.playerName}</h2>
               <span>
-                {naturalPosition(group.playerName)} · {teamCodes.slice(0, 4).join(' · ')}
-                {teamCodes.length > 4 && ` +${teamCodes.length - 4}`} · {careerYears}
+                {naturalPosition(group.playerName)} · {teamCodes.slice(0, 3).join(' · ')}
+                {teamCodes.length > 3 && ` +${teamCodes.length - 3}`} · <span className="pk2-yrs">{careerYears}</span>
               </span>
             </div>
             <button type="button" className="x" onClick={onClose} aria-label="Close">
@@ -237,75 +238,71 @@ export function PlayerPeekModal({
               <h3>
                 Other years
               </h3>
-              <table className="pk2-rows">
-                <tbody>
-                  {others.map((span) => {
-                    const open = openId === span.id;
-                    return (
-                      <Fragment key={span.id}>
-                        <tr className="pk2-r" onClick={() => setOpenId(open ? null : span.id)} aria-expanded={open}>
-                          <td className="y">{span.spanLabel}</td>
-                          <td>
-                            <span className="pk2-bx">{span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}</span>
-                            <Awards span={span} />
-                          </td>
-                          <td className="t">{scouted ? tierOf(span) : ''}</td>
-                          <td className="cap">
-                            <CapI />
-                            {fmtCaps(span.fga)}
-                          </td>
-                          <td className="car">{open ? '▾' : '▸'}</td>
-                        </tr>
-                        {open && (
-                          <tr className="pk2-open">
-                            <td colSpan={5}>
-                              {scouted && (
-                                <div className="pk2-grades">
-                                  <Grades span={span} />
-                                </div>
-                              )}
-                              <div className="pk2-more">
-                                <span>
-                                  FG% <b>{pct(span.box.fgPct)}</b>
-                                </span>
-                                <span title={hadThreePointLine(span) ? undefined : THREE_POINT_LINE_NOTE}>
-                                  3P% <b>{hadThreePointLine(span) ? pct(span.box.threePct) : NOT_YET}</b>
-                                </span>
-                                <span>
-                                  FT% <b>{pct(span.box.ftPct)}</b>
-                                </span>
-                                <span title={hadStealsBlocksRecorded(span) ? undefined : STEALS_BLOCKS_NOTE}>
-                                  STL <b>{hadStealsBlocksRecorded(span) ? span.box.spg.toFixed(1) : NOT_YET}</b>
-                                </span>
-                                <span title={hadStealsBlocksRecorded(span) ? undefined : STEALS_BLOCKS_NOTE}>
-                                  BLK <b>{hadStealsBlocksRecorded(span) ? span.box.bpg.toFixed(1) : NOT_YET}</b>
-                                </span>
-                                <span>
-                                  {teamsForSpan(span)
-                                    .map((t) => t.code)
-                                    .join(' · ')}{' '}
-                                  · plays {span.primaryPosition}
-                                </span>
-                              </div>
-                              {!readOnly && (
-                                <button
-                                  type="button"
-                                  className={`btn ${legal(span) ? 'line' : 'off'}`}
-                                  disabled={!legal(span)}
-                                  title={draftButtonTitle(state, span.id, canPick, currentTeam)}
-                                  onClick={() => onPick(span.id)}
-                                >
-                                  Draft {span.spanLabel} instead
-                                </button>
-                              )}
-                            </td>
-                          </tr>
+              <div className="pk2-list">
+                {others.map((span) => {
+                  const open = openId === span.id;
+                  return (
+                    <Fragment key={span.id}>
+                      <button type="button" className={`pk2-li${open ? ' open' : ''}`} onClick={() => setOpenId(open ? null : span.id)} aria-expanded={open}>
+                        <span className="y">{span.spanLabel}</span>
+                        <span className="bx">
+                          {span.box.ppg.toFixed(1)} · {span.box.rpg.toFixed(1)} · {span.box.apg.toFixed(1)}
+                          <Awards span={span} />
+                        </span>
+                        <span className="t">{scouted ? tierOf(span) : ''}</span>
+                        <span className="cap">
+                          <CapI />
+                          {fmtCaps(span.fga)}
+                        </span>
+                        <span className="car">{open ? '▾' : '▸'}</span>
+                      </button>
+                      {open && (
+                        <div className="pk2-open">
+                        {scouted && (
+                          <div className="pk2-grades">
+                            <Grades span={span} />
+                          </div>
                         )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        <div className="pk2-more">
+                          <span>
+                            FG% <b>{pct(span.box.fgPct)}</b>
+                          </span>
+                          <span title={hadThreePointLine(span) ? undefined : THREE_POINT_LINE_NOTE}>
+                            3P% <b>{hadThreePointLine(span) ? pct(span.box.threePct) : NOT_YET}</b>
+                          </span>
+                          <span>
+                            FT% <b>{pct(span.box.ftPct)}</b>
+                          </span>
+                          <span title={hadStealsBlocksRecorded(span) ? undefined : STEALS_BLOCKS_NOTE}>
+                            STL <b>{hadStealsBlocksRecorded(span) ? span.box.spg.toFixed(1) : NOT_YET}</b>
+                          </span>
+                          <span title={hadStealsBlocksRecorded(span) ? undefined : STEALS_BLOCKS_NOTE}>
+                            BLK <b>{hadStealsBlocksRecorded(span) ? span.box.bpg.toFixed(1) : NOT_YET}</b>
+                          </span>
+                          <span>
+                            {teamsForSpan(span)
+                              .map((t) => t.code)
+                              .join(' · ')}{' '}
+                            · plays {span.primaryPosition}
+                          </span>
+                        </div>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            className={`btn ${legal(span) ? 'line' : 'off'}`}
+                            disabled={!legal(span)}
+                            title={draftButtonTitle(state, span.id, canPick, currentTeam)}
+                            onClick={() => onPick(span.id)}
+                          >
+                            Draft {span.spanLabel} instead
+                          </button>
+                        )}
+                        </div>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </div>
             </>
           )}
           {hiddenCount > 0 && (
