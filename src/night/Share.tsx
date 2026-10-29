@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import { BRAND, BRAND_MARK } from '../brand';
 import { copyLink, shareFilename, useSaveCardImage } from '../components/shareSave';
@@ -280,6 +280,37 @@ export function Story({ d }: { d: PosterData }) {
   );
 }
 
+/** The card is laid out at its own width (`CARD_WIDTH`) and scaled down as one picture where the
+ * window is narrower (2026-10-29, playtest 13: on a phone the 4:5 post squeezed its five and the
+ * bench slid over them). The saved image is taken from the unscaled card, so it matches. */
+const CARD_WIDTH = 512;
+function FitCard({ children }: { children: ReactNode }) {
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 1, height: 0 });
+  useLayoutEffect(() => {
+    const o = outer.current;
+    const i = inner.current;
+    if (!o || !i) return;
+    const measure = () => {
+      const scale = Math.min(1, o.clientWidth / CARD_WIDTH);
+      setFit({ scale, height: i.offsetHeight * scale });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(o);
+    ro.observe(i);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={outer} className="fit-card" style={{ height: fit.height || undefined }}>
+      <div ref={inner} style={{ width: CARD_WIDTH, transform: `scale(${fit.scale})`, transformOrigin: 'top left' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** The share window: Post / Story, the poster, Save image and Copy link. */
 export function ShareNight({ d, link, fileName, onClose }: { d: PosterData; link?: string; fileName: string; onClose: () => void }) {
   const [kind, setKind] = useState<'post' | 'story'>('post');
@@ -307,9 +338,11 @@ export function ShareNight({ d, link, fileName, onClose }: { d: PosterData; link
             ✕
           </button>
         </div>
-        <div ref={ref} className={kind === 'story' ? 'story-wrap' : undefined}>
-          {kind === 'post' ? <Poster d={d} /> : <Story d={d} />}
-        </div>
+        <FitCard>
+          <div ref={ref} className={kind === 'story' ? 'story-wrap' : 'po-fixed'}>
+            {kind === 'post' ? <Poster d={d} /> : <Story d={d} />}
+          </div>
+        </FitCard>
         <div className="btn2" style={{ marginTop: 14 }}>
           <Btn onClick={saveImage} disabled={saveState === 'building'}>
             {saveState === 'building' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : saveState === 'error' ? 'Try again' : 'Save image'}

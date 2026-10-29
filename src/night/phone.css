@@ -525,3 +525,6 @@
 /* 2026-10-29 (playtest 10): in a played play-in game the loser's score is as quiet as his name, so
    the winner's number is the one that reads first. */
 .nt .pi-g:not(.live) .tr:not(.win):not(.you) .w { color: var(--ink3); }
+
+/* the share card keeps its own width and is scaled as one picture (`FitCard`, playtest 13) */
+.nt .fit-card { overflow: hidden; }
