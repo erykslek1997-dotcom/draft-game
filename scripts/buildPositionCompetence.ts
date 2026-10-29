@@ -59,12 +59,6 @@ function windowPositions(span: PlayerSpan): Position[] | undefined {
   if (!total) return undefined;
   return POSITIONS.filter((pos) => rows.filter((r) => r.pos === pos).reduce((sum, r) => sum + r.mp, 0) >= total * WINDOW_NATURAL_SHARE);
 }
-/** Share of a player's BBRef minutes listed at the point — how pure a point guard he is (rotation.ts). */
-function careerPointShare(name: string): number | undefined {
-  const rows = [...(bbrefSeasons.get(normalizePlayerName(name))?.values() ?? [])];
-  const total = rows.reduce((sum, r) => sum + r.mp, 0);
-  return total ? Math.round((rows.filter((r) => r.pos === 'PG').reduce((sum, r) => sum + r.mp, 0) / total) * 100) / 100 : undefined;
-}
 
 type Level = 'full' | 'partial' | 'emergency' | 'none';
 const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -205,7 +199,6 @@ type Entry = {
   pos: Partial<Record<Position, number>>;
   ov?: Position[];
   s?: Record<string, Partial<Record<Position, number>>>;
-  pg?: number;
 };
 const out: Record<string, Entry> = {};
 const tally: Record<string, number> = {};
@@ -280,8 +273,6 @@ for (const [name, spans] of byName) {
       }
     }
   }
-  const pg = careerPointShare(name);
-  if (pg !== undefined) entry.pg = pg;
   out[key] = entry;
 }
 
