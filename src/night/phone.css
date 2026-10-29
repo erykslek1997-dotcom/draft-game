@@ -491,12 +491,14 @@
 /* 2026-10-29 (playtest 9: "sporo empty space"): the season card of a player is three lines, so on a
    phone it is a sheet from the bottom as tall as it needs, not the full screen; its numbers come in
    a grid of tiles (`SeasonPlayerCard`). */
-.nt .pc-grid { display: none; }
+.nt .pc-grid, .nt .pc-gm { display: none; }
 @media (max-width: 600px) {
   .nt .pc-all { display: none; }
   .nt .pc-grid { display: grid; gap: 0; margin: 8px 0 10px; }
   .nt .pc-grid > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px 0; border-bottom: 1px solid var(--rule); }
-  .nt .pc-grid > .pg-rest { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .nt .pc-grid > .pg-rest { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nt .pc-gm { display: block; margin: 10px 0 0; font: 500 12px var(--num); color: var(--ink3); }
+  .nt .pc-gm b { color: var(--ink2); font-weight: 600; }
   .nt .pc-grid span { display: block; font: 700 11px var(--sans); letter-spacing: 0.06em; color: var(--ink3); }
   .nt .pc-grid b { display: block; margin-top: 2px; font: 600 18px var(--num); color: var(--ink2); }
   .nt .pc-grid .pg-big b { font: 800 34px/1 var(--cond); color: var(--ink); }
@@ -513,13 +515,13 @@
    with the position beside it, never broken over three. */
 @media (max-width: 600px) {
   .nt .dlg.wide { top: 0; left: 0; transform: none; width: 100%; max-height: none; height: 100dvh; border-top: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: none; }
-  .nt .twin .sbox td:first-child { white-space: nowrap; line-height: 1.2; }
+  .nt .twin .sbox td:first-child { white-space: nowrap; line-height: 1.2; padding-right: 12px; }
   /* a hairline between the number columns ("naprawdę drobna") */
   .nt .twin .sbox td + td, .nt .twin .sbox th + th { box-shadow: inset 1px 0 0 color-mix(in srgb, var(--rule) 55%, transparent); }
   .nt .twin .sbox td:first-child small { display: inline; margin-left: 5px; }
   /* every number column the same width, so the gap after MIN reads like the rest ("przerwa między
      minutami wydaje się mniejsza") */
-  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; padding-right: 4px; width: 40px; min-width: 40px; font-size: 13px; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; padding-right: 3px; width: 36px; min-width: 36px; font-size: 12.5px; }
   .nt .twin .dlg-head { padding-bottom: 10px; margin-bottom: 10px; }
   .nt .twin .tw-split > section, .nt .twin .tw-split > * { min-width: 0; }
   .nt .twin .sbox td:first-child .pn { display: inline-block; max-width: 112px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
@@ -538,3 +540,13 @@
 @media (max-width: 600px) {
   .nt .modal.sharem2 { top: auto; bottom: 0; height: auto; max-height: 100dvh; border-radius: 14px 14px 0 0; padding-top: 12px; }
 }
+
+/* the poster's bench (2026-10-29: "tragiczne są te ryje", the empty columns beside it): a low row
+   across the card — a small round face, the name and its line beside it, three to a row */
+.po-bench .po-bp { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+.po-b2 { display: flex; align-items: center; gap: 8px; min-width: 0; text-align: left; }
+.po-bf { flex: none; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, var(--team) 26%, var(--cface)); box-shadow: inset 0 0 0 2px var(--team); }
+.po-bf img { width: 100%; height: 100%; object-fit: cover; }
+.po-b2 > span:last-child { min-width: 0; }
+.po-b2 b { display: block; font: 800 14px/1 var(--cond); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.po-b2 em { display: block; margin-top: 2px; font: 500 10px var(--num); font-style: normal; color: var(--cink2); white-space: nowrap; }

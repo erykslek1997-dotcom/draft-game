@@ -349,12 +349,21 @@ function SeasonPlayerCard({
           "uporządkowanie danych"): on a phone the line comes in three groups — points, rebounds and
           assists big, then the shooting, then the rest in small — with the playoffs under each
           number when he played them. */}
+      <p className="pc-gm">
+        <b>{line.games}</b> games · <b>{f1(per(line, 'min'))}</b> min
+        {po && po.games > 0 && (
+          <>
+            {' '}
+            · playoffs <b>{po.games}</b> · <b>{f1(per(po, 'min'))}</b> min
+          </>
+        )}
+      </p>
       <div className="pc-grid">
         {(
           [
             ['big', [2, 3, 4]],
             ['shoot', [7, 8, 9]],
-            ['rest', [0, 1, 5, 6, 10, 11]],
+            ['rest', [5, 6, 10, 11]],
           ] as const
         ).map(([g, idx]) => (
           <div key={g} className={`pg-${g}`}>

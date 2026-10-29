@@ -164,13 +164,17 @@ export function Poster({ d }: { d: PosterData }) {
           <span className="po-bl">Bench</span>
           <div className="po-bp">
             {d.bench.slice(0, 5).map(({ span, num, min }) => (
-              <div key={span.id} className="po-p po-b" style={teamVar(span)}>
-                <div className="po-ph">
+              <div key={span.id} className="po-b2" style={teamVar(span)}>
+                <span className="po-bf">
                   <NFace name={span.playerName} />
-                </div>
-                <b>{lastName(span.playerName)}</b>
-                <em>{numLabel(num, d.unit)}</em>
-                {min != null && <span className="po-m">{span.primaryPosition.split('/')[0]} · {Math.round(min)} min</span>}
+                </span>
+                <span>
+                  <b>{lastName(span.playerName)}</b>
+                  <em>
+                    {numLabel(num, d.unit)}
+                    {min != null && ` · ${span.primaryPosition.split('/')[0]} · ${Math.round(min)} min`}
+                  </em>
+                </span>
               </div>
             ))}
           </div>
