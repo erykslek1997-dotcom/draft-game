@@ -16,6 +16,7 @@ import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
 import { liftForReducedRole } from './reducedRole';
 import { realSpan } from './realAdvancedLookup';
+import roleResumeData from '../data/roleResume.json';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
@@ -2011,7 +2012,8 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const reduced = Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
   preCreditCache.set(span.id, reduced);
   const credited = reduced + defenseCreditLift(span, reduced);
-  const result = Math.max(0, Math.min(100, Math.round(credited + lowUsageLift(span, credited) + namedTalLift(span))));
+  const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span);
+  const result = Math.max(0, Math.min(100, Math.round(lifted + roleResumeAdjustment(span, lifted))));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2030,6 +2032,29 @@ function lowUsageLift(span: PlayerSpan, tal: number): number {
   if (usg === undefined) return 0;
   const fade = clamp01((LOW_USAGE_LIFT.fadeTo - tal) / (LOW_USAGE_LIFT.fadeTo - LOW_USAGE_LIFT.fadeFrom));
   return LOW_USAGE_LIFT.points * clamp01((LOW_USAGE_LIFT.from - usg) / (LOW_USAGE_LIFT.from - LOW_USAGE_LIFT.full)) * fade;
+}
+
+/**
+ * 2026-10-29 (the user, export 53023928: Derek Fisher and P.J. Tucker missing while players who had
+ * two good years on an average team and never smelled the playoffs go in their place): a role
+ * player is credited for proving himself on strong teams and docked for never doing so.
+ * `scripts/auditRoleResume.ts`, role players (TAL 35-79, careers from 1975) against peak RAPM / prime
+ * WOWYR, in TAL points the judge puts over TAL: no season of 1,000+ minutes on a +4 SRS team −1.9 /
+ * −9.2, 1-2 such seasons −1.0 / −0.1, 3-4 +2.3 / 0.0, 5+ +5.6 / +13.5; length of career alone 0.
+ * `perStrong` a +4 SRS season, `perPlayoff` a playoff season past the third, less `base`, within
+ * [−base, max] (`scripts/buildRoleResume.ts`). The user: role players only — TAL 69 and under, and
+ * the credit takes nobody past 69. Careers before 1974-75 are not read (no team seasons): 0.
+ */
+const ROLE_RESUME = { perStrong: 1.1, perPlayoff: 0.5, base: 2, max: 6, talCap: 69 };
+const ROLE_RESUME_DATA = roleResumeData as Record<string, [number, number]>;
+function roleResumeAdjustment(span: PlayerSpan, tal: number): number {
+  if (tal > ROLE_RESUME.talCap) return 0;
+  const r = ROLE_RESUME_DATA[normalizePlayerName(span.playerName).replace(/[^a-z0-9]+/g, ' ').trim()];
+  if (!r) return 0;
+  const [strong, playoff] = r;
+  const raw = ROLE_RESUME.perStrong * strong + ROLE_RESUME.perPlayoff * Math.max(0, playoff - 3) - ROLE_RESUME.base;
+  const adj = Math.max(-ROLE_RESUME.base, Math.min(ROLE_RESUME.max, raw));
+  return adj > 0 ? Math.min(adj, Math.max(0, ROLE_RESUME.talCap - tal)) : adj;
 }
 
 /**
