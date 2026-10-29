@@ -1741,9 +1741,8 @@ const QUALITY_FIT_SPLIT = 0.5;
 // its weight and rotation less than nothing / 0.5x — the only two parts both judges agree on. Bench
 // .113 -> .17, rotation .078 -> .039, talent takes the rest: Overall vs real SRS r 0.752 -> 0.758,
 // vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
-const QB = Number(process.env.QB ?? 0.17);
-const QUALITY_TALENT_WEIGHT = (0.441 - QB) / 0.48;
-const QUALITY_BENCH_WEIGHT = QB / 0.48;
+const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
+const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
 const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.17 / 0.52;
