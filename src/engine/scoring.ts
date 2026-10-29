@@ -1750,8 +1750,13 @@ const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
 const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
 const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
-const FIT_OFFENSE_WEIGHT = 0.17 / 0.52;
-const FIT_DEFENSE_WEIGHT = 0.17 / 0.52;
+// 2026-10-29 (audit follow-up step 2, `scripts/measureDefenseLean.ts`; the user: "Fair"): real teams
+// leaning to defense (Defense 8+ over Offense) beat their Overall by 0.63 SRS inside their decade.
+// 0.04 of the composite moved from Offense to Defense: that miss 0.63 -> 0.23 (offense-leaning
+// -0.05 -> 0.02), Overall vs real SRS r 0.7725 -> 0.7756, vs the bench leagues' mechanics margin R²
+// 0.559 -> 0.581 (0.06 gave 0.7761 / 0.580). Was .17 / .17.
+const FIT_OFFENSE_WEIGHT = 0.13 / 0.52;
+const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
 
 export function teamQualityScore(talent: number, benchDepth: number, rotation: number): number {
   return talent * QUALITY_TALENT_WEIGHT + benchDepth * QUALITY_BENCH_WEIGHT + rotation * QUALITY_ROTATION_WEIGHT;
