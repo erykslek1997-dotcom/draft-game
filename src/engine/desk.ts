@@ -7,7 +7,7 @@ import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
 import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
 import { FAV_LINES, HATE_LINES, MOONBAT_ANSWERS, hates, loves, moonbatPicks, specialLine } from './deskTastes';
-import { talkFor } from './deskTalk';
+import { exchangeFor, talkFor } from './deskTalk';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -470,10 +470,10 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
  */
 const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
   sosini: { tail: ['trust Uncle Mattia', 'hehe', '🍺', 'write that down', 'as I always say'], head: ['Kiddo.', 'Listen here.'] },
-  shyman: { tail: ['🧱'], head: ['Look.'] },
+  shyman: { tail: ['🧱'], head: [] },
   solin: { tail: ['💪', 'lol', 'say less', 'eye test', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
   binash: { tail: ['📼', 'totally tubular', 'rad 🤙', 'gnarly', 'cowabunga, dudes', '🕺'], head: ['Dude.', 'Oh, please.'] },
-  jert: { tail: ['pace-adjusted, btw', 'I counted', '(source: my 1991 almanac, page 212)', 'to be precise', 'footnote 4'], head: ['Actually.', 'Technically.', 'Correction.'] },
+  jert: { tail: ['pace-adjusted, btw', '(source: my 1991 almanac, page 212)', 'to be precise'], head: ['Actually.', 'Technically.', 'Correction.'] },
   rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
   batt: { tail: ['🤌', 'both ends'], head: ['Ragazzi.', 'Look.'] },
   prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },
@@ -519,11 +519,12 @@ function loosen(lines: DeskLine[], seed: number): DeskLine[] {
  * finding, so the colour never misleads — and now and then its author answers him.
  */
 const PILE_ON: Record<'praise' | 'concern', string[]> = {
-  praise: ['This. Exactly this.', 'Say it louder for the people in the back.', 'Finally, a take I can repost.', 'Co-signed. Rare W for this desk.', 'Not often I agree with you. Today I do.'],
-  concern: ['Been saying this all night.', 'Painful, but true.', 'Yep. The film agrees.', 'Somebody had to say it.', 'Muted the desk, unmuted for this. Correct.'],
+  praise: ['Hate to say it, but he’s right.', 'I was going to say the same thing. He just said it first.', 'Okay, that one I agree with.', 'Correct. Moving on.', 'First good take of the night.'],
+  concern: ['I said this before the draft. Nobody listened.', 'Yep. Saw it too.', 'He’s not wrong. It hurts, but he’s not wrong.', 'Somebody had to say it.', 'Thank you. Finally.'],
 };
-const PILE_ON_ANSWER = ['Appreciate you.', 'Took you long enough.', 'Write that down.', 'Screenshot this, everyone.', 'Told you.'];
+const PILE_ON_ANSWER = ['Took you long enough.', 'See? Somebody here watches basketball.', 'Thank you. Rare.', 'Finally.'];
 const PILE_ON_CHANCE = 0.6;
+const EXCHANGE_CHANCE = 0.7;
 const PILE_ON_ANSWER_CHANCE = 0.45;
 function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
   if ((line.kind !== 'praise' && line.kind !== 'concern') || line.who === 'host' || rng() >= PILE_ON_CHANCE) return [];
@@ -549,20 +550,20 @@ export function ordinal(n: number): string {
 // 2026-10-29 (the user: "Eric B — to ja"): the host talks like the user does — short, dry, blunt,
 // a "wtf" when it's earned, never a speech.
 const HOST_OPEN: Record<'won' | 'podium' | 'middle' | 'bottom', string[]> = {
-  won: ['{team}. Champions. Ok that’s actually good. Panel?', 'CHAMPIONS. {team}. I need a minute. Go.', 'Title for the {team}. Not gonna lie, didn’t see it coming. Panel.'],
-  podium: ['{place} for the {team}. Close. Not close enough. Go.', '{team}, {place}. Podium. Fine. Talk.', '{place}. {team}. So close it hurts. Panel?'],
-  middle: ['{place} for the {team}. Meh. Who wants it?', '{team} in {place}. Not great, not tragic. Go.', '{place}. The {team}. Somebody say something interesting.'],
-  bottom: ['{place}?? {team}, wtf. Somebody explain.', '{team}, {place}. Tragic. Go.', '{place} for the {team}. I’m tired, boss. Panel.'],
+  won: ['CHAMPIONS. The {team}. Okay, who called it? Nobody? Great. Panel.', '{team}, champions. Not gonna lie, didn’t see it coming. Matt, you’ve been smiling for ten minutes. Go.', 'Title for the {team}. Lex looks upset already. Good sign. Panel?'],
+  podium: ['{place} for the {team}. Close. Not close enough. Who wants it?', '{team}, {place}. A podium. Mark is relieved, Lex is furious. Go.', '{place}. The {team}. So close it hurts. Panel, be nice. Or don’t.'],
+  middle: ['{place} for the {team}. Not great, not tragic. Somebody say something interesting.', 'The {team} in {place}. Middle of the pack. Davyd, you look like you have opinions.', '{place}. {team}. Meh. Who’s first?'],
+  bottom: ['{place}?? {team}, wtf. Somebody explain this to me.', 'The {team}, {place}. Tragic. Lex, try to be human. Go.', '{place} for the {team}. I’m tired, boss. Panel.'],
 };
 const HOST_CLOSE_TIP = [
-  'Ok. Next time: {tip} Again. We’ll be right back.',
-  'Lesson for next time: {tip} That’s it. Break.',
+  'Okay. Everybody breathe. Next time: {tip} We’ll be right back.',
+  'That’s enough. Lesson for next time: {tip} Break, before somebody gets blocked.',
 ];
 const HOST_CLOSE_WON = [
   'That’s the show. Champions. Somebody check on Igor. Break.',
-  'Champions. Lex wants a dynasty, Mark wants a bench, I want a nap. Break.',
+  'Champions. Lex wants a dynasty, Mark wants a bench, I want a nap. We’ll be right back.',
 ];
-const HOST_CLOSE_PODIUM = ['Podium. Not bad. We’ll be right back.', 'Podium. Nobody got blocked tonight. Good. Break.'];
+const HOST_CLOSE_PODIUM = ['Podium. Not bad at all. We’ll be right back.', 'Podium, and nobody got blocked tonight. That’s a win for me too. Break.'];
 /** Arguments per show at most, and the chance that a take able to start one does. */
 // 2026-10-29 (the user: the room "should be a multi-stage discussion — replies and so on"): more
 // arguments, and plain takes draw replies (`pileOn`).
@@ -647,7 +648,17 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   const beefsUsed = new Set<string>();
   for (const t of onAir) {
     const thread = beefsUsed.size < MAX_BEEFS && beefRng() < BEEF_CHANCE ? beefFor(t, read, beefRng, beefsUsed) : null;
-    lines.push(...(thread ?? [t.line, ...pileOn(t.line, beefRng)]));
+    if (thread) { lines.push(...thread); continue; }
+    // 2026-10-29 (the user picked "B + C": arguments that run over several lines): a take on a
+    // finding first draws somebody who disagrees about that very point, and its author answers.
+    const ex = t.insight && (t.line.kind === 'praise' || t.line.kind === 'concern') && beefRng() < EXCHANGE_CHANCE
+      ? exchangeFor(t.insight, t.line.kind, t.who, DESK_CAST[t.who].name.split(' ').at(-1)!, beefRng)
+      : null;
+    if (ex) {
+      lines.push(t.line, { who: ex.by as ExpertId, kind: 'reply', text: ex.push, reply: true, pile: true }, { who: t.who, kind: 'reply', text: ex.answer, reply: true, pile: true });
+      continue;
+    }
+    lines.push(t.line, ...pileOn(t.line, beefRng));
   }
   if (moonbatOnAir(seed)) lines.push(...moonbatBit(read, mulberry32(mixSeed(seed, 0x30bb)), rank, used, strengths[0]));
 
