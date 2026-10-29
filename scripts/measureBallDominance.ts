@@ -31,11 +31,21 @@ function csv(file: string): Record<string, string>[] {
 
 // Ball share by season|player id.
 const ball = new Map<string, { name: string; share: number }>();
+// 2026-10-29: NBA.com's 2024-25 (and partly 2025-26) time of possession reads ~65% above every other
+// season (mean share 0.144 against ~0.087 for 2013-14..2023-24); each season is scaled to the
+// 2013-24 mean of its 1000+ minute players.
+const seasonMean = new Map<string, number>();
+{
+  const acc = new Map<string, number[]>();
+  for (const r of csv('player_possessions.csv')) if (Number(r.MIN) >= 1000) acc.set(r.SEASON, [...(acc.get(r.SEASON) ?? []), Number(r.TIME_OF_POSS) / Number(r.MIN)]);
+  for (const [k, v] of acc) seasonMean.set(k, v.reduce((a, b) => a + b, 0) / v.length);
+}
+const BASE_SHARE = 0.087;
 for (const r of csv('player_possessions.csv')) {
   const min = Number(r.MIN);
   if (min < 200) continue;
   const key = `${r.SEASON}|${r.PLAYER_ID}`;
-  const share = Number(r.TIME_OF_POSS) / min;
+  const share = (Number(r.TIME_OF_POSS) / min) * (BASE_SHARE / (seasonMean.get(r.SEASON) ?? BASE_SHARE));
   const prev = ball.get(key);
   if (!prev || share > prev.share) ball.set(key, { name: r.PLAYER_NAME, share }); // traded players: either row
 }
