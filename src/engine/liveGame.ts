@@ -192,8 +192,18 @@ const PASSER_POWER = 1.15;
  * misses his real share by 1.39 points (was 2.19), no archetype off by more than 1.1 (Primary Ball
  * Handlers were +3.0 and post scorers -2.6); the leaders still reach 11-12 on stacked teams.
  */
+/**
+ * 2026-10-29 (the user: Stockton 14.9 assists a game — "in today's game that's not real", the same
+ * rule the cards follow: past today's leaders only part of the excess counts): AST% past
+ * `PASSER_AST_TOP` counts a quarter. Season leaders on stacked teams 13.3 -> 11-12 (today's leaders
+ * ~11), the split of each team's assists unchanged (miss 1.54 -> 1.55 points).
+ */
+const PASSER_AST_TOP = 40;
+const PASSER_AST_KEEP = 0.25;
 function passerWeight(span: PlayerSpan): number {
-  return (astPctForSpan(span) / 10) * (PASSING_HUBS[span.playerName] ?? 1);
+  const ast = astPctForSpan(span);
+  const capped = ast > PASSER_AST_TOP ? PASSER_AST_TOP + (ast - PASSER_AST_TOP) * PASSER_AST_KEEP : ast;
+  return (capped / 10) * (PASSING_HUBS[span.playerName] ?? 1);
 }
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.1;

@@ -31,11 +31,21 @@ function csv(file: string): Record<string, string>[] {
 
 // Ball share by season|player id.
 const ball = new Map<string, { name: string; share: number }>();
+// 2026-10-29: NBA.com's 2024-25 (and partly 2025-26) time of possession reads ~65% above every other
+// season (mean share 0.144 against ~0.087 for 2013-14..2023-24); each season is scaled to the
+// 2013-24 mean of its 1000+ minute players.
+const seasonMean = new Map<string, number>();
+{
+  const acc = new Map<string, number[]>();
+  for (const r of csv('player_possessions.csv')) if (Number(r.MIN) >= 1000) acc.set(r.SEASON, [...(acc.get(r.SEASON) ?? []), Number(r.TIME_OF_POSS) / Number(r.MIN)]);
+  for (const [k, v] of acc) seasonMean.set(k, v.reduce((a, b) => a + b, 0) / v.length);
+}
+const BASE_SHARE = 0.087;
 for (const r of csv('player_possessions.csv')) {
   const min = Number(r.MIN);
   if (min < 200) continue;
   const key = `${r.SEASON}|${r.PLAYER_ID}`;
-  const share = Number(r.TIME_OF_POSS) / min;
+  const share = (Number(r.TIME_OF_POSS) / min) * (BASE_SHARE / (seasonMean.get(r.SEASON) ?? BASE_SHARE));
   const prev = ball.get(key);
   if (!prev || share > prev.share) ball.set(key, { name: r.PLAYER_NAME, share }); // traded players: either row
 }
@@ -61,7 +71,7 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { offense: number; b1: number; b2: number; b3: number; u2: number; iso2: boolean; e1: number; e2: number; e3: number; y: number; w: number; who: string };
+type Row = { offense: number; b1: number; b2: number; b3: number; u2: number; iso2: boolean; astMean: number; ast2: number; unitAst: number; e1: number; e2: number; e3: number; y: number; w: number; who: string };
 const rows: Row[] = [];
 let skipped = 0;
 const offenseCache = new Map<string, number>();
@@ -93,6 +103,7 @@ for (const u of csv('lineups_advanced.csv')) {
     return -0.01139 + 0.00174 * u + 0.00445 * a - 0.00194 * (u * a) / 100 + (pos === 'PG' ? 0.04444 : pos === 'SG' ? 0.00562 : pos === 'PF' || pos === 'C' ? -0.0103 : 0);
   };
   const e = balls.map((b, i) => est(b!, five[i]!.primaryPosition)).sort((a, b) => b - a);
+  const astOf = balls.map((b) => Number(realSeason(normalizePlayerName(b!.name), end)?.ast ?? 12)).sort((a, b) => b - a);
   const usg = balls.map((b) => Number(realSeason(normalizePlayerName(b!.name), end)?.usg ?? 18) / 100).sort((a, b) => b - a);
   rows.push({
     offense,
@@ -101,6 +112,9 @@ for (const u of csv('lineups_advanced.csv')) {
     b3: order[2].share,
     u2: usg[1],
     iso2: false,
+    astMean: astOf.reduce((a, b) => a + b, 0) / 5,
+    ast2: astOf[1],
+    unitAst: Number(u.AST_PCT) * 100,
     e1: e[0],
     e2: e[1],
     e3: e[2],
@@ -163,6 +177,11 @@ report('… 2nd handler at 18%+ tracked, with his estimate held', ['Offense', 't
   const t = rows.filter((r) => r.b2 >= 0.18);
   console.log(`  2nd handlers at 18%+: tracked mean ${mean(t.map((r) => r.b2)).toFixed(3)}, estimated mean ${mean(t.map((r) => r.e2)).toFixed(3)}`);
 }
+
+// 2026-10-29 (the user: Shreveport's problem is passing and ball movement): does the five's passing
+// — its players' real AST% — add offense beyond what its Offense score already reads?
+report('PASSING: five\'s mean AST% (per 5 points) and its second-best passer (per 5)', ['Offense', 'mean AST% (per 5)', 'second-best passer AST% (per 5)'], (r) => [r.offense, r.astMean / 5, r.ast2 / 5]);
+report('… the unit\'s own assisted share of makes (outcome, per 5 points)', ['Offense', 'unit AST% (per 5)'], (r) => [r.offense, r.unitAst / 5]);
 
 // The two-handler units, by how far they beat or miss the fit on Offense and the top handler alone.
 const b = wols(rows.map((r) => [r.offense, r.b1 * 10]), rows.map((r) => r.y), rows.map((r) => r.w));
