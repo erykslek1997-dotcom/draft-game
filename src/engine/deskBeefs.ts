@@ -680,6 +680,23 @@ const CORE_BEEFS: Beef[] = [
           ['host', 'Davyd put the chair down. Jake close the spreadsheet. thank you', 'host'],
         ],
       }),
+      () => ({
+        lines: [
+          ['lex', '@Solinhakov rebounds are for teams that miss. my guys don’t miss', 'cuts'],
+          ['solin', 'Your guys shot 44% last week, Lex.'],
+          ['lex', 'and still won. cope'],
+          ['solin', 'They lost by 12.'],
+          ['lex', 'blocked'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['jert', '@Solinhakov for the record, Russell averaged 22.5 rebounds for his career. This team combined couldn’t get to 22.5 in a quarter.', 'cuts'],
+          ['solin', 'First time I’ve agreed with an almanac.'],
+          ['sosini', 'two grandpas agreeing about boxing out. historic. riveting.', 'cuts'],
+          ['solin', 'Come to the paint, Mattia.'],
+        ],
+      }),
     ],
   },
 ];
@@ -1143,6 +1160,14 @@ const MORE_BEEFS: Beef[] = [
           ['rotation', 'Some of them are ON the bench, Lex, resting. That’s the point.'],
           ['lex', 'Stars don’t rest. Role players rest. You rest.'],
           ['rotation', 'Everybody rests, Lex. Even your ego, apparently, because it hasn’t shown up to a playoff game.'],
+        ],
+      }),
+      () => ({
+        lines: [
+          ['sosini', '@Rotation congrats on the bench. can any of them shoot or is this a charity', 'cuts'],
+          ['rotation', 'They can play, Mattia. That’s more than your podcast can say.'],
+          ['sosini', 'my podcast is top 200 in Croatia'],
+          ['zoran', 'It is not. I checked. 🇪🇺', 'cuts'],
         ],
       }),
     ],

@@ -5,9 +5,10 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
-import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
+import { BEEFS, HANDLE, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
 import { FAV_LINES, HATE_LINES, MOONBAT_ANSWERS, hates, loves, moonbatPicks, specialLine } from './deskTastes';
 import { exchangeFor, talkFor } from './deskTalk';
+import { deskSegment } from './deskSegments';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -74,6 +75,8 @@ export interface DeskLine {
   beef?: string;
   /** A reply backing the take right above it (`pileOn`), or its author answering. */
   pile?: boolean;
+  /** A line of a quick segment the host calls (deskSegments.ts): the MVP, the worst pick, one word. */
+  seg?: string;
 }
 
 /** Whose field each insight category is. */
@@ -525,6 +528,7 @@ const PILE_ON: Record<'praise' | 'concern', string[]> = {
 const PILE_ON_ANSWER = ['took you long enough', 'see? one of you watches basketball', 'screenshotting this before you delete it', 'welcome to the right side'];
 const PILE_ON_CHANCE = 0.6;
 const EXCHANGE_CHANCE = 0.7;
+const SEGMENT_CHANCE = 0.55;
 const PILE_ON_ANSWER_CHANCE = 0.45;
 function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
   if ((line.kind !== 'praise' && line.kind !== 'concern') || line.who === 'host' || rng() >= PILE_ON_CHANCE) return [];
@@ -642,11 +646,19 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   if (!onAir.some((t) => t.score < 0)) addSide([...insightTakes, ...flavour].find((t) => t.score < 0 && !used.has(t.who)));
   if (!onAir.some((t) => t.score > 0)) addSide([...insightTakes, ...flavour].find((t) => t.score > 0 && !used.has(t.who)));
 
-  onAir.sort((a, b) => Math.sign(b.score) - Math.sign(a.score));
+  // 2026-10-29 (the user: "wygląda jak jednakowa kolejność"): praise first used to be the rule; now
+  // the order is the show's own, and one show in two runs a quick segment somewhere between takes.
+  const orderRng = mulberry32(mixSeed(seed, 0x0bde));
+  const keyed = onAir.map((t) => ({ t, k: orderRng() }));
+  keyed.sort((a, b) => a.k - b.k);
+  onAir.splice(0, onAir.length, ...keyed.map((o) => o.t));
+  const segmentAt = orderRng() < SEGMENT_CHANCE && onAir.length > 0 ? 1 + Math.floor(orderRng() * onAir.length) : -1;
+  const segment = segmentAt >= 0 ? deskSegment(read, rank <= Math.ceil(fieldSize / 2), orderRng, HANDLE) : null;
   // Arguments come from their own stream, so starting one never reshuffles who else is on air.
   const beefRng = mulberry32(mixSeed(seed, 0xbeef));
   const beefsUsed = new Set<string>();
-  for (const t of onAir) {
+  for (const [i, t] of onAir.entries()) {
+    if (segment && i === segmentAt) lines.push(...segment);
     const thread = beefsUsed.size < MAX_BEEFS && beefRng() < BEEF_CHANCE ? beefFor(t, read, beefRng, beefsUsed) : null;
     if (thread) { lines.push(...thread); continue; }
     // 2026-10-29 (the user picked "B + C": arguments that run over several lines): a take on a
@@ -661,6 +673,7 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
     }
     lines.push(t.line, ...pileOn(t.line, beefRng));
   }
+  if (segment && segmentAt === onAir.length) lines.push(...segment);
   if (moonbatOnAir(seed)) lines.push(...moonbatBit(read, mulberry32(mixSeed(seed, 0x30bb)), rank, used, strengths[0]));
 
   lines.push({
