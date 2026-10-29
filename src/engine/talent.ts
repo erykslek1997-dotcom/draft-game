@@ -864,7 +864,7 @@ function lukaOffenseComputationSpan(span: PlayerSpan): PlayerSpan {
 /** Full wing strength (1.0) — see `LUKA_MVP_TIER_CAP`'s own docstring for why the "MVP level"
  * half of the ask is enforced separately, as an explicit ceiling, rather than by weakening this
  * bonus until it stops overshooting. A fractional blend was tried first and couldn't hit both
- * targets from one knob: at 0.5 his best span (2022-24) still overshot into Greatest peak while
+ * targets from one knob: at 0.5 his best span (2022-24) still overshot into Legend while
  * his other real spans fell short of the S/A+ grade that was the whole point of the exception. */
 const LUKA_WING_BLEND = 1.0;
 
@@ -956,7 +956,7 @@ function rawComponents(
   // wing-strength instead of light-PG, everything else in this function (efficiency baseline,
   // defense, the final position-correction multiplier) keeps reading his real `span`/PG
   // untouched. Full wing strength (`LUKA_WING_BLEND = 1`) was tried first and overshot the "MVP
-  // level" ask on his two biggest spans (2022-24/2023-25 both crossed into Greatest peak, 96-97)
+  // level" ask on his two biggest spans (2022-24/2023-25 both crossed into Legend, 96-97)
   // — the raw offense boost feeds the BLENDED TAL too, not just the O-TAL display, so granting
   // the full wing delta pushed him past the Greatest-peak floor on exactly the spans it was
   // least intended to. `LUKA_WING_BLEND` interpolates between his real light-PG value and the
@@ -1659,7 +1659,7 @@ function softCapTalent(scaled: number): number {
  * in sync with `letterForValue`'s A/B cutoffs by hand):
  * - O-TAL grade A or better (>=90): uncapped, same as before.
  * - O-TAL grade B through A- (75-89): capped at 93, the top of the "MVP" overall tier — can't
- *   reach "Greatest peak" (94+) on offense alone being merely good-not-elite.
+ *   reach "Legend" (94+) on offense alone being merely good-not-elite.
  * - O-TAL grade below B, i.e. B- or worse (<75): capped at 87, the top of "All-NBA" — can't
  *   reach "MVP" tier at all without at least a real B offensive letter grade. (The user's own
  *   spec was "below B", not "below B-" — an early draft of this comment/dry-run mismatched the
@@ -1751,7 +1751,7 @@ function pgOffenseGradeCeiling(span: PlayerSpan): number {
 /**
  * 2026-08-01, same batch: the mirror-image case the O-TAL cap above can't reach — a PG whose
  * SCORING/creation grades A (Harden, Lillard) doesn't get touched by `pgOffenseGradeCeiling`,
- * but real defense grading below a 'C' (<60) is just as disqualifying from "Greatest peak" as
+ * but real defense grading below a 'C' (<60) is just as disqualifying from "Legend" as
  * weak offense is. Single tier, not two — the user's ask was specifically "below C ... max in
  * MVP tier", no second All-NBA-tier band requested here. Checked the blast radius before
  * shipping: only 4 spans move, cleanly hitting the two names the O-TAL cap missed (Harden
@@ -1782,7 +1782,7 @@ function pgDefenseGradeCeiling(span: PlayerSpan): number {
 
 /**
  * 2026-08-01, same batch, mirrored onto SF: O-TAL below a 'B+' letter grade (<80) caps at the
- * MVP tier top (93) — can't reach "Greatest peak" on offense that isn't at least borderline-
+ * MVP tier top (93) — can't reach "Legend" on offense that isn't at least borderline-
  * elite. Single tier, matching the user's exact spec. Checked before shipping: 6 spans move
  * (Bird's two non-peak spans, LeBron 2006-08, both Kawhi spans, Paul George 2018-20) — none of
  * them are these players' own peak span used in Taylor top-10 validation.
@@ -1871,7 +1871,7 @@ export function rawUncappedTalent(rawSpan: PlayerSpan): number {
  * Same fix, mirrored: values above their ceiling now approach it asymptotically instead of
  * clipping flat onto it, spread out by how far above the ceiling they actually were. Never
  * reaches (let alone exceeds) the ceiling, so the underlying rule this whole mechanism exists for
- * — weak offense/defense can't reach "Greatest peak"/"MVP" tier — still holds exactly. Band (4)
+ * — weak offense/defense can't reach "Legend"/"MVP" tier — still holds exactly. Band (4)
  * chosen deliberately small: this is meant to break exact ties among already-capped players, not
  * meaningfully re-open the gap the ceiling was built to close. (2026-09-25: the original curve
  * ran backwards — see the fix note inside `applyGradeCeiling`.)
@@ -1884,7 +1884,7 @@ const GRADE_CEILING_BAND = 4;
  * ceiling above), found the same day auditing the PG top-of-pool cluster the user reported. Same
  * band reused rather than re-tuned separately: no principled reason the two layers should
  * compress by different amounts, and one shared constant is one less thing to drift out of
- * sync. Safe for `ceiling = Infinity` (grades.ts's own `tierCeiling('Greatest peak' | 'GOAT')`) —
+ * sync. Safe for `ceiling = Infinity` (grades.ts's own `tierCeiling('Legend' | 'GOAT')`) —
  * the `ceiling >= 100` guard below already short-circuits before any arithmetic touches it. */
 export function applyGradeCeiling(value: number, ceiling: number): number {
   if (ceiling >= 100 || value <= ceiling) return value;
@@ -1905,7 +1905,7 @@ export function applyGradeCeiling(value: number, ceiling: number): number {
  * docstring for the first half — the offense-side wing-strength boost). The user's explicit ask
  * was "S O-TAL... MVP level", two independently-specified targets — granting the full wing bonus
  * alone doesn't hit both from one knob (checked directly: 1.0 strength gets real S/A+ grades but
- * overshoots his two biggest spans into Greatest peak; dialing the bonus down to avoid that also
+ * overshoots his two biggest spans into Legend; dialing the bonus down to avoid that also
  * dials the O-TAL grade back below what was asked for on his other spans). Splitting the two
  * halves apart — keep the offense boost at full strength, cap the OUTCOME separately — hits both
  * targets from independent, individually-tunable knobs instead of one fragile compromise value.
@@ -1927,7 +1927,7 @@ function lukaMvpTierCeiling(span: PlayerSpan): number {
  * reach this — a `MAX_TWO_WAY_SYNERGY_BONUS` trim and a `NAMED_TIER_DOWNCAPS` entry — both fail
  * here specifically: the synergy trim costs GOAT-40 for near-zero movement (the 95-100 soft-cap
  * absorbs it), and a downcap to MVP over-corrects to ~90 (`applyGradeCeiling` compresses hard and
- * there is no tier between MVP's 93 ceiling and Greatest peak's 94 floor).
+ * there is no tier between MVP's 93 ceiling and Legend's 94 floor).
  *
  * So this is a small, flat, post-everything subtraction on exactly the named spans — the same
  * "named single-span exception, the user explicitly wants a specific outcome and no clean general

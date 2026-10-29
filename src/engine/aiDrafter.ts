@@ -220,14 +220,14 @@ function eliteLowUsageDraftMalus(p: PlayerSpan): number {
 }
 
 /**
- * 2026-08-06, user's own hand-graded sub-ranking within the "Greatest peak" tier (the CSV export
+ * 2026-08-06, user's own hand-graded sub-ranking within the "Legend" tier (the CSV export
  * this file's own value formula doesn't otherwise distinguish — every one of these 16 sits at
  * TAL94-98, close enough that ordinary need/FGA-penalty noise can and does flip their relative
  * draft order).
  *
  * Keyed by (name, spanLabel) — same shape as `POSITION_OVERRIDES` in players.ts — not name
  * alone: a flat per-player bonus would apply identically to every span of that person the AI
- * might ever see, including a real decline-era Jordan span far below his actual "Greatest peak"
+ * might ever see, including a real decline-era Jordan span far below his actual "Legend"
  * one. The user's tier list is about these specific peak seasons, not a blanket "always prefer
  * this person" rule, so only the exact span from the Greatest Peak export gets the bonus
  * (`greatestPeakTierBonus` below actually matches by name + TAL-equality — see its own
@@ -267,7 +267,7 @@ const GREATEST_PEAK_DRAFT_TIERS: Record<string, 1 | 2 | 3> = {
   // `isDraftableDurability` in this same file excludes it from the AI's candidate pool
   // entirely, so a tier bonus keyed to it would never fire (confirmed directly: he sat
   // undrafted through a full auto-finished draft). '2021-23' is the closest actually-
-  // draftable equivalent — same TAL96, same "Greatest peak" tier per grades.ts.
+  // draftable equivalent — same TAL96, same "Legend" tier per grades.ts.
   'joel embiid|2021-23': 3,
   // 2026-09-17, real playtester feedback ("Shaq spada za daleko" — Shaq falls too far): he was
   // simply never in this map at all, despite his real peak (1999-01, TAL 97) grading "Greatest

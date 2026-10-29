@@ -27,7 +27,7 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
     return { ...span, secondaryPositions: [...span.secondaryPositions, 'PF'] };
   }
   // Kirilenko 2003-05 — one-span SF-primary classifier artifact (see `POSITION_OVERRIDES` in
-  // players.ts). As PF it dodged the SF elite-defense tier cap and read Greatest peak.
+  // players.ts). As PF it dodged the SF elite-defense tier cap and read Legend.
   if (span.playerName === 'Andrei Kirilenko' && span.spanLabel === '2003-05' && span.primaryPosition === 'PF') {
     return { ...span, primaryPosition: 'SF', secondaryPositions: ['PF'] };
   }

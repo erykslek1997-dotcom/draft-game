@@ -135,7 +135,7 @@ export interface NightRow {
   spans?: number;
 }
 
-const TOP_TIERS = new Set(['GOAT', 'Greatest peak', 'MVP']);
+const TOP_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
 
 /**
  * The player list (mockups `mini.html#pick` `plist`, `alltime.html#draft` `plist2`): fixed columns,

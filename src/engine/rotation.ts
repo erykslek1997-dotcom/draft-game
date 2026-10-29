@@ -36,11 +36,11 @@ const MIN_USEFUL_BENCH_MINUTES = 8;
  * (grades.ts), which — per that function's own documented behavior — "never actually returns"
  * 'GOAT' (a display-only tier only `overallTierForSpan`'s per-span upgrade can produce). Switching
  * to the span-aware `overallTierForSpan` to fix Sixth Man immediately exposed that this set was
- * never updated for the one tier ABOVE 'Greatest peak' — Jordan 1990-92 (TAL98, GOAT) and Curry
+ * never updated for the one tier ABOVE 'Legend' — Jordan 1990-92 (TAL98, GOAT) and Curry
  * 2014-16 (TAL97, GOAT) both got silently zeroed out of `bestPrimaryAssignment` entirely and
  * benched, despite being the highest-TAL players on their own rosters. 'GOAT' added — it was
- * always meant to mean "even better than Greatest peak," never "ineligible to start." */
-const STARTER_ELIGIBLE_TIERS = new Set(['GOAT', 'Greatest peak', 'MVP', 'All-NBA', 'All-star', 'Starter']);
+ * always meant to mean "even better than Legend," never "ineligible to start." */
+const STARTER_ELIGIBLE_TIERS = new Set(['GOAT', 'Legend', 'MVP', 'All-NBA', 'All-star', 'Starter']);
 
 function emptySlots(): Record<Position, SlotAssignment[]> {
   const slots = {} as Record<Position, SlotAssignment[]>;
@@ -442,13 +442,13 @@ function comboGuardAtTwo(
 
 /**
  * 2026-10-01, the user ("David Robinson nie może wchodzić z ławki, forsowanie greatest peak i mvp do
- * starting 5"): a GOAT / Greatest peak / MVP-tier player always starts. If the search left one on
+ * starting 5"): a GOAT / Legend / MVP-tier player always starts. If the search left one on
  * the bench (two such centres, say), he takes the slot he plays that costs the lineup least,
  * displacing a lesser starter; with no such slot he starts at the neighbouring position anyway
  * (Robinson at PF beside another centre) — the one exception to "a classic centre can't play the
  * four", which the minute solver honours for a starter's home slot (minuteAllocation.ts).
  */
-const MUST_START_TIERS = new Set(['GOAT', 'Greatest peak', 'MVP']);
+const MUST_START_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
 /** How the rotation score reads a must-start star placed at a neighbouring position he can't
  * normally play — the same share the minute solver gives him there. */
 export const FORCED_STAR_SLOT_FIT = 0.75;

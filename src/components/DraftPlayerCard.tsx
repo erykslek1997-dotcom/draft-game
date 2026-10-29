@@ -21,8 +21,8 @@ export const TIER_FRAME_COLOR: Record<OverallTier | 'Salary Glue', string> = {
   'All-star': '#6fd9e6',
   'All-NBA': '#8b9bf7',
   MVP: '#ec8ecb',
-  'Greatest peak': '#ffdc9b',
-  // 2026-09-24: was '#ffd479', a near-twin of Greatest peak's gold right above it — the two top
+  'Legend': '#ffdc9b',
+  // 2026-09-24: was '#ffd479', a near-twin of Legend's gold right above it — the two top
   // rungs were indistinguishable on the card frames and the tier key. Platinum reads as "above
   // gold" without colliding with any other tier's hue.
   GOAT: '#f2f4f8',

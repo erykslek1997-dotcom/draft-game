@@ -25,7 +25,7 @@ export type DailyRule =
   | { kind: 'team'; code: string; name: string }
   /** No one whose window touches this decade (seasons ending in it). */
   | { kind: 'era'; decade: number }
-  /** At most this many MVP-tier players (MVP, Greatest peak, GOAT). */
+  /** At most this many MVP-tier players (MVP, Legend, GOAT). */
   | { kind: 'stars'; max: number };
 
 export interface DailyDraftDay {
