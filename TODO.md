@@ -172,6 +172,28 @@ Otwarte tematy silnika — na później (bierzemy, gdy wyjdą w grze albo w symu
 - [ ] **Metadane kart dla nowych graczy** — `npm run build:card-metadata` wymaga lokalnych danych
       (`C:\Users\Eryks\Desktop\player-data`); 223 nowych graczy nie ma drużyn na kartach ani zdjęć.
 
+### AI draftu: bezpiecznik dla spadających gwiazd (2026-10-29) — WRÓCIĆ, gdyby coś się rozjechało
+
+Playtest: Porter, Butler i Porziņģis w 2. rundzie, Kawhi do 23, CP3 do 42, Malone do 55, Barkley do
+112, Nash leżący do ~100; gracz składał absurdalne piątki z gwiazd, które spadły. Przyczyna: wartość
+AI = talent × potrzeba pozycyjna, a mnożnik potrzeby dochodzi do 5–6×, plus kary za capy, gust GM-a
+i szum (±20). Pomiary (`scripts/measureStarPower.ts`, 6 draftów samej AI na wariant):
+
+- obecna AI: 27 wyborów na draft z graczem lepszym o 8+ TAL na stole, najgorszy spadek gwiazdy 73
+  miejsca, Overall drużyn AI 80,8;
+- bezpiecznik (gracz, którego TAL stawia rundę przed bieżącym wyborem, idzie od razu): 11 · 21 ·
+  79,3; po 1,5 rundy: 19 · 27 · 80,1; po 2 rundach: 25 · 35 · 80,3;
+- bez efektu (odrzucone): gwiazdy w pierwszych 3 wyborach (`starPhase`), ocena drużyny od 2. wyboru
+  (`lookahead`), limit mnożnika potrzeby 1,5/2/2,5, zwolnienie z kary za drugiego rozgrywającego
+  od TAL 88.
+
+Decyzja użytkownika: drobny spadek siły AI jest OK, jeśli blokuje graczowi absurdalne piątki —
+bezpiecznik po 1 rundzie. Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
+drużyny (`ballHandling.ts`, AST% i USG%), nie za „7+ asyst” (LeBron, Bird, Jokić w składzie nie
+znaczą, że drugi rozgrywający jest zbędny). **Jeśli AI zacznie draftować dziwnie** (za mocne
+drużyny AI, gwiazdy na siłę obok siebie, trzech centrów, za słabe ławki): wrócić tutaj, przełączniki
+w `AI_STAR_RULES` (aiDrafter.ts), pomiar `npx tsx scripts/measureStarPower.ts 6`.
+
 ### Znane, zaakceptowane ograniczenia (nie odgrzewać bez nowych dowodów)
 
 - **Więcej gry pod koszem niż w NBA** (2026-10-08): punkty z pomalowanego 55.9 / 100 posiadań vs
