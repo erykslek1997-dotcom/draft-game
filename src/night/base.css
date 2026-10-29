@@ -427,14 +427,16 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 
 /* A rival's roster (option b): one line a slot, on every width. */
 .nt .rlist.compact { display: flex; flex-direction: column; gap: 0; margin: 4px 0 14px; border-top: 1px solid var(--rule); border-bottom: 0; }
-.nt .rc-row { display: grid; grid-template-columns: 26px 26px minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 4px 6px 6px; border-bottom: 1px solid var(--rule); border-left: 3px solid var(--team, var(--rule3)); }
+.nt .rc-row { display: grid; grid-template-columns: 26px 26px minmax(0, 1fr); align-items: center; gap: 2px 8px; padding: 6px 4px 6px 6px; border-bottom: 1px solid var(--rule); border-left: 3px solid var(--team, var(--rule3)); }
 .nt .rc-row .rl-slot { font-size: 12px; }
 .nt .rc-row .rl-face img, .nt .rc-row .rl-face .ini { width: 26px; height: 26px; font-size: 10px; }
 .nt .rc-main { font: 500 13px var(--sans); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nt .rc-main b { font: 600 15px var(--cond); color: var(--ink); }
 .nt .rc-main em { font: 500 11px var(--num); font-style: normal; color: var(--ink3); }
-.nt .rc-bench { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; min-width: 0; font: 400 12px var(--sans); color: var(--ink3); }
+.nt .rc-bench { grid-column: 3; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 2px 12px; min-width: 0; font: 400 12px var(--sans); color: var(--ink3); }
+.nt .rc-bench:empty { display: none; }
 .nt .rc-bench > span { white-space: nowrap; }
+.nt .rc-bench em { font: 500 10px var(--num); font-style: normal; color: var(--ink4); }
 /* Desktop: the rival's five as small columns side by side, like your roster at a smaller size. */
 @media (min-width: 901px) {
   .nt .rlist.compact { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; border-top: 0; }

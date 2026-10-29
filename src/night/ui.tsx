@@ -136,12 +136,13 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                   <NFace name={starter.span.playerName} span={starter.span} />
                 </span>
                 <span className="rc-main">
-                  <b>{lastName(maskText(starter.span.playerName))}</b> <em>{shortYears(maskYears(starter.span.playerName, starter.span.spanLabel))}</em> {Math.round(starter.minutes)}m
+                  <b>{shortName(starter.span.playerName)}</b> <em>{shortYears(maskYears(starter.span.playerName, starter.span.spanLabel))}</em> {Math.round(starter.minutes)}m
                 </span>
                 <span className="rc-bench">
                   {bench.map((b) => (
+                    // Initial and years too (the user: surnames repeat across the league's history — which Hill?).
                     <span key={b.span.id}>
-                      {lastName(maskText(b.span.playerName))} {Math.round(b.minutes)}m
+                      {shortName(b.span.playerName)} <em>{shortYears(maskYears(b.span.playerName, b.span.spanLabel))}</em> {Math.round(b.minutes)}m
                     </span>
                   ))}
                 </span>
