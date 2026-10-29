@@ -333,7 +333,11 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  *    the current pick is taken now — the same hard net the named legends have, by talent.
  * Mutable only so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { starPhase: true, fallNet: true };
+export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true };
+/** `lookahead`: the team-score judgement (see `TEAM_SCORE_SHORTLIST`) from a team's second pick,
+ * and the board's best talents join its shortlist, so a star is weighed by what he adds. */
+const EARLY_LOOKAHEAD_ROSTER_SIZE = 1;
+const LOOKAHEAD_TALENT_EXTRA = 5;
 const STAR_PHASE_PICKS = 3;
 const STAR_PHASE_NEED_CAP = 0.25;
 const FALL_NET_FROM_PICK = 20;
@@ -2443,7 +2447,7 @@ export function pickForAi(
     }
   }
 
-  if (roster.length >= LOOKAHEAD_ROSTER_SIZE && teamScorer) {
+  if (roster.length >= (AI_STAR_RULES.lookahead ? EARLY_LOOKAHEAD_ROSTER_SIZE : LOOKAHEAD_ROSTER_SIZE) && teamScorer) {
     // 2026-10-02, the user (late picks that "nic nie zapewniają": the cap spent on the first seven
     // leaves only 3-FGA fringe players): each shortlisted candidate is judged by the team he leaves
     // room for — the roster completed with the best affordable players still on the board — not by
@@ -2460,6 +2464,10 @@ export function pickForAi(
       .sort((a, b) => b.rank - a.rank)
       .map((x) => x.p);
     const shortlist = lotteryCandidates.slice(0, Math.min(TEAM_SCORE_SHORTLIST, lotteryCandidates.length));
+    if (AI_STAR_RULES.lookahead) {
+      const inList = new Set(shortlist.map((e) => e.player.id));
+      shortlist.push(...[...lotteryCandidates].sort((a, b) => b.talent - a.talent).filter((e) => !inList.has(e.player.id)).slice(0, LOOKAHEAD_TALENT_EXTRA));
+    }
     const gaps = startingFiveGaps(roster);
     const rescored = shortlist.map((entry) => {
       const completed = completeRosterGreedy(
