@@ -281,54 +281,92 @@ type Exchange = [string, string, string, string?];
 const PUSHBACK: Partial<Record<InsightCategory, { praise?: Exchange[]; concern?: Exchange[] }>> = {
   perimeter_defense: {
     praise: [
+      ['jert', '@{who} for the record, the 1989 Pistons held teams under 100 with less athletic guards than these. Context matters. You lack it.', 'They win, Mattheus. Context is rings.', 'footnote: Pistons rings 2. your rings 0'],
+      ['binash', '@{who} cute. Michael Cooper would’ve locked up all three of these guys in one quarter. In short shorts.', 'Cooper was great. These are better. Watch the tape.', 'I OWN the tape'],
+      ['zoran', '@{who} defense defense defense. in Europe we also pass the ball, you know', 'Pass it to the other team? Sure, Zoran.', 'I will not dignify this'],
       ['sosini', '@{who} imagine celebrating a charge in 2026 💀', 'They win. You post.', 'ratio + nobody asked'],
       ['lex', '@{who} nobody bought a ticket to watch a deflection, Matt', 'Rings, Lex. Count them.', 'you’ve never counted anything above two'],
       ['sosini', '@{who} great, they get a stop and then walk it up for a long two. elite stuff', 'A stop is two points. Keep typing.'],
     ],
-    concern: [['sosini', '@{who} so they give up 115 and score 125. who cares', 'In May they score 98.', 'source: your feelings']],
+    concern: [
+      ['lex', '@{who} who cares. stars outscore it', 'Not in May they don’t.', 'my stars do'],
+      ['jeremy', '@{who} in the ’90s you got hand-checked into the third row for this. soft era', 'In any era they get scored on, Jeremy.', 'go watch the tape'],['sosini', '@{who} so they give up 115 and score 125. who cares', 'In May they score 98.', 'source: your feelings']],
   },
   rim_protection: {
-    praise: [['sosini', '@{who} rim protector lmao. people shoot over him from 28 feet now', 'Then he walks out. Contests. Blocks.', 'bro thinks it’s 2004']],
-    concern: [['lex', '@{who} rim protectors are for teams that can’t outscore people', 'Layup every trip, Lex. Outscore that.', 'my stars would']],
+    praise: [
+      ['natalie', '@{who} love a rim protector. hate what he costs. it’s always a receipt with you guys', 'He’s worth it. Look at the paint.', 'look at the cap sheet'],
+      ['jert', '@{who} for the record, Mark Eaton blocked 5.6 a game in 1985. this is fine. it’s not Eaton', 'It’s enough. They can’t score inside.', 'it is not Eaton'],['sosini', '@{who} rim protector lmao. people shoot over him from 28 feet now', 'Then he walks out. Contests. Blocks.', 'bro thinks it’s 2004']],
+    concern: [
+      ['prab', '@{who} Kobe never needed a rim protector. he needed teammates who caught the ball', 'They need someone at the rim, my friend.', 'they need someone who wants it'],['lex', '@{who} rim protectors are for teams that can’t outscore people', 'Layup every trip, Lex. Outscore that.', 'my stars would']],
   },
   defensive_structure: {
-    praise: [['lex', '@{who} defense is a hobby. stars win. this is embarrassing for you', 'Stars win when the other team can’t score.', 'cope']],
-    concern: [['sosini', '@{who} it’s the regular season grandpa. outscore them', 'They find that guy in May.', 'they find your posts too']],
+    praise: [
+      ['jeremy', '@{who} the ’98 Bulls did this with Rodman and half a back. go watch the tape', 'Then you agree. Defense wins.', 'I agree with Rodman. not you'],
+      ['onoffsky', '@{who} defensive on/off says this is real. I hate agreeing with you. 🤓', 'Then say it louder, Jake.', 'no'],['lex', '@{who} defense is a hobby. stars win. this is embarrassing for you', 'Stars win when the other team can’t score.', 'cope']],
+    concern: [
+      ['lex', '@{who} it’s a regular season problem. stars don’t get hunted, they hunt', 'Your star gets hunted every trip, Lex.', 'my star doesn’t play defense, Matt. that’s the point'],
+      ['bannerman', '@{who} Celtics would’ve found that guy in two possessions. two. 🍀', 'Everybody finds him. That’s the problem.', 'just saying, 18 banners'],['sosini', '@{who} it’s the regular season grandpa. outscore them', 'They find that guy in May.', 'they find your posts too']],
   },
   spacing: {
     praise: [
+      ['lex', '@{who} spacing is what you talk about when you don’t have a star', 'Stars need spacing, Lex. Even yours.', 'mine make their own'],
+      ['jeremy', '@{who} spacing. in the ’90s we called that standing in the corner. go watch the tape', 'In the ’90s you scored 86 points, Jeremy.', 'and won'],
+      ['binash', '@{who} Bird didn’t need five shooters. he WAS five shooters', 'Bird took two threes a game.', 'and made them'],
       ['shyman', '@{who} great. They shoot. Who guards?', 'Nobody needs to guard when you’re up 20, Matt.', 'Up 20 in November.'],
       ['solin', '@{who} jump shooters. wait till it’s cold in May, kiddo', 'Davyd, an empty paint doesn’t go cold. Math.', 'math never boxed anybody out'],
       ['jert', '@{who} for the record, the 1986 Celtics won a title barely shooting threes. I have the box scores. Laminated.', 'And they’d lose by 30 tonight.', 'pace-adjusted, they would not. footnote 3'],
     ],
-    concern: [['solin', '@{who} so they play inside. real basketball. not your little math', 'Inside where, Davyd? There’s no room inside. That’s the point.', 'come to the paint and say that']],
+    concern: [
+      ['zoran', '@{who} who needs shooters when the ball moves. Americans and their threes', 'The ball moves into a packed paint, Zoran.', 'then it moves out. this is called basketball'],
+      ['jert', '@{who} the 1986 Celtics shot fewer threes than this and won. I have the box scores', 'They’d lose by 30 tonight.', 'pace-adjusted they would not. footnote 3'],['solin', '@{who} so they play inside. real basketball. not your little math', 'Inside where, Davyd? There’s no room inside. That’s the point.', 'come to the paint and say that']],
   },
   creation: {
-    praise: [['zoran', '@{who} one guy dribbles, four guys watch. beautiful. for him', 'When he’s this good, the four guys get rings.', 'rings are an American disease']],
-    concern: [['lex', '@{who} give it to the best player and move. this isn’t hard', 'There is no best player, Lex. That’s the take.', 'then this team doesn’t matter']],
+    praise: [
+      ['jeremy', '@{who} a closer? Michael was a closer. this is a guy who shoots a lot', 'He makes them, Jeremy.', 'sometimes'],
+      ['natalie', '@{who} love the closer. hate the cap number. pick one', 'You pay for buckets. That’s the rule.', 'you pay for vibes'],['zoran', '@{who} one guy dribbles, four guys watch. beautiful. for him', 'When he’s this good, the four guys get rings.', 'rings are an American disease']],
+    concern: [
+      ['zoran', '@{who} no closer? good. five guys passing. finally', 'Five guys passing with ten seconds left, Zoran?', 'yes. it’s called a play'],
+      ['jeremy', '@{who} nobody wants the last shot. Michael would’ve taken all of them. and made five', 'Exactly my point.', 'my point first'],['lex', '@{who} give it to the best player and move. this isn’t hard', 'There is no best player, Lex. That’s the take.', 'then this team doesn’t matter']],
   },
   rebounding: {
-    praise: [['onoffsky', '@{who} rebounding matters less every season. I have the data. you have vibes', 'Numbers don’t box out, Jake.', 'they do. it’s called DREB%. you’re welcome']],
-    concern: [['onoffsky', '@{who} offensive rebounds are overrated, actually. 🤓', 'Tell that to the guy who gets dunked on after the second miss.', 'anecdotal']],
+    praise: [
+      ['lex', '@{who} rebounds are for teams that miss. my guys don’t miss', 'Everybody misses, Lex.', 'not my guys'],
+      ['jert', '@{who} for the record, Russell averaged 22.5 for his career. this is cute', 'It’s enough. They own the glass.', 'cute'],['onoffsky', '@{who} rebounding matters less every season. I have the data. you have vibes', 'Numbers don’t box out, Jake.', 'they do. it’s called DREB%. you’re welcome']],
+    concern: [
+      ['lex', '@{who} who cares about rebounds. stars don’t miss', 'They miss forty times a game, Lex.', 'not the important ones'],
+      ['binash', '@{who} Moses Malone would’ve had 20 offensive rebounds against this team. TWENTY', 'That’s literally my point, Jacob.', 'I made it first'],['onoffsky', '@{who} offensive rebounds are overrated, actually. 🤓', 'Tell that to the guy who gets dunked on after the second miss.', 'anecdotal']],
   },
   depth: {
-    praise: [['lex', '@{who} lovely bench. where are the stars? oh. there aren’t any', 'Stars get hurt, Lex. Benches don’t.', 'benches don’t get banners either']],
-    concern: [['lex', '@{who} stars play 40. who needs a bench. this take is unemployed', 'Everybody in February, Lex.', 'February is for losers']],
+    praise: [
+      ['natalie', '@{who} deep bench, love it. cheap too. someone here finally can count', 'Thank you. Rare.', 'don’t get used to it'],
+      ['prab', '@{who} bench, bench, bench. Kobe didn’t need a bench. he needed the ball', 'Kobe had Fisher and Odom, my friend.', 'don’t you dare'],['lex', '@{who} lovely bench. where are the stars? oh. there aren’t any', 'Stars get hurt, Lex. Benches don’t.', 'benches don’t get banners either']],
+    concern: [
+      ['jert', '@{who} for the record, the 1996 Bulls played 7 guys in the Finals. you don’t need a bench', 'Their 7 were good, Mattheus.', 'footnote: so are these'],
+      ['bannerman', '@{who} the 2008 Celtics had Big Baby and Posey off the bench. that’s depth. this is a group chat', 'Exactly.', 'just saying. banners'],['lex', '@{who} stars play 40. who needs a bench. this take is unemployed', 'Everybody in February, Lex.', 'February is for losers']],
   },
   rotation: {
-    concern: [['lex', '@{who} stars play, the rest watch. that’s a rotation', 'Until a star sprains an ankle in March.', 'my stars don’t sprain']],
+    concern: [
+      ['prab', '@{who} play the stars 44 minutes. Kobe played 44', 'Kobe’s knees disagree, my friend.', 'Kobe’s knees won five rings'],
+      ['onoffsky', '@{who} minutes don’t matter as much as you think. I have the load data', 'They matter in March, Jake.', 'anecdotal'],['lex', '@{who} stars play, the rest watch. that’s a rotation', 'Until a star sprains an ankle in March.', 'my stars don’t sprain']],
   },
   two_way: {
-    praise: [['sosini', '@{who} both ends sure, can any of them hit a 30-footer', 'They don’t need to when they guard.', 'L']],
+    praise: [
+      ['lex', '@{who} both ends. cute. one end wins rings. the scoring one', 'Both ends win rings, Lex. Look it up.', 'I looked. still cute'],
+      ['jeremy', '@{who} two-way? Michael was two-way. nine All-Defense. this is nice', 'Nice is enough to win, Jeremy.', 'not a sixth ring'],['sosini', '@{who} both ends sure, can any of them hit a 30-footer', 'They don’t need to when they guard.', 'L']],
   },
   usage: {
-    concern: [['lex', '@{who} stars figure it out', 'With one ball? Show me once.', 'this you? 👇 “stars always find a way” — you, last week']],
+    concern: [
+      ['prab', '@{who} give it to the best one and the others watch. Kobe solved this in 2006', 'Kobe took 50 shots a night, my friend.', 'and scored 81'],
+      ['natalie', '@{who} three guys who need the ball, and you paid for all three. tragic', 'Exactly my point.', 'my point is the money'],['lex', '@{who} stars figure it out', 'With one ball? Show me once.', 'this you? 👇 “stars always find a way” — you, last week']],
   },
   fga: {
-    concern: [['lex', '@{who} stars cost money. deal with it, accountant', 'Nine stars don’t fit under 100.9 caps. That’s the rule.', 'rules are for role players']],
+    concern: [
+      ['prab', '@{who} stars cost money, Natalie. Kobe cost money', 'Kobe’s team had Pau, my friend.', 'don’t'],['lex', '@{who} stars cost money. deal with it, accountant', 'Nine stars don’t fit under 100.9 caps. That’s the rule.', 'rules are for role players']],
   },
   fit: {
-    concern: [['solin', '@{who} put good players out there and let them hoop', 'Good players out of position are average players.', 'nerd']],
+    concern: [
+      ['lex', '@{who} fit is for teams without stars', 'Stars without fit lose in the second round, Lex.', 'mine win'],
+      ['jeremy', '@{who} put Michael anywhere and he fits. this is overthinking', 'This isn’t Michael, Jeremy.', 'nobody is'],['solin', '@{who} put good players out there and let them hoop', 'Good players out of position are average players.', 'nerd']],
   },
 };
 const surnameOf = (name: string) => name.split(' ').slice(-1)[0];
@@ -360,8 +398,10 @@ export function talkFor(insight: RosterInsight, kind: 'praise' | 'concern', rost
 
 /** A real answer to a take on a finding: who pushes back, his line, and the first expert's reply —
  * or null when nobody in that field argues (`pileOn` then backs it instead). */
-export function exchangeFor(insight: RosterInsight, kind: 'praise' | 'concern', who: string, whoSurname: string, rng: () => number): { by: string; push: string; answer: string; last?: string } | null {
-  const options = (PUSHBACK[insight.category]?.[kind] ?? []).filter(([by]) => by !== who);
+export function exchangeFor(insight: RosterInsight, kind: 'praise' | 'concern', who: string, whoSurname: string, rng: () => number, busy: (expert: string) => boolean = () => false): { by: string; push: string; answer: string; last?: string } | null {
+  // 2026-10-29 (the user: "wszędzie Sossini… po prostu więcej postaci się kłóci"): whoever has
+  // talked enough tonight sits this one out.
+  const options = (PUSHBACK[insight.category]?.[kind] ?? []).filter(([by]) => by !== who && !busy(by));
   if (!options.length) return null;
   const [by, push, answer, last] = options[Math.floor(rng() * options.length)];
   return { by, push: push.replace('{who}', whoSurname), answer, last };
