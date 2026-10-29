@@ -564,11 +564,10 @@
 
 /* Your team on a phone (playtest 1): the next open pick, the rest in one line; no awards badge in
    the row (the player card has them) */
-.nt tr.open-rest { display: none; }
+.nt .open-rest { display: none; }
 @media (max-width: 600px) {
   .nt tr.open.open-more { display: none; }
-  .nt tr.open-rest { display: table-row; }
-  .nt tr.open-rest td { padding: 8px 0 10px; font: 500 12px var(--num); color: var(--ink3); }
+  .nt .open-rest { display: block; margin: 8px 0 0; font: 500 12px var(--num); color: var(--ink3); }
   .nt .rs-aw { display: none; }
 }
 

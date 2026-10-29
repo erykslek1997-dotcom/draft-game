@@ -1501,19 +1501,19 @@ export default function DraftBoard({
                     </tr>
                   );
                 })}
-                {humanUpcoming.slice(1, ROSTER_SIZE - humanTeam.roster.length).length > 0 && (
-                  <tr className="open-rest">
-                    <td colSpan={10}>
-                      Then picks{' '}
-                      {humanUpcoming
-                        .slice(1, ROSTER_SIZE - humanTeam.roster.length)
-                        .map((u) => `#${u.pick}`)
-                        .join(' · ')}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
+            {/* outside the table: a row spanning its columns re-laid the whole table on a phone, where
+                most of them are hidden (2026-10-29, the user: "co tu się odjebało") */}
+            {humanUpcoming.slice(1, ROSTER_SIZE - humanTeam.roster.length).length > 0 && (
+              <p className="open-rest">
+                Then picks{' '}
+                {humanUpcoming
+                  .slice(1, ROSTER_SIZE - humanTeam.roster.length)
+                  .map((u) => `#${u.pick}`)
+                  .join(' · ')}
+              </p>
+            )}
           </section>
         </>
       );
