@@ -169,10 +169,13 @@ export function Poster({ d }: { d: PosterData }) {
                   <NFace name={span.playerName} />
                 </span>
                 <span>
-                  <b>{lastName(span.playerName)}</b>
+                  <b>
+                    {lastName(span.playerName)}
+                    <small>{span.primaryPosition.split('/')[0]}</small>
+                  </b>
                   <em>
                     {numLabel(num, d.unit)}
-                    {min != null && ` · ${span.primaryPosition.split('/')[0]} · ${Math.round(min)} min`}
+                    {min != null && ` · ${Math.round(min)} min`}
                   </em>
                 </span>
               </div>

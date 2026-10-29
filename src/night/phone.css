@@ -521,7 +521,7 @@
   .nt .twin .sbox td:first-child small { display: inline; margin-left: 5px; }
   /* every number column the same width, so the gap after MIN reads like the rest ("przerwa między
      minutami wydaje się mniejsza") */
-  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; padding-right: 3px; width: 36px; min-width: 36px; font-size: 12.5px; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding: 0 1px; text-align: center; width: 35px; min-width: 35px; font-size: 12.5px; }
   .nt .twin .dlg-head { padding-bottom: 10px; margin-bottom: 10px; }
   .nt .twin .tw-split > section, .nt .twin .tw-split > * { min-width: 0; }
   .nt .twin .sbox td:first-child .pn { display: inline-block; max-width: 112px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
@@ -550,3 +550,9 @@
 .po-b2 > span:last-child { min-width: 0; }
 .po-b2 b { display: block; font: 800 14px/1 var(--cond); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .po-b2 em { display: block; margin-top: 2px; font: 500 10px var(--num); font-style: normal; color: var(--cink2); white-space: nowrap; }
+
+/* the poster (2026-10-29, "wykonanie takie sobie"): a starter's face grows with its box — 80% of
+   its height, at the foot, whole in frame — and a bench line is the name and position, then points
+   and minutes, so nothing runs into the next cell */
+.poster.ig .po-ph img { width: auto; height: 80%; max-width: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; margin-bottom: 0; }
+.po-b2 b small { font: 700 9px var(--sans); color: var(--cink2); margin-left: 3px; }
