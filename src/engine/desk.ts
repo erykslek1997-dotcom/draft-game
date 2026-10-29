@@ -7,6 +7,7 @@ import type { InsightCategory, RosterInsight } from './insights';
 import { mixSeed, mulberry32 } from './rng';
 import { BEEFS, type BeefCtx, type BeefLine, type Lens } from './deskBeefs';
 import { FAV_LINES, HATE_LINES, MOONBAT_ANSWERS, hates, loves, moonbatPicks, specialLine } from './deskTastes';
+import { talkFor } from './deskTalk';
 import { teamsForSpan } from './spanTeams';
 import type { Team } from './types';
 
@@ -221,43 +222,25 @@ const names = (ps: PlayerSpan[], n = 3) => list(ps.slice(0, n).map(surname));
 
 /** Each expert's voice around an engine finding. `{m}` is the finding's own sentence. */
 const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> = {
+  // the uncle at the barbecue who found the three-point line (the user: "bardziej wujasowy")
   sosini: {
     praise: [
-      'Respectfully? {m} Finally, somebody gets it.',
-      '{m} That’s gravity. Defenders leave the paint just thinking about it.',
-      '{m} Corner threes, open lanes, nobody parked in the dunker spot for no reason. Chef’s kiss.',
-      '{m} Five out, pace, space. This is the sport now. Keep up.',
-      '{m} Pin it. Frame it. Send it to every GM still drafting centers who can’t shoot.',
-      '{m} The maths is simple: three is more than two. Somebody tell Davyd.',
-      '{m} *nods* That is basketball in THIS century.',
+      '{m} Uncle Mattia has been saying this since 2014, kiddo.',
+      '{m} Three is more than two. I tell this to everybody at every family dinner.',
+      '{m} Pass me a beer, this is beautiful.',
+      '{m} Write that down, kid. Uncle Mattia was right again.',
     ],
     concern: [
-      'Respectfully. {m} 🥱',
-      '{m} Two non-shooters on the floor and the paint turns into a parking lot.',
-      '{m} Their best look is going to be a long two with a hand in the face. In 2026.',
-      '{m} Any coach with a laptop sags off and dares them to shoot. They lose that dare.',
-      '{m} It’s 2026. Who approved this?',
-      '{m} Respectfully, this is a crime and I’m calling it in.',
-      '{m} You built a team that needs the other side to miss. Bold.',
+      '{m} Kiddo. In 2026? Who drafted this, grandpa?',
+      '{m} The paint is going to be a parking lot. A parking lot, I tell you.',
+      '{m} Uncle Mattia is not angry. Uncle Mattia is disappointed.',
+      '{m} I’m going to need a second beer for this one.',
     ],
   },
+  // plain words (the user: "prostszy język")
   shyman: {
-    praise: [
-      'STOPS! {m}',
-      '{m} Good. That wins games.',
-      '{m} That works in May too. Shots go cold. Defense doesn’t.',
-      '{m} Nobody to pick on. Love it.',
-      '{m} Simple. Smart. Good team.',
-      '{m} Somebody show this to Mattia.',
-    ],
-    concern: [
-      'Can we talk defense? {m} Not good.',
-      '{m} In the playoffs they find that guy. Every time.',
-      '{m} Who helps at the rim? Nobody. Problem.',
-      '{m} You can hide one guy. Not two.',
-      '{m} Regular season, fine. Playoffs? No.',
-      '{m} No stops, no wins. Simple.',
-    ],
+    praise: ['{m} Good. That wins.', '{m} Shots go cold. Defense doesn’t.', '{m} Simple. Good team.'],
+    concern: ['{m} Not good.', '{m} In the playoffs they find that guy. Every time.', '{m} No stops, no wins. Simple.'],
   },
   solin: {
     praise: ['{m} That’s grown-man basketball.', '{m} Back in ’04 that’s a toll booth. Pay up.'],
@@ -283,13 +266,14 @@ const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> 
     praise: ['{m} *hand on heart* The ball moves. Beautiful.', 'Listen to me. {m} That is European basketball.'],
     concern: ['Listen to me. {m} One ball, five guys. In Europe we call that a problem.', '{m} *hand on heart* The ball is crying.'],
   },
+  // two-way first, Italian only now and then (the user: "przesadzone z włoskim")
   batt: {
-    praise: ['Do they play both ends? Yes. {m}', '{m} Two ends. Two! Bellissimo.'],
-    concern: ['Do they guard anybody? No. {m}', '{m} Half a team. Mezza squadra. Mamma mia.'],
+    praise: ['Do they play both ends? Yes. {m}', '{m} Both ends. BOTH. That’s basketball.'],
+    concern: ['Do they guard anybody? No. {m}', '{m} Half a team. Plays one end and hopes.'],
   },
   onoffsky: {
-    praise: ['{m} The numbers agree, for once.', '*adjusts glasses* {m} Statistically? Beautiful.'],
-    concern: ['*adjusts glasses* {m}', 'Verily, one must contemplate the evidence. {m}', 'Actually. {m} I have the spreadsheet open if anyone wants to fight.'],
+    praise: ['{m} The numbers agree, for once.', '{m} Statistically? Beautiful. 🤓'],
+    concern: ['{m} The lineup data won’t be kind.', 'Actually. {m} I have the spreadsheet open if anyone wants to fight.'],
   },
 };
 
@@ -314,14 +298,14 @@ function flavourTakes(read: RosterRead): Take[] {
   else if (read.nineties.length >= 3) add('jeremy', 0.55, 'praise', `${names(read.nineties)}. That’s ’90s basketball. Elbows, hand-checks, mid-range. Go watch the tape.`, 'nineties');
   else if (read.kobe) add('jeremy', -0.4, 'concern', 'Kobe’s great. He’s not Michael. Go watch the ’98 tape, then we talk.', 'notMichael');
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
-  if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} guys from before 2000. Pace-adjusted, they’d still run today’s soft load-management merchants off the floor. I have the almanacs.`, 'preTwoK');
-  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Not one player from before 2000? Kids today. Reggie Miller is rolling his eyes somewhere.', 'noPreTwoK');
-  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. 🥱 Respectfully, does this team come with a time machine, or do we rent one?`, 'old');
-  else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody on this roster could play tonight. Respectfully, that’s the whole point.', 'modern');
+  if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} players from before 2000. I counted twice. Pace-adjusted, every one of them averages more than his 2026 counterpart. I have the almanacs. All of them. Alphabetised.`, 'preTwoK');
+  else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Zero players from before 2000. Zero. That is 0 out of 9, which is 0.0%. I wrote it down. I write everything down.', 'noPreTwoK');
+  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. Kiddo, I had their posters. In 1975. On the wall next to the lava lamp. Great guys. Can’t shoot a three.`, 'old');
+  else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody here could play tonight. Tonight! Uncle Mattia is proud of you, kid.', 'modern');
   if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)}. That’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`, 'aughts');
-  if (read.stars.length >= 3) add('lex', 0.75, 'praise', `${names(read.stars)}! STARS WIN! Benches are for people who couldn’t draft stars!`, 'stars');
-  else if (read.stars.length === 1) add('lex', -0.5, 'concern', `${surname(read.stars[0])} and… who? One star? ONE? Where’s the dynasty?`, 'oneStar');
-  else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'No stars. Zero. A roster of scrubs and good vibes. Congratulations. 👏', 'noStars');
+  if (read.stars.length >= 3) add('lex', 0.75, 'praise', `${names(read.stars)}. Now THAT is a team. Everyone else in this league is just here to lose to it.`, 'stars');
+  else if (read.stars.length === 1) add('lex', -0.5, 'concern', `${surname(read.stars[0])} and a group of nice young men who will be watching from the bench in May. How quaint.`, 'oneStar');
+  else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'Not a single star. A roster built on good vibes. I’ll enjoy watching this one lose. 👏', 'noStars');
   if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`, 'international');
   if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`, 'steal');
   else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. Fraud contract. *closes the laptop very slowly*`, 'overpay');
@@ -485,32 +469,36 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
  * own random stream, so the panel itself (who speaks, what, Moonbat's odds) never changes.
  */
 const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
-  sosini: { tail: ['🥱', 'lol', 'ratio', 'it’s not that deep', 'cope', '💀'], head: ['Bro.', 'Lol.'] },
-  shyman: { tail: ['😤', 'smh', 'fr', 'simple', '🧱'], head: ['Bro.', 'Look.'] },
+  sosini: { tail: ['trust Uncle Mattia', 'hehe', '🍺', 'write that down', 'as I always say'], head: ['Kiddo.', 'Listen here.'] },
+  shyman: { tail: ['🧱'], head: ['Look.'] },
   solin: { tail: ['💪', 'lol', 'say less', 'eye test', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
   binash: { tail: ['📼', 'totally tubular', 'rad 🤙', 'gnarly', 'cowabunga, dudes', '🕺'], head: ['Dude.', 'Oh, please.'] },
-  jert: { tail: ['👴', '📚', 'pace-adjusted, btw', 'look it up', 'I don’t have to explain myself', 'smh'], head: ['Actually.', 'Please.'] },
+  jert: { tail: ['pace-adjusted, btw', 'I counted', '(source: my 1991 almanac, page 212)', 'to be precise', 'footnote 4'], head: ['Actually.', 'Technically.', 'Correction.'] },
   rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
-  batt: { tail: ['🤌', 'mamma mia', 'basta', '🇮🇹'], head: ['Madonna.', 'Ragazzi.'] },
+  batt: { tail: ['🤌', 'both ends'], head: ['Ragazzi.', 'Look.'] },
   prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },
   onoffsky: { tail: ['🤓', '📊', 'source: me', 'it’d be funny if it wasn’t true', 'ngl', 'no play-by-play, no opinion'], head: ['Footnote.', 'Correction.'] },
   bannerman: { tail: ['🍀', '☘️', 'lmao', 'banner szn'], head: ['Lol.', 'Imagine.'] },
   natalie: { tail: ['💸', '📉', 'not me crying', 'sigh', '🧾'], head: ['Okay.', 'Darling.'] },
   jeremy: { tail: ['🐐', '📼', 'smh', '6–0 btw'], head: ['Please.', 'Lol.'] },
-  lex: { tail: ['👑', '💅', 'lol', 'it’s giving lottery', 'scrubs', '🏆'], head: ['Lol.', 'Imagine.'] },
+  lex: { tail: ['pathetic', 'how quaint', '👑', 'enjoy the lottery'], head: ['How sweet.', 'Oh no.', 'Cute.'] },
   zoran: { tail: ['🙏', 'my brother', '🇪🇺', 'beautiful 🥲'], head: ['Listen.', 'My friend.'] },
   rightwing: { tail: ['🙄', 'smh', 'unreal'], head: ['Bart.'] },
-  host: { tail: ['😅', '🫠', 'we’re live, people'], head: [] },
+  host: { tail: [], head: [] },
 };
 const INTERJECTIONS = new Set(['lol', 'smh', 'fr', 'lmao', 'ngl', 'ugh', 'sigh']);
 const ENDS_LOOSE = /(\p{Extended_Pictographic}\uFE0F?|\*|—)\s*$/u;
+// 2026-10-29 (the user: the room reads stiff): a tag glued to every other line read like a bot —
+// now about one take in five, never on a reply, and once per expert a show.
 function loosen(lines: DeskLine[], seed: number): DeskLine[] {
   const rng = mulberry32(mixSeed(seed, 0x51a6));
+  const tagged = new Set<ExpertId>();
   return lines.map((l) => {
     const slang = SLANG[l.who];
     const r = rng();
-    if (!slang || l.kind === 'burst' || ENDS_LOOSE.test(l.text)) return l;
-    if (r < (l.who === 'host' ? 0.15 : 0.4)) {
+    if (!slang || !slang.tail.length || l.kind === 'burst' || ENDS_LOOSE.test(l.text)) return l;
+    if (!l.reply && !tagged.has(l.who) && r < (l.who === 'host' ? 0.15 : 0.22)) {
+      tagged.add(l.who);
       const tag = pick(rng, slang.tail);
       // "I love you guys" already says "love u guys" (playtest 2026-10-29).
       const plain = (t: string) => t.toLowerCase().replace(/\bu\b/g, 'you');
@@ -558,21 +546,23 @@ export function ordinal(n: number): string {
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
+// 2026-10-29 (the user: "Eric B — to ja"): the host talks like the user does — short, dry, blunt,
+// a "wtf" when it's earned, never a speech.
 const HOST_OPEN: Record<'won' | 'podium' | 'middle' | 'bottom', string[]> = {
-  won: ['CHAMPIONS! The {team} take it all! Okay, okay — panel, go.', 'Title for the {team}! Somebody stop Igor from crying. Panel?', 'CHAMPIONS! The {team}! My producer is crying. Igor is crying. Panel, go.'],
-  podium: ['{place} for the {team}. Podium! Panel — be nice. Or don’t.', '{place} place, {team}. So close you can smell it. Go.', '{place}, {team}. Close. Not close enough for Lex. Go.'],
-  middle: ['{place} for the {team}. Not great, not terrible. Who wants it?', 'The {team} land {place}. Panel, I can see you vibrating. Go.', '{place} for the {team}. The mushy middle. Somebody say something spicy.'],
-  bottom: ['{place}. {place}, for the {team}. Somebody explain this to me.', 'The {team}, {place}. Deep breaths, everybody. Go.', '{place}. The {team}. I have been told to remain professional. Panel?'],
+  won: ['{team}. Champions. Ok that’s actually good. Panel?', 'CHAMPIONS. {team}. I need a minute. Go.', 'Title for the {team}. Not gonna lie, didn’t see it coming. Panel.'],
+  podium: ['{place} for the {team}. Close. Not close enough. Go.', '{team}, {place}. Podium. Fine. Talk.', '{place}. {team}. So close it hurts. Panel?'],
+  middle: ['{place} for the {team}. Meh. Who wants it?', '{team} in {place}. Not great, not tragic. Go.', '{place}. The {team}. Somebody say something interesting.'],
+  bottom: ['{place}?? {team}, wtf. Somebody explain.', '{team}, {place}. Tragic. Go.', '{place} for the {team}. I’m tired, boss. Panel.'],
 };
 const HOST_CLOSE_TIP = [
-  'Okay. OKAY. Everybody breathe. Note for next time? {tip} We’ll be right back.',
-  'Phones down, everybody. Lesson for next time? {tip} We’ll be right back before somebody gets blocked.',
+  'Ok. Next time: {tip} Again. We’ll be right back.',
+  'Lesson for next time: {tip} That’s it. Break.',
 ];
 const HOST_CLOSE_WON = [
-  'That’s the show. Champions. Somebody get Igor a tissue. We’ll be right back.',
-  'That’s the show. Champions. Lex wants a dynasty, Mark wants a bench, I want a nap. We’ll be right back.',
+  'That’s the show. Champions. Somebody check on Igor. Break.',
+  'Champions. Lex wants a dynasty, Mark wants a bench, I want a nap. Break.',
 ];
-const HOST_CLOSE_PODIUM = ['Podium it is. Not bad at all. We’ll be right back.', 'Podium. Nobody got blocked. That’s a win for me too. We’ll be right back.'];
+const HOST_CLOSE_PODIUM = ['Podium. Not bad. We’ll be right back.', 'Podium. Nobody got blocked tonight. Good. Break.'];
 /** Arguments per show at most, and the chance that a take able to start one does. */
 // 2026-10-29 (the user: the room "should be a multi-stage discussion — replies and so on"): more
 // arguments, and plain takes draw replies (`pileOn`).
@@ -598,6 +588,7 @@ export interface DeskInput {
 export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, tip, seed }: DeskInput): DeskLine[] {
   const rng = mulberry32(mixSeed(seed, 0xde5c));
   const read = readRoster(team);
+  const rosterNames = team.roster.map((p) => p.playerName);
   const tier = rank === 1 ? 'won' : rank <= 3 ? 'podium' : rank <= Math.ceil(fieldSize / 2) ? 'middle' : 'bottom';
   const lines: DeskLine[] = [
     { who: 'host', kind: 'host', text: pick(rng, HOST_OPEN[tier]).replace(/\{team\}/g, team.name).replace(/\{place\}/g, ordinal(rank)) },
@@ -607,11 +598,11 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   const insightTakes: Take[] = [
     ...strengths.slice(0, rank <= 3 ? 3 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), insight: i, line: { who, kind: 'praise' as const, text: voiced(rng, who, 'praise', i.message) } };
+      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), insight: i, line: { who, kind: 'praise' as const, text: talkFor(i, 'praise', rosterNames, rng) ?? voiced(rng, who, 'praise', i.message) } };
     }),
     ...concerns.slice(0, rank <= 3 ? 1 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), insight: i, line: { who, kind: 'concern' as const, text: voiced(rng, who, 'concern', i.message) } };
+      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), insight: i, line: { who, kind: 'concern' as const, text: talkFor(i, 'concern', rosterNames, rng) ?? voiced(rng, who, 'concern', i.message) } };
     }),
   ];
   if (style) insightTakes.push({ who: 'jeremy', score: 0.45, line: { who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` } });
@@ -694,13 +685,13 @@ export function buildRivalDesk({ strengths, concerns, style, rank, seed, third }
     const who = CATEGORY_EXPERT[i.category];
     if (used.has(who)) continue;
     used.add(who);
-    out.push({ who, kind: 'praise', text: voiced(rng, who, 'praise', third(i.message)) });
+    out.push({ who, kind: 'praise', text: talkFor(i, 'praise', [], rng) ?? voiced(rng, who, 'praise', third(i.message)) });
   }
   for (const i of concerns.slice(0, 2)) {
     const who = CATEGORY_EXPERT[i.category];
     if (used.has(who)) continue;
     used.add(who);
-    out.push({ who, kind: 'concern', text: voiced(rng, who, 'concern', third(i.message)) });
+    out.push({ who, kind: 'concern', text: talkFor(i, 'concern', [], rng) ?? voiced(rng, who, 'concern', third(i.message)) });
   }
   if (style && !used.has('jeremy') && out.length < 4) out.push({ who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` });
   return loosen(out.slice(0, 4), seed);
