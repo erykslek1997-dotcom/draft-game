@@ -325,6 +325,15 @@ export function CardBack() {
 }
 
 /** A slot of your five: filled (cream card), the active one (red), an empty one. */
+/** A phone's slot has room for about seven letters: a longer surname gives way to the first name
+ * ("Klay" for Thompson; 2026-10-29, the user: "Może być po prostu 'Klay'"). */
+const SLOT_NAME_MAX = 7;
+function phoneSlotName(name: string): string {
+  const last = lastName(name);
+  const first = name.split(' ')[0];
+  return last.length > SLOT_NAME_MAX && first !== last && first.length < last.length ? first : last;
+}
+
 export function Slot({
   pos,
   span,
@@ -359,7 +368,7 @@ export function Slot({
         <NFace name={span.playerName} />
         <div className="nm">
           <span className="sl-l">{shortName(span.playerName)}</span>
-          <span className="sl-s">{lastName(span.playerName)}</span>
+          <span className="sl-s">{phoneSlotName(span.playerName)}</span>
         </div>
         <div className="sb">
           <span className="sb-y">{maskYears(span.playerName, span.spanLabel)}</span>

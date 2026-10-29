@@ -94,7 +94,7 @@
     .slot.filled .top { padding: 2px 5px; margin-bottom: 2px; font-size: 11px; }
     /* a small face between the team band and the name (playtest: "zmieścimy tu facecards?") */
     .slot.filled img, .slot.filled .ini { width: 28px; height: 28px; font-size: 12px; margin: 1px 0 2px; }
-    .slot .nm { margin-top: 0; font-size: 13px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 3px; }
+    .slot .nm { margin-top: 0; font-size: 13px; line-height: 1.3; /* room for the descenders: Billups, Holmgren */ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 3px; }
     .slot .nm .sl-l { display: none; }
     .slot .nm .sl-s { display: inline; }
     .slot .sb { font-size: 11px; }
@@ -554,3 +554,28 @@
 /* the poster's bench line (2026-10-29): the name and position, then points and minutes, so nothing
    runs into the next cell */
 .po-b2 b small { font: 700 9px var(--sans); color: var(--cink2); margin-left: 3px; }
+
+/* "Your team · his years" (2026-10-29, playtest 4: "nie jest równo"): the head of the player card —
+   a 64px face, the name, his position and years under it — set evenly under the eyebrow */
+.nt .prompt .who-head { margin: 10px 0 12px; gap: 14px; }
+.nt .prompt .who-head img, .nt .prompt .who-head .ini { width: 64px; height: 64px; flex: none; }
+.nt .prompt .who-head h2 { margin: 0; line-height: 1; }
+.nt .prompt .who-head small { display: block; margin-top: 5px; font: 500 13px var(--num); color: var(--ink3); }
+
+/* Your team on a phone (playtest 1): the next open pick, the rest in one line; no awards badge in
+   the row (the player card has them) */
+.nt tr.open-rest { display: none; }
+@media (max-width: 600px) {
+  .nt tr.open.open-more { display: none; }
+  .nt tr.open-rest { display: table-row; }
+  .nt tr.open-rest td { padding: 8px 0 10px; font: 500 12px var(--num); color: var(--ink3); }
+  .nt .rs-aw { display: none; }
+}
+
+/* the season profile under the metrics (playtest 8) */
+.nt .sprof { display: grid; gap: 3px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.nt .sprof-k { font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.nt .sprof > b { font: 800 22px/1.1 var(--cond); text-transform: uppercase; color: var(--ink); }
+.nt .sprof-n { font: 500 13px var(--num); color: var(--ink3); }
+.nt .sprof-n b { color: var(--ink); font-weight: 600; }
+.nt .sprof small { font-size: 13px; color: var(--ink3); }

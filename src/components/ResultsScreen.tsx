@@ -54,7 +54,8 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
+import { effectiveTalent } from '../engine/grades';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -536,7 +537,7 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
           <MetricTable
             rows={[
               { label: 'D-TAL', value: defenseTalent, hint: 'Team defensive talent: the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure.' },
-              { label: 'Role coverage', value: fit.components.defensiveRoleCoverage, hint: 'Whether someone covers each defensive job: point of attack, wing, rim.' },
+              { label: 'Role coverage', value: fit.components.defensiveRoleCoverage, hint: 'Whether someone covers each defensive job (point of attack, wing, rim) — not how well; that is the Defense score.' },
               { label: 'Switchability', value: fit.components.switchability, hint: 'How freely the roster can switch across a screen without a mismatch.' },
               { label: 'Hunt resistance', value: fit.components.huntResistance, hint: 'How well the roster hides its weakest defender in a playoff series.' },
               { label: 'Rebounding', value: fit.components.reboundingBalance, hint: 'Two-way rebounding balance.' },
@@ -557,13 +558,17 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
         </section>
       </div>
       <section>
-        <p className="host">
-          <b>Season profile:</b> {profile.label} (regular season {profile.regularSeason} · playoffs {profile.playoffs}). {profile.explanation}
-        </p>
-        <p className="empty-note">
-          These are the ingredients behind the scores, measured separately: Role coverage is whether each defensive job is filled at all, the Defense score is how well it’s done.
-        </p>
-        <button type="button" className="lk-inline" style={{ marginTop: 10 }} onClick={() => setAll((v) => !v)}>
+        {/* 2026-10-29 (playtest 8: "wygląda jak dodany od niechcenia"): the season profile is a row of
+            its own, like the scores above; the note on Role coverage went to that row's hint. */}
+        <div className="sprof">
+          <span className="sprof-k">Season profile</span>
+          <b>{profile.label}</b>
+          <span className="sprof-n">
+            Regular season <b>{profile.regularSeason}</b> · Playoffs <b>{profile.playoffs}</b>
+          </span>
+          <small>{profile.explanation}</small>
+        </div>
+        <button type="button" className="lk-inline" style={{ marginTop: 12 }} onClick={() => setAll((v) => !v)}>
           {all ? 'Hide all metrics & inputs ▴' : 'All metrics & inputs ▾'}
         </button>
       </section>
@@ -963,7 +968,17 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const prof = profileRows(hero.breakdown);
   const weakest = [...prof].sort((x, y) => x.value - (fieldMedians[x.label === 'Bench' ? 'Bench Depth' : x.label] ?? 0) - (y.value - (fieldMedians[y.label === 'Bench' ? 'Bench Depth' : y.label] ?? 0)))[0];
   const strongest = [...prof].sort((x, y) => y.value - (fieldMedians[y.label === 'Bench' ? 'Bench Depth' : y.label] ?? 0) - (x.value - (fieldMedians[x.label === 'Bench' ? 'Bench Depth' : x.label] ?? 0)))[0];
-  const quote = heroVoices.find((l) => l.kind === 'praise' || l.kind === 'concern') ?? null;
+  // 2026-10-29 (playtest 5: "Two layers: Kawhi on the wing, Chet at the rim" as the headline, no
+  // Shaq): the headline is the desk's first take that names one of the team's two best players;
+  // with none, it says who they are.
+  const topTwo = [...heroTeam.roster].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, 2);
+  const takes = heroVoices.filter((l) => l.kind === 'praise' || l.kind === 'concern');
+  const namesTop = (l: DeskLine) => topTwo.some((sp) => l.text.includes(lastName(sp.playerName)));
+  const quote: DeskLine | null =
+    takes.find(namesTop) ??
+    (takes[0] && topTwo.length === 2
+      ? { ...takes[0], text: `${topTwo[0].playerName} and ${topTwo[1].playerName}. Two of the best players on the floor, every night.` }
+      : (takes[0] ?? null));
 
   // Your roster by slot: the starter on the card, who comes in for him underneath.
   const bySlot = STARTER_SLOTS.map((slot) => {
