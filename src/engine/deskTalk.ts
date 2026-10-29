@@ -245,7 +245,7 @@ const TALK: Partial<Record<string, Lines>> = {
     concern: ['Guys at positions they’ve never played. On paper, a team. On the floor, a war crime.'],
   },
   DEFENSE_AT_COST_OF_SPACING: {
-    concern: ['Best defensive five can’t shoot, best shooting five can’t guard. Pick your L.'],
+    concern: ['Best defensive five can’t shoot, best shooting five can’t guard. Pick an L.'],
   },
   ELITE_CREATION_POOR_SPACING: {
     concern: ['{a} can create anything and nobody around him shoots. They’ll send three. Every time. Enjoy.'],
