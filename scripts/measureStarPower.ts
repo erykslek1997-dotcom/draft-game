@@ -15,10 +15,11 @@ import { AI_STAR_RULES } from '../src/engine/aiDrafter';
  *  - falls: how far past his TAL rank each 90+ player went (picks),
  *  - every team's Overall (mean, sd, the best).
  *
- *   npx tsx scripts/measureStarPower.ts [drafts]     (NET=0 / BS=0 switch a rule off, SLACK=n)
+ *   npx tsx scripts/measureStarPower.ts [drafts]     (NET=0 / BS=0 switch a rule off, SLACK=n, MARGIN=x)
  */
 AI_STAR_RULES.fallNet = process.env.NET !== '0';
 AI_STAR_RULES.fallSlack = Number(process.env.SLACK ?? AI_STAR_RULES.fallSlack);
+AI_STAR_RULES.fallFitMargin = Number(process.env.MARGIN ?? AI_STAR_RULES.fallFitMargin);
 AI_STAR_RULES.playmakingByBallShare = process.env.BS !== '0';
 const DRAFTS = Number(process.argv[2] ?? 12);
 const key = (n: string) => normalizePlayerName(n);
@@ -64,7 +65,7 @@ for (let d = 0; d < DRAFTS; d++) {
   best.push(Math.max(...ov));
 }
 const f = (v: number[]) => mean(v).toFixed(1);
-console.log(`fall net ${AI_STAR_RULES.fallNet ? `on (slack ${AI_STAR_RULES.fallSlack})` : 'off'} · ball share ${AI_STAR_RULES.playmakingByBallShare ? 'on' : 'off'} · ${DRAFTS} drafts · ${((Date.now() - t0) / DRAFTS / 1000).toFixed(1)} s each`);
+console.log(`fall net ${AI_STAR_RULES.fallNet ? `on (slack ${AI_STAR_RULES.fallSlack}, fit margin ${AI_STAR_RULES.fallFitMargin})` : 'off'} · ball share ${AI_STAR_RULES.playmakingByBallShare ? 'on' : 'off'} · ${DRAFTS} drafts · ${((Date.now() - t0) / DRAFTS / 1000).toFixed(1)} s each`);
 console.log(`TAL by round: R1 ${f(roundTal[0])} · R2 ${f(roundTal[1])} · R3 ${f(roundTal[2])} · R4 ${f(roundTal[3])}`);
 console.log(`passes (8+ TAL better on the board, R1-4): ${f(passes)} a draft`);
 console.log(`best TAL left after R2 ${f(left[0])} · R3 ${f(left[1])} · R4 ${f(left[2])}`);

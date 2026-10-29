@@ -328,16 +328,19 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  * momencie powinien wchodzić zdrowy rozsądek"; a slightly weaker AI is fine if it stops absurd
  * fives). Measured on scripts/measureStarPower.ts (TODO.md, "AI draftu: bezpiecznik"):
  *  - `fallNet`: a player whose TAL ranks him `fallSlack` picks (a round) above the current pick is
- *    taken now — the hard net the named legends have, by talent. 6 all-AI drafts: picks with a
- *    player 8+ TAL better on the board 27 → 11 a draft, the worst fall 73 → 21 picks, AI Overall
- *    80.8 → 79.3.
+ *    weighed against the normal pick by the team score and taken if his team is within
+ *    `fallFitMargin` of it. Taken outright at first (6 all-AI drafts: picks with a player 8+ TAL
+ *    better on the board 27 → 11 a draft, the worst fall 73 → 21, AI Overall 80.8 → 79.3, the loss
+ *    all in fit −5 and spacing −4 — stars who don't fit), hence the check.
  *  - `playmakingByBallShare`: the second-playmaker discount follows the ball-share cost the team
  *    score charges (ballHandling.ts), not "7+ assists": Overall unchanged, the worst fall 73 → 33.
  * Tried and dropped (no effect): talent-only first picks, the team-score lookahead from the second
  * pick, a cap on the need multiplier, a talent exemption from the playmaker discount.
  * Mutable so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { fallNet: true, fallSlack: 16, playmakingByBallShare: true };
+export const AI_STAR_RULES = { fallNet: true, fallSlack: 16, fallFitMargin: 0.5, playmakingByBallShare: true };
+/** How many of the fallen (best TAL first) the net weighs by the team score. */
+const FALL_NET_CHECKED = 4;
 const FALL_NET_FROM_PICK = 20;
 /** Every player's best TAL across his windows, highest first: where TAL says he goes. */
 let bestTalentsDesc: number[] | null = null;
@@ -1969,16 +1972,13 @@ export function pickForAi(
     }
   }
 
-  // The common-sense net (see `AI_STAR_RULES`): a player TAL puts a round ahead of this pick is
-  // taken now, the one who fills a real gap first, then the best; never a third at one position.
-  if (AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK) {
-    const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
-    const fallen = planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber && atPosition(p.primaryPosition) < 2);
-    if (fallen.length > 0) {
-      const fillsRealGap = (p: PlayerSpan) => needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition);
-      return fallen.sort((a, b) => Number(fillsRealGap(b)) - Number(fillsRealGap(a)) || effectiveTalent(b) - effectiveTalent(a) || a.fga - b.fga)[0];
-    }
-  }
+  // The common-sense net (see `AI_STAR_RULES`): players TAL puts a round ahead of this pick, never a
+  // third at one position. Weighed against the normal pick at the end, by the team score.
+  const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
+  const fallen =
+    AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK
+      ? planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber && atPosition(p.primaryPosition) < 2)
+      : [];
 
   // 2026-08-07, user's own diagnosis: force the starting five to actually complete EARLY, while
   // the pool is still deep at every position (100+ per position), not late. Two hard-filter
@@ -2508,5 +2508,18 @@ export function pickForAi(
   if (aiDraftDebug) {
     logDraftDebug(roster, pickNumber, top, weights, rolledFrom, totalWeight, chosenIndex);
   }
-  return top[chosenIndex].player;
+  const normal = top[chosenIndex].player;
+  if (fallen.length === 0 || fallen.some((p) => p.id === normal.id)) return normal;
+  // A fallen star comes in only if he fits (2026-10-29, the user: "ma brać gwiazdy które pasują,
+  // nic na siłę"): his team, completed with the best affordable players left, scores within
+  // `fallFitMargin` of the normal pick's; of several, the one whose team scores best.
+  if (!teamScorer) return normal;
+  const byTalent = available.filter((p) => isDraftableDurability(p)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  const teamWith = (p: PlayerSpan) => teamScorer!(completeRosterGreedy([...roster, p], byTalent, capLimit - spent - p.fga, rosterSize - roster.length - 1));
+  const best = [...fallen]
+    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
+    .slice(0, FALL_NET_CHECKED)
+    .map((p) => ({ p, score: teamWith(p) }))
+    .sort((a, b) => b.score - a.score)[0];
+  return best.score >= teamWith(normal) - AI_STAR_RULES.fallFitMargin ? best.p : normal;
 }
