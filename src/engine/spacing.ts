@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { eraScaledThreePA, spanEndYears } from './era';
 import { players } from '../data/players';
 import { draftPool } from '../data/draftPool';
+import { preZoneShootingSkill } from './preZoneShooting';
 
 /**
  * SPACING — "how much does this player's shooting bend a defense," on the same 0-100 display
@@ -491,6 +492,26 @@ function shortenedLineShare(span: PlayerSpan): number {
 }
 
 const smoothedCache = new Map<string, SpacingBreakdown>();
+/**
+ * 2026-10-29, the user ("nie rzucali za 3 bo nikt nie rzucał wtedy więc tego nie ćwiczyli, trzeba
+ * inne założenia przyjąć i jakieś skalowanie"): before the three-point line (1979-80) there are no
+ * attempts to scale, so every shooter read 0. A span wholly before the line takes his shooting skill
+ * as the pre-zone review set it (preZoneShooting.ts: efficiency against his era, free throws, the
+ * shot's mechanics — the user's own criteria) at `PRE_LINE_SHARE`: a three is a harder shot than a
+ * fifteen-footer. Jerry West in full (the user: higher than the share gave him). An assumption, not
+ * a measurement: no judge holds a team before 1980.
+ */
+const LAST_SEASON_WITHOUT_THE_LINE = 1979;
+const PRE_LINE_SHARE = 0.85;
+const PRE_LINE_FULL = new Set(['jerry west']);
+function preLinePoints(span: PlayerSpan): number {
+  if (Math.max(...spanEndYears(span.spanLabel)) > LAST_SEASON_WITHOUT_THE_LINE) return 0;
+  const skill = preZoneShootingSkill(span);
+  if (!skill) return 0;
+  const share = PRE_LINE_FULL.has(normalizePlayerName(span.playerName)) ? 1 : PRE_LINE_SHARE;
+  return (skill * share * MAX_SPACING_POINTS) / 100;
+}
+
 export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   if (selfCreationOverride !== undefined) return rawSpacingBreakdown(span, selfCreationOverride);
   const hit = smoothedCache.get(span.id);
@@ -506,7 +527,7 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
     weight += w;
   }
-  const points = weight > 0 ? sum / weight : own.points;
+  const points = Math.max(weight > 0 ? sum / weight : own.points, preLinePoints(span));
   const result = { ...own, points, tier: tierForPoints(span, points) };
   smoothedCache.set(span.id, result);
   return result;
