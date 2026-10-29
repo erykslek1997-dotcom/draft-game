@@ -77,9 +77,12 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
 }
 
 /** 2026-10-29, the user (Porziņģis starting at PF beside Embiid: "a 7'4\" PF makes no real sense"):
- * named players who play a slot at most as a stretch (`partial`), whatever their career says. */
+ * named players who play a slot at most at the given score, whatever their career says. */
 const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   'kristaps porzingis': { PF: 0.6 },
+  // The user (export 1497221832, "Rodman na SG i SF??"): a four from his Pistons years on — the
+  // wing at most as a stretch, never the two.
+  'dennis rodman': { SG: 0, SF: 0.6 },
 };
 
 /**
