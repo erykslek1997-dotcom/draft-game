@@ -192,7 +192,13 @@ bezpiecznik po 1 rundzie. Brany na siłę kosztował fit −5 i spacing −4 (gw
 więc ostatecznie gwiazda wchodzi tylko, jeśli jej drużyna (dopełniona najlepszymi dostępnymi) ma
 ocenę najwyżej 0,5 niższą niż przy normalnym wyborze („ma brać gwiazdy które pasują, nic na siłę”).
 Wersja końcowa: 15,7 wyborów z lepszym o 8+ na stole, najgorszy spadek 32, Overall AI 80,5
-(margines 0: 17,2 · 34 · 80,4; margines 1: 15,5 · 32 · 80,2). Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
+(margines 0: 17,2 · 34 · 80,4; margines 1: 15,5 · 32 · 80,2).
+Live draft (eksport 3114492529, „bez szału, na siłę to strasznie”): dół tabeli z mocnymi piątkami i
+resztkami na ławce (Long Beach 72, Detroit 74, Knoxville 75) — bezpiecznik przesunięty na 3 rundy
+(`fallSlack` 48): łapie tylko absurdy (Barkley przy 112, Nash przy 100), zwykły draft robi kara za
+drugiego rozgrywającego (sama: najgorszy spadek 33, Overall 80,8). Do obejrzenia: McAdoo 1975-77
+TAL 95 (19. w puli) i jego półdystans 72 z dawnej listy (nie przeglądany) — po spacingu sprzed linii
+(0 → 61) AI bierze go w 2. rundzie; obniżyć rzut albo talent (decyzja użytkownika). Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
 drużyny (`ballHandling.ts`, AST% i USG%), nie za „7+ asyst” (LeBron, Bird, Jokić w składzie nie
 znaczą, że drugi rozgrywający jest zbędny). **Jeśli AI zacznie draftować dziwnie** (za mocne
 drużyny AI, gwiazdy na siłę obok siebie, trzech centrów, za słabe ławki): wrócić tutaj, przełączniki
