@@ -324,23 +324,20 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
 
 /**
  * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
- * Chris Paul to 42, Malone to 55, Barkley to 112: "w pierwszych rundach powinno się stackować star
- * power a nie lower fga opcje" and "w pewnym momencie powinien wchodzić zdrowy rozsądek"). Two
- * rules, each measured on its own (scripts/measureStarPower.ts):
- *  - `starPhase`: a team's first `STAR_PHASE_PICKS` picks chase talent. Positional need still
- *    discounts a duplicate, but its pull toward an open slot is capped at `STAR_PHASE_NEED_CAP`,
- *    so a TAL 80 who fills a hole no longer outbids a TAL 95 who doesn't (need multiplies talent).
- *  - `fallNet`: common sense. A player whose TAL ranks him a full round (`fallSlack`) above
- *    the current pick is taken now — the same hard net the named legends have, by talent.
- * Mutable only so the measurement can switch each off.
+ * Chris Paul to 42, Malone to 55, Barkley to 112, and a five built from what fell: "w pewnym
+ * momencie powinien wchodzić zdrowy rozsądek"; a slightly weaker AI is fine if it stops absurd
+ * fives). Measured on scripts/measureStarPower.ts (TODO.md, "AI draftu: bezpiecznik"):
+ *  - `fallNet`: a player whose TAL ranks him `fallSlack` picks (a round) above the current pick is
+ *    taken now — the hard net the named legends have, by talent. 6 all-AI drafts: picks with a
+ *    player 8+ TAL better on the board 27 → 11 a draft, the worst fall 73 → 21 picks, AI Overall
+ *    80.8 → 79.3.
+ *  - `playmakingByBallShare`: the second-playmaker discount follows the ball-share cost the team
+ *    score charges (ballHandling.ts), not "7+ assists": Overall unchanged, the worst fall 73 → 33.
+ * Tried and dropped (no effect): talent-only first picks, the team-score lookahead from the second
+ * pick, a cap on the need multiplier, a talent exemption from the playmaker discount.
+ * Mutable so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true, needCap: 0, fallSlack: 16, playmakingExempt: 0, playmakingByBallShare: true };
-/** `lookahead`: the team-score judgement (see `TEAM_SCORE_SHORTLIST`) from a team's second pick,
- * and the board's best talents join its shortlist, so a star is weighed by what he adds. */
-const EARLY_LOOKAHEAD_ROSTER_SIZE = 1;
-const LOOKAHEAD_TALENT_EXTRA = 5;
-const STAR_PHASE_PICKS = 3;
-const STAR_PHASE_NEED_CAP = 0.25;
+export const AI_STAR_RULES = { fallNet: true, fallSlack: 16, playmakingByBallShare: true };
 const FALL_NET_FROM_PICK = 20;
 /** Every player's best TAL across his windows, highest first: where TAL says he goes. */
 let bestTalentsDesc: number[] | null = null;
@@ -2262,7 +2259,7 @@ export function pickForAi(
         const added = ballHandlerCost([...needs.starterPlayers, p]) - ballHandlerCost(needs.starterPlayers);
         need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT * Math.min(1, Math.max(0, added) / SECOND_HANDLER_FULL_COST);
       }
-    } else if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < (AI_STAR_RULES.playmakingExempt || ELITE_TALENT_REDUNDANCY_EXEMPTION)) {
+    } else if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT;
     }
     if (needs.hasSelfSufficientEngineStarter && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
@@ -2273,9 +2270,7 @@ export function pickForAi(
     // a team's first few picks — see NEED_RAMP_ROSTER_SIZE above. At roster.length 0 this
     // collapses `need` to a flat 1 for everyone (pure best-talent-available); by
     // NEED_RAMP_ROSTER_SIZE picks in, `need` applies at its full computed value.
-    // A team's first picks chase talent (`AI_STAR_RULES.starPhase`): need's pull is capped.
-    if (AI_STAR_RULES.starPhase && roster.length < STAR_PHASE_PICKS && need > 1) need = 1 + Math.min(need - 1, STAR_PHASE_NEED_CAP);
-    const rampedNeed = Math.min(AI_STAR_RULES.needCap || Infinity, 1 + (need - 1) * needRampProgress);
+    const rampedNeed = 1 + (need - 1) * needRampProgress;
 
     // 2026-08-05, experiment per explicit user request: durability REMOVED from the AI's draft
     // VALUE (previously `talent * durabilityScale(...) * rampedNeed`, 2026-08-01). Reason: it
@@ -2462,7 +2457,7 @@ export function pickForAi(
     }
   }
 
-  if (roster.length >= (AI_STAR_RULES.lookahead ? EARLY_LOOKAHEAD_ROSTER_SIZE : LOOKAHEAD_ROSTER_SIZE) && teamScorer) {
+  if (roster.length >= LOOKAHEAD_ROSTER_SIZE && teamScorer) {
     // 2026-10-02, the user (late picks that "nic nie zapewniają": the cap spent on the first seven
     // leaves only 3-FGA fringe players): each shortlisted candidate is judged by the team he leaves
     // room for — the roster completed with the best affordable players still on the board — not by
@@ -2479,10 +2474,6 @@ export function pickForAi(
       .sort((a, b) => b.rank - a.rank)
       .map((x) => x.p);
     const shortlist = lotteryCandidates.slice(0, Math.min(TEAM_SCORE_SHORTLIST, lotteryCandidates.length));
-    if (AI_STAR_RULES.lookahead) {
-      const inList = new Set(shortlist.map((e) => e.player.id));
-      shortlist.push(...[...lotteryCandidates].sort((a, b) => b.talent - a.talent).filter((e) => !inList.has(e.player.id)).slice(0, LOOKAHEAD_TALENT_EXTRA));
-    }
     const gaps = startingFiveGaps(roster);
     const rescored = shortlist.map((entry) => {
       const completed = completeRosterGreedy(

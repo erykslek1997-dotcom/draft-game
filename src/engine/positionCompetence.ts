@@ -83,6 +83,9 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   // The user (export 1497221832, "Rodman na SG i SF??"): a four from his Pistons years on — the
   // wing at most as a stretch, never the two.
   'dennis rodman': { SG: 0, SF: 0.6 },
+  // The user (Jason Collins, TAL 58, the four's 13 minutes beside Giannis while Ben Wallace sat:
+  // "zablokuj Collinsa na PF"): a centre only.
+  'jason collins': { PF: 0 },
 };
 
 /**
