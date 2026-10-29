@@ -509,7 +509,9 @@
   .nt .dlg.wide { top: 0; left: 0; transform: none; width: 100%; max-height: none; height: 100dvh; border-top: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: none; }
   .nt .twin .sbox td:first-child { white-space: nowrap; line-height: 1.2; }
   .nt .twin .sbox td:first-child small { display: inline; margin-left: 5px; }
-  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 7px; font-size: 13px; }
+  /* every number column the same width, so the gap after MIN reads like the rest ("przerwa między
+     minutami wydaje się mniejsza") */
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; width: 38px; min-width: 38px; font-size: 13px; }
   .nt .twin .dlg-head { padding-bottom: 10px; margin-bottom: 10px; }
   .nt .twin .tw-split > section, .nt .twin .tw-split > * { min-width: 0; }
   .nt .twin .sbox td:first-child .pn { display: inline-block; max-width: 112px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }

@@ -78,10 +78,14 @@ const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '
 const lastName = (n: string) => n.split(' ').slice(-1)[0];
 const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(digits)}`;
 
-/** "Terry Porter" → "T. Porter"; a one-word name stays as it is. */
+/** "Terry Porter" → "T. Porter"; a one-word name stays as it is. A surname too long for a phone row
+ * turns it round (2026-10-29, the user: "Zrób Giannis A."): "Giannis Antetokounmpo" → "Giannis A.". */
+const LONG_SURNAME = 10;
 const shortName = (name: string) => {
   const i = name.indexOf(' ');
-  return i < 0 ? name : `${name[0]}. ${name.slice(i + 1)}`;
+  if (i < 0) return name;
+  const last = name.slice(i + 1);
+  return last.length > LONG_SURNAME ? `${name.slice(0, i)} ${last[0]}.` : `${name[0]}. ${last}`;
 };
 
 /** A first name that hides on a phone (`.fn`), then the last name. */
