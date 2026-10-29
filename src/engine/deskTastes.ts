@@ -21,7 +21,7 @@ export const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
   jert: ['Reggie Miller', 'Shawn Kemp', 'Luka Doncic', 'Rudy Gobert', 'Jayson Tatum', 'Gary Payton', 'Terry Porter', 'Mark Price', 'Bobby Jones', 'Dennis Johnson', 'Jack Sikma', 'Walt Frazier', 'Jerry West', 'John Havlicek', 'Bob McAdoo', 'Terry Cummings', 'Jeff Hornacek', 'Kyrie Irving', 'Kiki Vandeweghe', 'Nicolas Batum', 'George Hill', 'Elton Brand', 'Chris Paul', 'Antonio McDyess', 'Bill Russell', 'Alex English', 'Fat Lever', 'John Stockton', 'Detlef Schrempf', 'Brad Daugherty', 'Alex Caruso', 'DeMar DeRozan', 'Isiah Thomas', 'Baron Davis', 'Al Horford', 'Vince Carter'],
   rotation: ['John Stockton', 'Karl Malone', 'Jeff Hornacek', 'Mark Eaton', 'Andrei Kirilenko', 'Manu Ginobili', 'Robert Horry'],
   batt: ['Manu Ginobili', 'Kawhi Leonard', 'Scottie Pippen', 'Jimmy Butler', 'Paul George', 'Andre Iguodala', 'Shawn Marion', 'Gary Payton', 'Dennis Johnson', 'Sidney Moncrief', 'Michael Cooper', 'Kobe Bryant', 'Michael Jordan', 'Hakeem Olajuwon', 'Tim Duncan', 'Kevin Garnett', 'Giannis Antetokounmpo', 'Andrei Kirilenko', 'Jaylen Brown', 'OG Anunoby', 'Mikal Bridges', 'Marco Belinelli', 'Danilo Gallinari'],
-  prab: ['Derek Fisher', "Shaquille O'Neal", 'Pau Gasol', 'Lamar Odom', 'Rick Fox', 'Trevor Ariza', 'Robert Horry', 'Ron Artest', 'DeMar DeRozan', 'Devin Booker', 'Jayson Tatum', 'Paul George', 'Jimmy Butler', 'Kawhi Leonard', 'Dikembe Mutombo'],
+  prab: ['Derek Fisher', "Shaquille O'Neal", 'Pau Gasol', 'Lamar Odom', 'Rick Fox', 'Trevor Ariza', 'Robert Horry', 'Ron Artest', 'DeMar DeRozan', 'Devin Booker', 'Jayson Tatum', 'Paul George', 'Jimmy Butler', 'Kawhi Leonard', 'Dikembe Mutombo', 'Tony Parker'],
   bannerman: ['Larry Bird', 'Paul Pierce', 'Kevin Garnett', 'Bill Russell', 'John Havlicek', 'Kevin McHale', 'Robert Parish', 'Dennis Johnson', 'Jayson Tatum', 'Chris Paul', 'Joe Johnson'],
   natalie: ['James Harden', 'Hakeem Olajuwon', 'Yao Ming', 'Tracy McGrady', 'Chris Paul', 'Clint Capela', 'Manu Ginobili', 'Draymond Green', 'Fred VanVleet', 'Ben Wallace', 'Dennis Rodman'],
   jeremy: ['Michael Jordan', 'Scottie Pippen', 'Dennis Rodman', 'Reggie Miller', 'Patrick Ewing', 'Hakeem Olajuwon', 'Gary Payton', 'Shawn Kemp', 'Dikembe Mutombo', 'Grant Hill', 'Anfernee Hardaway', 'Alonzo Mourning', 'Clyde Drexler', 'Charles Barkley', 'Elton Brand', 'Michael Redd'],
@@ -37,7 +37,11 @@ export const NEMESES: Partial<Record<ExpertId, string[]>> = {
   binash: ['Michael Jordan'],
   jert: ['LeBron James', 'Derrick White', 'James Harden', 'Trae Young', 'Wilt Chamberlain', 'Moses Malone', 'Elgin Baylor', 'Tim Hardaway', 'Oscar Robertson', 'Dominique Wilkins', 'Jrue Holiday', 'Rik Smits', 'Russell Westbrook', 'LaMarcus Aldridge', 'Ja Morant', 'Andre Miller', 'Mark Jackson', 'Dirk Nowitzki', 'Stephen Curry', 'Manu Ginobili', 'Carmelo Anthony', 'Zach Randolph', 'Nikola Jokic'],
   batt: ['Trae Young', "D'Angelo Russell", 'Jamal Crawford', 'Lou Williams', 'Jordan Poole', 'Carmelo Anthony', 'Steve Nash', 'Enes Freedom', 'Isaiah Thomas', 'Andrea Bargnani'],
-  prab: ['Smush Parker', 'Kwame Brown', 'Paul Pierce', 'Kevin Garnett', 'Ray Allen', 'Dwight Howard', 'LeBron James', 'Rudy Gobert'],
+  prab: ['Smush Parker', 'Kwame Brown', 'Paul Pierce', 'Kevin Garnett', 'Ray Allen', 'Dwight Howard', 'LeBron James',
+    // 2026-10-29, the user: "Prabuckov jest hejterem każdego Francuza oprócz Tony Parkera"
+    'Rudy Gobert', 'Boris Diaw', 'Nicolas Batum', 'Joakim Noah', 'Evan Fournier', 'Victor Wembanyama', 'Frank Ntilikina', 'Ian Mahinmi',
+    'Ronny Turiaf', 'Mickael Pietrus', 'Johan Petro', 'Kevin Seraphin', 'Alexis Ajinca', 'Timothe Luwawu-Cabarrot', 'Guerschon Yabusele',
+    'Bilal Coulibaly', 'Zaccharie Risacher', 'Alex Sarr', 'Killian Hayes', 'Sekou Doumbouya', 'Elie Okobo', 'Tariq Abdul-Wahad', 'Moussa Diabate', 'Theo Maledon'],
   natalie: ['Gilbert Arenas', 'Rashard Lewis', 'Joe Johnson', 'Chandler Parsons', 'Timofey Mozgov', 'Joakim Noah', 'Andrew Wiggins'],
   jeremy: ['LeBron James', 'Kobe Bryant', 'Isiah Thomas', 'Bill Laimbeer', 'Rick Mahorn'],
   lex: ['Derrick White', 'Alex Caruso', 'Robert Horry', 'Fred VanVleet', 'Dirk Nowitzki'],
@@ -102,6 +106,11 @@ const SPECIAL: Partial<Record<ExpertId, Record<string, string>>> = {
     // 2026-10-29, the user: Gobert "francuska szmata", Mutombo "baza"
     'Rudy Gobert': 'Gobert? A French dish towel, my friend. Soft, wet, and he folds in the playoffs. Every year.',
     'Dikembe Mutombo': 'Mutombo. Baza. Finger wag, four DPOYs, no fear. Kobe respected him and so do I.',
+    'Tony Parker': 'Tony Parker. The only Frenchman I trust. Four rings, a floater from heaven. Respect, my friend.',
+    'Victor Wembanyama': 'Wembanyama? Eight feet of French cheese. Call me when he wins something.',
+    'Boris Diaw': 'Diaw. French. Passes when he should shoot, shoots when he should pass. Classic.',
+    'Nicolas Batum': 'Batum. French. Nice guy, I’m sure. Kobe would have eaten him for breakfast.',
+    'Joakim Noah': 'Noah. French passport, French jump shot. Next.',
   },
   batt: {
     'Andrea Bargnani': 'Bargnani. *covers his face* We don’t talk about Bargnani.',
