@@ -398,6 +398,12 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .rl-bench.many .rl-main b { font-size: 14px; }
 .nt .rl-bench.many .rl-main span { font-size: 10px; }
 .nt .rl-none { font-style: italic; color: var(--ink3); font-size: 13px; }
+/* Desktop: two columns of narrower rows instead of one row the width of the page. */
+@media (min-width: 901px) {
+  .nt .rlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); grid-auto-flow: column; column-gap: 18px; border-top: 0; }
+  .nt .rl-row { border-top: 1px solid var(--rule); border-bottom: 0; }
+  .nt .rlist { border-bottom: 1px solid var(--rule); }
+}
 @media (max-width: 600px) {
   .nt .rl-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 8px 6px 8px 6px; }
   .nt .rl-sub { gap: 7px; }
@@ -423,3 +429,4 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .xhead span { font: 400 13px var(--sans); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nt .xfeed .xpost p { margin: 2px 0 0; padding: 0; border: 0; font: 400 15px/1.42 var(--sans); color: var(--ink); }
 .nt .xact { display: flex; gap: 28px; margin-top: 8px; font: 400 12px var(--sans); color: var(--ink3); }
+.nt .xact .liked { color: #F91880; }

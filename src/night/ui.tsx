@@ -392,7 +392,8 @@ export function NightVoices({ voices, cast, fold }: { voices: { who: string; kin
               <div className="xact" aria-hidden="true">
                 <span>💬 {countLabel(Math.round(likes * (0.05 + 0.1 * seeded(v.text, 3))))}</span>
                 <span>⟲ {countLabel(Math.round(likes * (0.08 + 0.2 * seeded(v.text, 4))))}</span>
-                <span>♡ {countLabel(likes)}</span>
+                {/* A post praising the roster is one you liked (the user, 2026-10-29). */}
+                <span className={v.kind === 'praise' ? 'liked' : undefined}>{v.kind === 'praise' ? '♥' : '♡'} {countLabel(likes + (v.kind === 'praise' ? 1 : 0))}</span>
               </div>
             </div>
           </article>
