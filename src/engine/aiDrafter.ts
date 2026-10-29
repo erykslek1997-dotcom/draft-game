@@ -333,7 +333,7 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  *    the current pick is taken now — the same hard net the named legends have, by talent.
  * Mutable only so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true };
+export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true, needCap: 0 };
 /** `lookahead`: the team-score judgement (see `TEAM_SCORE_SHORTLIST`) from a team's second pick,
  * and the board's best talents join its shortlist, so a star is weighed by what he adds. */
 const EARLY_LOOKAHEAD_ROSTER_SIZE = 1;
@@ -2260,7 +2260,7 @@ export function pickForAi(
     // NEED_RAMP_ROSTER_SIZE picks in, `need` applies at its full computed value.
     // A team's first picks chase talent (`AI_STAR_RULES.starPhase`): need's pull is capped.
     if (AI_STAR_RULES.starPhase && roster.length < STAR_PHASE_PICKS && need > 1) need = 1 + Math.min(need - 1, STAR_PHASE_NEED_CAP);
-    const rampedNeed = 1 + (need - 1) * needRampProgress;
+    const rampedNeed = Math.min(AI_STAR_RULES.needCap || Infinity, 1 + (need - 1) * needRampProgress);
 
     // 2026-08-05, experiment per explicit user request: durability REMOVED from the AI's draft
     // VALUE (previously `talent * durabilityScale(...) * rampedNeed`, 2026-08-01). Reason: it

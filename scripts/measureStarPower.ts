@@ -20,6 +20,7 @@ import { AI_STAR_RULES } from '../src/engine/aiDrafter';
 AI_STAR_RULES.starPhase = process.env.STAR !== '0';
 AI_STAR_RULES.fallNet = process.env.NET !== '0';
 AI_STAR_RULES.lookahead = process.env.LOOK !== '0';
+AI_STAR_RULES.needCap = Number(process.env.CAP ?? 0);
 const DRAFTS = Number(process.argv[2] ?? 12);
 const key = (n: string) => normalizePlayerName(n);
 const mean = (v: number[]) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0);
@@ -61,7 +62,7 @@ for (let d = 0; d < DRAFTS; d++) {
   best.push(Math.max(...ov));
 }
 const f = (v: number[]) => mean(v).toFixed(1);
-console.log(`star phase ${AI_STAR_RULES.starPhase ? 'on' : 'off'} · fall net ${AI_STAR_RULES.fallNet ? 'on' : 'off'} · lookahead ${AI_STAR_RULES.lookahead ? 'on' : 'off'} · ${DRAFTS} drafts · ${((Date.now() - t0) / DRAFTS / 1000).toFixed(1)} s each`);
+console.log(`star phase ${AI_STAR_RULES.starPhase ? 'on' : 'off'} · fall net ${AI_STAR_RULES.fallNet ? 'on' : 'off'} · lookahead ${AI_STAR_RULES.lookahead ? 'on' : 'off'} · need cap ${AI_STAR_RULES.needCap || 'none'} · ${DRAFTS} drafts · ${((Date.now() - t0) / DRAFTS / 1000).toFixed(1)} s each`);
 console.log(`TAL by round: R1 ${f(roundTal[0])} · R2 ${f(roundTal[1])} · R3 ${f(roundTal[2])} · R4 ${f(roundTal[3])}`);
 console.log(`passes (8+ TAL better on the board, R1-4): ${f(passes)} a draft`);
 console.log(`best TAL left after R2 ${f(left[0])} · R3 ${f(left[1])} · R4 ${f(left[2])}`);
