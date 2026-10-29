@@ -2046,7 +2046,7 @@ function lowUsageLift(span: PlayerSpan, tal: number): number {
  * the credit takes nobody past 69. Careers before 1974-75 are not read (no team seasons): 0.
  */
 const ROLE_RESUME = { perStrong: 1.1, perPlayoff: 0.5, base: 2, max: 6, talCap: 69 };
-const ROLE_RESUME_DATA = roleResumeData as Record<string, [number, number]>;
+const ROLE_RESUME_DATA = roleResumeData as unknown as Record<string, [number, number]>;
 function roleResumeAdjustment(span: PlayerSpan, tal: number): number {
   if (tal > ROLE_RESUME.talCap) return 0;
   const r = ROLE_RESUME_DATA[normalizePlayerName(span.playerName).replace(/[^a-z0-9]+/g, ' ').trim()];

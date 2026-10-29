@@ -1,5 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, realSecondaryPositions } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
+import { ballShare } from './ballHandling';
+import { getHeightInches } from '../data/heightLookup';
 import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositionFit, isUpwardSlide, hardLockedPosition } from './positions';
 // 2026-08-19: `computeTalent` import replaced with `effectiveTalent` (grades.ts) throughout —
 // every real starter/backup assignment decision here now uses the same tier-capped number
@@ -358,7 +360,7 @@ export function bestPrimaryAssignment(
   search(0, 0, 0);
   const swapped = bestScore === -Infinity ? null : spacingAwareStarterSwaps(best, roster, valueFor);
   const searched = swapped ?? { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
-  const result = forceStarsIntoLineup(searched, roster, valueFor);
+  const result = comboGuardAtTwo(forceStarsIntoLineup(searched, roster, valueFor), valueFor);
   if (bestPrimaryAssignmentCache.size >= BEST_PRIMARY_ASSIGNMENT_CACHE_CAP) bestPrimaryAssignmentCache.clear();
   bestPrimaryAssignmentCache.set(cacheKey, result);
   return result;
@@ -409,6 +411,33 @@ function spacingAwareStarterSwaps(
   if (!changed) return null;
   const score = STARTER_SLOTS.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
   return { assignment: lineup, score };
+}
+
+/**
+ * 2026-10-29, the user (Harden at the point beside Jason Kidd; "the same goes for SGA — both play
+ * PG or SG beside a point guard who does not need the ball", "add a height condition"): a guard
+ * who has the ball (Harden, SGA, Luka, Booker) starts at the two when the other starting guard is a
+ * point guard who needs it less. Both must play the swapped spot (`COMBO_GUARD_SWAP` scores), the
+ * star must have a two's height (6'4") and be no shorter than the point guard, and the point guard
+ * holds the ball at most `maxPointShare` of his floor time and `minGap` less than the star
+ * (`ballShare`, ballHandling.ts). A label and matchup change: the five's value barely moves.
+ */
+const COMBO_GUARD_SWAP = { starAtSg: 0.9, pointAtPg: 0.95, minStarInches: 76, maxPointShare: 0.2, minGap: 0.05 };
+function comboGuardAtTwo(
+  searched: { assignment: Partial<Record<Position, PlayerSpan>>; score: number },
+  valueFor: (player: PlayerSpan, slot: Position) => number,
+): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
+  const star = searched.assignment.PG;
+  const point = searched.assignment.SG;
+  if (!star || !point) return searched;
+  if (positionCompetenceScore(star, 'SG') < COMBO_GUARD_SWAP.starAtSg || positionCompetenceScore(point, 'PG') < COMBO_GUARD_SWAP.pointAtPg) return searched;
+  const starHeight = getHeightInches(star.playerName);
+  const pointHeight = getHeightInches(point.playerName);
+  if (starHeight === undefined || starHeight < COMBO_GUARD_SWAP.minStarInches || (pointHeight !== undefined && pointHeight > starHeight)) return searched;
+  if (ballShare(point) > COMBO_GUARD_SWAP.maxPointShare || ballShare(star) - ballShare(point) < COMBO_GUARD_SWAP.minGap) return searched;
+  const assignment = { ...searched.assignment, PG: point, SG: star };
+  const score = STARTER_SLOTS.reduce((sum, slot) => sum + (assignment[slot] ? valueFor(assignment[slot]!, slot) : 0), 0);
+  return { assignment, score };
 }
 
 /**
