@@ -386,7 +386,29 @@ export function rimPressureForFit(span: PlayerSpan): number {
       : perimeterRimProxy(span);
   }
   const isBig = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
-  return isBig ? bigPositionalFloor(base) : base;
+  const withDrives = prof.hasZoneData ? Math.max(base, DRIVE_FLOOR_SHARE * driveScore(span, prof.rimShare)) : base;
+  return isBig ? bigPositionalFloor(withDrives) : withDrives;
+}
+
+/**
+ * 2026-10-29 (the user, playtest 7: Billups 0 "mimo tego że wymuszał sporo osobistych", Parker 0
+ * "nie ma sensu"; "0 to też jakby totalnie pod kosz nie wjeżdżał"): a player whose rim attempts are a
+ * small share of a big diet read 0 above — the share gate shut out his free throws too. The floor
+ * reads what he gets to the rim and the line each game, pace-adjusted: rim attempts (zone share ×
+ * FGA) plus 0.44 × free throws, as a percentile of the 1996-97+ pool (`DRIVE_RUNGS`, baked
+ * 2026-10-29) above the 35th, and a player keeps `DRIVE_FLOOR_SHARE` of it at least.
+ */
+const DRIVE_RUNGS = [0.174, 1.719, 2.369, 2.987, 3.598, 4.249, 5.011, 5.909, 6.797, 7.861, 8.888, 10.435, 13.172];
+// 0.3, measured 2026-10-29 (`scripts/auditTeams.ts`, `scripts/measureScoreVsSim.ts`,
+// `scripts/measureRimTeam.ts`, k = 0 / 0.3 / 0.5 / 0.7): Overall vs real SRS r 0.772 → 0.772 (0.771,
+// 0.769), Overall → mechanics R² 0.55 unchanged, team rim vs real ORtg 0.303 → 0.290 (0.229, 0.163).
+// Billups 2004-06 0 → 14, Nash 2004-06 2 → 11; Klay and Korver stay 0. The user's playtest five
+// (Billups, Klay, Kawhi, Holmgren, Shaq) 71.2 → 77.5.
+const DRIVE_FLOOR_SHARE = 0.3;
+function driveScore(span: PlayerSpan, rimShare: number): number {
+  const fta = (boxRatesForSpan(span)?.ftRate ?? 0) * span.fga;
+  const perGame = (rimShare * span.fga + 0.44 * fta) * paceFactor(span);
+  return clamp((pctileOf(DRIVE_RUNGS, perGame) - 35) / 65, 0, 1) * 100;
 }
 
 /**
@@ -430,9 +452,25 @@ const RIM_TEAM_BASE_ANCHOR = 55; // starters-mean rimPressureForFit that reads a
 const RIM_TEAM_FT_BONUS_MAX = 16;
 const RIM_TEAM_OREB_BONUS_MAX = 12;
 
+/**
+ * 2026-10-29 (the user: "Shaq case w rimP… jak Curry w spacingu, powinien znacznie zawyżać. Podobnie
+ * Giannis"): one dominant rim force bends a defense more than the five's mean says. On 600 real
+ * team-seasons (`scripts/measureRimTeam.ts`) teams whose best rim player reads 95+ scored 1.04 per 100
+ * more than the team rim number predicted, 80-94 1.18 more. The team base moves `share` of the way
+ * from the mean to the best player, ramping in from 70 to 95. Measured at share 0 / 0.2 / 0.4 / 0.6:
+ * those misses 1.04 / 0.15 / 0.13 / 0.20 and 1.18 / 0.58 / 0.22 / 0.11; team rim vs ORtg r 0.290 →
+ * 0.316 at 0.4; Overall vs SRS 0.772 → 0.772, Offense vs SRS 0.513 → 0.515, Overall → mechanics R²
+ * 0.55 → 0.56.
+ */
+const DOMINANT_RIM = { from: 70, full: 95, share: 0.4 };
+
 export function rimPressureTeam(starters: PlayerSpan[]): number {
   if (starters.length === 0) return 0;
-  const base = starters.reduce((sum, p) => sum + rimPressureForFit(p), 0) / starters.length;
+  const each = starters.map(rimPressureForFit);
+  const mean = each.reduce((sum, v) => sum + v, 0) / each.length;
+  const best = Math.max(...each);
+  const ramp = clamp((best - DOMINANT_RIM.from) / (DOMINANT_RIM.full - DOMINANT_RIM.from), 0, 1);
+  const base = mean + DOMINANT_RIM.share * ramp * (best - mean);
   const baseComponent = clamp((base / RIM_TEAM_BASE_ANCHOR) * 100, 0, 100);
 
   const frontcourt = starters.filter((p) => p.primaryPosition === 'C' || p.primaryPosition === 'PF');

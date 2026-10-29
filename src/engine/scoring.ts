@@ -254,9 +254,14 @@ const STARTER_FLOOR_PENALTY_PER_POINT = 0.6;
  * field. Talent 91 -> 90, 88 -> 82, 85 -> 73, 83 -> 68.
  */
 const TALENT_RAW_MEAN = 85.3;
-const TALENT_RAW_SD = 3.3;
+// 2026-10-29 (the user, playtest 6: Talent 73 beside peak Shaq and Kawhi; "80 no już lepiej niż
+// 73"): the full Defense spread (2.8 display points per Talent point) made an average five with two
+// all-time peaks read like a weak one. The display keeps the field's average at 80 and gives 1.6
+// points per Talent point: 91 -> 89, 88 -> 84, 85 -> 80, 83 -> 76, 80 -> 72.
+const TALENT_DISPLAY_AT_MEAN = 80;
+const TALENT_DISPLAY_PER_POINT = 1.6;
 export function talentOnDefenseScale(talent: number): number {
-  return Math.max(0, Math.min(100, DEFENSE_MEAN + (talent - TALENT_RAW_MEAN) * (DEFENSE_SD / TALENT_RAW_SD)));
+  return Math.max(0, Math.min(100, TALENT_DISPLAY_AT_MEAN + (talent - TALENT_RAW_MEAN) * TALENT_DISPLAY_PER_POINT));
 }
 
 export function talentScore(team: Team): number {
