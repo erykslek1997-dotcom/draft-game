@@ -1,8 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
-import { normalizePlayerName } from '../data/schema';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { computeSpacing } from './spacing';
-import preZoneModel from '../data/preZoneMidrange.json';
+import { preZoneShootingSkill } from './preZoneShooting';
 
 /**
  * 2026-09-25, user-confirmed ("KG vs Ryan Anderson do sprawdzenia" -> option A): `computeSpacing`
@@ -47,54 +46,9 @@ export function midrangeGravitySpacing(span: PlayerSpan): number {
   return MAX_MIDRANGE_SPACING * volume * accuracy;
 }
 
-/**
- * 2026-09-30, engine calibration session 3 (the user: "ręczna kalibracja"): zone data starts in
- * 1996-97, so every earlier jump shooter read as a non-shooter to the team's floor geometry — Bob
- * McAdoo (a 15-to-20-foot scorer) was a "block-camping center", Jerry West and Oscar Robertson
- * (no three-point line in their era) read like Shaq. A hand-set midrange-gravity value for spans
- * without zone data, on the same 0-80 scale the data produces (Garnett 2002-04 ~80, Webber ~64,
- * Karl Malone 1996-98 ~66, Duncan ~20). Reputation-based by design — adjust freely; only the
- * team-spacing read uses it, never TAL.
- */
-const PRE_ZONE_MIDRANGE_SPACING: ReadonlyMap<string, number> = new Map(
-  (
-    [
-      ['Jerry West', 75], ['Michael Jordan', 75], ['Bill Sharman', 70], ['George Gervin', 70],
-      ['Kiki Vandeweghe', 70], ['Bob McAdoo', 72], ['Rick Barry', 65], ['Alex English', 65],
-      ['Pete Maravich', 65], ['Karl Malone', 60], ['Oscar Robertson', 60], ['Jack Twyman', 60],
-      ['Dolph Schayes', 60], ['Lou Hudson', 60], ['Walter Davis', 60], ['Bernard King', 55],
-      ['Patrick Ewing', 55], ['Paul Arizin', 55], ['John Havlicek', 55], ['Rolando Blackman', 55],
-      ['Mark Aguirre', 55], ['Kelly Tripucka', 55], ['World B. Free', 55], ['Paul Westphal', 55],
-      ['Cliff Hagan', 50], ['Richie Guerin', 50], ['Dominique Wilkins', 50], ['Tom Chambers', 50],
-      ['Bob Lanier', 50], ['Dan Issel', 50], ['Rudy Tomjanovich', 50], ['Adrian Dantley', 45],
-      ['Hakeem Olajuwon', 45], ['David Robinson', 45], ['Bob Pettit', 45], ['Earl Monroe', 45],
-      ['Spencer Haywood', 45], ['Marques Johnson', 45], ['Doug Collins', 45], ['David Thompson', 45],
-      ['Reggie Theus', 45], ['Detlef Schrempf', 45], ['Elgin Baylor', 45], ['George Yardley', 45],
-      ['Billy Knight', 45], ['Isiah Thomas', 40], ['Tiny Archibald', 40], ['Sidney Moncrief', 40],
-      ['Clyde Drexler', 40], ['Randy Smith', 40], ['Kenny Sears', 40], ['Larry Johnson', 40],
-      ['Kareem Abdul-Jabbar', 25], ['Kevin Johnson', 35], ['Brad Daugherty', 35], ['Julius Erving', 35],
-      ['James Worthy', 35], ['Grant Hill', 35], ['Larry Nance', 30], ['Neil Johnston', 30],
-      ['Ed Macauley', 30], ['Ron Harper', 30], ['Kevin McHale', 25], ['Jeff Ruland', 25],
-      ['Charles Barkley', 20], ['Walt Bellamy', 20],
-    ] as const
-  ).map(([name, value]) => [normalizePlayerName(name), value]),
-);
-
-/**
- * 2026-10-29 (the user: the hand list "będzie długo z bólem robiona sesja, chyba że masz jakiś
- * pomysł"): every other pre-zone span reads the model `scripts/fitPreZoneMidrange.ts` fits on the
- * zone data — box numbers every era has (free throws, two-point volume and accuracy, free-throw rate,
- * offensive rebounding, height, position, AST%), nearest neighbours among 2005-on spans, quantile-
- * mapped to the zone data's spread. On 1997-2004 spans it never saw: R² 0.44, r 0.68; against the
- * hand list r 0.69. It reads perimeter jump shooters well (Gervin, English, Havlicek, Bird) and
- * undersells midrange bigs (Malone 1996-98 14 against 66 from zones), hence the hand list first.
- */
-const PRE_ZONE_MODEL = preZoneModel as Record<string, number>;
-export const PRE_ZONE_RULES = { model: true };
-
 function preZoneMidrangeSpacing(span: PlayerSpan): number {
   if (runtimeZoneTotalsForSpan(span)) return 0;
-  return PRE_ZONE_MIDRANGE_SPACING.get(normalizePlayerName(span.playerName)) ?? (PRE_ZONE_RULES.model ? (PRE_ZONE_MODEL[span.id] ?? 0) : 0);
+  return preZoneShootingSkill(span) ?? 0;
 }
 
 /** A player's spacing as the TEAM's floor geometry sees it: three-point spacing, or partial
