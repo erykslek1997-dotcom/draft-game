@@ -145,7 +145,9 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                       <span className="rl-face rc-bf">
                         <NFace name={b.span.playerName} span={b.span} />
                       </span>
-                      {maskName(b.span.playerName)} <em>{shortYears(maskYears(b.span.playerName, b.span.spanLabel))}</em> {Math.round(b.minutes)}m
+                      <span className="rc-bt">
+                        <span className="rc-bn">{maskName(b.span.playerName)}</span> <em>{shortYears(maskYears(b.span.playerName, b.span.spanLabel))}</em> {Math.round(b.minutes)}m
+                      </span>
                     </span>
                   ))}
                 </span>

@@ -447,7 +447,9 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt .rc-row .rl-face img, .nt .rc-row .rl-face .ini { width: 40px; height: 40px; font-size: 13px; }
   .nt .rc-main { max-width: 100%; }
   .nt .rc-bench { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--rule); width: 100%; }
-  .nt .rc-sub { gap: 6px; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nt .rc-sub { gap: 6px; min-width: 0; text-align: left; }
+  .nt .rc-bt { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 4px; min-width: 0; line-height: 1.25; }
+  .nt .rc-bn { flex-basis: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink2); }
   .nt .rc-bf { display: inline-block; flex: none; }
   .nt .rc-bf img, .nt .rc-bf .ini { width: 22px !important; height: 22px !important; font-size: 9px !important; }
   .nt .rc-main { white-space: normal; }
