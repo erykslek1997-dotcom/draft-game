@@ -422,7 +422,7 @@ function spacingAwareStarterSwaps(
  * holds the ball at most `maxPointShare` of his floor time and `minGap` less than the star
  * (`ballShare`, ballHandling.ts). A label and matchup change: the five's value barely moves.
  */
-const COMBO_GUARD_SWAP = { starAtSg: 0.9, pointAtPg: 0.95, minStarInches: 76, maxPointShare: 0.2, minGap: 0.05 };
+const COMBO_GUARD_SWAP = { starAtSg: 0.9, pointAtPg: 0.47, minStarInches: 76, maxPointShare: 0.2, minGap: 0.05 };
 function comboGuardAtTwo(
   searched: { assignment: Partial<Record<Position, PlayerSpan>>; score: number },
   valueFor: (player: PlayerSpan, slot: Position) => number,
