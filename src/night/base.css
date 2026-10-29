@@ -419,7 +419,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt .rl-sub { gap: 7px; }
   .nt .rl-face img, .nt .rl-face .ini { width: 34px; height: 34px; }
   .nt .rl-main b { font-size: 15px; }
-  .nt .rl-main span { font-size: 10px; }
+  .nt .rl-main span, .nt .rc-meta { font-size: 11px; }
   .nt .rl-bench { padding-left: 8px; }
   .nt .rl-bench.many .rl-face img, .nt .rl-bench.many .rl-face .ini { width: 24px; height: 24px; }
   .nt .rl-bench.many .rl-main b { font-size: 13px; }
@@ -432,11 +432,12 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .rc-row .rl-face img, .nt .rc-row .rl-face .ini { width: 26px; height: 26px; font-size: 10px; }
 .nt .rc-main { font: 500 13px var(--sans); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nt .rc-main b { font: 600 15px var(--cond); color: var(--ink); }
-.nt .rc-main em { font: 500 11px var(--num); font-style: normal; color: var(--ink3); }
+/* Years and minutes read as one: the same face, size and colour everywhere (the user: "14-16" small,
+   "34m" big). */
+.nt .rc-meta { font: 500 12px var(--num); color: var(--ink3); white-space: nowrap; }
 .nt .rc-bench { grid-column: 3; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 2px 12px; min-width: 0; font: 400 12px var(--sans); color: var(--ink3); }
 .nt .rc-bench:empty { display: none; }
 .nt .rc-bench > span { white-space: nowrap; }
-.nt .rc-bench em { font: 500 10px var(--num); font-style: normal; color: var(--ink4); }
 .nt .rc-sub { display: inline-flex; align-items: center; gap: 4px; }
 .nt .rc-bf { display: none; }
 /* Desktop: the rival's five as small columns side by side, like your roster at a smaller size. */
