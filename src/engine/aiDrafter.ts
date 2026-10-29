@@ -34,6 +34,7 @@ import { madeAllNbaInSpan } from './allNbaLookup';
 import { hashSeed, mixSeed } from './rng';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
+import { ballHandlerCost } from './ballHandling';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -321,6 +322,47 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
   return GREATEST_PEAK_TIER_BONUS[entry.tier];
 }
 
+/**
+ * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
+ * Chris Paul to 42, Malone to 55, Barkley to 112, and a five built from what fell: "w pewnym
+ * momencie powinien wchodzić zdrowy rozsądek"; a slightly weaker AI is fine if it stops absurd
+ * fives). Measured on scripts/measureStarPower.ts (TODO.md, "AI draftu: bezpiecznik"):
+ *  - `fallNet`: a player whose TAL ranks him `fallSlack` picks (a round) above the current pick is
+ *    weighed against the normal pick by the team score and taken if his team is within
+ *    `fallFitMargin` of it. Taken outright at first (6 all-AI drafts: picks with a player 8+ TAL
+ *    better on the board 27 → 11 a draft, the worst fall 73 → 21, AI Overall 80.8 → 79.3, the loss
+ *    all in fit −5 and spacing −4 — stars who don't fit), hence the check.
+ *  - `playmakingByBallShare`: the second-playmaker discount follows the ball-share cost the team
+ *    score charges (ballHandling.ts), not "7+ assists": Overall unchanged, the worst fall 73 → 33.
+ * Tried and dropped (no effect): talent-only first picks, the team-score lookahead from the second
+ * pick, a cap on the need multiplier, a talent exemption from the playmaker discount.
+ * Mutable so the measurement can switch each off.
+ */
+export const AI_STAR_RULES = { fallNet: true, fallSlack: 16, fallFitMargin: 0.5, playmakingByBallShare: true };
+/** How many of the fallen (best TAL first) the net weighs by the team score. */
+const FALL_NET_CHECKED = 4;
+const FALL_NET_FROM_PICK = 20;
+/** Every player's best TAL across his windows, highest first: where TAL says he goes. */
+let bestTalentsDesc: number[] | null = null;
+function talentRankPick(talent: number): number {
+  if (!bestTalentsDesc) {
+    const best = new Map<string, number>();
+    for (const p of draftPool) {
+      const k = normalizePlayerName(p.playerName);
+      best.set(k, Math.max(best.get(k) ?? 0, effectiveTalent(p)));
+    }
+    bestTalentsDesc = [...best.values()].sort((a, b) => b - a);
+  }
+  let lo = 0;
+  let hi = bestTalentsDesc.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (bestTalentsDesc[mid] > talent) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo + 1;
+}
+
 /** See the "steal" safety-net's own comment on its one use site (`pickForAi`) for the full case.
  * Measured against Kevin Garnett 2002-04's own real observed range (picks 9-15 across 15 fresh
  * drafts, `scripts` — temp, not kept) — comfortably past the worst legitimate lottery outcome
@@ -488,6 +530,8 @@ interface NeedContext {
    * different skill the existing taxonomy has no entry for at all. Distinct mechanism, gated
    * separately below. */
   hasElitePlaymaking: boolean;
+  /** The current five, for the ball-share cost a candidate would add (`playmakingByBallShare`). */
+  starterPlayers: PlayerSpan[];
   /** 2026-08-07, offensiveProfile.ts synergy signals (shot-diet + playmaking gravity from the
    * user's zone-efficiency/playmaking CSV batch — explicitly NOT wired into computeTalent).
    * True if a starter is rim-dominant (Shaq/Giannis/LeBron per the user's a/c examples) — the
@@ -551,6 +595,9 @@ const ELITE_PLAYMAKING_APG_THRESHOLD = 7;
  * finer gradient the way FGA-shortfall maluses elsewhere do; this is a binary "do we already
  * have this skill covered" question, not a "how much excess" one. */
 const ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT = 0.6;
+/** The ball-share cost (ORtg a 100 trips) of two classic point guards together (Nash beside Chris
+ * Paul, 2.3): the full discount. */
+const SECOND_HANDLER_FULL_COST = 2.3;
 
 /** Real minutes at a slot below which its top rotation entry is a nominal cover, not a starter (a third of the game). */
 const MIN_STARTER_MINUTES_AT_SLOT = 16;
@@ -685,6 +732,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
         ? 50
         : starterPlayers.reduce((sum, p) => sum + computeDefensivePortability(p), 0) / starterPlayers.length,
     hasElitePlaymaking: starterPlayers.some((p) => p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD),
+    starterPlayers,
     hasRimGravityStarter: starterPlayers.some(isRimGravityScorer),
     hasSelfSufficientEngineStarter: starterPlayers.some(isSelfSufficientEngine),
     lacksBenchShotCreator: !roster.some((p) => !starterPlayers.includes(p) && isSelfCreatorArchetype(p)),
@@ -1924,6 +1972,14 @@ export function pickForAi(
     }
   }
 
+  // The common-sense net (see `AI_STAR_RULES`): players TAL puts a round ahead of this pick, never a
+  // third at one position. Weighed against the normal pick at the end, by the team score.
+  const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
+  const fallen =
+    AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK
+      ? planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber && atPosition(p.primaryPosition) < 2)
+      : [];
+
   // 2026-08-07, user's own diagnosis: force the starting five to actually complete EARLY, while
   // the pool is still deep at every position (100+ per position), not late. Two hard-filter
   // attempts scoped to the ENDGAME (last 1-3 picks, pool already thinned by 13+ other teams'
@@ -2194,7 +2250,16 @@ export function pickForAi(
     if (talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       need -= samePositionRedundancyDiscount(roster, p);
     }
-    if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
+    if (AI_STAR_RULES.playmakingByBallShare) {
+      // 2026-10-29, the user ("a nie lepiej użyć AST%? ... LeBron, Bird czy Jokić w składzie nie
+      // znaczy że drugi rozgrywający nie jest potrzebny"): the second-playmaker discount follows the
+      // ball-share cost the team score itself charges (ballHandling.ts, from real AST% and USG%) —
+      // full at the cost of a Nash beside a Chris Paul, next to nothing beside Bird or Draymond.
+      if (talent < ELITE_TALENT_REDUNDANCY_EXEMPTION && needs.starterPlayers.length > 0) {
+        const added = ballHandlerCost([...needs.starterPlayers, p]) - ballHandlerCost(needs.starterPlayers);
+        need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT * Math.min(1, Math.max(0, added) / SECOND_HANDLER_FULL_COST);
+      }
+    } else if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT;
     }
     if (needs.hasSelfSufficientEngineStarter && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
@@ -2443,5 +2508,18 @@ export function pickForAi(
   if (aiDraftDebug) {
     logDraftDebug(roster, pickNumber, top, weights, rolledFrom, totalWeight, chosenIndex);
   }
-  return top[chosenIndex].player;
+  const normal = top[chosenIndex].player;
+  if (fallen.length === 0 || fallen.some((p) => p.id === normal.id)) return normal;
+  // A fallen star comes in only if he fits (2026-10-29, the user: "ma brać gwiazdy które pasują,
+  // nic na siłę"): his team, completed with the best affordable players left, scores within
+  // `fallFitMargin` of the normal pick's; of several, the one whose team scores best.
+  if (!teamScorer) return normal;
+  const byTalent = available.filter((p) => isDraftableDurability(p)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  const teamWith = (p: PlayerSpan) => teamScorer!(completeRosterGreedy([...roster, p], byTalent, capLimit - spent - p.fga, rosterSize - roster.length - 1));
+  const best = [...fallen]
+    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
+    .slice(0, FALL_NET_CHECKED)
+    .map((p) => ({ p, score: teamWith(p) }))
+    .sort((a, b) => b.score - a.score)[0];
+  return best.score >= teamWith(normal) - AI_STAR_RULES.fallFitMargin ? best.p : normal;
 }

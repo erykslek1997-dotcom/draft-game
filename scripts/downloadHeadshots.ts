@@ -7,6 +7,9 @@
  *
  * Run: npm run download:headshots
  * Optional: npm run download:headshots -- --dry-run --limit 10 --concurrency 4
+ * Browser: npm run download:headshots -- --browser-script   writes scripts/fetch_headshots_browser.js
+ *   with every resolved player still without a file, for a session that can't reach the NBA CDN
+ *   (2026-10-29): it runs in the browser's console and saves one JSON for scripts/importHeadshots.ts.
  */
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -67,6 +70,7 @@ interface MissingHeadshot {
 interface CliOptions {
   concurrency: number;
   dryRun: boolean;
+  browserScript?: boolean;
   limit?: number;
 }
 
@@ -240,6 +244,7 @@ function parseOptions(args: string[]): CliOptions {
   for (let index = 0; index < args.length; index++) {
     const arg = args[index];
     if (arg === '--dry-run') options.dryRun = true;
+    else if (arg === '--browser-script') options.browserScript = true;
     else if (arg === '--limit') options.limit = Number.parseInt(args[++index] ?? '', 10);
     else if (arg === '--concurrency') options.concurrency = Number.parseInt(args[++index] ?? '', 10);
     else throw new Error(`Unknown argument: ${arg}`);
@@ -273,6 +278,15 @@ async function main(): Promise<void> {
   const { targets: allTargets, unresolved } = resolveTargets(players, parseBioDatabase(bioCsv));
   const targets = options.limit === undefined ? allTargets : allTargets.slice(0, options.limit);
   const manifest = Object.fromEntries(allTargets.map((target) => [target.playerName, target.nbaId]));
+
+  if (options.browserScript) {
+    const todo: [string, string][] = [];
+    for (const t of allTargets) if (!(await fileExists(path.join(OUTPUT_DIR, `${t.nbaId}.png`)))) todo.push([t.playerName, t.nbaId]);
+    const template = await readFile(path.resolve('scripts/fetch_headshots_browser.template.js'), 'utf8');
+    await writeFile(path.resolve('scripts/fetch_headshots_browser.js'), template.replace('__PLAYERS__', JSON.stringify(todo)), 'utf8');
+    console.log(`Browser script: ${todo.length} players without a file → scripts/fetch_headshots_browser.js`);
+    return;
+  }
 
   if (options.dryRun) {
     console.log(`Dry run: ${players.length} players, ${allTargets.length} NBA IDs, ${unresolved.length} unresolved.`);
