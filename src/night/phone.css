@@ -494,11 +494,14 @@
 .nt .pc-grid { display: none; }
 @media (max-width: 600px) {
   .nt .pc-all { display: none; }
-  .nt .pc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 10px 0 12px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
-  .nt .pc-grid > div { background: var(--bg); padding: 8px 10px 9px; }
+  .nt .pc-grid { display: grid; gap: 0; margin: 8px 0 10px; }
+  .nt .pc-grid > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .nt .pc-grid > .pg-rest { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .nt .pc-grid span { display: block; font: 700 11px var(--sans); letter-spacing: 0.06em; color: var(--ink3); }
-  .nt .pc-grid b { display: block; margin-top: 3px; font: 600 18px var(--num); color: var(--ink2); }
-  .nt .pc-grid .k b { color: var(--ink); }
+  .nt .pc-grid b { display: block; margin-top: 2px; font: 600 18px var(--num); color: var(--ink2); }
+  .nt .pc-grid .pg-big b { font: 800 34px/1 var(--cond); color: var(--ink); }
+  .nt .pc-grid .pg-rest b { font-size: 14px; }
+  .nt .pc-grid .pg-rest span { font-size: 10px; }
   .nt .pc-grid small { display: block; margin-top: 2px; font: 500 11px var(--num); color: var(--ink3); }
   .nt .dlg.pcard { top: auto; bottom: 0; height: auto; max-height: 92dvh; border-radius: 14px 14px 0 0; border-top: 1px solid var(--rule2); padding-top: 4px; }
   .nt .dlg.pcard .dlg-head { position: absolute; right: 16px; top: 14px; padding: 0; margin: 0; border: 0; background: none; }
@@ -511,10 +514,12 @@
 @media (max-width: 600px) {
   .nt .dlg.wide { top: 0; left: 0; transform: none; width: 100%; max-height: none; height: 100dvh; border-top: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: none; }
   .nt .twin .sbox td:first-child { white-space: nowrap; line-height: 1.2; }
+  /* a hairline between the number columns ("naprawdę drobna") */
+  .nt .twin .sbox td + td, .nt .twin .sbox th + th { box-shadow: inset 1px 0 0 color-mix(in srgb, var(--rule) 55%, transparent); }
   .nt .twin .sbox td:first-child small { display: inline; margin-left: 5px; }
   /* every number column the same width, so the gap after MIN reads like the rest ("przerwa między
      minutami wydaje się mniejsza") */
-  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; width: 38px; min-width: 38px; font-size: 13px; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 0; padding-right: 4px; width: 40px; min-width: 40px; font-size: 13px; }
   .nt .twin .dlg-head { padding-bottom: 10px; margin-bottom: 10px; }
   .nt .twin .tw-split > section, .nt .twin .tw-split > * { min-width: 0; }
   .nt .twin .sbox td:first-child .pn { display: inline-block; max-width: 112px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
@@ -528,3 +533,8 @@
 
 /* the share card keeps its own width and is scaled as one picture (`FitCard`, playtest 13) */
 .nt .fit-card { overflow: hidden; }
+/* the share window on a phone: as tall as the card and its buttons, held at the bottom, not a full
+   screen with half of it empty (2026-10-29, "dużo empty space") */
+@media (max-width: 600px) {
+  .nt .modal.sharem2 { top: auto; bottom: 0; height: auto; max-height: 100dvh; border-radius: 14px 14px 0 0; padding-top: 12px; }
+}

@@ -243,7 +243,8 @@ function TeamWindow({
           ) : (
             <SeasonTable
               groups={[
-                ['Starting five', shown.filter((l) => l.starter).sort(byMin)],
+                // the five in position order, PG to C (2026-10-29, the user); the bench by minutes
+                ['Starting five', shown.filter((l) => l.starter).sort((a, b) => POS_ORDER.indexOf(a.span.primaryPosition.split('/')[0]) - POS_ORDER.indexOf(b.span.primaryPosition.split('/')[0]) || byMin(a, b))],
                 ['Bench', shown.filter((l) => !l.starter).sort(byMin)],
               ]}
             />
@@ -344,15 +345,26 @@ function SeasonPlayerCard({
           )}
         </span>
       </div>
-      {/* 2026-10-29 (playtest 9: FG% ran off the edge; then "niepotrzebnie dwa razy season"): on a
-          phone the line is a grid of twelve tiles, the label over the number, with the playoffs
-          under it in small when he played them — no sideways scroll and no repeated row label. */}
+      {/* 2026-10-29 (playtest 9: FG% ran off the edge; "niepotrzebnie dwa razy season";
+          "uporządkowanie danych"): on a phone the line comes in three groups — points, rebounds and
+          assists big, then the shooting, then the rest in small — with the playoffs under each
+          number when he played them. */}
       <div className="pc-grid">
-        {heads.map((h, i) => (
-          <div key={h} className={i === 2 ? 'k' : undefined}>
-            <span>{h}</span>
-            <b>{statRow(line)[i]}</b>
-            {po && po.games > 0 && <small>PO {statRow(po)[i]}</small>}
+        {(
+          [
+            ['big', [2, 3, 4]],
+            ['shoot', [7, 8, 9]],
+            ['rest', [0, 1, 5, 6, 10, 11]],
+          ] as const
+        ).map(([g, idx]) => (
+          <div key={g} className={`pg-${g}`}>
+            {idx.map((i) => (
+              <div key={heads[i]}>
+                <span>{heads[i]}</span>
+                <b>{statRow(line)[i]}</b>
+                {po && po.games > 0 && <small>PO {statRow(po)[i]}</small>}
+              </div>
+            ))}
           </div>
         ))}
       </div>
