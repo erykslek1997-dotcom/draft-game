@@ -338,7 +338,7 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  * pick, a cap on the need multiplier, a talent exemption from the playmaker discount.
  * Mutable so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { fallNet: true, fallSlack: 16, fallFitMargin: 0.5, playmakingByBallShare: true };
+export const AI_STAR_RULES = { fallNet: true, fallSlack: 48, fallFitMargin: 0.5, playmakingByBallShare: true };
 /** How many of the fallen (best TAL first) the net weighs by the team score. */
 const FALL_NET_CHECKED = 4;
 const FALL_NET_FROM_PICK = 20;

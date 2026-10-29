@@ -43,7 +43,9 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Shai Gilgeous-Alexander', '2024-26', 116, 'MVP'],
   ['Chris Paul', '2013-15', 113, 'MVP'],
   ['Anthony Davis', '2017-19', 111, 'MVP'],
-  ['Bob McAdoo', '1973-75', 111, 'MVP'],
+  // 2026-10-29, the user after a live draft (McAdoo 1975-77 at TAL 95, 19th in the pool, in round 2):
+  // "McAdoo TAL 87 na ten moment" — All-NBA, a volume scorer without range.
+  ['Bob McAdoo', '1973-75', 111, 'All-NBA'],
   ['Damian Lillard', '2019-21', 109, 'MVP'],
   ['Victor Wembanyama', '2024-26', 109, 'MVP'],
   ['John Stockton', '1990-92', 105, 'MVP'],
