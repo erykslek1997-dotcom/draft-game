@@ -28,7 +28,43 @@ import { computeSpacing } from '../src/engine/spacing';
 import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
 import { per36 } from '../src/engine/minutesPerGame';
 import { pointGuardScore } from '../src/engine/positionCompetence';
+import { spanEndYears } from '../src/engine/era';
 import '../src/engine/fit';
+
+/**
+ * 2026-10-29, the user (Porziņģis 2022-24, a centre both seasons, starting at PF beside Embiid
+ * because the four is one of his career positions): what a window counts as natural is what BBRef
+ * listed him at in its own seasons — a position with at least `WINDOW_NATURAL_SHARE` of the
+ * window's minutes. A career position he was not listed at in the window is scored like any other
+ * move (`score`, a centre to the four at most `partial`); a position listed in the window that is
+ * not his tag reads natural there (Kidd 2011-12 at the point). Windows with no BBRef seasons keep
+ * the career rule.
+ */
+const WINDOW_NATURAL_SHARE = 1 / 3;
+const OTHER_NATURAL = 0.95;
+const bbrefSeasons = new Map<string, Map<number, { pos: string; mp: number }>>();
+for (const line of readFileSync(resolve(import.meta.dirname, '../src/data/raw/bbref/player_advanced.csv'), 'utf8').trim().split(/\r?\n/).slice(1)) {
+  const c = line.split(',');
+  const end = Number(c[0].slice(0, 4)) + 1, pos = c[6], mp = Number(c[9]);
+  if (!pos || !mp) continue;
+  const k = normalizePlayerName(c[2]);
+  const seasons = bbrefSeasons.get(k) ?? new Map();
+  if ((seasons.get(end)?.mp ?? 0) < mp) seasons.set(end, { pos, mp });
+  bbrefSeasons.set(k, seasons);
+}
+function windowPositions(span: PlayerSpan): Position[] | undefined {
+  const seasons = bbrefSeasons.get(normalizePlayerName(span.playerName));
+  const rows = spanEndYears(span.spanLabel).map((y) => seasons?.get(y)).filter((r) => r !== undefined);
+  const total = rows.reduce((sum, r) => sum + r.mp, 0);
+  if (!total) return undefined;
+  return POSITIONS.filter((pos) => rows.filter((r) => r.pos === pos).reduce((sum, r) => sum + r.mp, 0) >= total * WINDOW_NATURAL_SHARE);
+}
+/** Share of a player's BBRef minutes listed at the point — how pure a point guard he is (rotation.ts). */
+function careerPointShare(name: string): number | undefined {
+  const rows = [...(bbrefSeasons.get(normalizePlayerName(name))?.values() ?? [])];
+  const total = rows.reduce((sum, r) => sum + r.mp, 0);
+  return total ? Math.round((rows.filter((r) => r.pos === 'PG').reduce((sum, r) => sum + r.mp, 0) / total) * 100) / 100 : undefined;
+}
 
 type Level = 'full' | 'partial' | 'emergency' | 'none';
 const POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -78,6 +114,7 @@ function score(
   share: number,
   natural: Position[],
   career: { bigShare: number; peakStartYear: number },
+  outOfWindow = false,
 ): number {
   const b = s.box;
   const rpg = per36(b.rpg, s);
@@ -126,7 +163,8 @@ function score(
       break;
     case 'PF':
       // The user's rule: a centre plays the four only if he really did (half his spans list it).
-      if (from === 'C') return share >= 0.5 ? MAX_SCORE : 0;
+      // A career four not listed there in this window (Porziņģis 2022-24): a stretch, not a start.
+      if (from === 'C') return outOfWindow ? LEVEL_SCORE.partial : share >= 0.5 ? MAX_SCORE : 0;
       if (from !== 'SF') return 0;
       penalty = below(79, 0.1, 0.8) + shortfall(rpg, 6.5, 0.08, 0.4);
       break;
@@ -167,9 +205,11 @@ type Entry = {
   pos: Partial<Record<Position, number>>;
   ov?: Position[];
   s?: Record<string, Partial<Record<Position, number>>>;
+  pg?: number;
 };
 const out: Record<string, Entry> = {};
 const tally: Record<string, number> = {};
+const windowTally = { listed: 0, unlisted: 0 };
 for (const [name, spans] of byName) {
   const peak = spans.map((s) => ({ s, t: effectiveTalent(s) })).sort((a, b) => b.t - a.t)[0].s;
   const primaryCount = new Map<Position, number>();
@@ -213,9 +253,38 @@ for (const [name, spans] of byName) {
       if (userLevel !== undefined) (entry.ov ??= []).push(pos);
     }
   }
+  if (!hardLockedPosition(spans[0])) {
+    const height = getHeightInches(name) ?? 0;
+    const career = {
+      bigShare: spans.filter((s) => s.primaryPosition === 'PF' || s.primaryPosition === 'C').length / spans.length,
+      peakStartYear: Number(peak.spanLabel.slice(0, 4)),
+    };
+    const userLevels = overridesByKey.get(key) ?? {};
+    for (const span of spans) {
+      const listed = windowPositions(span);
+      if (!listed) continue;
+      const own = (entry.s![span.spanLabel] ??= {});
+      for (const pos of POSITIONS) {
+        if (pos === span.primaryPosition || userLevels[pos] !== undefined) continue;
+        if (listed.includes(pos)) {
+          own[pos] = Math.max(own[pos] ?? 0, OTHER_NATURAL);
+          windowTally.listed++;
+        } else if (nat.includes(pos) && pos !== 'PG') {
+          const share = spans.filter((s) => s.secondaryPositions.includes(pos) || s.primaryPosition === pos).length / spans.length;
+          // A position of his career is still one he can stretch to: at least `partial`, at most what
+          // the classifier reads from this window's numbers.
+          const read = score(pos, span.primaryPosition, span, height, share, nat, career, true);
+          own[pos] = Math.abs(POSITIONS.indexOf(pos) - POSITIONS.indexOf(span.primaryPosition)) === 1 ? Math.max(LEVEL_SCORE.partial, read) : read;
+          windowTally.unlisted++;
+        }
+      }
+    }
+  }
+  const pg = careerPointShare(name);
+  if (pg !== undefined) entry.pg = pg;
   out[key] = entry;
 }
 
 const sorted = Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
 writeFileSync(resolve(import.meta.dirname, '../src/data/positionCompetence.json'), JSON.stringify(sorted) + '\n');
-console.log(`Wrote src/data/positionCompetence.json: ${Object.keys(sorted).length} players`, tally);
+console.log(`Wrote src/data/positionCompetence.json: ${Object.keys(sorted).length} players`, tally, windowTally);
