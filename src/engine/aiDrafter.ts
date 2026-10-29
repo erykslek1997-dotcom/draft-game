@@ -34,6 +34,7 @@ import { madeAllNbaInSpan } from './allNbaLookup';
 import { hashSeed, mixSeed } from './rng';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
+import { ballHandlerCost } from './ballHandling';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -329,11 +330,11 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  *  - `starPhase`: a team's first `STAR_PHASE_PICKS` picks chase talent. Positional need still
  *    discounts a duplicate, but its pull toward an open slot is capped at `STAR_PHASE_NEED_CAP`,
  *    so a TAL 80 who fills a hole no longer outbids a TAL 95 who doesn't (need multiplies talent).
- *  - `fallNet`: common sense. A player whose TAL ranks him a full round (`FALL_NET_SLACK`) above
+ *  - `fallNet`: common sense. A player whose TAL ranks him a full round (`fallSlack`) above
  *    the current pick is taken now — the same hard net the named legends have, by talent.
  * Mutable only so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true, needCap: 0 };
+export const AI_STAR_RULES = { starPhase: true, fallNet: true, lookahead: true, needCap: 0, fallSlack: 16, playmakingExempt: 0, playmakingByBallShare: true };
 /** `lookahead`: the team-score judgement (see `TEAM_SCORE_SHORTLIST`) from a team's second pick,
  * and the board's best talents join its shortlist, so a star is weighed by what he adds. */
 const EARLY_LOOKAHEAD_ROSTER_SIZE = 1;
@@ -341,7 +342,6 @@ const LOOKAHEAD_TALENT_EXTRA = 5;
 const STAR_PHASE_PICKS = 3;
 const STAR_PHASE_NEED_CAP = 0.25;
 const FALL_NET_FROM_PICK = 20;
-const FALL_NET_SLACK = 16;
 /** Every player's best TAL across his windows, highest first: where TAL says he goes. */
 let bestTalentsDesc: number[] | null = null;
 function talentRankPick(talent: number): number {
@@ -530,6 +530,8 @@ interface NeedContext {
    * different skill the existing taxonomy has no entry for at all. Distinct mechanism, gated
    * separately below. */
   hasElitePlaymaking: boolean;
+  /** The current five, for the ball-share cost a candidate would add (`playmakingByBallShare`). */
+  starterPlayers: PlayerSpan[];
   /** 2026-08-07, offensiveProfile.ts synergy signals (shot-diet + playmaking gravity from the
    * user's zone-efficiency/playmaking CSV batch — explicitly NOT wired into computeTalent).
    * True if a starter is rim-dominant (Shaq/Giannis/LeBron per the user's a/c examples) — the
@@ -593,6 +595,9 @@ const ELITE_PLAYMAKING_APG_THRESHOLD = 7;
  * finer gradient the way FGA-shortfall maluses elsewhere do; this is a binary "do we already
  * have this skill covered" question, not a "how much excess" one. */
 const ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT = 0.6;
+/** The ball-share cost (ORtg a 100 trips) of two classic point guards together (Nash beside Chris
+ * Paul, 2.3): the full discount. */
+const SECOND_HANDLER_FULL_COST = 2.3;
 
 /** Real minutes at a slot below which its top rotation entry is a nominal cover, not a starter (a third of the game). */
 const MIN_STARTER_MINUTES_AT_SLOT = 16;
@@ -727,6 +732,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
         ? 50
         : starterPlayers.reduce((sum, p) => sum + computeDefensivePortability(p), 0) / starterPlayers.length,
     hasElitePlaymaking: starterPlayers.some((p) => p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD),
+    starterPlayers,
     hasRimGravityStarter: starterPlayers.some(isRimGravityScorer),
     hasSelfSufficientEngineStarter: starterPlayers.some(isSelfSufficientEngine),
     lacksBenchShotCreator: !roster.some((p) => !starterPlayers.includes(p) && isSelfCreatorArchetype(p)),
@@ -1970,7 +1976,7 @@ export function pickForAi(
   // taken now, the one who fills a real gap first, then the best; never a third at one position.
   if (AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK) {
     const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
-    const fallen = planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + FALL_NET_SLACK < pickNumber && atPosition(p.primaryPosition) < 2);
+    const fallen = planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber && atPosition(p.primaryPosition) < 2);
     if (fallen.length > 0) {
       const fillsRealGap = (p: PlayerSpan) => needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition);
       return fallen.sort((a, b) => Number(fillsRealGap(b)) - Number(fillsRealGap(a)) || effectiveTalent(b) - effectiveTalent(a) || a.fga - b.fga)[0];
@@ -2247,7 +2253,16 @@ export function pickForAi(
     if (talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
       need -= samePositionRedundancyDiscount(roster, p);
     }
-    if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
+    if (AI_STAR_RULES.playmakingByBallShare) {
+      // 2026-10-29, the user ("a nie lepiej użyć AST%? ... LeBron, Bird czy Jokić w składzie nie
+      // znaczy że drugi rozgrywający nie jest potrzebny"): the second-playmaker discount follows the
+      // ball-share cost the team score itself charges (ballHandling.ts, from real AST% and USG%) —
+      // full at the cost of a Nash beside a Chris Paul, next to nothing beside Bird or Draymond.
+      if (talent < ELITE_TALENT_REDUNDANCY_EXEMPTION && needs.starterPlayers.length > 0) {
+        const added = ballHandlerCost([...needs.starterPlayers, p]) - ballHandlerCost(needs.starterPlayers);
+        need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT * Math.min(1, Math.max(0, added) / SECOND_HANDLER_FULL_COST);
+      }
+    } else if (needs.hasElitePlaymaking && p.box.apg >= ELITE_PLAYMAKING_APG_THRESHOLD && talent < (AI_STAR_RULES.playmakingExempt || ELITE_TALENT_REDUNDANCY_EXEMPTION)) {
       need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT;
     }
     if (needs.hasSelfSufficientEngineStarter && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
