@@ -117,8 +117,9 @@ const shortYears = (label: string) => label.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2
 
 /**
  * 2026-10-29 (the user, on the results roster on a phone: five narrow cards with truncated bench
- * names): the roster as a list — a row a slot, the starter (face, name, years, minutes) on the left,
- * who comes in for him on the right (under him on a phone), the team colour as the row's edge.
+ * names): the roster as a list — a row a slot, split in half: the starter (face, name, years,
+ * minutes) on the left, who comes in for him on the right in the same form, smaller when two share
+ * the slot; the starter's team colour is the row's edge.
  */
 export function RosterList({ rows }: { rows: { slot: string; starter?: { span: PlayerSpan; minutes: number }; bench: { span: PlayerSpan; minutes: number }[] }[] }) {
   return (
@@ -128,23 +129,35 @@ export function RosterList({ rows }: { rows: { slot: string; starter?: { span: P
           <span className="rl-slot">{slot}</span>
           {starter ? (
             <>
-              <span className="rl-face">
-                <NFace name={starter.span.playerName} span={starter.span} />
-              </span>
-              <span className="rl-main">
-                <b>{shortName(starter.span.playerName)}</b>
-                <span>
-                  {maskYears(starter.span.playerName, starter.span.spanLabel)} · {Math.round(starter.minutes)}m
+              <span className="rl-sub rl-start">
+                <span className="rl-face">
+                  <NFace name={starter.span.playerName} span={starter.span} />
+                </span>
+                <span className="rl-main">
+                  <b>{shortName(starter.span.playerName)}</b>
+                  <span>
+                    {maskYears(starter.span.playerName, starter.span.spanLabel)} · {Math.round(starter.minutes)}m
+                  </span>
                 </span>
               </span>
-              <span className="rl-bench">
-                {bench.length
-                  ? bench.map((b) => (
-                      <span key={b.span.id}>
-                        {lastName(maskText(b.span.playerName))} <em>{shortYears(maskYears(b.span.playerName, b.span.spanLabel))}</em> <b>{Math.round(b.minutes)}m</b>
+              <span className={cx('rl-bench', bench.length > 1 && 'many')}>
+                {bench.length ? (
+                  bench.map((b) => (
+                    <span key={b.span.id} className="rl-sub">
+                      <span className="rl-face">
+                        <NFace name={b.span.playerName} span={b.span} />
                       </span>
-                    ))
-                  : <span className="rl-none">no one else here</span>}
+                      <span className="rl-main">
+                        <b>{shortName(b.span.playerName)}</b>
+                        <span>
+                          {maskYears(b.span.playerName, b.span.spanLabel)} · {Math.round(b.minutes)}m
+                        </span>
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="rl-none">no one else here</span>
+                )}
               </span>
             </>
           ) : (
