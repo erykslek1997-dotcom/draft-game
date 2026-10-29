@@ -10,7 +10,7 @@ import { offenseScore, offenseScoreBreakdown } from '../src/engine/scoring';
 import { computeOffensiveTalent } from '../src/engine/talent';
 import { rimPressureForFit } from '../src/engine/rimPressure';
 import { teamSpacingValue } from '../src/engine/midrangeGravity';
-import { ballShare } from '../src/engine/ballHandling';
+import { astPctForSpan, ballShare } from '../src/engine/ballHandling';
 import { mechanicsPer100 } from '../src/engine/liveGame';
 import benchTeams from '../src/data/benchTeams.json';
 import { spanById } from '../src/engine/bestFive';
@@ -75,7 +75,7 @@ for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { seas
   leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
 const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
 
-type Row = { rim: number; mm: number; hub: number; arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
+type Row = { astMean: number; rim: number; mm: number; hub: number; arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
 const rows: Row[] = [];
 const yard = (benchTeams as { teams: { ids: string[] }[] }[]).slice(0, 4).map((lg, L) => {
   const ts = lg.teams.map((t, i) => teamOf(t.ids.map(spanById).filter(Boolean) as PlayerSpan[], `y${L}-${i}`));
@@ -110,7 +110,7 @@ for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]
   const star = [...five].sort((p, q) => computeOffensiveTalent(q) - computeOffensiveTalent(p))[0];
   const rimStar = clamp01((rimPressureForFit(star) - 50) / 30) * clamp01((60 - teamSpacingValue(star)) / 30) * clamp01((computeOffensiveTalent(star) - 75) / 15);
   const mates = mean(five.filter((x) => x !== star).map(teamSpacingValue));
-  rows.push({ rim: c.rim, mm: c.mm, hub: Math.max(...five.map(ballShare)), arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
+  rows.push({ astMean: five.reduce((a, x) => a + astPctForSpan(x), 0) / 5, rim: c.rim, mm: c.mm, hub: Math.max(...five.map(ballShare)), arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
 }
 console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
 // `FROM=<year>`: keep only seasons ending that year or later (an era check of every result below).
@@ -270,3 +270,9 @@ for (const from of [1974, 1980, 1990, 2000, 2010]) {
     console.log(`SWEEP${from} score~real r ${r(g.map((q) => q.offense), g.map((q) => q.y)).toFixed(4)}  game~real r ${r(g.map((q) => q.mech), g.map((q) => q.y)).toFixed(4)}`);
   }
 }
+
+// 2026-10-29: the five's passing (mean AST% of its players, per 5 points) beyond its Offense score —
+// real teams against the game's mechanics.
+report('PASSING real ORtg ~ Offense + five mean AST% (per 5)', ['Offense', 'mean AST% (per 5)'], (r) => [r.offense, r.astMean / 5], (r) => r.y);
+report('PASSING game mechanics', ['Offense', 'mean AST% (per 5)'], (r) => [r.offense, r.astMean / 5], (r) => r.mech);
+{ const v = rows.map((r) => r.astMean).sort((a, b) => a - b); console.log(`five mean AST%: p10 ${v[Math.floor(v.length * 0.1)].toFixed(1)}, median ${v[Math.floor(v.length / 2)].toFixed(1)}, p90 ${v[Math.floor(v.length * 0.9)].toFixed(1)}`); }
