@@ -198,7 +198,13 @@ resztkami na ławce (Long Beach 72, Detroit 74, Knoxville 75) — bezpiecznik pr
 (`fallSlack` 48): łapie tylko absurdy (Barkley przy 112, Nash przy 100), zwykły draft robi kara za
 drugiego rozgrywającego (sama: najgorszy spadek 33, Overall 80,8). Do obejrzenia: McAdoo 1975-77
 TAL 95 (19. w puli) i jego półdystans 72 z dawnej listy (nie przeglądany) — po spacingu sprzed linii
-(0 → 61) AI bierze go w 2. rundzie; obniżyć rzut albo talent (decyzja użytkownika). Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
+(0 → 61) AI bierze go w 2. rundzie; obniżyć rzut albo talent (decyzja użytkownika).
+Noc 2026-10-29 („masz całą noc żeby te składy miały sens”): McAdoo przeniesiony do All-NBA w tabeli
+kalibracji (TAL 87). `scripts/measureRosterSense.ts`, 10 draftów samej AI na wariant: stara AI 80,98
+(najsłabsza 1/10 75,2 · gracz <60 TAL z 10+ min 37% · spacing <55 11% · najgorszy spadek 73); sama kara
+za drugiego rozgrywającego 80,95 (76,2 · 37% · 19% · 60); kara + bezpiecznik po 3 rundach 81,15 (76,3
+· 31% · 17% · 70) — WYBRANY; kara + bezpiecznik po 1 rundzie (było na stronie) 80,65 (74,6 · 40% · 13%
+· 24). Do obejrzenia: drużyn ze spacingiem <55 jest 17% zamiast 11%. Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
 drużyny (`ballHandling.ts`, AST% i USG%), nie za „7+ asyst” (LeBron, Bird, Jokić w składzie nie
 znaczą, że drugi rozgrywający jest zbędny). **Jeśli AI zacznie draftować dziwnie** (za mocne
 drużyny AI, gwiazdy na siłę obok siebie, trzech centrów, za słabe ławki): wrócić tutaj, przełączniki
