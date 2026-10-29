@@ -19,7 +19,7 @@ const MAX_WIDTH = 160;
 const file = process.argv[2];
 if (!file) throw new Error('Usage: npx tsx scripts/importHeadshots.ts headshots_nba.json');
 const data = JSON.parse(readFileSync(file, 'utf8')) as {
-  photos: Record<string, { name: string; webp?: string; jpg?: string; guessed?: boolean }>;
+  photos: Record<string, { name: string; webp?: string; jpg?: string; guessed?: boolean; page?: string }>;
   missing: [string, string, string][];
   errors: [string, string, string][];
 };
@@ -56,7 +56,7 @@ for (const [id, p] of entries) {
     written++;
   }
   manifest[p.name] = id;
-  if (p.guessed) guessed.push(`${p.name} (${id})`);
+  if (p.guessed) guessed.push(`${p.name} (${id}) → BBRef page: ${p.page ?? '?'}`);
 }
 const sorted = Object.fromEntries(Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b)));
 writeFileSync(MANIFEST, `${JSON.stringify(sorted, null, 2)}\n`);
