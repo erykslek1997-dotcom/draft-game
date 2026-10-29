@@ -376,3 +376,39 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .team-btn > .tm { cursor: pointer; }
 .nt .team-btn:hover > .tm { outline: 1.5px solid var(--ink3); outline-offset: 1px; }
 .nt .team-btn:focus-visible > .tm { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* 2026-10-29: the results roster as a list — a row a slot, the starter left, his bench right (under
+   him on a phone); the starter's team colour is the row's edge. */
+.nt .rlist { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
+.nt .rl-row { display: grid; grid-template-columns: 34px 40px minmax(0, 1fr) minmax(0, 1.2fr); align-items: center; gap: 10px; padding: 8px 10px 8px 8px; border-bottom: 1px solid var(--rule); border-left: 3px solid var(--team, var(--rule3)); }
+.nt .rl-slot { font: 700 13px var(--cond); letter-spacing: 0.04em; color: var(--ink3); }
+.nt .rl-face img, .nt .rl-face .ini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--cface); display: grid; place-items: center; font: 600 13px var(--sans); color: var(--cink); }
+.nt .rl-face .face-btn { padding: 0; border: 0; background: none; display: block; }
+.nt .rl-main { display: flex; flex-direction: column; min-width: 0; }
+.nt .rl-main b { font: 600 17px var(--cond); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt .rl-main span { font: 500 12px var(--num); color: var(--ink3); }
+.nt .rl-bench { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: flex-end; min-width: 0; font: 500 13px var(--sans); color: var(--ink2); }
+.nt .rl-bench > span { white-space: nowrap; }
+.nt .rl-bench em { font: 500 11px var(--num); font-style: normal; color: var(--ink3); }
+.nt .rl-bench b { font: 600 12px var(--num); color: var(--ink); }
+.nt .rl-none { font-style: italic; color: var(--ink3); font-size: 13px; }
+@media (max-width: 600px) {
+  .nt .rl-row { grid-template-columns: 30px 36px minmax(0, 1fr); row-gap: 4px; }
+  .nt .rl-face img, .nt .rl-face .ini { width: 36px; height: 36px; }
+  .nt .rl-bench { grid-column: 3 / -1; justify-content: flex-start; font-size: 12px; }
+}
+
+/* 2026-10-29: the room as a thread off X — avatar, name, handle and age, the post, its counts; a
+   reply hangs off the post above it, the thread line joining them. */
+.nt .xfeed { display: flex; flex-direction: column; }
+.nt .xpost { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.nt .xpost.thread { border-bottom: 0; padding-bottom: 4px; }
+.nt .xpost.thread::after { content: ''; position: absolute; left: 19px; top: 56px; bottom: -8px; width: 2px; background: var(--rule3); }
+.nt .xpost.reply { padding-top: 6px; }
+.nt .xav { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--sans); color: #fff; letter-spacing: 0.02em; }
+.nt .xbody { min-width: 0; }
+.nt .xhead { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.nt .xhead b { font: 700 15px var(--sans); color: var(--ink); white-space: nowrap; }
+.nt .xhead span { font: 400 13px var(--sans); color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt .xfeed .xpost p { margin: 2px 0 0; padding: 0; border: 0; font: 400 15px/1.42 var(--sans); color: var(--ink); }
+.nt .xact { display: flex; gap: 28px; margin-top: 8px; font: 400 12px var(--sans); color: var(--ink3); }
