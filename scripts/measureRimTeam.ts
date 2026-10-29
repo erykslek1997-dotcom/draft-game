@@ -49,7 +49,7 @@ const zoned = draftPool.filter((s) => computeOffensiveProfile(s).hasZoneData).ma
 const pctile = (v: number) => { let lo = 0, hi = zoned.length; while (lo < hi) { const m = (lo + hi) >> 1; if (zoned[m] < v) lo = m + 1; else hi = m; } return (100 * lo) / zoned.length; };
 const driveScore = (s: PlayerSpan) => (computeOffensiveProfile(s).hasZoneData ? Math.max(0, (pctile(drive(s)) - 35) / 65) * 100 : rimPressureForFit(s));
 const blend = (s: PlayerSpan) => Math.max(rimPressureForFit(s), driveScore(s));
-type Row = { rel: number; off: number; rims: number[]; team: number; label: string; drv: number; mx: number };
+type Row = { rel: number; off: number; rims: number[]; team: number; label: string; drv: number; mx: number; end: number; five: PlayerSpan[] };
 const rows: Row[] = [];
 for (const t of ts) {
   const end = parseInt(t.season.slice(0, 4), 10) + 1;
@@ -58,7 +58,7 @@ for (const t of ts) {
   if (top.length < 8 || spans.some((s) => !s)) continue;
   const five = spans.slice(0, 5) as PlayerSpan[];
   const b = scoreTeam({ id: t.team, name: t.team, draftSlot: 1, isHuman: false, roster: spans as PlayerSpan[], rotation: autoAssignRotation(spans as PlayerSpan[]) });
-  rows.push({ rel: t.ortg - lgOrtg.get(t.season)!, off: b.offenseScore, rims: five.map(rimPressureForFit).sort((a, c) => c - a), team: rimPressureTeam(five), label: `${t.season} ${t.team}`, drv: mean(five.map(driveScore)), mx: mean(five.map(blend)) });
+  rows.push({ rel: t.ortg - lgOrtg.get(t.season)!, off: b.offenseScore, rims: five.map(rimPressureForFit).sort((a, c) => c - a), team: rimPressureTeam(five), label: `${t.season} ${t.team}`, drv: mean(five.map(driveScore)), mx: mean(five.map(blend)), end, five });
 }
 const corr = (xs: number[], ys: number[]) => { const mx = mean(xs), my = mean(ys); let a = 0, b = 0, c = 0; xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; }); return a / Math.sqrt(b * c); };
 // what a measure adds to the Offense score: the correlation of its residual on Offense with the ORtg residual on Offense
@@ -85,3 +85,15 @@ for (const [k, w] of weights) {
   const v = rows.map((r) => r.rims.reduce((s, x, i) => s + x * w[i], 0));
   console.log(`  ${k.padEnd(16)} r ${corr(v, rel).toFixed(3)}, beyond Offense ${corr(resid(v, off), relR).toFixed(3)}`);
 }
+
+// 1997-98 on only (every player has zone data), and blends: today's rim pressure plus k × the drive
+// score for a player today reads 0-40 on (a guard who gets to the rim and the line)
+const late = rows.filter((r) => r.end >= 1998);
+const offL = late.map((r) => r.off), relL = late.map((r) => r.rel), relLR = resid(relL, offL);
+console.log(`\n1997-98 on: ${late.length} team-seasons`);
+for (const k of [0, 0.15, 0.3, 0.5, 0.75, 1]) {
+  const v = late.map((r) => mean(r.five.map((s) => { const t = rimPressureForFit(s); return Math.max(t, t + k * driveScore(s) * (1 - t / 100)); })));
+  console.log(`  today + ${k} × drive  r ${corr(v, relL).toFixed(3)}, beyond Offense ${corr(resid(v, offL), relLR).toFixed(3)}`);
+}
+const vd = late.map((r) => r.drv);
+console.log(`  drive alone         r ${corr(vd, relL).toFixed(3)}, beyond Offense ${corr(resid(vd, offL), relLR).toFixed(3)}`);
