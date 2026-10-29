@@ -41,7 +41,7 @@ import { upcomingPicks } from './DraftWarRoom';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { draftSaveKeys } from '../draftSaveSummary';
 import { saveSlotFor } from './draftSave';
-import { BOMB_NAME, isBombMasked, maskName } from './bombMask';
+import { BOMB_NAME, isBombMasked, maskName, maskYears } from './bombMask';
 import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
@@ -1309,7 +1309,10 @@ export default function DraftBoard({
           <Kv k="Starters" v={startersSet === STARTER_SLOTS.length ? 'Set' : `${startersSet} of 5`} />
           <Kv k="Years" v="Click to change" />
         </section>
-        <Actions links={links}>
+        {/* 2026-10-29 (playtest 2: the ‹ on Your team threw you to the main menu): from your team the
+            back arrow goes one step back — out of a player's years, then to the draft board; the
+            menu, with its "leave the draft?" check, is one more tap from there. */}
+        <Actions links={{ ...links, onMenu: () => (yearsFor ? setYearsFor(null) : setActiveTab('draft')), menuLabel: yearsFor ? 'Your team' : 'Draft' }}>
           <Btn disabled={!canSubmit} title={!state.complete ? `Finish drafting all ${ROSTER_SIZE} picks first.` : chosenRosterOverCap ? 'Over the cap: pick cheaper years.' : rotStatus.reason} onClick={() => submitRef.current?.()}>
             Play the season
           </Btn>
@@ -1335,9 +1338,12 @@ export default function DraftBoard({
               <NFace name={teamYears.playerName} />
               <div>
                 <h2>{maskName(teamYears.playerName)}</h2>
-                <p>Which years does he play for you? Cheaper years free caps for the rest.</p>
+                <small>
+                  {current.primaryPosition} · {maskYears(teamYears.playerName, current.spanLabel)} · {displayedOverallTier(current)}
+                </small>
               </div>
             </div>
+            <p>Which years does he play for you? Cheaper years free caps for the rest.</p>
           </div>
           <section>
             <H3 note={`${options.length} stretches`}>His stretches</H3>
@@ -1473,8 +1479,10 @@ export default function DraftBoard({
                 {humanUpcoming.slice(0, ROSTER_SIZE - humanTeam.roster.length).map((u, k) => {
                   const r = humanTeam.roster.length + k + 1;
                   const bombHere = bombSpan && !bombLanded && state.bomb?.round === r;
+                  // 2026-10-29 (playtest 1: eight empty "Pick #" rows were half a phone): a phone
+                  // shows the next pick and folds the rest into one line (`open-rest`).
                   return (
-                    <tr key={u.pick} className="open">
+                    <tr key={u.pick} className={cx('open', k > 0 && !bombHere && 'open-more')}>
                       <td className="rd">R{r}</td>
                       <td className="sl bn">—</td>
                       <td className="f">{bombHere ? <span className="ini">?</span> : null}</td>
@@ -1493,6 +1501,17 @@ export default function DraftBoard({
                     </tr>
                   );
                 })}
+                {humanUpcoming.slice(1, ROSTER_SIZE - humanTeam.roster.length).length > 0 && (
+                  <tr className="open-rest">
+                    <td colSpan={10}>
+                      Then picks{' '}
+                      {humanUpcoming
+                        .slice(1, ROSTER_SIZE - humanTeam.roster.length)
+                        .map((u) => `#${u.pick}`)
+                        .join(' · ')}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>
@@ -1506,9 +1525,12 @@ export default function DraftBoard({
         {rotation}
         {!teamYears && (
           <div className="btn2 phone-only">
-            <Btn disabled={!canSubmit} onClick={() => submitRef.current?.()}>
-              Play the season
-            </Btn>
+            {/* the season button shows once it can be pressed (playtest 1: a dead button took the room) */}
+            {(state.complete || canSubmit) && (
+              <Btn disabled={!canSubmit} onClick={() => submitRef.current?.()}>
+                Play the season
+              </Btn>
+            )}
             {!state.complete && (
               <Btn kind="line" onClick={() => setActiveTab('draft')}>
                 Back to the draft

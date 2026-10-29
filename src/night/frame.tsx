@@ -178,6 +178,8 @@ export interface NavLinks {
   /** The screen has a Main menu button already: the link shows on a phone only, where the buttons
    * stay hidden and the links sit by the masthead (playtest 2026-10-22: no way out on a phone). */
   menuPhoneOnly?: boolean;
+  /** What the back link says when it goes somewhere other than the menu ("← Draft"). */
+  menuLabel?: string;
 }
 
 // On a phone the links become the app bar's icons (‹ on the left, ? and ⚙ on the right); the words
@@ -188,13 +190,13 @@ const LkIcon = ({ d }: { d: ReactNode }) => (
   </svg>
 );
 
-export function Links({ onMenu, onHowTo, onSettings, menuPhoneOnly }: NavLinks) {
+export function Links({ onMenu, onHowTo, onSettings, menuPhoneOnly, menuLabel }: NavLinks) {
   return (
     <div className="links">
       {onMenu && (
-        <button type="button" className={cx('lk', 'lk-menu', menuPhoneOnly && 'po')} onClick={onMenu} aria-label="Menu">
+        <button type="button" className={cx('lk', 'lk-menu', menuPhoneOnly && 'po')} onClick={onMenu} aria-label={menuLabel ?? 'Menu'}>
           <LkIcon d={<path d="M15 6l-6 6 6 6" />} />
-          <span className="lk-t">← Menu</span>
+          <span className="lk-t">← {menuLabel ?? 'Menu'}</span>
         </button>
       )}
       {onHowTo && (

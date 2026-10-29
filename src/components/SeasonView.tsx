@@ -78,10 +78,14 @@ const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? '
 const lastName = (n: string) => n.split(' ').slice(-1)[0];
 const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(digits)}`;
 
-/** "Terry Porter" → "T. Porter"; a one-word name stays as it is. */
+/** "Terry Porter" → "T. Porter"; a one-word name stays as it is. A surname too long for a phone row
+ * turns it round (2026-10-29, the user: "Zrób Giannis A."): "Giannis Antetokounmpo" → "Giannis A.". */
+const LONG_SURNAME = 10;
 const shortName = (name: string) => {
   const i = name.indexOf(' ');
-  return i < 0 ? name : `${name[0]}. ${name.slice(i + 1)}`;
+  if (i < 0) return name;
+  const last = name.slice(i + 1);
+  return last.length > LONG_SURNAME ? `${name.slice(0, i)} ${last[0]}.` : `${name[0]}. ${last}`;
 };
 
 /** A first name that hides on a phone (`.fn`), then the last name. */
@@ -239,7 +243,8 @@ function TeamWindow({
           ) : (
             <SeasonTable
               groups={[
-                ['Starting five', shown.filter((l) => l.starter).sort(byMin)],
+                // the five in position order, PG to C (2026-10-29, the user); the bench by minutes
+                ['Starting five', shown.filter((l) => l.starter).sort((a, b) => POS_ORDER.indexOf(a.span.primaryPosition.split('/')[0]) - POS_ORDER.indexOf(b.span.primaryPosition.split('/')[0]) || byMin(a, b))],
                 ['Bench', shown.filter((l) => !l.starter).sort(byMin)],
               ]}
             />
@@ -340,38 +345,73 @@ function SeasonPlayerCard({
           )}
         </span>
       </div>
-      <div className="pc-wrap">
-        <table className="pc-t">
-          <thead>
-            <tr>
-              <th />
-              {heads.map((h) => (
-                <th key={h}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Season</td>
-              {statRow(line).map((v, i) => (
-                <td key={i} className={i === 2 ? 'k' : undefined}>
-                  {v}
-                </td>
-              ))}
-            </tr>
-            {po && po.games > 0 && (
+      {/* 2026-10-29 (playtest 9: FG% ran off the edge; "niepotrzebnie dwa razy season";
+          "uporządkowanie danych"): on a phone the line comes in three groups — points, rebounds and
+          assists big, then the shooting, then the rest in small — with the playoffs under each
+          number when he played them. */}
+      <p className="pc-gm">
+        <b>{line.games}</b> games · <b>{f1(per(line, 'min'))}</b> min
+        {po && po.games > 0 && (
+          <>
+            {' '}
+            · playoffs <b>{po.games}</b> · <b>{f1(per(po, 'min'))}</b> min
+          </>
+        )}
+      </p>
+      <div className="pc-grid">
+        {(
+          [
+            ['big', [2, 3, 4]],
+            ['shoot', [7, 8, 9]],
+            ['rest', [5, 6, 10, 11]],
+          ] as const
+        ).map(([g, idx]) => (
+          <div key={g} className={`pg-${g}`}>
+            {idx.map((i) => (
+              <div key={heads[i]}>
+                <span>{heads[i]}</span>
+                <b>{statRow(line)[i]}</b>
+                {po && po.games > 0 && <small>PO {statRow(po)[i]}</small>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      {(
+        [
+          [0, heads.length, 'pc-all'],
+        ] as const
+      ).map(([from, to, cls]) => (
+        <div key={`${cls}${from}`} className={cx('pc-wrap', cls)}>
+          <table className="pc-t">
+            <thead>
               <tr>
-                <td>Playoffs</td>
-                {statRow(po).map((v, i) => (
-                  <td key={i} className={i === 2 ? 'k' : undefined}>
-                    {v}
-                  </td>
+                <th />
+                {heads.slice(from, to).map((h) => (
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {[
+                ['Season', line] as const,
+                ...(po && po.games > 0 ? [['Playoffs', po] as const] : []),
+              ].map(([label, l]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  {statRow(l)
+                    .slice(from, to)
+                    .map((v, i) => (
+                      <td key={i} className={i + from === 2 ? 'k' : undefined}>
+                        {v}
+                      </td>
+                    ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
       <p className="pc-real">
         His real {span.spanLabel}:{' '}
         <b>
@@ -613,7 +653,7 @@ function SeasonBody({
     { id: 'standings', label: 'Standings' },
     { id: 'stats', label: 'Stats' },
     { id: 'awards', label: 'Awards' },
-    { id: 'playoffs', label: 'The playoffs' },
+    { id: 'playoffs', label: 'Playoffs' },
   ];
   const onNav = (id: Tab | 'playoffs') => {
     if (id === 'playoffs') {
@@ -2055,13 +2095,17 @@ function Finale({
 function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [string, SeasonPlayerLine[]][] }) {
   const parts: [string | null, SeasonPlayerLine[]][] = groups ?? [[null, lines ?? []]];
   const topPts = Math.max(0, ...parts.flatMap(([, ls]) => ls.map((l) => per(l, 'pts'))));
+  // 2026-10-29 (playtest 11): a G column of 82s says nothing and costs a phone its names, so it
+  // shows only while the players' games differ.
+  const games = new Set(parts.flatMap(([, ls]) => ls.map((l) => l.games)));
+  const showG = games.size > 1;
   return (
     <div className="sbox-wrap">
       <table className="box sbox">
         <thead>
           <tr>
             <th>Player</th>
-            <th>G</th>
+            {showG && <th>G</th>}
             <th>MIN</th>
             <th>PTS</th>
             <th>REB</th>
@@ -2077,7 +2121,7 @@ function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [
             <Fragment key={label ?? 'all'}>
               {label && ls.length > 0 && (
                 <tr className="grp">
-                  <td colSpan={10}>{label}</td>
+                  <td colSpan={showG ? 10 : 9}>{label}</td>
                 </tr>
               )}
               {ls.map((l) => (
@@ -2093,7 +2137,7 @@ function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [
                 </PlayerName>
                 <small>{l.span.primaryPosition}</small>
               </td>
-              <td>{l.games}</td>
+              {showG && <td>{l.games}</td>}
               <td>{f1(per(l, 'min'))}</td>
               <td className={per(l, 'pts') === topPts ? 'hi' : undefined}>{f1(per(l, 'pts'))}</td>
               <td>{f1(per(l, 'reb'))}</td>
@@ -2632,7 +2676,7 @@ function PlayInScreen({
       {yourNext ? (
         <Btn onClick={() => setWatching(yourNext)}>Watch your game</Btn>
       ) : (
-        <Btn onClick={() => setWatching(playIn[Math.max(2, shown)])}>Watch the 8-seed game</Btn>
+        <Btn onClick={() => setWatching(playIn[Math.max(2, shown)])}>Watch it live</Btn>
       )}
       <Btn kind="line" onClick={() => setShown(shown < 2 ? 2 : playIn.length)}>
         {shown < 2 ? 'Sim your game' : 'Sim to the playoffs'}
