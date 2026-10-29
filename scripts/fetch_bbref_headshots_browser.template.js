@@ -18,6 +18,11 @@
   const PLAYERS = __PLAYERS__; // [name, Basketball-Reference id, id guessed]
   const PAUSE_MS = 3500;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // The site quiets console.log (2026-10-29: nothing showed), so the lines go through a clean
+  // console from a hidden frame, as warnings (shown even when Info is filtered out), and the tab's
+  // title shows the progress.
+  const frame = document.body.appendChild(Object.assign(document.createElement('iframe'), { hidden: true }));
+  const log = (...a) => frame.contentWindow.console.warn(...a);
   const list = TEST ? PLAYERS.slice(0, 5) : PLAYERS;
   const photos = {};
   const missing = [];
@@ -38,7 +43,7 @@
       const res = await fetch(url, { credentials: 'omit' });
       await sleep(PAUSE_MS);
       if (res.status === 429) {
-        console.log('  429: too many requests, waiting a minute');
+        log('  429: too many requests, waiting a minute');
         await sleep(60000);
         continue;
       }
@@ -76,15 +81,16 @@
   }
   window.bbrefHeadshotsDownload = save;
 
-  console.log(`BBRef headshots: ${list.length} players${TEST ? ' (TEST)' : ''}, about ${Math.ceil((list.length * PAUSE_MS * 2) / 60000)} min`);
+  log(`BBRef headshots: ${list.length} players${TEST ? ' (TEST)' : ''}, about ${Math.ceil((list.length * PAUSE_MS * 2) / 60000)} min`);
   for (let i = 0; i < list.length; i++) {
     await one(list[i]);
-    if ((i + 1) % 20 === 0 || i + 1 === list.length) console.log(`  ${i + 1}/${list.length} · ${Object.keys(photos).length} photos · ${missing.length} without one · ${errors.length} errors`);
+    document.title = `${i + 1}/${list.length} headshots`;
+    if ((i + 1) % 20 === 0 || i + 1 === list.length) log(`  ${i + 1}/${list.length} · ${Object.keys(photos).length} photos · ${missing.length} without one · ${errors.length} errors`);
   }
-  console.log(`Done: ${Object.keys(photos).length} photos, ${missing.length} without one, ${errors.length} errors.`);
+  log(`Done: ${Object.keys(photos).length} photos, ${missing.length} without one, ${errors.length} errors.`);
   if (TEST) {
-    for (const [id, p] of Object.entries(photos)) console.log(`  ${p.name} (${id}) → page "${p.page}" · ${Math.round((p.jpg.length * 3) / 4 / 1024)} KB · ${p.src}`);
-    for (const m of [...missing, ...errors]) console.log(`  ${m.join(' · ')}`);
+    for (const [id, p] of Object.entries(photos)) log(`  ${p.name} (${id}) → page "${p.page}" · ${Math.round((p.jpg.length * 3) / 4 / 1024)} KB · ${p.src}`);
+    for (const m of [...missing, ...errors]) log(`  ${m.join(' · ')}`);
   }
   save();
 })();
