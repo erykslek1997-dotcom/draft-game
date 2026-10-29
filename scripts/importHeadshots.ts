@@ -46,7 +46,7 @@ for (const [id, p] of entries) {
     let img = sharp(Buffer.from(bytes(p), 'base64'));
     if (p.jpg) {
       const { width = 0, height = 0 } = await img.metadata();
-      if (height > width) img = sharp(await img.extract({ left: 0, top: 0, width, height: width }).toBuffer());
+      if (height > width) img = sharp(await img.extract({ left: 0, top: Math.min(height - width, Math.round(width * 0.06)), width, height: width }).toBuffer());
     }
     const buf = await img
       .resize({ width: MAX_WIDTH, withoutEnlargement: true })
