@@ -435,9 +435,14 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .rc-main em { font: 500 11px var(--num); font-style: normal; color: var(--ink3); }
 .nt .rc-bench { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; min-width: 0; font: 400 12px var(--sans); color: var(--ink3); }
 .nt .rc-bench > span { white-space: nowrap; }
+/* Desktop: the rival's five as small columns side by side, like your roster at a smaller size. */
 @media (min-width: 901px) {
-  .nt .rc-row { grid-template-columns: 26px 26px 240px minmax(0, 1fr); }
-  .nt .rc-bench { justify-content: flex-start; }
+  .nt .rlist.compact { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; border-top: 0; }
+  .nt .rc-row { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 8px 10px; text-align: center; border: 1px solid var(--rule); border-top: 3px solid var(--team, var(--rule3)); border-radius: 4px; background: var(--surf); }
+  .nt .rc-row .rl-slot { align-self: flex-start; }
+  .nt .rc-row .rl-face img, .nt .rc-row .rl-face .ini { width: 40px; height: 40px; font-size: 13px; }
+  .nt .rc-main { max-width: 100%; }
+  .nt .rc-bench { flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--rule); width: 100%; }
 }
 
 /* 2026-10-29: the room as a thread off X — avatar, name, handle and age, the post, its counts; a
