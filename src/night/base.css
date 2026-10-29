@@ -398,11 +398,21 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .rl-bench.many .rl-main b { font-size: 14px; }
 .nt .rl-bench.many .rl-main span { font-size: 10px; }
 .nt .rl-none { font-style: italic; color: var(--ink3); font-size: 13px; }
-/* Desktop: two columns of narrower rows instead of one row the width of the page. */
+/* Desktop: the five side by side, a column a slot — slot and team colour on top, the starter large,
+   his bench under a rule, smaller. */
 @media (min-width: 901px) {
-  .nt .rlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, auto); grid-auto-flow: column; column-gap: 18px; border-top: 0; }
-  .nt .rl-row { border-top: 1px solid var(--rule); border-bottom: 0; }
-  .nt .rlist { border-bottom: 1px solid var(--rule); }
+  .nt .rlist { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; border-top: 0; }
+  .nt .rl-row { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; border: 1px solid var(--rule); border-top: 3px solid var(--team, var(--rule3)); border-radius: 4px; background: var(--surf); }
+  .nt .rl-slot { padding: 8px 12px 0; font-size: 14px; }
+  .nt .rl-start { flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 6px 10px 14px; }
+  .nt .rl-start .rl-face img, .nt .rl-start .rl-face .ini { width: 64px; height: 64px; font-size: 18px; }
+  .nt .rl-start .rl-main { align-items: center; max-width: 100%; }
+  .nt .rl-start .rl-main b { font-size: 20px; }
+  .nt .rl-bench { padding: 10px 12px 12px; border-left: 0; border-top: 1px solid var(--rule); gap: 8px; }
+  .nt .rl-bench .rl-face img, .nt .rl-bench .rl-face .ini, .nt .rl-bench.many .rl-face img, .nt .rl-bench.many .rl-face .ini { width: 30px; height: 30px; font-size: 11px; }
+  .nt .rl-bench .rl-main b, .nt .rl-bench.many .rl-main b { font-size: 15px; }
+  .nt .rl-bench .rl-main span, .nt .rl-bench.many .rl-main span { font-size: 11px; }
+  .nt .rl-bench .rl-none { font-size: 12px; }
 }
 @media (max-width: 600px) {
   .nt .rl-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 8px 6px 8px 6px; }
