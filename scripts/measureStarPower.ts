@@ -35,6 +35,7 @@ const passes: number[] = [];
 const left: number[][] = [[], [], []];
 const falls: number[] = [];
 const overall: number[] = [];
+const parts: Record<string, number[]> = { talentScore: [], benchDepthScore: [], offenseScore: [], defenseScore: [], spacingScore: [], fitScore: [], rotationScore: [] };
 const best: number[] = [];
 const t0 = Date.now();
 for (let d = 0; d < DRAFTS; d++) {
@@ -56,7 +57,9 @@ for (let d = 0; d < DRAFTS; d++) {
     if ((bestTal.get(key(p.playerName)) ?? 0) >= 90) falls.push(e.pickNumber - talRank.get(key(p.playerName))!);
   }
   passes.push(pass);
-  const ov = s.teams.map((t) => scoreTeam({ ...t, rotation: autoAssignRotation(t.roster) }).overallExact);
+  const scores = s.teams.map((t) => scoreTeam({ ...t, rotation: autoAssignRotation(t.roster) }));
+  for (const sc of scores) for (const k of Object.keys(parts)) parts[k].push((sc as unknown as Record<string, number>)[k]);
+  const ov = scores.map((sc) => sc.overallExact);
   overall.push(...ov);
   best.push(Math.max(...ov));
 }
@@ -67,4 +70,5 @@ console.log(`passes (8+ TAL better on the board, R1-4): ${f(passes)} a draft`);
 console.log(`best TAL left after R2 ${f(left[0])} · R3 ${f(left[1])} · R4 ${f(left[2])}`);
 const sorted = [...falls].sort((a, b) => a - b);
 console.log(`90+ players past their TAL rank: mean ${f(falls)} · 90th pct ${sorted[Math.floor(sorted.length * 0.9)]} · worst ${sorted[sorted.length - 1]}`);
+console.log('parts: ' + Object.entries(parts).map(([k, v]) => `${k.replace('Score', '')} ${f(v)}`).join(' · '));
 console.log(`Overall: mean ${f(overall)} · sd ${sd(overall).toFixed(2)} · best team ${f(best)}`);
