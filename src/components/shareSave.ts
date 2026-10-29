@@ -7,8 +7,10 @@ import { useEffect, useState, type RefObject } from 'react';
  * the system share sheet when available; otherwise a download, and the image is also shown in
  * place so an in-app browser that blocks both (Messenger) can still long-press it to save.
  */
+const SAVE_TIMEOUT_MS = 20000;
+
 export function useSaveCardImage(cardRef: RefObject<HTMLElement | null>, filename: string, shareTitle: string) {
-  const [saveState, setSaveState] = useState<'idle' | 'building' | 'error'>('idle');
+  const [saveState, setSaveState] = useState<'idle' | 'building' | 'saved' | 'error'>('idle');
   const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
   useEffect(() => () => {
     if (savedImageUrl) URL.revokeObjectURL(savedImageUrl);
@@ -21,11 +23,16 @@ export function useSaveCardImage(cardRef: RefObject<HTMLElement | null>, filenam
     try {
       const { toBlob } = await import('html-to-image');
       const background = getComputedStyle(card).backgroundColor;
-      const blob = await toBlob(card, {
-        pixelRatio: 2,
-        backgroundColor: background && background !== 'rgba(0, 0, 0, 0)' ? background : '#0b0f17',
-        filter: (node) => !(node instanceof HTMLElement && node.dataset.shareExclude !== undefined),
-      });
+      // 2026-10-29 (playtest 13: "Saving…" never came back on a phone): a capture that hangs ends
+      // as an error after SAVE_TIMEOUT_MS, so the button offers to try again.
+      const blob = await Promise.race([
+        toBlob(card, {
+          pixelRatio: 2,
+          backgroundColor: background && background !== 'rgba(0, 0, 0, 0)' ? background : '#0b0f17',
+          filter: (node) => !(node instanceof HTMLElement && node.dataset.shareExclude !== undefined),
+        }),
+        new Promise<null>((_, reject) => window.setTimeout(() => reject(new Error('timed out')), SAVE_TIMEOUT_MS)),
+      ]);
       if (!blob) throw new Error('empty image');
       const file = new File([blob], filename, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
@@ -48,7 +55,8 @@ export function useSaveCardImage(cardRef: RefObject<HTMLElement | null>, filenam
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setSaveState('idle');
+      setSaveState('saved');
+      window.setTimeout(() => setSaveState('idle'), 2500);
     } catch {
       setSaveState('error');
     }

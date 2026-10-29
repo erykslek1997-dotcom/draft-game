@@ -340,38 +340,45 @@ function SeasonPlayerCard({
           )}
         </span>
       </div>
-      <div className="pc-wrap">
-        <table className="pc-t">
-          <thead>
-            <tr>
-              <th />
-              {heads.map((h) => (
-                <th key={h}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Season</td>
-              {statRow(line).map((v, i) => (
-                <td key={i} className={i === 2 ? 'k' : undefined}>
-                  {v}
-                </td>
-              ))}
-            </tr>
-            {po && po.games > 0 && (
+      {/* 2026-10-29 (playtest 9: FG% ran off the edge): on a phone the twelve columns come in two
+          tables of six, one under the other, so nothing scrolls sideways. */}
+      {(
+        [
+          [0, heads.length, 'pc-all'],
+          [0, 6, 'pc-half'],
+          [6, heads.length, 'pc-half'],
+        ] as const
+      ).map(([from, to, cls]) => (
+        <div key={`${cls}${from}`} className={cx('pc-wrap', cls)}>
+          <table className="pc-t">
+            <thead>
               <tr>
-                <td>Playoffs</td>
-                {statRow(po).map((v, i) => (
-                  <td key={i} className={i === 2 ? 'k' : undefined}>
-                    {v}
-                  </td>
+                <th />
+                {heads.slice(from, to).map((h) => (
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {[
+                ['Season', line] as const,
+                ...(po && po.games > 0 ? [['Playoffs', po] as const] : []),
+              ].map(([label, l]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  {statRow(l)
+                    .slice(from, to)
+                    .map((v, i) => (
+                      <td key={i} className={i + from === 2 ? 'k' : undefined}>
+                        {v}
+                      </td>
+                    ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
       <p className="pc-real">
         His real {span.spanLabel}:{' '}
         <b>
@@ -613,7 +620,7 @@ function SeasonBody({
     { id: 'standings', label: 'Standings' },
     { id: 'stats', label: 'Stats' },
     { id: 'awards', label: 'Awards' },
-    { id: 'playoffs', label: 'The playoffs' },
+    { id: 'playoffs', label: 'Playoffs' },
   ];
   const onNav = (id: Tab | 'playoffs') => {
     if (id === 'playoffs') {
@@ -2055,13 +2062,17 @@ function Finale({
 function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [string, SeasonPlayerLine[]][] }) {
   const parts: [string | null, SeasonPlayerLine[]][] = groups ?? [[null, lines ?? []]];
   const topPts = Math.max(0, ...parts.flatMap(([, ls]) => ls.map((l) => per(l, 'pts'))));
+  // 2026-10-29 (playtest 11): a G column of 82s says nothing and costs a phone its names, so it
+  // shows only while the players' games differ.
+  const games = new Set(parts.flatMap(([, ls]) => ls.map((l) => l.games)));
+  const showG = games.size > 1;
   return (
     <div className="sbox-wrap">
       <table className="box sbox">
         <thead>
           <tr>
             <th>Player</th>
-            <th>G</th>
+            {showG && <th>G</th>}
             <th>MIN</th>
             <th>PTS</th>
             <th>REB</th>
@@ -2077,7 +2088,7 @@ function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [
             <Fragment key={label ?? 'all'}>
               {label && ls.length > 0 && (
                 <tr className="grp">
-                  <td colSpan={10}>{label}</td>
+                  <td colSpan={showG ? 10 : 9}>{label}</td>
                 </tr>
               )}
               {ls.map((l) => (
@@ -2093,7 +2104,7 @@ function SeasonTable({ lines, groups }: { lines?: SeasonPlayerLine[]; groups?: [
                 </PlayerName>
                 <small>{l.span.primaryPosition}</small>
               </td>
-              <td>{l.games}</td>
+              {showG && <td>{l.games}</td>}
               <td>{f1(per(l, 'min'))}</td>
               <td className={per(l, 'pts') === topPts ? 'hi' : undefined}>{f1(per(l, 'pts'))}</td>
               <td>{f1(per(l, 'reb'))}</td>
@@ -2632,7 +2643,7 @@ function PlayInScreen({
       {yourNext ? (
         <Btn onClick={() => setWatching(yourNext)}>Watch your game</Btn>
       ) : (
-        <Btn onClick={() => setWatching(playIn[Math.max(2, shown)])}>Watch the 8-seed game</Btn>
+        <Btn onClick={() => setWatching(playIn[Math.max(2, shown)])}>Watch it live</Btn>
       )}
       <Btn kind="line" onClick={() => setShown(shown < 2 ? 2 : playIn.length)}>
         {shown < 2 ? 'Sim your game' : 'Sim to the playoffs'}

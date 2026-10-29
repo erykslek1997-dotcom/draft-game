@@ -312,7 +312,7 @@ export function ShareNight({ d, link, fileName, onClose }: { d: PosterData; link
         </div>
         <div className="btn2" style={{ marginTop: 14 }}>
           <Btn onClick={saveImage} disabled={saveState === 'building'}>
-            {saveState === 'building' ? 'Saving…' : saveState === 'error' ? 'Try again' : 'Save image'}
+            {saveState === 'building' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : saveState === 'error' ? 'Try again' : 'Save image'}
           </Btn>
           {link ? (
             <Btn

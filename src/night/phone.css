@@ -466,3 +466,57 @@
 .nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }
 .nt .card .roles .bn-row .bn-f { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
 .nt .card .roles .bn-row .bn-f img, .nt .card .roles .bn-row .bn-f .ini { width: 30px; height: 30px; border-width: 1px; font-size: 11px; }
+
+/* 2026-10-29 (playtest 10 and 12: "wszystkie te przyciski powinny wyglądać jak filtrowanie pozycji
+   podczas draftu"): every switch and tab reads like the draft's position filter — plain labels, the
+   chosen one a cream chip. Where the labels sit on a rule (a section heading, the live game's tabs,
+   the season's pages on a phone) the chip stands on it with square feet, as the position tabs do;
+   elsewhere it is a rounded chip. No underline under the chosen label. */
+.nt :is(h3 .sw, .sw2, .seg, .tabs, .tabs2, .speeds) { gap: 2px; }
+.nt :is(h3 .sw, .sw2, .seg, .tabs, .tabs2, .speeds) > button { padding: 5px 10px; margin-bottom: 0; border: 0; border-radius: 6px; color: var(--ink3); }
+.nt :is(h3 .sw, .sw2, .seg, .tabs, .tabs2, .speeds) > button.on { background: var(--card); color: var(--cink); }
+.nt :is(h3 .sw, .sw2, .seg, .tabs, .tabs2, .speeds) > button:not(.on):not(:disabled):hover { color: var(--ink); }
+.nt .seg > button.on small { color: var(--red); }
+.nt h3 .sw { align-self: flex-end; margin-bottom: -8px; }
+.nt h3 .sw > button { border-radius: 6px 6px 0 0; padding: 6px 12px 8px; }
+.nt .tabs2 > button { border-radius: 6px 6px 0 0; padding: 7px 12px 8px; margin-bottom: -1.5px; }
+@media (max-width: 600px) {
+  .nt aside section.snav { gap: 0; border-bottom: 1.5px solid var(--rule2); overflow-x: auto; }
+  .nt aside section.snav .kv.nav { border: 0; border-radius: 6px 6px 0 0; padding: 7px 9px 8px; font-size: 14px; margin-bottom: -1.5px; }
+  .nt aside section.snav .kv.nav span { color: var(--ink3); }
+  .nt aside section.snav .kv.nav.on { background: var(--card); padding-left: 9px; }
+  .nt aside section.snav .kv.nav.on span { color: var(--cink); }
+}
+
+/* 2026-10-29 (playtest 9: "sporo empty space"): the season card of a player is three lines, so on a
+   phone it is a sheet from the bottom as tall as it needs, not the full screen; its numbers come in
+   two rows of six (`SeasonPlayerCard`). */
+.nt .pc-half { display: none; }
+@media (max-width: 600px) {
+  .nt .pc-all { display: none; }
+  .nt .pc-half { display: block; overflow: visible; margin: 2px 0 6px; }
+  .nt .pc-half .pc-t { min-width: 0; table-layout: fixed; }
+  .nt .pc-half .pc-t th:first-child, .nt .pc-half .pc-t td:first-child { width: 78px; }
+  .nt .dlg.pcard { top: auto; bottom: 0; height: auto; max-height: 92dvh; border-radius: 14px 14px 0 0; border-top: 1px solid var(--rule2); padding-top: 4px; }
+  .nt .dlg.pcard .dlg-head { position: absolute; right: 16px; top: 14px; padding: 0; margin: 0; border: 0; background: none; }
+  .nt .dlg.pcard .pc-head { padding-top: 14px; padding-right: 40px; }
+}
+
+/* 2026-10-29 (playtest 11, a team's window on a phone: "spory syf"): the window is the full screen
+   like every other one (`.dlg.wide` outranked that rule), and a player is one line — the short name
+   with the position beside it, never broken over three. */
+@media (max-width: 600px) {
+  .nt .dlg.wide { top: 0; left: 0; transform: none; width: 100%; max-height: none; height: 100dvh; border-top: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: none; }
+  .nt .twin .sbox td:first-child { white-space: nowrap; line-height: 1.2; }
+  .nt .twin .sbox td:first-child small { display: inline; margin-left: 5px; }
+  .nt .twin .sbox td:not(:first-child), .nt .twin .sbox th:not(:first-child) { padding-left: 7px; font-size: 13px; }
+  .nt .twin .dlg-head { padding-bottom: 10px; margin-bottom: 10px; }
+  .nt .twin .tw-split > section, .nt .twin .tw-split > * { min-width: 0; }
+  .nt .twin .sbox td:first-child .pn { display: inline-block; max-width: 112px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  /* 3P% (the last column) stays on a desktop; the phone keeps FG% and every name on one line */
+  .nt .twin .sbox tr:not(.grp) td:last-child, .nt .twin .sbox th:last-child { display: none; }
+}
+
+/* 2026-10-29 (playtest 10): in a played play-in game the loser's score is as quiet as his name, so
+   the winner's number is the one that reads first. */
+.nt .pi-g:not(.live) .tr:not(.win):not(.you) .w { color: var(--ink3); }
