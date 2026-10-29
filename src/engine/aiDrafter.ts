@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, realSecondaryPositions, PARTIAL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
@@ -398,6 +398,24 @@ function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): nu
   if (p.primaryPosition !== 'C') return base;
   const extra = Math.min(MAX_C_REDUNDANCY_EXTRA_DISCOUNT, excess * C_REDUNDANCY_EXTRA_DISCOUNT_SCALE);
   return base + extra;
+}
+
+/**
+ * 2026-10-29 (the user's auto-finished draft: Jokic, then Embiid at pick 21 — two MVP centres, one
+ * forced to a four he never played; `scripts/measureAiTwinCentres.ts`: the strategies took two 90+
+ * centres for 6% of 80 teams, mostly a pair one of whom plays the four — Duncan or Wembanyama —
+ * and twice two who can't): a starter-grade centre next to one already on the roster, when neither
+ * plays the four at least as a stretch, costs `TWIN_CENTRE.share` value a TAL point past
+ * `TWIN_CENTRE.floor`. Twin towers who can (Duncan + Wembanyama) and backup centres are untouched.
+ */
+const TWIN_CENTRE = { floor: 80, share: 0.8 };
+const playsFour = (p: PlayerSpan) => p.primaryPosition !== 'C' || positionCompetenceScore(p, 'PF') >= PARTIAL_SCORE;
+function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (p.primaryPosition !== 'C' || playsFour(p)) return 0;
+  const talent = effectiveTalent(p);
+  if (talent < TWIN_CENTRE.floor) return 0;
+  const blocked = roster.some((r) => r.primaryPosition === 'C' && !playsFour(r) && effectiveTalent(r) >= TWIN_CENTRE.floor);
+  return blocked ? TWIN_CENTRE.share * (talent - TWIN_CENTRE.floor) : 0;
 }
 
 interface NeedContext {
@@ -2223,6 +2241,7 @@ export function pickForAi(
       greatestPeakTierBonus: greatestPeakTierBonus(p),
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
+      twinCentrePenalty: -twinCentrePenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
       boardNoise: BOARD_NOISE_POINTS * boardNoise(ruleset?.boardSeed, p),
