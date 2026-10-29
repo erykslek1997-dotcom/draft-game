@@ -344,13 +344,21 @@ function SeasonPlayerCard({
           )}
         </span>
       </div>
-      {/* 2026-10-29 (playtest 9: FG% ran off the edge): on a phone the twelve columns come in two
-          tables of six, one under the other, so nothing scrolls sideways. */}
+      {/* 2026-10-29 (playtest 9: FG% ran off the edge; then "niepotrzebnie dwa razy season"): on a
+          phone the line is a grid of twelve tiles, the label over the number, with the playoffs
+          under it in small when he played them — no sideways scroll and no repeated row label. */}
+      <div className="pc-grid">
+        {heads.map((h, i) => (
+          <div key={h} className={i === 2 ? 'k' : undefined}>
+            <span>{h}</span>
+            <b>{statRow(line)[i]}</b>
+            {po && po.games > 0 && <small>PO {statRow(po)[i]}</small>}
+          </div>
+        ))}
+      </div>
       {(
         [
           [0, heads.length, 'pc-all'],
-          [0, 6, 'pc-half'],
-          [6, heads.length, 'pc-half'],
         ] as const
       ).map(([from, to, cls]) => (
         <div key={`${cls}${from}`} className={cx('pc-wrap', cls)}>

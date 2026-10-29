@@ -490,13 +490,16 @@
 
 /* 2026-10-29 (playtest 9: "sporo empty space"): the season card of a player is three lines, so on a
    phone it is a sheet from the bottom as tall as it needs, not the full screen; its numbers come in
-   two rows of six (`SeasonPlayerCard`). */
-.nt .pc-half { display: none; }
+   a grid of tiles (`SeasonPlayerCard`). */
+.nt .pc-grid { display: none; }
 @media (max-width: 600px) {
   .nt .pc-all { display: none; }
-  .nt .pc-half { display: block; overflow: visible; margin: 2px 0 6px; }
-  .nt .pc-half .pc-t { min-width: 0; table-layout: fixed; }
-  .nt .pc-half .pc-t th:first-child, .nt .pc-half .pc-t td:first-child { width: 78px; }
+  .nt .pc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 10px 0 12px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+  .nt .pc-grid > div { background: var(--bg); padding: 8px 10px 9px; }
+  .nt .pc-grid span { display: block; font: 700 11px var(--sans); letter-spacing: 0.06em; color: var(--ink3); }
+  .nt .pc-grid b { display: block; margin-top: 3px; font: 600 18px var(--num); color: var(--ink2); }
+  .nt .pc-grid .k b { color: var(--ink); }
+  .nt .pc-grid small { display: block; margin-top: 2px; font: 500 11px var(--num); color: var(--ink3); }
   .nt .dlg.pcard { top: auto; bottom: 0; height: auto; max-height: 92dvh; border-radius: 14px 14px 0 0; border-top: 1px solid var(--rule2); padding-top: 4px; }
   .nt .dlg.pcard .dlg-head { position: absolute; right: 16px; top: 14px; padding: 0; margin: 0; border: 0; background: none; }
   .nt .dlg.pcard .pc-head { padding-top: 14px; padding-right: 40px; }
