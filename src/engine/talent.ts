@@ -15,6 +15,7 @@ import { withHustleBonus } from '../data/hustleDefenders';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
 import { liftForReducedRole } from './reducedRole';
+import { realSpan } from './realAdvancedLookup';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
 import { playmakingThreeLevelOffenseAdjustment } from './playmakingThreeLevel';
@@ -2009,9 +2010,42 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // below is applied once, not compounded through the reference.
   const reduced = Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
   preCreditCache.set(span.id, reduced);
-  const result = Math.max(0, Math.min(100, Math.round(reduced + defenseCreditLift(span, reduced))));
+  const credited = reduced + defenseCreditLift(span, reduced);
+  const result = Math.max(0, Math.min(100, Math.round(credited + lowUsageLift(span, credited) + namedTalLift(span))));
   talentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * 2026-10-29 (the user: "players who do the dirty work are undervalued", Rodman 1993-95 at TAL 52;
+ * `scripts/auditDirtyWork.ts`): against peak RAPM (1,213 players from 1997, the reverse fit — RAPM
+ * on TAL — so the noise does not pull every low-TAL group down) the players with under 16% usage
+ * sit 3.4 TAL (±1.5) under their plus-minus, the 22%+ ones 2.0 over. Up to `LOW_USAGE_LIFT.points`
+ * at `LOW_USAGE_LIFT.full` usage or less, nothing from `from` up; faded out over TAL 80-90 like the
+ * defense credit (a star's value already reads off his box). Real USG% (BBRef); none read before 1977-78.
+ */
+const LOW_USAGE_LIFT = { points: 3, full: 12, from: 17, fadeFrom: 80, fadeTo: 90 };
+function lowUsageLift(span: PlayerSpan, tal: number): number {
+  const usg = realSpan(span)?.usg;
+  if (usg === undefined) return 0;
+  const fade = clamp01((LOW_USAGE_LIFT.fadeTo - tal) / (LOW_USAGE_LIFT.fadeTo - LOW_USAGE_LIFT.fadeFrom));
+  return LOW_USAGE_LIFT.points * clamp01((LOW_USAGE_LIFT.from - usg) / (LOW_USAGE_LIFT.from - LOW_USAGE_LIFT.full)) * fade;
+}
+
+/**
+ * 2026-10-29, the user's call (c): Dennis Rodman, whose value the box does not see — BPM +1.3 in
+ * 1993-95, while his teams' with-and-without (prime WOWYR +5.3, 63rd of 661) reads him at an
+ * All-Star's level. His Detroit / San Antonio / Chicago windows lifted toward that (TAL 52 -> ~66),
+ * the same named-exception footing as Marion's defense bonus.
+ */
+const NAMED_TAL_LIFT: Record<string, { from: number; to: number; points: number }> = {
+  'dennis rodman': { from: 1989, to: 1998, points: 14 },
+};
+function namedTalLift(span: PlayerSpan): number {
+  const n = NAMED_TAL_LIFT[normalizePlayerName(span.playerName)];
+  if (!n) return 0;
+  const ys = spanEndYears(span.spanLabel);
+  return ys.length && ys.every((y) => y >= n.from && y <= n.to) ? n.points : 0;
 }
 
 const preCreditCache = new Map<string, number>();

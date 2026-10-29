@@ -1,6 +1,6 @@
 import { players } from '../src/data/players';
 import { autoAssignRotation } from '../src/engine/rotation';
-import { ballLoadAdjustment, benchDepthScore, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
+import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
 import { liftAdjustment } from '../src/engine/teammateLift';
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
 // `fit.ts` now, not `scoring.ts` (which only imports it internally for `scoreTeam`).
@@ -81,18 +81,21 @@ const breakdown = scoreTeam(fullRoster);
 // internal weights renormalize the project's last validated 6-way split (talent .30 / bench .10 /
 // rotation .08 / fit .18 / offense .17 / defense .17) to sum to 1 within their bucket. See
 // `scoreTeam`'s docstring in scoring.ts.
-const qualitySum = 0.30 + 0.10 + 0.08;
+// 2026-10-28, metrics audit: quality's internal weights are talent .271 / bench .17 / rotation .039
+// (same .48 bucket), and the second-ball-handler cost joins the whole-team terms.
+const qualitySum = 0.271 + 0.17 + 0.039;
 const fitSum = 0.18 + 0.17 + 0.17;
 const recomputedOverall = Math.round(
-  (breakdown.talentScore * (0.30 / qualitySum) +
-    breakdown.benchDepthScore * (0.10 / qualitySum) +
-    breakdown.rotationScore * (0.08 / qualitySum)) * 0.5 +
+  (breakdown.talentScore * (0.271 / qualitySum) +
+    breakdown.benchDepthScore * (0.17 / qualitySum) +
+    breakdown.rotationScore * (0.039 / qualitySum)) * 0.5 +
   (breakdown.fitScore * (0.18 / fitSum) +
     breakdown.offenseScore * (0.17 / fitSum) +
     breakdown.defenseScore * (0.17 / fitSum)) * 0.5 +
     // Plus the two small whole-team terms: the ball load and (2026-10-15) the teammate lift.
     ballLoadAdjustment(fullRoster) +
-    liftAdjustment(fullRoster),
+    liftAdjustment(fullRoster) +
+    ballHandlerAdjustment(fullRoster),
 );
 assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
 

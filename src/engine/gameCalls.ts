@@ -67,7 +67,7 @@ export function gameCalls(game: LiveGameResult, short: [string, string]): GameCa
     { k: -1, pts: 0, called: 0 },
     { k: -1, pts: 0, called: 0 },
   ];
-  const lastMake = [2880, 2880];
+  const lastMake = [game.gameSeconds ?? 2880, game.gameSeconds ?? 2880];
   const droughtCalled = [false, false];
   const leadCalled = [0, 0];
   const deficit = [0, 0];

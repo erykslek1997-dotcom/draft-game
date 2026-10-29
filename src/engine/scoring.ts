@@ -1,3 +1,4 @@
+import { ballHandlerCost } from './ballHandling';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
@@ -508,9 +509,22 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // five-man units and of the game's own mechanics, the mismatch-structure part earned more than its
 // 0.118 and the offensive-glass term (halved below) pointed the wrong way in the mechanics. Mismatch
 // x1.5, the rest scaled back to a sum of 1 so the Offense scale stays where it was.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.408;
+// 2026-10-28, step 6.3 (`scripts/measureStarSpacingTeams.ts`, 962 real team-seasons 1973-74 on, ORtg
+// over the league's): beyond the five's offensive talent, 10 points of team spacing are worth +0.15
+// ORtg (90% +0.11…+0.21), ~0.9 O-TAL points — the game played ~1.8 and the Offense score more.
+// Spacing 0.17 -> 0.04, the difference to O-TAL: Offense vs real ORtg r 0.622 -> 0.634, Overall vs
+// the bench leagues' margin R² 0.57 -> 0.58 (with the game's spacing cut, contextStats.ts).
+// 2026-10-28, step 6.4 (the user: "ok"): team rim pressure 0.085 -> 0, to O-TAL. On the same 962
+// team-seasons it adds +0.06 ORtg per 10 points beyond the five's talent and spacing (90% −0.04…
+// +0.15) — what a rim attack is worth is already in its players' own scoring. Offense vs real ORtg
+// r 0.634 -> 0.640, Overall vs the bench leagues' margin R² 0.58 -> 0.59. The bar stays on screen.
+// 2026-10-28, later (the user: measure from 1996-97 only): the step 6.3 cut above was read off all
+// eras together, and the 1970s-80s (little spacing to tell apart) dragged it down. From 1996-97 on
+// 10 points of spacing are worth +0.29 ORtg (90% +0.22…+0.35), ~1.9 O-TAL points; back to 0.17.
+// Offense vs real ORtg from 2000 on r 0.650 -> 0.660. An era-aware weight is step 8's.
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.493;
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17;
-const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0.085;
+const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
 const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
 // (0.001 a point on 960 teams), so its share moves to O-TAL. Was .032 (O-TAL .40).
@@ -1722,9 +1736,14 @@ const QUALITY_FIT_SPLIT = 0.5;
  */
 // 2026-10-07, stage 2b step 7: bench depth halfway toward the live game's measure (1.26x the
 // engine's), within the same .48 bucket. Was .30 / .10 / .08.
-const QUALITY_TALENT_WEIGHT = 0.289 / 0.48;
-const QUALITY_BENCH_WEIGHT = 0.113 / 0.48;
-const QUALITY_ROTATION_WEIGHT = 0.078 / 0.48;
+// 2026-10-28, metrics audit (`scripts/auditMetrics.ts`; the user: "ok"): against 600 real
+// team-seasons (SRS) and the bench leagues in the game's mechanics, bench depth earned 3.2x / 1.6x
+// its weight and rotation less than nothing / 0.5x — the only two parts both judges agree on. Bench
+// .113 -> .17, rotation .078 -> .039, talent takes the rest: Overall vs real SRS r 0.752 -> 0.758,
+// vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
+const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
+const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
+const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.17 / 0.52;
 const FIT_DEFENSE_WEIGHT = 0.17 / 0.52;
@@ -1768,6 +1787,18 @@ export function topFiveUsageLoad(team: Team): number {
   if (top.length < 5) return BALL_LOAD_TUNING.ref;
   return top.reduce((sum, { p }) => sum + realUsageShare(p), 0);
 }
+export function ballHandlerAdjustment(team: Team): number {
+  return -(ballHandlerCost(primaryStarters(team).map((s) => s.player)) - BALL_HANDLER_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+/**
+ * Overall points per ORtg point of the starters' cost, and the drafted starters' typical cost (so
+ * the league's Overall stays put). Set on the game's own mechanics, 160 bench-league teams with and
+ * without the cost (2026-10-28): at 1/0.85 an Overall point of it moved the league margin 0.73 a
+ * 100 trips against the ~0.97 the rest of Overall delivers, so 0.75 of that; mean cost 0.54.
+ */
+export const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
+const BALL_HANDLER_REF = 0.54;
+
 export function ballLoadAdjustment(team: Team): number {
   return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));
 }
@@ -1786,7 +1817,10 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     ballLoadAdjustment(team) +
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
     // game plays it, so the team's number carries it too.
-    liftAdjustment(team);
+    liftAdjustment(team) +
+    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
+    // for the five on the floor; the team's number takes it for the starters.
+    ballHandlerAdjustment(team);
   const overall = Math.round(overallExact);
   return {
     talentScore: talent,

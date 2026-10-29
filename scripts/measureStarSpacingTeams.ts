@@ -1,0 +1,272 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import teamSeasons from '../src/data/awards/teamSeasons.json';
+import { draftPool } from '../src/data/draftPool';
+import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
+import { spanEndYears } from '../src/engine/era';
+import { realSeason } from '../src/engine/realAdvancedLookup';
+import { autoAssignRotation } from '../src/engine/rotation';
+import { offenseScore, offenseScoreBreakdown } from '../src/engine/scoring';
+import { computeOffensiveTalent } from '../src/engine/talent';
+import { rimPressureForFit } from '../src/engine/rimPressure';
+import { teamSpacingValue } from '../src/engine/midrangeGravity';
+import { ballShare } from '../src/engine/ballHandling';
+import { mechanicsPer100 } from '../src/engine/liveGame';
+import benchTeams from '../src/data/benchTeams.json';
+import { spanById } from '../src/engine/bestFive';
+import { scoreTeam } from '../src/engine/scoring';
+import type { Team } from '../src/engine/types';
+
+/**
+ * 2026-10-28, step 6.3, team-season version (the user: Giannis at Spacing 51 barely pays): does a star who scores at the
+ * rim and cannot shoot lose more beside poor shooters than other stars do? Same units and loader as
+ * `measureBallDominance.ts`. The star = the five's top O-TAL; "rim star" = his rim pressure high and
+ * his own spacing low; the four beside him = their mean spacing value (`teamSpacingValue`).
+ *
+ * (Loader copied from measureBallDominance.ts — step 6.2:)
+ * 2026-10-28, step 6.2 (the user: "Harden i Kobe nie powinni ze sobą fitować"): does a second
+ * ball-dominant player cost a real five offense beyond what its players are worth? Ball dominance
+ * measured directly: NBA.com tracking time of possession over minutes played (2013-14 on; Harden
+ * and Westbrook 2017-18 ~0.25 of their floor time with the ball, a spot-up wing ~0.03). Every
+ * NBA.com five-man unit with `--min` minutes; expectation = the engine's Offense score of that five
+ * (each player's pool span covering the season); judge = the unit's ORtg over the league's that
+ * season, minutes-weighted.
+ *
+ *   npx tsx scripts/measureBallDominance.ts [--min=100]
+ */
+const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
+const MIN_UNIT_MINUTES = Number(args.min ?? 100);
+const RAW = resolve(import.meta.dirname, '../src/data/raw/nbaStats');
+function csv(file: string): Record<string, string>[] {
+  const [head, ...lines] = readFileSync(resolve(RAW, file), 'utf8').trim().split(/\r?\n/);
+  const cols = head.split(',');
+  return lines.map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], v])));
+}
+
+// Ball share by season|player id.
+const ball = new Map<string, { name: string; share: number }>();
+for (const r of csv('player_possessions.csv')) {
+  const min = Number(r.MIN);
+  if (min < 200) continue;
+  const key = `${r.SEASON}|${r.PLAYER_ID}`;
+  const share = Number(r.TIME_OF_POSS) / min;
+  const prev = ball.get(key);
+  if (!prev || share > prev.share) ball.set(key, { name: r.PLAYER_NAME, share }); // traded players: either row
+}
+
+const byName = new Map<string, PlayerSpan[]>();
+for (const s of draftPool) {
+  const k = normalizePlayerName(s.playerName);
+  byName.set(k, [...(byName.get(k) ?? []), s]);
+}
+const spanFor = (name: string, endYear: number) =>
+  (byName.get(normalizePlayerName(name)) ?? [])
+    .filter((s) => spanEndYears(s.spanLabel).includes(endYear))
+    .sort((a, b) => {
+      const mid = (s: PlayerSpan) => {
+        const ys = spanEndYears(s.spanLabel);
+        return Math.abs(ys[Math.floor(ys.length / 2)] - endYear);
+      };
+      return mid(a) - mid(b);
+    })[0];
+const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+const leagueOrtg = new Map<string, number>();
+for (const [season, rows] of Object.entries(Object.groupBy(teamSeasons as { season: string; ortg: number }[], (r) => r.season)))
+  leagueOrtg.set(season, mean(rows!.map((r) => r.ortg)));
+const teamOf = (roster: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) });
+
+type Row = { rim: number; mm: number; hub: number; arch: string; otal: number; spacing: number; offense: number; rimStar: number; mates: number; starO: number; y: number; mech: number; w: number; who: string };
+const rows: Row[] = [];
+const yard = (benchTeams as { teams: { ids: string[] }[] }[]).slice(0, 4).map((lg, L) => {
+  const ts = lg.teams.map((t, i) => teamOf(t.ids.map(spanById).filter(Boolean) as PlayerSpan[], `y${L}-${i}`));
+  return ts.sort((a, b) => scoreTeam(a).overallExact - scoreTeam(b).overallExact)[Math.floor(ts.length / 2)];
+});
+const cache = new Map<string, { offense: number; mech: number; otal: number; spacing: number; mm: number; rim: number }>();
+// rim star: rim pressure 0-100 scaled from 50 -> 0 to 80 -> 1, times his own spacing deficit (spacing 60 -> 0, 30 -> 1).
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+// Team-seasons (BBRef, 1973-74 on): the five with the most minutes on that team.
+const rosterRows = readFileSync(resolve(import.meta.dirname, '../src/data/raw/playerSeasonTeams.csv'), 'utf8').trim().split(/\r?\n/).slice(1).map((l) => {
+  const m = l.match(/^(\d+),(.*),(\d{4}),(.*),(\d+),(\d+)$/);
+  return m ? { name: m[2].replace(/^"|"$/g, ''), end: Number(m[3]), team: m[4].replace(/^"|"$/g, ''), minutes: Number(m[6]) } : null;
+}).filter((r): r is NonNullable<typeof r> => r !== null);
+const byTeam = Object.groupBy(rosterRows, (r) => `${r.end}|${r.team}`);
+let missingTeams = 0;
+for (const ts of teamSeasons as { season: string; team: string; ortg: number }[]) {
+  const end = parseInt(ts.season.slice(0, 4), 10) + 1;
+  const top = [...(byTeam[`${end}|${ts.team}`] ?? [])].sort((p, q) => q.minutes - p.minutes).slice(0, 5);
+  const five = top.map((r) => spanFor(r.name, end)) as PlayerSpan[];
+  if (top.length < 5 || five.some((x) => !x) || !leagueOrtg.has(ts.season)) {
+    missingTeams++;
+    continue;
+  }
+  const key = five.map((x) => x.id).sort().join('|');
+  let c = cache.get(key);
+  if (!c) {
+    const t = teamOf(five, key);
+    const bd = offenseScoreBreakdown(t);
+    c = { offense: offenseScore(t), mech: yard.reduce((sum, y) => sum + mechanicsPer100(t, y)[0], 0) / yard.length, otal: bd.otal, spacing: bd.spacing, mm: bd.mismatchStructure, rim: bd.rimPressure };
+    cache.set(key, c);
+  }
+  const star = [...five].sort((p, q) => computeOffensiveTalent(q) - computeOffensiveTalent(p))[0];
+  const rimStar = clamp01((rimPressureForFit(star) - 50) / 30) * clamp01((60 - teamSpacingValue(star)) / 30) * clamp01((computeOffensiveTalent(star) - 75) / 15);
+  const mates = mean(five.filter((x) => x !== star).map(teamSpacingValue));
+  rows.push({ rim: c.rim, mm: c.mm, hub: Math.max(...five.map(ballShare)), arch: String(star.offensiveArchetype), otal: c.otal, spacing: c.spacing, offense: c.offense, rimStar, mates, starO: computeOffensiveTalent(star), y: ts.ortg - leagueOrtg.get(ts.season)!, mech: c.mech, w: 1, who: `${ts.season} ${ts.team} ${star.playerName} mates spacing ${mates.toFixed(0)}` });
+}
+console.log(`team-seasons used ${rows.length}, skipped ${missingTeams}`);
+// `FROM=<year>`: keep only seasons ending that year or later (an era check of every result below).
+if (process.env.FROM) rows.splice(0, rows.length, ...rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= Number(process.env.FROM)));
+function wols(X: number[][], y: number[], w: number[]) {
+  const rowsX = X.map((r) => [1, ...r]);
+  const k = rowsX[0].length;
+  const A = Array.from({ length: k }, (_, i) => [...Array.from({ length: k }, (_, j) => rowsX.reduce((s, r, n) => s + w[n] * r[i] * r[j], 0)), rowsX.reduce((s, r, n) => s + w[n] * r[i] * y[n], 0)]);
+  for (let i = 0; i < k; i++) {
+    const p = A[i][i];
+    for (let j = i; j <= k; j++) A[i][j] /= p;
+    for (let r = 0; r < k; r++) if (r !== i) for (let j = k; j >= i; j--) A[r][j] -= A[r][i] * A[i][j];
+  }
+  return A.map((r) => r[k]);
+}
+let seed = 5;
+const rnd = () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+function report(label: string, names: string[], xf: (r: Row) => number[], yf: (r: Row) => number) {
+  const b = wols(rows.map(xf), rows.map(yf), rows.map((r) => r.w));
+  const boots = Array.from({ length: 300 }, () => {
+    const s = rows.map(() => rows[Math.floor(rnd() * rows.length)]);
+    return wols(s.map(xf), s.map(yf), s.map((r) => r.w));
+  });
+  console.log(`\n${label}`);
+  names.forEach((n, j) => {
+    const v = boots.map((c) => c[j + 1]).sort((p, q) => p - q);
+    console.log(`  ${n.padEnd(44)} ${b[j + 1].toFixed(3).padStart(7)}   90% ${v[15].toFixed(3)} … ${v[285].toFixed(3)}`);
+  });
+}
+const rs = rows.filter((r) => r.rimStar > 0.3);
+console.log(`${rows.length} units; with a rim star (> 0.3): ${rs.length} — ${[...new Set(rs.map((r) => r.who.split(' ').slice(2, -3).join(' ')))].join(', ')}`);
+const X = (r: Row) => [r.offense, r.rimStar, (r.mates - 50) / 10, r.rimStar * ((50 - r.mates) / 10)];
+const names = ['Offense', 'rim star', 'mates spacing (per 10)', 'rim star × mates spacing deficit (per 10)'];
+report('REAL ORtg over league', names, X, (r) => r.y);
+report('GAME mechanics offense a 100 trips', names, X, (r) => r.mech);
+
+// Does spacing matter at all? Real ORtg on the five's offensive talent alone, then with its spacing (per 10).
+report('SPACING AT ALL — real ORtg ~ O-TAL bar + team spacing (per 10)', ['O-TAL bar', 'spacing (per 10)'], (r) => [r.otal, r.spacing / 10], (r) => r.y);
+report('… game mechanics', ['O-TAL bar', 'spacing (per 10)'], (r) => [r.otal, r.spacing / 10], (r) => r.mech);
+{
+  const sp = rows.map((r) => r.spacing).sort((a, b) => a - b);
+  console.log(`team spacing on these teams: p10 ${sp[Math.floor(sp.length * 0.1)].toFixed(0)}, median ${sp[Math.floor(sp.length / 2)].toFixed(0)}, p90 ${sp[Math.floor(sp.length * 0.9)].toFixed(0)}`);
+}
+
+// By the star's offensive archetype: how much spacing (per 10) is worth to his team, real and in the game.
+console.log('\nSpacing per 10 by the star\'s archetype (O-TAL bar held): real ORtg | game');
+for (const [arch, group] of Object.entries(Object.groupBy(rows, (r) => r.arch)).sort((a, b) => b[1]!.length - a[1]!.length)) {
+  if (group!.length < 25) continue;
+  const fit = (yf: (r: Row) => number) => {
+    const b = wols(group!.map((r) => [r.otal, r.spacing / 10]), group!.map(yf), group!.map(() => 1));
+    const boots = Array.from({ length: 300 }, () => {
+      const s2 = group!.map(() => group![Math.floor(rnd() * group!.length)]);
+      return wols(s2.map((r) => [r.otal, r.spacing / 10]), s2.map(yf), s2.map(() => 1))[2];
+    }).sort((p, q) => p - q);
+    return `${b[2].toFixed(2).padStart(6)} (${boots[15].toFixed(2)}…${boots[285].toFixed(2)})`;
+  };
+  const names = [...new Set(group!.map((r) => r.who.split(' ').slice(-6, -3).join(' ')))].slice(0, 5).join(', ');
+  console.log(`  ${arch.padEnd(24)} n ${String(group!.length).padStart(3)}  real ${fit((r) => r.y)}  game ${fit((r) => r.mech)}   e.g. ${names}`);
+}
+
+// One line for sweeps: how well the Offense score and the game's offense follow real ORtg, and each other.
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  const real = rows.map((x) => x.y);
+  console.log(`SWEEP score~real r ${r(rows.map((x) => x.offense), real).toFixed(4)}  game~real r ${r(rows.map((x) => x.mech), real).toFixed(4)}  score~game r ${r(rows.map((x) => x.offense), rows.map((x) => x.mech)).toFixed(4)}`);
+}
+
+// Step 6.5: does the mismatch-structure part pay off less when one player holds the ball (a hub)?
+// hub = the five's top ball share (ballHandling.ts); per 10 points of mismatch structure.
+{
+  const hubs = rows.map((r) => r.hub).sort((a, b) => a - b);
+  const mid = hubs[Math.floor(hubs.length / 2)];
+  console.log(`\n6.5 mismatch structure × hub (top ball share: median ${mid.toFixed(3)}, p90 ${hubs[Math.floor(hubs.length * 0.9)].toFixed(3)})`);
+  const mmMean = mean(rows.map((r) => r.mm));
+  console.log(`  (mismatch centred on its mean ${mmMean.toFixed(0)}: 'hub' reads at an average mismatch)`);
+  const X = (r: Row) => [r.otal, r.spacing / 10, (r.mm - mmMean) / 10, ((r.hub - mid) * 10) * ((r.mm - mmMean) / 10), (r.hub - mid) * 10];
+  const names = ['O-TAL bar', 'spacing (per 10)', 'mismatch (per 10)', 'mismatch × hub (per 0.10 share)', 'hub (per 0.10)'];
+  report('REAL ORtg', names, X, (r) => r.y);
+  report('GAME mechanics', names, X, (r) => r.mech);
+}
+
+// Step 6.4: the team's rim pressure (offenseScoreBreakdown.rimPressure, 0-100), per 10, over the five's talent and spacing.
+report('6.4 REAL ORtg ~ O-TAL bar + spacing + rim pressure', ['O-TAL bar', 'spacing (per 10)', 'rim pressure (per 10)'], (r) => [r.otal, r.spacing / 10, r.rim / 10], (r) => r.y);
+report('6.4 GAME mechanics', ['O-TAL bar', 'spacing (per 10)', 'rim pressure (per 10)'], (r) => [r.otal, r.spacing / 10, r.rim / 10], (r) => r.mech);
+
+// 2026-10-28 (the user: a post scorer should need shooters MOST): the same question done properly —
+// only the four teammates' spacing (the star's own shooting left out), only 1979-80 on (the three-
+// point line), per 10 points of the four's mean spacing value, the five's O-TAL bar held.
+{
+  const modern = rows.filter((r) => Number(r.who.slice(0, 4)) + 1 >= 1980);
+  const fitArch = (g: Row[], yf: (r: Row) => number) => {
+    const b = wols(g.map((r) => [r.otal, r.mates / 10]), g.map(yf), g.map(() => 1));
+    const boots = Array.from({ length: 400 }, () => {
+      const s2 = g.map(() => g[Math.floor(rnd() * g.length)]);
+      return wols(s2.map((r) => [r.otal, r.mates / 10]), s2.map(yf), s2.map(() => 1))[2];
+    }).sort((p, q) => p - q);
+    return `${b[2].toFixed(2).padStart(6)} (${boots[20].toFixed(2)}…${boots[380].toFixed(2)})`;
+  };
+  console.log(`\nTEAMMATES' spacing only, 1980 on (${modern.length} team-seasons): all  real ${fitArch(modern, (r) => r.y)}  game ${fitArch(modern, (r) => r.mech)}`);
+  const groups: Record<string, string[]> = {
+    'post / interior stars': ['Post Scorer', 'Versatile Big'],
+    'ball handlers': ['Primary Ball Handler', 'Secondary Ball Handler'],
+    'creators / slashers': ['Shot Creator', 'Slasher'],
+    'shooters / stretch': ['Stationary Shooter', 'Stretch Big', 'Off Screen Shooter', 'Movement Shooter'],
+  };
+  for (const [label, archs] of Object.entries(groups)) {
+    const g = modern.filter((r) => archs.includes(r.arch));
+    if (g.length < 25) continue;
+    const ms = g.map((r) => r.mates).sort((a, b) => a - b);
+    console.log(`  ${label.padEnd(22)} n ${String(g.length).padStart(3)}  real ${fitArch(g, (r) => r.y)}  game ${fitArch(g, (r) => r.mech)}  mates spacing p10-p90 ${ms[Math.floor(ms.length * 0.1)].toFixed(0)}-${ms[Math.floor(ms.length * 0.9)].toFixed(0)}`);
+  }
+}
+
+// 2026-10-28 (the user: "korelacja między jakością spacingu a jakością ataku"): plain correlations of
+// team spacing with real ORtg over the league's, all seasons and 1980 on, and the same with the
+// five's offensive talent held (partial r).
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  const partial = (g: Row[], x: (q: Row) => number) => {
+    const rxy = r(g.map(x), g.map((q) => q.y)), rxz = r(g.map(x), g.map((q) => q.otal)), ryz = r(g.map((q) => q.y), g.map((q) => q.otal));
+    return (rxy - rxz * ryz) / Math.sqrt((1 - rxz ** 2) * (1 - ryz ** 2));
+  };
+  for (const [label, g] of [['all seasons', rows], ['1980 on', rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= 1980)], ['2000 on', rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= 2000)]] as const) {
+    console.log(`\nSPACING vs real ORtg, ${label} (n ${g.length}): team spacing r ${r(g.map((q) => q.spacing), g.map((q) => q.y)).toFixed(3)} (talent held ${partial(g, (q) => q.spacing).toFixed(3)}); teammates' spacing r ${r(g.map((q) => q.mates), g.map((q) => q.y)).toFixed(3)} (held ${partial(g, (q) => q.mates).toFixed(3)}); O-TAL bar r ${r(g.map((q) => q.otal), g.map((q) => q.y)).toFixed(3)}; spacing vs O-TAL r ${r(g.map((q) => q.spacing), g.map((q) => q.otal)).toFixed(3)}`);
+  }
+}
+for (const from of [1974, 1980, 1990, 2000, 2010]) {
+  const g = rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= from);
+  const b = wols(g.map((q) => [q.otal, q.spacing / 10]), g.map((q) => q.y), g.map(() => 1));
+  const bm = wols(g.map((q) => [q.otal, q.spacing / 10]), g.map((q) => q.mech), g.map(() => 1));
+  console.log(`SPACING ${from} on (n ${g.length}): real ORtg per 10 spacing ${b[2].toFixed(3)} (= ${(b[2] / b[1]).toFixed(2)} O-TAL points); game ${bm[2].toFixed(3)} (= ${(bm[2] / bm[1]).toFixed(2)} O-TAL points)`);
+}
+{
+  const r = (xs: number[], ys: number[]) => {
+    const mx = mean(xs), my = mean(ys);
+    let a = 0, b = 0, c = 0;
+    xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
+    return a / Math.sqrt(b * c);
+  };
+  for (const from of [1974, 1990, 2000]) {
+    const g = rows.filter((q) => Number(q.who.slice(0, 4)) + 1 >= from);
+    console.log(`SWEEP${from} score~real r ${r(g.map((q) => q.offense), g.map((q) => q.y)).toFixed(4)}  game~real r ${r(g.map((q) => q.mech), g.map((q) => q.y)).toFixed(4)}`);
+  }
+}

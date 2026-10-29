@@ -1,3 +1,4 @@
+import { astPctForSpan, ballHandlerCost, ORTG_PER_TS } from './ballHandling';
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
@@ -15,6 +16,7 @@ import { estimatedMinutesPerGame } from './minutesPerGame';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { computeDefensiveTalent, computeOffensiveTalent } from './talent';
 import { rimPressureTeam } from './rimPressure';
+import spanPaceData from '../data/spanPace.json';
 import { teamSpacingValue } from './midrangeGravity';
 import { fiveSwitchability, fitScore, FIT_WEIGHTS } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
@@ -87,6 +89,8 @@ export interface LiveGameResult {
   box: [Record<string, BoxLineStats>, Record<string, BoxLineStats>];
   /** Expected margin from the model, your side's view. */
   expectedMargin: number;
+  /** The game's length (a five-only game is shorter, `FIVE_GAME_MINUTES`). */
+  gameSeconds: number;
   players: [PlayerSpan[], PlayerSpan[]];
   /** Box-score names, PG→C (last names, full names where two share one). */
   labels: [string[], string[]];
@@ -124,8 +128,45 @@ export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
   return Math.max(-25, Math.min(25, projectMatchup(lineupTeam(yours), lineupTeam(theirs)).marginA));
 }
 
-const POSSESSIONS = 200;
+/**
+ * 2026-10-28, step 8 (tempo; the user's 2026-10-08 call: the era counts, gently). A game's
+ * possessions follow its two teams' pace instead of a flat 200: each team's pace is today's league
+ * (`TEMPO.base`) plus `TEMPO.style` times its players' style — how much faster than their league
+ * their own teams played (`spanPace.json`; a team's pace over its league follows its players' paces
+ * elsewhere at r 0.62, slope 1.78, `scripts/measurePace.ts`) — plus `TEMPO.era` of how far their
+ * leagues' pace sat from today's (the 1960s ran ~125, the 2000s ~91). Minutes-weighted over the
+ * rotation; the game is twice the mean of the two teams, an even count, inside `TEMPO.range`. The
+ * margin the engine expects is unchanged — only the number of trips moves.
+ */
+export const TEMPO = { base: 99, style: 1.78, era: 0.25, range: [88, 112] as [number, number] };
+const SPAN_PACE = spanPaceData as unknown as Record<string, [number, number]>;
+function teamPace(roster: GameRoster): number {
+  let w = 0;
+  let pace = 0;
+  for (const slot of Object.values(roster.slotMinutes))
+    for (const { player, minutes } of slot) {
+      if (minutes <= 0) continue;
+      const [style, era] = SPAN_PACE[player.span.id] ?? [0, TEMPO.base * 10];
+      pace += minutes * (TEMPO.base + TEMPO.style * (style / 10) + TEMPO.era * (era / 10 - TEMPO.base));
+      w += minutes;
+    }
+  return w > 0 ? pace / w : TEMPO.base;
+}
+/** A team's pace, as the live game reads it (measurement scripts). */
+export const teamPaceFor = (team: Team) => teamPace(rosterFromTeam(team));
+function possessionsFor(rosters: [GameRoster, GameRoster], gameSeconds: number): number {
+  const pace = Math.max(TEMPO.range[0], Math.min(TEMPO.range[1], (teamPace(rosters[0]) + teamPace(rosters[1])) / 2));
+  return 2 * Math.round((pace * gameSeconds) / GAME_SECONDS);
+}
 const GAME_SECONDS = 48 * 60;
+/**
+ * 2026-10-28, step 8 (the user, 2026-10-22: "48 minutes without a bench makes no sense"): a five-only
+ * game (Draw Five, daily) runs 4 x 9 minutes. Measured on 400 games of random TAL-70+ fives: 48
+ * minutes 121 points a team, the favourite (engine margin 3+) winning 90%; 36 minutes 91 points,
+ * 87%; 30 minutes 76 points, 83%. The engine's margin is per 48 minutes, so a short game aims at its
+ * share of it. Full teams keep 48.
+ */
+export const FIVE_GAME_MINUTES = 36;
 /**
  * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
  * and-one adds ~0.02 per shot, so a free-throw rate r (FTA per FGA) comes from a foul on a share
@@ -136,10 +177,24 @@ function foulChance(freeThrowRate: number): number {
 }
 const AND_ONE = 0.05;
 const OFF_REBOUND = 0.26;
-/** Assists go to the real passers: weight by assists per 36 to this power (2026-10-02 — linear
- * weights spread them so evenly that Jokic averaged 5 and the league leader 9). How many makes are
- * assisted at all follows from the set-up shots (`SETUP_TUNING`). */
-const PASSER_POWER = 1.3;
+/** Assists go to the real passers: weight by passing to this power (2026-10-02 — linear weights
+ * spread them so evenly that Jokic averaged 5 and the league leader 9). How many makes are assisted
+ * at all follows from the set-up shots (`SETUP_TUNING`). */
+const PASSER_POWER = 1.15;
+/**
+ * 2026-10-28, step 8 (playtest 2026-10-22: Jordan 1987-89 7.0 assists on his card -> 3.0 in a
+ * season, Bird 6.6 -> 9.0): the passer was picked by his modern assists a minute (`modernBox`),
+ * which reads old-era assists by percentile within the position — LeBron 2012-14 6.8 real -> 9.4,
+ * Bird 1985-87 7.2 -> 10.0, Jordan 1988-90 7.2 -> 6.3 — so wing creators lost their passes to the
+ * point guards. Now by real AST% (the share of teammates' baskets he set up on the floor; BBRef,
+ * before 1973-74 read from assists a 36), Jokic's hub weight kept. `scripts/measureSeasonBox.ts`,
+ * 3 AI drafts' seasons against the players' real assists: each player's share of his team's assists
+ * misses his real share by 1.39 points (was 2.19), no archetype off by more than 1.1 (Primary Ball
+ * Handlers were +3.0 and post scorers -2.6); the leaders still reach 11-12 on stacked teams.
+ */
+function passerWeight(span: PlayerSpan): number {
+  return (astPctForSpan(span) / 10) * (PASSING_HUBS[span.playerName] ?? 1);
+}
 /** Rebounds concentrate on the real rebounders a little more than their rates alone. */
 const REBOUND_WEIGHT_POWER = 1.1;
 /** Offensive share of rebounds off a missed last free throw. */
@@ -240,7 +295,9 @@ export function simulateLiveGame(
 ): LiveGameResult {
   // Deterministic retakes: the first game of the seed whose winner agrees with a clear favourite.
   let game = playGame(yours, legends, margin, seed, jokerId);
-  for (let take = 1; take < 40 && Math.abs(margin) >= CLEAR_FAVOURITE && game.final[0] > game.final[1] !== margin > 0; take++) {
+  // The clear-favourite line reads the margin over the game's own (shorter) length, as the odds do.
+  const m = game.expectedMargin;
+  for (let take = 1; take < 40 && Math.abs(m) >= CLEAR_FAVOURITE && game.final[0] > game.final[1] !== m > 0; take++) {
     game = playGame(yours, legends, margin, `${seed}~${take}`, jokerId);
   }
   return game;
@@ -1051,7 +1108,9 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const usageGain = lines.map((l, i) => contextGain(l.usageDelta * (l.usageDelta < 0 ? usageCost[i] : giveUp[i])));
     const away = five.map((p, i) => outOfPosition(p.span, STARTER_SLOTS[i]));
     const overload = -OVERLOAD_TUNING.perOverload * (lines.reduce((sum, l) => sum + l.originalUsage, 0) - OVERLOAD_TUNING.ref);
-    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload;
+    // 2026-10-28, step 6.2: a second player holding the ball (`ballHandling.ts`), on every shot.
+    const handlers = -ballHandlerCost(five.map((p) => p.span)) / ORTG_PER_TS;
+    const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload + handlers;
     // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
     const lifted = fiveLiftShifts(five.map((p) => p.span));
     court = five.map((player, i) => ({
@@ -1105,7 +1164,7 @@ function playGame(
   seed: string,
   jokerId?: string,
 ): LiveGameResult {
-  return playRosters([rosterFromFive(yours, (s) => s.id === jokerId), rosterFromFive(legends, () => false)], margin, seed, true);
+  return playRosters([rosterFromFive(yours, (s) => s.id === jokerId), rosterFromFive(legends, () => false)], (margin * FIVE_GAME_MINUTES) / 48, seed, true, undefined, false, FIVE_GAME_MINUTES);
 }
 
 /**
@@ -1149,11 +1208,13 @@ const emptyLine = (): BoxLineStats => ({ pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
 
 /** Everything decided before tip-off: the whole game's fives (substitutions are deterministic), who
  * tires, and the expected margin of the mechanics at a given shooting tilt (`gapAt`). */
-function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
+function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean, gameMinutes = 48) {
+  const gameSeconds = gameMinutes * 60;
+  const POSSESSIONS = possessionsFor(rosters, gameSeconds);
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
-  const possessionMinutes = GAME_SECONDS / POSSESSIONS / 60;
+  const possessionMinutes = gameSeconds / POSSESSIONS / 60;
   // The substitutions are deterministic, so the whole game's fives are known before tip-off.
   const benches = [new Bench(rosters[0]), new Bench(rosters[1])];
   const schedule: [CourtPlayer[][], CourtPlayer[][]] = [[], []];
@@ -1241,7 +1302,7 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean) {
   };
   const perTeam = POSSESSIONS / 2;
   const gapAt = (n: number) => perTeam * (meanPossession(0, 1 + n, 1 - n) - meanPossession(1, 1 - n, 1 + n));
-  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession };
+  return { courts, starting, possessionMinutes, schedule, tired, clashFor, gapAt, meanPossession, possessions: POSSESSIONS, gameSeconds };
 }
 
 /**
@@ -1270,8 +1331,8 @@ interface PreparedGame {
   margin: number;
 }
 
-function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean): PreparedGame {
-  const setup = gameSetup(rosters, tiring);
+function prepareRosters(rosters: [GameRoster, GameRoster], margin: number, tiring: boolean, gameMinutes = 48): PreparedGame {
+  const setup = gameSetup(rosters, tiring, gameMinutes);
   const { gapAt } = setup;
   const target = margin * GARBAGE_TUNING.aim;
   let nudge: number;
@@ -1298,14 +1359,18 @@ function playRosters(
   weakLinks?: [string | null, string | null],
   /** Only a full rotation tires: a five alone (Daily, Draw Five) plays the whole game by design. */
   tiring = false,
+  gameMinutes = 48,
 ): LiveGameResult {
-  return playPrepared(prepareRosters(rosters, margin, tiring), seed, record, weakLinks);
+  return playPrepared(prepareRosters(rosters, margin, tiring, gameMinutes), seed, record, weakLinks);
 }
 
 function playPrepared(prepared: PreparedGame, seed: string, record: boolean, weakLinks?: [string | null, string | null]): LiveGameResult {
   const { rosters, nudge, margin } = prepared;
   const rng = mulberry32(hashSeed(`${seed}:game`));
   const { courts, starting, possessionMinutes, tired, clashFor } = prepared.setup;
+  const POSSESSIONS = prepared.setup.possessions;
+  const gameSeconds = prepared.setup.gameSeconds;
+  const gameMinutes = gameSeconds / 60;
   // A foul-out rewrites this game's fives from that trip on, so each game gets its own copy.
   const schedule: GameSetup['schedule'] = [[...prepared.setup.schedule[0]], [...prepared.setup.schedule[1]]];
   const makeScale: [number, number] = [1 + nudge, 1 - nudge];
@@ -1379,7 +1444,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   };
   let garbage = false;
   const garbageCut = (k: number) => {
-    const minutesLeft = 48 - ((k + 1) * 48) / POSSESSIONS;
+    const minutesLeft = gameMinutes - ((k + 1) * gameMinutes) / POSSESSIONS;
     return GARBAGE_TUNING.lead.find(([m]) => minutesLeft >= m)?.[1] ?? Infinity;
   };
 
@@ -1401,7 +1466,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     const def = defCourt.map((c) => c.player);
     const clash = clashFor(off, defCourt);
     const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
-    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / 48) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
+    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / gameMinutes) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
     let play: GamePlay | null = null;
     let pts = 0;
     const onBreak = breakNext[o];
@@ -1418,7 +1483,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         play = { side: o, text: `${fouled.label} ${ft.made}/2 in the bonus`, joker: fouled.joker, quiet: ft.made === 0 };
         score[o] += pts;
         quarters[o][quarter] += pts;
-        if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+        if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
         continue;
       }
     }
@@ -1529,7 +1594,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         let joker = shooter.joker;
         const mates = off.filter((x) => x.player !== shooter);
         if (setup) {
-          const passer = pickWeighted(rng, mates, (x) => rates(x.player.span).ast ** PASSER_POWER + 0.2).player;
+          const passer = pickWeighted(rng, mates, (x) => passerWeight(x.player.span) ** PASSER_POWER + 0.2).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
@@ -1564,7 +1629,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     }
     score[o] += pts;
     quarters[o][quarter] += pts;
-    if (record) moments.push({ left: Math.max(0, GAME_SECONDS - ((k + 1) * GAME_SECONDS) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+    if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
   }
   // Overtime would need more possessions; a tie goes to whoever the model favours, on a last shot.
   if (score[0] === score[1]) {
@@ -1605,6 +1670,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     quarters,
     box,
     expectedMargin: margin,
+    gameSeconds,
     players: [rosters[0].players.map((p) => p.span), rosters[1].players.map((p) => p.span)],
     labels: [rosters[0].players.map((p) => p.label), rosters[1].players.map((p) => p.label)],
     jokerLabel: mine.find((p) => p.joker)?.label ?? null,

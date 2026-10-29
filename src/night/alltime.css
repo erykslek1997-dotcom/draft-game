@@ -1227,6 +1227,7 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .card .roles .bn-row { display: flex; justify-content: space-between; gap: 6px; padding: 3px 0; border-top: 1px solid var(--cline); font-style: normal; min-width: 0; }
 .nt .card .roles .bn-row i { font: 500 12px var(--sans); font-style: normal; color: var(--cink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .nt .card .roles .bn-row b { font: 600 12px var(--num); color: var(--cink); flex: none; }
+.nt .card .roles .bn-row .bn-y { font: 500 10px var(--num); font-style: normal; color: var(--cink3, var(--cink2)); opacity: 0.8; }
 
 /* 2026-10-28: grades on the Team view — the four columns on a desktop with the letter in a fixed
    slot and its colour; on a phone the columns hide and two lines under the years take over. */
