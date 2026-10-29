@@ -646,6 +646,14 @@ function SeasonBody({
       : lastRun
         ? `Out in the ${lastRun.roundLabel.toLowerCase()}, ${runWL(lastRun).join('–')} to ${mascot(byId.get(lastRun.teamAId === you.id ? lastRun.teamBId : lastRun.teamAId))}`
         : 'Missed the playoffs';
+  // The season card's band: the result big, the series that ended it beside (2026-10-29).
+  const verdict: [string, string?] | null = !finalsDone
+    ? null
+    : champ === you.id
+      ? ['Champions', `${poW}–${poL} in the playoffs`]
+      : lastRun
+        ? [`Out in the ${lastRun.roundLabel.toLowerCase()}`, `${runWL(lastRun).join('–')} to the ${mascot(byId.get(lastRun.teamAId === you.id ? lastRun.teamBId : lastRun.teamAId))}`]
+        : ['Missed the playoffs', `${ord(rank)} seed`];
 
   // The aside: the record on top, the season's pages, your leaders, then the way on.
   const nav: { id: Tab | 'playoffs'; label: string }[] = [
@@ -771,9 +779,10 @@ function SeasonBody({
   const poster: PosterData = {
     mode: 'All-Time Draft · season',
     date: new Date(),
-    kick: result ?? `${ord(rank)} seed`,
+    kick: '',
     head: you.name,
-    line: `${record.wins}–${record.losses} · ${ord(rank)} seed${yourRuns.length ? ` · ${poW}–${poL} in the playoffs` : ''}`,
+    line: '',
+    verdict: verdict ?? undefined,
     five: [...roster.slice(0, 5)]
       .sort((a, b) => POS_ORDER.indexOf(a.span.primaryPosition.split('/')[0]) - POS_ORDER.indexOf(b.span.primaryPosition.split('/')[0]))
       .map((l) => ({ span: l.span, num: Math.round(per(l, 'pts') * 10) / 10, min: per(l, 'min') })),
@@ -781,12 +790,14 @@ function SeasonBody({
     unit: 'ppg',
     prof: draftProf,
     ig: true,
-    draft: [`The draft · ${ord(yv?.rank ?? 0)} of ${teams.length}`, `Rating ${yv?.overall ?? '—'} · best ${Math.max(...[...views.values()].map((v) => v.overall))}`],
+    draft: ['The draft', `Rating ${yv?.overall ?? '—'} · best ${Math.max(...[...views.values()].map((v) => v.overall))}`],
+    // The draft's place takes the strip's last cell (2026-10-29, the user: "draft 2nd of 16 jest
+    // ukryte"); the result moved up to the band.
     strip: [
       ['Season', `${record.wins}–${record.losses}`],
       ['Seed', ord(rank)],
       ['Playoffs', yourRuns.length ? `${poW}–${poL}` : '—'],
-      ['Result', champ === you.id ? '🏆' : lastRun ? lastRun.roundLabel : '—'],
+      ['Draft', `${ord(yv?.rank ?? 0)} of ${teams.length}`],
     ],
     foot: yourAwards.slice(0, 3).join(' · ') || 'The same draft always plays the same season',
     champ: champ === you.id,
