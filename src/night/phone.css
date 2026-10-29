@@ -551,7 +551,6 @@
 .po-b2 b { display: block; font: 800 14px/1 var(--cond); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .po-b2 em { display: block; margin-top: 2px; font: 500 10px var(--num); font-style: normal; color: var(--cink2); white-space: nowrap; }
 
-/* the poster (2026-10-29, "wykonanie takie sobie"): a starter's face grows with its box — 80% of
-   its height, at the foot, whole in frame — and a bench line is the name and position, then points
-   and minutes, so nothing runs into the next cell */
+/* the poster's bench line (2026-10-29): the name and position, then points and minutes, so nothing
+   runs into the next cell */
 .po-b2 b small { font: 700 9px var(--sans); color: var(--cink2); margin-left: 3px; }
