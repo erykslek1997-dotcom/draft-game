@@ -71,6 +71,8 @@ export interface DeskLine {
   reply?: boolean;
   /** The argument (deskBeefs.ts) this line belongs to, opener included. */
   beef?: string;
+  /** A reply backing the take right above it (`pileOn`), or its author answering. */
+  pile?: boolean;
 }
 
 /** Whose field each insight category is. */
@@ -510,7 +512,9 @@ function loosen(lines: DeskLine[], seed: number): DeskLine[] {
     if (!slang || l.kind === 'burst' || ENDS_LOOSE.test(l.text)) return l;
     if (r < (l.who === 'host' ? 0.15 : 0.4)) {
       const tag = pick(rng, slang.tail);
-      if (l.text.toLowerCase().includes(tag.toLowerCase())) return l;
+      // "I love you guys" already says "love u guys" (playtest 2026-10-29).
+      const plain = (t: string) => t.toLowerCase().replace(/\bu\b/g, 'you');
+      if (plain(l.text).includes(plain(tag))) return l;
       // "lol" sits on the sentence ("That’s theft lol"); a phrase starts a lowercase one of its own
       // ("Maths is a social construct. it’s giving lottery").
       const text = INTERJECTIONS.has(tag) ? `${l.text.replace(/[.!]$/, '')} ${tag}` : `${l.text}${/[.!?…]$/.test(l.text) ? '' : '.'} ${tag}`;
@@ -519,6 +523,28 @@ function loosen(lines: DeskLine[], seed: number): DeskLine[] {
     if (r < 0.5 && l.reply && slang.head.length && !/^[@*…]/.test(l.text)) return { ...l, text: `${pick(rng, slang.head)} ${l.text}` };
     return l;
   });
+}
+
+/**
+ * 2026-10-29 (the user: the room as a discussion off X, "replies and so on"): a take that started no
+ * argument draws a reply from another expert who backs it — never one who contradicts an engine
+ * finding, so the colour never misleads — and now and then its author answers him.
+ */
+const PILE_ON: Record<'praise' | 'concern', string[]> = {
+  praise: ['This. Exactly this.', 'Say it louder for the people in the back.', 'Finally, a take I can repost.', 'Co-signed. Rare W for this desk.', 'Not often I agree with you. Today I do.'],
+  concern: ['Been saying this all night.', 'Painful, but true.', 'Yep. The film agrees.', 'Somebody had to say it.', 'Muted the desk, unmuted for this. Correct.'],
+};
+const PILE_ON_ANSWER = ['Appreciate you.', 'Took you long enough.', 'Write that down.', 'Screenshot this, everyone.', 'Told you.'];
+const PILE_ON_CHANCE = 0.6;
+const PILE_ON_ANSWER_CHANCE = 0.45;
+function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
+  if ((line.kind !== 'praise' && line.kind !== 'concern') || line.who === 'host' || rng() >= PILE_ON_CHANCE) return [];
+  const others = (Object.keys(DESK_CAST) as ExpertId[]).filter((w) => w !== 'host' && w !== 'moonbat' && w !== 'rightwing' && w !== line.who);
+  const by = pick(rng, others);
+  const at = (w: ExpertId) => `@${DESK_CAST[w].name.split(' ').at(-1)}`;
+  const out: DeskLine[] = [{ who: by, kind: 'reply', text: `${at(line.who)} ${pick(rng, PILE_ON[line.kind])}`, reply: true, pile: true }];
+  if (rng() < PILE_ON_ANSWER_CHANCE) out.push({ who: line.who, kind: 'reply', text: `${at(by)} ${pick(rng, PILE_ON_ANSWER)}`, reply: true, pile: true });
+  return out;
 }
 
 /** About one show in four — its own stream, so it doesn't depend on how many lines came before. */
@@ -548,8 +574,10 @@ const HOST_CLOSE_WON = [
 ];
 const HOST_CLOSE_PODIUM = ['Podium it is. Not bad at all. We’ll be right back.', 'Podium. Nobody got blocked. That’s a win for me too. We’ll be right back.'];
 /** Arguments per show at most, and the chance that a take able to start one does. */
-const MAX_BEEFS = 2;
-const BEEF_CHANCE = 0.65;
+// 2026-10-29 (the user: the room "should be a multi-stage discussion — replies and so on"): more
+// arguments, and plain takes draw replies (`pileOn`).
+const MAX_BEEFS = 3;
+const BEEF_CHANCE = 0.85;
 
 export interface DeskInput {
   team: Team;
@@ -628,7 +656,7 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   const beefsUsed = new Set<string>();
   for (const t of onAir) {
     const thread = beefsUsed.size < MAX_BEEFS && beefRng() < BEEF_CHANCE ? beefFor(t, read, beefRng, beefsUsed) : null;
-    lines.push(...(thread ?? [t.line]));
+    lines.push(...(thread ?? [t.line, ...pileOn(t.line, beefRng)]));
   }
   if (moonbatOnAir(seed)) lines.push(...moonbatBit(read, mulberry32(mixSeed(seed, 0x30bb)), rank, used, strengths[0]));
 

@@ -1,4 +1,4 @@
-import { Fragment, useContext, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
 import { teamColors } from '../data/teamColors';
@@ -114,6 +114,60 @@ export function BenchRow({ span, minutes }: { span: PlayerSpan; minutes: number 
   );
 }
 const shortYears = (label: string) => label.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2-$3');
+
+/**
+ * 2026-10-29 (the user, on the results roster on a phone: five narrow cards with truncated bench
+ * names): the roster as a list — a row a slot, split in half: the starter (face, name, years,
+ * minutes) on the left, who comes in for him on the right in the same form, smaller when two share
+ * the slot; the starter's team colour is the row's edge.
+ */
+export function RosterList({ rows }: { rows: { slot: string; starter?: { span: PlayerSpan; minutes: number }; bench: { span: PlayerSpan; minutes: number }[] }[] }) {
+  return (
+    <div className="rlist">
+      {rows.map(({ slot, starter, bench }) => (
+        <div key={slot} className="rl-row" style={starter ? bandStyle(starter.span) : undefined}>
+          <span className="rl-slot">{slot}</span>
+          {starter ? (
+            <>
+              <span className="rl-sub rl-start">
+                <span className="rl-face">
+                  <NFace name={starter.span.playerName} span={starter.span} />
+                </span>
+                <span className="rl-main">
+                  <b>{shortName(starter.span.playerName)}</b>
+                  <span>
+                    {maskYears(starter.span.playerName, starter.span.spanLabel)} · {Math.round(starter.minutes)}m
+                  </span>
+                </span>
+              </span>
+              <span className={cx('rl-bench', bench.length > 1 && 'many')}>
+                {bench.length ? (
+                  bench.map((b) => (
+                    <span key={b.span.id} className="rl-sub">
+                      <span className="rl-face">
+                        <NFace name={b.span.playerName} span={b.span} />
+                      </span>
+                      <span className="rl-main">
+                        <b>{shortName(b.span.playerName)}</b>
+                        <span>
+                          {maskYears(b.span.playerName, b.span.spanLabel)} · {Math.round(b.minutes)}m
+                        </span>
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="rl-none">no one else here</span>
+                )}
+              </span>
+            </>
+          ) : (
+            <span className="rl-none">empty</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot: string; extra?: ReactNode; foot: ReactNode }) {
   return (
@@ -290,36 +344,66 @@ export function Slot({
 }
 
 /** The desk's lines as printed voices (mockup `mini.html#results` "The room"). */
-export function NightVoices({ voices, cast, fold }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; tag: string }>; fold?: number }) {
+/** A stable small number from a string (the room's reply / like counts and post ages). */
+function seeded(text: string, salt: number): number {
+  let h = 2166136261 ^ salt;
+  for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0) / 4294967296;
+}
+const countLabel = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : String(n));
+const handleOf = (name: string) => `@${name.toLowerCase().replace(/[^a-z]+/g, '')}`;
+/** 2026-10-29 (the user: "the room looks uninviting — drop the odd asides, make it a discussion
+ * straight off X"): stage cues (*nods*) are dropped, the tag line goes, and each voice is a post —
+ * avatar, name, handle, age, text, reply / repost / like counts; a reply hangs off the post above. */
+const withoutCues = (text: string) =>
+  text.replace(/\*[^*]+\*/g, ' ').replace(/\s+([.,!?…])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+
+export function NightVoices({ voices, cast, fold }: { voices: { who: string; kind: string; text: string; reply?: boolean }[]; cast: Record<string, { name: string; mono?: string; hue?: number }>; fold?: number }) {
   // 2026-10-22 (playtest): a long room ran far past the column beside it; the first few voices show,
   // the rest open on request (never cutting a reply off from what it answers).
   const [open, setOpen] = useState(false);
-  let cut = voices.length;
-  if (fold && !open && voices.length > fold + 1) {
+  const posts = voices.map((v) => ({ ...v, text: withoutCues(maskText(v.text)) })).filter((v) => v.text);
+  let cut = posts.length;
+  if (fold && !open && posts.length > fold + 1) {
     cut = fold;
-    while (cut < voices.length && voices[cut].reply) cut += 1;
+    while (cut < posts.length && posts[cut].reply) cut += 1;
   }
-  const rest = voices.length - cut;
+  const rest = posts.length - cut;
   return (
-    <>
-      {voices.slice(0, cut).map((v, i) => {
+    <div className="xfeed">
+      {posts.slice(0, cut).map((v, i) => {
         const x = cast[v.who];
-        const parts = maskText(v.text)
-          .split(/\*(.+?)\*/g)
-          .map((part, j) => (j % 2 ? <i key={j} className="cue">{part}</i> : <Fragment key={j}>{part}</Fragment>));
+        const name = x?.name ?? v.who;
+        const next = posts[i + 1];
+        const likes = Math.round(4 + 1800 * seeded(v.text, 1) ** 3);
         return (
-          <p key={i} className={v.reply ? 'reply' : undefined}>
-            {x && v.kind !== 'burst' && <b>{x.name}: </b>}
-            {parts}
-            {x && v.kind !== 'burst' && <em>{x.tag}</em>}
-          </p>
+          <article key={i} className={cx('xpost', v.reply && 'reply', next?.reply && i + 1 < cut && 'thread')}>
+            <span className="xav" style={{ background: `hsl(${x?.hue ?? 210} 42% 36%)` }} aria-hidden="true">
+              {x?.mono ?? name.slice(0, 2).toUpperCase()}
+            </span>
+            <div className="xbody">
+              <div className="xhead">
+                <b>{name}</b>
+                <span>
+                  {handleOf(name)} · {1 + Math.floor(58 * seeded(v.text, 2))}m
+                </span>
+              </div>
+              <p>{v.text}</p>
+              <div className="xact" aria-hidden="true">
+                <span>💬 {countLabel(Math.round(likes * (0.05 + 0.1 * seeded(v.text, 3))))}</span>
+                <span>⟲ {countLabel(Math.round(likes * (0.08 + 0.2 * seeded(v.text, 4))))}</span>
+                {/* A post praising the roster is one you liked (the user, 2026-10-29). */}
+                <span className={v.kind === 'praise' ? 'liked' : undefined}>{v.kind === 'praise' ? '♥' : '♡'} {countLabel(likes + (v.kind === 'praise' ? 1 : 0))}</span>
+              </div>
+            </div>
+          </article>
         );
       })}
       {rest > 0 && (
         <button type="button" className="lk-inline voices-more" onClick={() => setOpen(true)}>
-          Read the rest · {rest} more ▾
+          Show {rest} more {rest === 1 ? 'post' : 'posts'} ▾
         </button>
       )}
-    </>
+    </div>
   );
 }

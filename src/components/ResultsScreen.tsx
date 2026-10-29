@@ -54,7 +54,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, BenchRow, RosterCard, Tally, fmtCaps } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -1234,28 +1234,13 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       )}
       <section>
         <H3 note="starter · bench minutes">Your roster</H3>
-        <div className="five-row">
-          {bySlot.map(({ slot, starter, others }) =>
-            starter ? (
-              <RosterCard
-                key={slot}
-                span={starter.player}
-                slot={slot}
-                extra={
-                  <>
-                    <span className="sb-sep"> · </span>
-                    <b>{Math.round(starter.minutes)}m</b>
-                  </>
-                }
-                foot={others.length ? others.map((o) => <BenchRow key={o.player.id} span={o.player} minutes={o.minutes} />) : 'no one else here'}
-              />
-            ) : (
-              <div key={slot} className="slot empty">
-                {slot}
-              </div>
-            ),
-          )}
-        </div>
+        <RosterList
+          rows={bySlot.map(({ slot, starter, others }) => ({
+            slot,
+            starter: starter ? { span: starter.player, minutes: starter.minutes } : undefined,
+            bench: others.map((o) => ({ span: o.player, minutes: o.minutes })),
+          }))}
+        />
         <p className="empty-note dnp-note" style={{ marginTop: 8 }}>
           Did not play: {dnp.length ? dnp.map((sp) => maskText(sp.playerName)).join(', ') : 'none'}.
         </p>
@@ -1341,31 +1326,20 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                       <td />
                       <td colSpan={6}>
                         {/* their five first, as cards: who they are matters most (playtest 2026-10-22) */}
-                        <div className="five-row rival-five">
-                          {(() => {
-                            // the same card as your roster: the starter's minutes, who comes in for him (playtest: "brak minut i ławki")
-                            const shown = displayTeam(team);
-                            const rows = allAssignments(shown);
-                            return primaryStarters(shown).map((x) => {
-                              const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
-                              const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((a, b) => b.minutes - a.minutes);
-                              return (
-                                <RosterCard
-                                  key={x.slot}
-                                  span={x.player}
-                                  slot={x.slot}
-                                  extra={
-                                    <>
-                                      <span className="sb-sep"> · </span>
-                                      <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
-                                    </>
-                                  }
-                                  foot={others.length ? others.map((o) => <BenchRow key={o.player.id} span={o.player} minutes={o.minutes} />) : 'no one else here'}
-                                />
-                              );
-                            });
-                          })()}
-                        </div>
+                        {(() => {
+                          // the same list as your roster: the starter's minutes, who comes in for him (playtest: "brak minut i ławki")
+                          const shown = displayTeam(team);
+                          const rows = allAssignments(shown);
+                          return (
+                            <RosterList
+                              rows={primaryStarters(shown).map((x) => {
+                                const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
+                                const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((p, q) => q.minutes - p.minutes);
+                                return { slot: x.slot, starter: { span: x.player, minutes: own?.minutes ?? x.minutes }, bench: others.map((o) => ({ span: o.player, minutes: o.minutes })) };
+                              })}
+                            />
+                          );
+                        })()}
                         <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
                       </td>
                     </tr>

@@ -65,7 +65,9 @@ function checkLines(lines: DeskLine[], where: string): void {
       const seenBefore = lines.slice(0, i).some((o) => o.beef === l.beef);
       if (seenBefore) offTopicReplies.push(`${where}: beef ${l.beef} split in two`);
     }
-    if (l.reply && !l.beef && !lines.slice(0, i).some((o) => o.who === 'moonbat')) offTopicReplies.push(`${where}: stray reply “${l.text}”`);
+    // A pile-on reply hangs right under the take it backs (or under the reply it answers).
+    if (l.pile && !(i > 0 && (lines[i - 1].pile || ((lines[i - 1].kind === 'praise' || lines[i - 1].kind === 'concern') && !lines[i - 1].reply)))) offTopicReplies.push(`${where}: pile-on “${l.text}” not under a take`);
+    if (l.reply && !l.beef && !l.pile && !lines.slice(0, i).some((o) => o.who === 'moonbat')) offTopicReplies.push(`${where}: stray reply “${l.text}”`);
     if (/\bOnly 0\b|(?:—|:) [A-Z][a-z]+ \d+ real\b|(?<![Vv]an )\b(?:Lier|Exel|Horn|Gundy)\b/.test(l.text)) clumsy.push(`${where}: ${l.text}`);
   }
 }
