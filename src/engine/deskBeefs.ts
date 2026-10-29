@@ -70,7 +70,7 @@ const CORE_BEEFS: Beef[] = [
     on: { lens: 'old' },
     variants: [
       (c) => ({
-        open: `${c.names(c.read.old)}. In 2026. Kiddo, Uncle Mattia had their posters. Next to the lava lamp. Did this roster come with a time machine?`,
+        open: `${c.names(c.read.old)}. In 2026. Did this roster come with a time machine, or do we rent one?`,
         lines: [
           ['jert', `@Sosini ${c.sur(c.read.old[0])} would eat your favourite player for breakfast. And lunch. And your podcast.`],
           ['sosini', 'My podcast has a very loyal audience.'],
@@ -82,7 +82,7 @@ const CORE_BEEFS: Beef[] = [
         const russell = c.has('Bill Russell');
         if (!wilt && !russell) return null;
         return {
-          open: `${c.names(c.read.old)}. Kiddo, this roster’s scouting report is in black and white. Uncle Mattia remembers the TV.`,
+          open: `${c.names(c.read.old)}. This roster’s scouting report is in black and white. Literally.`,
           lines: wilt
             ? [
               ['jert', '@Sosini for once you’re right. Wilt? Bum. Fifty a game and two rings. Russell is the one.'],
@@ -92,7 +92,7 @@ const CORE_BEEFS: Beef[] = [
             ]
             : [
               ['jert', '@Sosini Russell has eleven rings. ELEVEN. How many do you have?'],
-              ['sosini', 'Eleven rings in an eight-team league. Trust Uncle Mattia.'],
+              ['sosini', 'Eleven rings in an eight-team league. Cope.'],
               ['binash', '@Sosini right. Zero rings and a ring light. Sit down.', 'cuts'],
               ['host', 'nobody gets blocked live on air. again', 'host'],
             ],
@@ -412,7 +412,7 @@ const CORE_BEEFS: Beef[] = [
         lines: [
           ['sosini', '@Binash kiddo, can we score it already?'],
           ['binash', 'Bird would shoot 45% from three today. With a toothpick in his mouth.'],
-          ['sosini', 'Bird took two threes a game. Trust Uncle Mattia.'],
+          ['sosini', 'Bird took two threes a game. Cope.'],
           ['binash', '*clutches his chest* Somebody hold me back.'],
         ],
       }),
@@ -479,34 +479,34 @@ const CORE_BEEFS: Beef[] = [
     variants: [
       (c) => ({
         lines: [
-          ['sosini', '@Eurostep kiddo, a passport isn’t a jump shot.'],
+          ['sosini', '@Eurostep a passport isn’t a jump shot, Zoran 💀'],
           ['zoran', 'Listen to me. Argentina beat Team USA in 2004. Manu brought the move I am NAMED after.'],
-          ['sosini', '2004 Team USA couldn’t shoot. My grandma would’ve beaten them.'],
+          ['sosini', '2004 Team USA couldn’t shoot. My grandma would’ve beaten them. Not the flex you think it is.'],
           ...(c.has('Dirk Nowitzki')
             ? [
               ['zoran', 'Dirk beat the Miami superteam in 2011. One German, zero excuses. In Europe we call that a lesson.'],
               ['sosini', 'Okay, Dirk is my guy. *mumbles* Dirk is everybody’s guy.'],
-              ['zoran', '*hand on heart* Growth. I’m proud of you.'],
+              ['zoran', 'Growth. Took you fifteen years, but growth.'],
             ] as BeefLine[]
             : [
-              ['zoran', 'Your grandma would also call this roster beautiful. She has taste. Unlike her grandson.'],
-              ['sosini', 'Leave my grandma out of this.'],
+              ['zoran', 'Your grandma has better taste than your entire timeline.'],
+              ['sosini', 'leave my grandma out of this. blocked'],
             ] as BeefLine[]),
         ],
       }),
       (c) => ({
         lines: [
-          ['lex', `@Eurostep cool, a passport. How many rings came with ${c.sur(c.read.international[0])}’s?`],
-          ['zoran', 'Listen to me. Rings are an American obsession. In Europe we celebrate the PASS.'],
-          ['lex', 'That’s why nobody watches. Nobody.'],
-          ['zoran', '*hand on heart* I will pray for you, Lex.'],
+          ['lex', `@Eurostep cute, a passport. How many rings came with ${c.sur(c.read.international[0])}’s? I’ll wait.`],
+          ['zoran', 'Rings are an American disease. In Europe we celebrate the PASS. Look it up, if you can read.'],
+          ['lex', 'That’s why nobody watches. Nobody. Not even you.'],
+          ['zoran', 'I will pray for you, Lex. Nobody else will.'],
         ],
       }),
       (c) => ({
         lines: [
-          ['jert', `@Eurostep ${c.sur(c.read.international[0])}? Learned the game over here, pal.`],
-          ['zoran', 'Listen to me. He learned the game THERE. Here he learned to sign autographs.'],
-          ['jert', '*slams the desk* Kids today. Europeans today. Everybody today.'],
+          ['jert', `@Eurostep ${c.sur(c.read.international[0])}? Learned the game over here. I have his college stats. All of them.`],
+          ['zoran', 'He learned the game THERE. Here he learned to sign autographs and lose to the Spurs.'],
+          ['jert', 'Kids today. Europeans today. Everybody today. I’m logging this exchange. Page 213.'],
         ],
       }),
     ],
@@ -563,7 +563,7 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['zoran', '@Sosini listen to me. In Europe kids shoot before they can walk. Here they dunk and pose.', 'cuts'],
-          ['sosini', 'Finally, someone gets it. Kiddo, Zoran, you can sit next to me.'],
+          ['sosini', 'Finally, someone gets it. Zoran, you can sit next to me.'],
           ['jert', '*slams the desk* Traitors. Both of you.', 'cuts'],
         ],
       }),
@@ -672,10 +672,11 @@ const CORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['onoffsky', '*adjusts glasses* Fun fact: rebounding matters less in a five-out offense.', 'cuts'],
-          ['solin', '@Onoffsky numbers don’t box out.'],
-          ['onoffsky', 'They do, actually. It’s called defensive rebounding percentage. You’re welcome.'],
+          ['onoffsky', 'fun fact: rebounding matters less in a five-out offense. I have the data. 🤓', 'cuts'],
+          ['solin', '@Onoffsky numbers don’t box out, nerd.'],
+          ['onoffsky', 'They do. It’s called defensive rebounding percentage. Maybe read something.'],
           ['solin', 'Come to the paint and say that. I’ll be waiting with an elbow.'],
+          ['onoffsky', 'threatening a man with a spreadsheet. on air. classic Davyd'],
           ['host', 'Davyd put the chair down. Jake close the spreadsheet. thank you', 'host'],
         ],
       }),

@@ -225,15 +225,15 @@ const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> 
   // the uncle at the barbecue who found the three-point line (the user: "bardziej wujasowy")
   sosini: {
     praise: [
-      '{m} Uncle Mattia has been saying this since 2014, kiddo.',
+      '{m} Been saying this since 2014. Nobody listened.',
       '{m} Three is more than two. I tell this to everybody at every family dinner.',
       '{m} Pass me a beer, this is beautiful.',
-      '{m} Write that down, kid. Uncle Mattia was right again.',
+      '{m} Right again. Screenshot it.',
     ],
     concern: [
       '{m} Kiddo. In 2026? Who drafted this, grandpa?',
       '{m} The paint is going to be a parking lot. A parking lot, I tell you.',
-      '{m} Uncle Mattia is not angry. Uncle Mattia is disappointed.',
+      '{m} Not angry. Disappointed. Mostly angry.',
       '{m} I’m going to need a second beer for this one.',
     ],
   },
@@ -243,28 +243,28 @@ const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> 
     concern: ['{m} Not good.', '{m} In the playoffs they find that guy. Every time.', '{m} No stops, no wins. Simple.'],
   },
   solin: {
-    praise: ['{m} That’s grown-man basketball.', '{m} Back in ’04 that’s a toll booth. Pay up.'],
-    concern: ['{m} Soft. Way too soft.', '{m} Nobody’s scared of this team. NOBODY.', '{m} My grandma boxes out harder.'],
+    praise: ['{m} Grown-man basketball. The spreadsheet crowd can cry about it.', '{m} Eye test passed. Argue with a wall.'],
+    concern: ['{m} Soft. Way too soft.', '{m} Nobody is scared of this team. Nobody.'],
   },
   rotation: {
-    praise: ['{m} *exhales* Finally, a bench I can trust.', '{m} Love you guys. Good draft.'],
-    concern: ['{m} Somebody call a doctor. Call two.', '{m} I love you guys, but February is coming.', '{m} This bench is a rumour.'],
+    praise: ['{m} Finally, a bench I trust. Lex can keep crying.', '{m} That’s how you survive February. Not that anyone here plans for February.'],
+    concern: ['{m} February is coming and this team is not ready.', '{m} This bench is a rumour.'],
   },
   natalie: {
-    praise: ['{m} That’s how you spend money.', '{m} Under budget AND good? I need to sit down.'],
-    concern: ['{m} *closes the laptop very slowly*', 'Rules are rules. {m}', '{m} I’m not mad. I’m disappointed. And a little mad.'],
+    praise: ['{m} That’s how you spend money. Some of you should take notes.', '{m} Under budget AND good. Rare on this desk.'],
+    concern: ['{m} Fraud contract energy.', '{m} Rules are rules. 100.9 caps. Learn to count.'],
   },
   prab: {
-    praise: ['{m} Kobe would sign off on that, my friend.', '{m} That’s a closer. That’s a CLOSER.'],
+    praise: ['{m} Kobe would sign off on that, my friend.', '{m} That’s a closer. The rest of you wouldn’t know one.'],
     concern: ['{m} Who takes the last shot? Exactly. Nobody.', '{m} Kobe would never. NEVER.'],
   },
   jeremy: {
-    praise: ['{m} Go watch the tape. Textbook.', '{m} Pure ’90s off-ball work. Michael would approve.'],
-    concern: ['{m} Go watch the tape, then we talk.', '{m} Michael would have run them off three screens. Three.'],
+    praise: ['{m} Go watch the tape. Textbook.', '{m} Pure ’90s. Michael would approve. Look it up.'],
+    concern: ['{m} Go watch the tape, then reply.', '{m} Michael would’ve run them off three screens. Three.'],
   },
   zoran: {
-    praise: ['{m} *hand on heart* The ball moves. Beautiful.', 'Listen to me. {m} That is European basketball.'],
-    concern: ['Listen to me. {m} One ball, five guys. In Europe we call that a problem.', '{m} *hand on heart* The ball is crying.'],
+    praise: ['{m} The ball moves. Beautiful. Americans won’t get it.', 'Listen to me. {m} That is real basketball.'],
+    concern: ['{m} One ball, five guys. In Europe we call that a problem.', '{m} The ball is crying. I am crying.'],
   },
   // two-way first, Italian only now and then (the user: "przesadzone z włoskim")
   batt: {
@@ -300,8 +300,8 @@ function flavourTakes(read: RosterRead): Take[] {
   if (read.eighties.length >= 2) add('binash', 0.35 + 0.1 * read.eighties.length, 'praise', `${names(read.eighties)} from the ’80s! Oh, I’m home. Somebody find me a tape deck and a pair of short shorts.`, 'eighties');
   if (read.preTwoK.length >= 6) add('jert', 0.7, 'praise', `${read.preTwoK.length} players from before 2000. I counted twice. Pace-adjusted, every one of them averages more than his 2026 counterpart. I have the almanacs. All of them. Alphabetised.`, 'preTwoK');
   else if (read.preTwoK.length === 0) add('jert', -0.6, 'concern', 'Zero players from before 2000. Zero. That is 0 out of 9, which is 0.0%. I wrote it down. I write everything down.', 'noPreTwoK');
-  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. Kiddo, I had their posters. In 1975. On the wall next to the lava lamp. Great guys. Can’t shoot a three.`, 'old');
-  else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody here could play tonight. Tonight! Uncle Mattia is proud of you, kid.', 'modern');
+  if (read.old.length >= 2) add('sosini', -0.4 - 0.1 * read.old.length, 'concern', `${names(read.old)}. Great posters. Can’t shoot a three. Next.`, 'old');
+  else if (read.modern.length >= 6) add('sosini', 0.6, 'praise', 'Everybody here could play tonight. Finally a roster from this century.', 'modern');
   if (read.aughts.length >= 3) add('solin', 0.55, 'praise', `${names(read.aughts)}. That’s 2004 in a jar. Somebody’s getting fouled hard and nobody’s apologising.`, 'aughts');
   if (read.stars.length >= 3) add('lex', 0.75, 'praise', `${names(read.stars)}. Now THAT is a team. Everyone else in this league is just here to lose to it.`, 'stars');
   else if (read.stars.length === 1) add('lex', -0.5, 'concern', `${surname(read.stars[0])} and a group of nice young men who will be watching from the bench in May. How quaint.`, 'oneStar');
@@ -471,19 +471,19 @@ function moonbatBit(read: RosterRead, rng: () => number, place: number, onAir: R
 const SLANG: Partial<Record<ExpertId, { tail: string[]; head: string[] }>> = {
   sosini: { tail: ['ratio', '💀', 'write that down'], head: [] },
   shyman: { tail: ['🧱'], head: [] },
-  solin: { tail: ['💪', 'lol', 'say less', 'eye test', 'soft', '🧱'], head: ['Bro.', 'Please.'] },
-  binash: { tail: ['📼', 'totally tubular', 'rad 🤙', 'gnarly', 'cowabunga, dudes', '🕺'], head: ['Dude.', 'Oh, please.'] },
-  jert: { tail: ['pace-adjusted, btw', '(source: my 1991 almanac, page 212)', 'to be precise'], head: ['Actually.', 'Technically.', 'Correction.'] },
-  rotation: { tail: ['🙏', '❤️', 'love u guys', '😭'], head: ['Guys.', 'Okay.'] },
-  batt: { tail: ['🤌', 'both ends'], head: ['Ragazzi.', 'Look.'] },
-  prab: { tail: ['🐍', '🐐', 'lol', 'mamba out'], head: ['Bro.', 'Please.'] },
-  onoffsky: { tail: ['🤓', '📊', 'source: me', 'it’d be funny if it wasn’t true', 'ngl', 'no play-by-play, no opinion'], head: ['Footnote.', 'Correction.'] },
-  bannerman: { tail: ['🍀', '☘️', 'lmao', 'banner szn'], head: ['Lol.', 'Imagine.'] },
-  natalie: { tail: ['💸', '📉', 'not me crying', 'sigh', '🧾'], head: ['Okay.', 'Darling.'] },
-  jeremy: { tail: ['🐐', '📼', 'smh', '6–0 btw'], head: ['Please.', 'Lol.'] },
-  lex: { tail: ['pathetic', 'how quaint', '👑', 'enjoy the lottery'], head: ['How sweet.', 'Oh no.', 'Cute.'] },
-  zoran: { tail: ['🙏', 'my brother', '🇪🇺', 'beautiful 🥲'], head: ['Listen.', 'My friend.'] },
-  rightwing: { tail: ['🙄', 'smh', 'unreal'], head: ['Bart.'] },
+  solin: { tail: ['eye test', 'soft', '💪'], head: [] },
+  binash: { tail: ['📼', 'kids today'], head: [] },
+  jert: { tail: ['pace-adjusted, btw', '(source: my 1991 almanac, page 212)'], head: [] },
+  rotation: { tail: ['February is coming', '🙏'], head: [] },
+  batt: { tail: ['🤌'], head: [] },
+  prab: { tail: ['🐍', 'mamba out'], head: [] },
+  onoffsky: { tail: ['🤓', 'source: the data', 'no play-by-play, no opinion'], head: [] },
+  bannerman: { tail: ['🍀', 'count the banners'], head: [] },
+  natalie: { tail: ['💸', '🧾'], head: [] },
+  jeremy: { tail: ['6–0 btw', '🐐'], head: [] },
+  lex: { tail: ['pathetic', '👑', 'enjoy the lottery'], head: [] },
+  zoran: { tail: ['🇪🇺', 'my brother'], head: [] },
+  rightwing: { tail: ['🙄'], head: [] },
   host: { tail: [], head: [] },
 };
 const INTERJECTIONS = new Set(['lol', 'smh', 'fr', 'lmao', 'ngl', 'ugh', 'sigh']);
