@@ -204,7 +204,7 @@ export interface StretchRow {
   action: { label: string; disabled: boolean; title?: string; onClick: () => void } | null;
 }
 
-const TOP_TIERS = new Set(['GOAT', 'Greatest peak', 'MVP']);
+const TOP_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
 
 /** His stretches (mockup `#years`): years, team, tier, the line, the grades once scouted, the
  * caps and a button. */

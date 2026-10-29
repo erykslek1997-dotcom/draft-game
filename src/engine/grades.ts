@@ -424,14 +424,14 @@ export function durabilityGrade(value: number): Grade {
  * the letter grades above — the user's own bands (2026-07-30), asked to render as coloured pills
  * like SPACING's shooter tags rather than plain letters, since TAL is the headline number.
  *
- * The 94-point overlap in the user's own spec ("Greatest peak 94+" and "MVP 94-88" both claim
+ * The 94-point overlap in the user's own spec ("Legend 94+" and "MVP 94-88" both claim
  * 94) is resolved by checking floors ascending and letting the highest one win ties — same
- * pattern as `spacing.ts`/`durability.ts`'s tier floors, so 94 lands in Greatest peak and MVP is
+ * pattern as `spacing.ts`/`durability.ts`'s tier floors, so 94 lands in Legend and MVP is
  * effectively 88-93.
  */
 export type OverallTier =
   | 'GOAT'
-  | 'Greatest peak'
+  | 'Legend'
   | 'MVP'
   | 'All-NBA'
   | 'All-star'
@@ -450,7 +450,7 @@ const OVERALL_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
   [80, 'All-NBA'],
   [88, 'MVP'],
   // 2026-09-26, the user ("za dużo graczy w greatest peak"): 94 -> 96; MVP is now 88-95.
-  [96, 'Greatest peak'],
+  [96, 'Legend'],
 ];
 
 export function overallTier(value: number): OverallTier {
@@ -472,7 +472,7 @@ export function overallTier(value: number): OverallTier {
  * exactly as their real TAL says, they just don't get to wear a tier badge their O/D profile
  * doesn't back up. Position-specific because the user's own rules are: a PG's case for MVP+ rests
  * on real half-court shot creation (grade + volume), an SG's case for the top tier specifically
- * rests on true two-way value (offense-only volume scorers cap below "Greatest peak"), etc.
+ * rests on true two-way value (offense-only volume scorers cap below "Legend"), etc.
  * Every rule caps *downward only* — never raises a tier above what raw TAL already earned.
  *
  * 2026-08-07: a same-day batch of position-specific refinements to these rules (PG/SG/SF/C, plus
@@ -501,7 +501,7 @@ const TIER_ORDER: OverallTier[] = [
   'All-star',
   'All-NBA',
   'MVP',
-  'Greatest peak',
+  'Legend',
   'GOAT',
 ];
 /**
@@ -510,7 +510,7 @@ const TIER_ORDER: OverallTier[] = [
  * ceiling (`tierCeiling`), and GOAT specifically has no ceiling of its own (`tierCeiling('GOAT')`
  * is `Infinity`), so a GOAT-tier span and a merely-Greatest-Peak span can land on the EXACT SAME
  * displayed number (both 98, say) with nothing in the number itself distinguishing them. Found via
- * LeBron (GOAT, 98) sorting BELOW Larry Bird (Greatest peak, 98) in the draft pool list — the sort
+ * LeBron (GOAT, 98) sorting BELOW Larry Bird (Legend, 98) in the draft pool list — the sort
  * only compared the tied number, so array order (not rank) decided who showed first. See
  * `DraftBoard.tsx`'s own sort comparator for the fix.
  */
@@ -554,7 +554,7 @@ const PG_ARCHETYPE_MAX_TIER_DROP = 1;
  * same way the user specified it ("PG below A- can't be MVP") rather than a re-derived number. */
 /**
  * 2026-08-08, user's explicit, direct ask: Harden's 2018-20 span (his real 35.3 ppg MVP season,
- * O-TAL A+/106 uncapped after the SG position fix earlier this session) reaches "Greatest peak"
+ * O-TAL A+/106 uncapped after the SG position fix earlier this session) reaches "Legend"
  * — a single, named span exception, matching this project's existing `GOAT_NAMES` precedent
  * (below) for "the user explicitly wants this exact display outcome, not a formula fix."
  * Deliberately does NOT touch the O-TAL grade itself (stays honest A+, not faked to S) — this
@@ -635,7 +635,7 @@ const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
     // All-star anyway; scoped to the two peak-usage spans.
     { name: 'Jalen Rose', spanLabel: '1999-01', cap: 'Starter' as OverallTier },
     { name: 'Jalen Rose', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
-    // 2026-09-02, user batch feedback: Dirk / Malone read a "Greatest peak" badge a rung too
+    // 2026-09-02, user batch feedback: Dirk / Malone read a "Legend" badge a rung too
     // high, Cousins "MVP zbyt wysoko". All ride the +7 two-way synergy bonus (maxed — see
     // talent.ts `MAX_TWO_WAY_SYNERGY_BONUS`); a synergy trim was measured (`scripts/_diagSynergy.ts`)
     // and reverted — it cost GOAT-40 0.009 for near-zero effect at the very top (the 95-100
@@ -891,14 +891,14 @@ function tierCaps(
       // bar: a genuinely elite offensive grade on its own, regardless of exactly how far into
       // the A-tier it reaches.
       const otalIsElite = gradeAtLeast(otalGrade, 'A-');
-      // "Greatest peak" specifically requires real two-way volume, not just one elite side —
+      // "Legend" specifically requires real two-way volume, not just one elite side —
       // unchanged even for an S-grade offense, which only guarantees MVP (see below), not the
       // top tier.
       if (!gradeAtLeast(otalGrade, 'B+')) caps.push('MVP');
       // 2026-08-13, user-reported: Zach LaVine's 2020-22 peak (OTAL A/94, DTAL F/25) displayed as
-      // "MVP" — raw TAL (89) never even reached the "Greatest peak" floor (94) on its own, so the
+      // "MVP" — raw TAL (89) never even reached the "Legend" floor (94) on its own, so the
       // old version of this rule (below, capping only at MVP) was a dead cap for him: it can only
-      // ever stop a player from reaching "Greatest peak", and he was never going to get there
+      // ever stop a player from reaching "Legend", and he was never going to get there
       // regardless. The real ask was a genuinely lower ceiling — All-star, not MVP — for an SG
       // with unconfirmed/bad defense (DTAL<C), same shape as the twoWay All-star cap below but
       // independent of it (that one exempts on OTAL>=A-; this one demands a literal A+, checked
@@ -915,13 +915,13 @@ function tierCaps(
       // 2026-08-05 follow-up: this was catching real offensive engines too hard (Harden, A+
       // O-TAL, still fell to All-star on a weak D-TAL) — a truly elite (A+) offense alone now
       // guarantees at least MVP, bypassing just this one cap (the MVP-blocking rules above still
-      // apply normally, so a merely-good defense still keeps him out of "Greatest peak").
+      // apply normally, so a merely-good defense still keeps him out of "Legend").
       const twoWay =
         (gradeAtLeast(otalGrade, 'B+') && gradeAtLeast(dtalGrade, 'B-')) ||
         (gradeAtLeast(otalGrade, 'B-') && gradeAtLeast(dtalGrade, 'B+'));
       if (!twoWay && !otalIsElite) caps.push('All-star');
       if (fga < TIER_GATE_LOW_FGA) caps.push('Starter');
-      // 2026-08-06: "Greatest peak" for an SG specifically requires a true top-of-scale (S)
+      // 2026-08-06: "Legend" for an SG specifically requires a true top-of-scale (S)
       // offensive grade — even a two-way A- guard doesn't have the case for the very top tier,
       // just MVP. Literal `=== 'S'` (not `gradeAtLeast(..., 'A+')` like the PG exemptions above)
       // is intentional here: this is the defining bar for the rule, not a fragile secondary
@@ -966,29 +966,29 @@ function tierCaps(
       if (!gradeAtLeast(otalGrade, 'C+')) caps.push('All-star');
       // 2026-09-25, user ("Draymond zdecydowanie za wysoko"): PF had no gate above All-star, so an
       // offense grade crossing C+ (Draymond Green 2015-17, O-TAL 64 -> 68 after the every-position
-      // playmaking bonus) jumped the badge from All-NBA straight to Greatest peak. MVP and above
+      // playmaking bonus) jumped the badge from All-NBA straight to Legend. MVP and above
       // now need at least a B- offense, whatever the defense: Kevin Garnett 2006-08 and Anthony
       // Davis 2019-21 (both B-) keep MVP; Draymond's defense-first peak tops out at All-NBA.
       if (!gradeAtLeast(otalGrade, 'B-')) caps.push('All-NBA');
       break;
     }
     case 'C': {
-      // 2026-08-05: "Greatest peak" needs real A- offense — Robinson/Olajuwon-type exception for
+      // 2026-08-05: "Legend" needs real A- offense — Robinson/Olajuwon-type exception for
       // a true S-grade defense (an elite-enough anchor overrides the offensive requirement
       // entirely — not those two players by name, anyone whose defense actually reaches S clears
       // it the same way). The exception has to waive BOTH offense-gated caps below, not just the
       // Greatest-peak one — otherwise the weaker "MVP needs B-" cap still fires on its own and
-      // quietly drags an S-defense anchor down to All-NBA instead of the intended Greatest peak.
+      // quietly drags an S-defense anchor down to All-NBA instead of the intended Legend.
       //
       // 2026-08-08, user's v0.2 rating batch, two follow-ups:
       // - Dwight Howard was stuck at All-NBA (real DTAL 95, a true A+ anchor, but short of the
       //   dynamic S threshold which currently sits at 98) and the ask was specifically MVP tier,
-      //   not Greatest peak — relaxed literal-S to a fixed A+ (>=95) for the All-NBA->MVP gate
+      //   not Legend — relaxed literal-S to a fixed A+ (>=95) for the All-NBA->MVP gate
       //   ONLY (same "S is a fragile relative cutoff, A+ reads the same elite intent" reasoning as
       //   the PG defense-cap exemption earlier this batch), deliberately NOT for the MVP->Greatest
       //   peak gate — Howard's real offense (C+, 67) is meaningfully weaker than every other real
       //   member of that literal-S club (Hakeem/Robinson/Kareem all B or better), so letting him
-      //   ride pure defense all the way to Greatest peak would overshoot what was actually asked
+      //   ride pure defense all the way to Legend would overshoot what was actually asked
       //   and dilute what that top tier is supposed to mean. Checked directly: with the Greatest-
       //   peak gate left at literal S, Howard lands exactly at MVP as requested.
       // - Wembanyama (OTAL B/78, DTAL A/93) still doesn't clear A+ defense OR A- offense on his
@@ -996,7 +996,7 @@ function tierCaps(
       //   DTAL>=A) for the MVP->Greatest-peak gate specifically, mirroring the SG two-way path
       //   above. Checked the blast radius first (`scripts/_v02_c_exemption_audit.ts`, deleted
       //   after use): only Hakeem/Robinson/Kareem/Wemby clear it — all genuine two-way anchors,
-      //   and the first three already reach Greatest peak via other spans regardless, so Wemby is
+      //   and the first three already reach Legend via other spans regardless, so Wemby is
       //   the real beneficiary, not a new blanket relaxation.
       const dtalIsS = dtalGrade === 'S';
       const cTwoWayElite = gradeAtLeast(otalGrade, 'B') && gradeAtLeast(dtalGrade, 'A');
@@ -1031,7 +1031,7 @@ function tierCaps(
       // spans, but only SOME of those get graded literal S vs A+ depending on which other spans
       // happen to occupy the pool's dynamic top-3 that round — the exact "S is a fragile relative
       // cutoff" problem this file's own PG/Howard comments already warn about, here catching two
-      // of Jokić's spans (2019-21, 2020-22) into an unintended "Greatest peak" -> "All-NBA" drop
+      // of Jokić's spans (2019-21, 2020-22) into an unintended "Legend" -> "All-NBA" drop
       // for no real reason tied to his actual offense. Fixed by testing the raw, hard-clamped
       // OTAL number instead of its letter grade — `otal >= 100` is an absolute scale-ceiling
       // fact, not a relative rank, so it can't flicker between spans of identical real quality.
@@ -1112,12 +1112,12 @@ export interface TierGateContext {
 
 /**
  * 2026-08-07, user explicit ask: "LeBron, Jordan and Curry [have] not so much separation" from
- * the rest of "Greatest peak" (a real, honest consequence of the soft-cap — see talent.ts's own
+ * the rest of "Legend" (a real, honest consequence of the soft-cap — see talent.ts's own
  * docstring on `SOFT_CAP_K`, which deliberately compresses the whole top band toward 100 so nothing
  * can hard-clip into an indistinguishable tie). This is the FOURTH named-player special case in
  * the whole project (after Curry's shooting-gravity cap, Magic's SF position-correction override,
  * and Durant's SF-defense-cap exclusion) — still exceptional, not a pattern to extend to a fourth
- * name without being asked. Purely a DISPLAY tier, one rung above "Greatest peak": doesn't touch
+ * name without being asked. Purely a DISPLAY tier, one rung above "Legend": doesn't touch
  * `computeTalent`, draft value, sorting, or sim behavior anywhere — a real draft-priority slide is
  * a separate question (checked directly via `checkEliteSlideDiagnostic.ts` the same session: 25
  * simulated 16-team drafts put Jordan at pick 1-8 every single time, avg 2.7 — the existing
@@ -1215,7 +1215,7 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   // 2026-08-31 (dedicated bridge pass): same shape as the elite-defense-bonus gate directly above,
   // extended to every top-tier boundary. The D-TAL->TAL bridge (`talent.ts`) is a small mean-zero
   // defensive rank correction (cap +5 / -6); near a top-tier floor that nudge flips the whole badge
-  // (Anthony Edwards 2024-26 into MVP, Durant 2009-11 MVP->Greatest peak, Dirk 1999-01, Kobe
+  // (Anthony Edwards 2024-26 into MVP, Durant 2009-11 MVP->Legend, Dirk 1999-01, Kobe
   // 2008-10 all measured crossing this way). The bridge can lift the displayed NUMBER within a
   // band, but it can't lift the displayed TIER above what the non-bridge number earns once that
   // tier is MVP or higher — never below All-NBA, so a legit All-NBA span the bridge nudged isn't
@@ -1294,12 +1294,12 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   // GOAT is a RAISE, deliberately the only exception to this function's own "caps only ever
   // lower a tier" rule (see every other case above) — gated on already having earned "Greatest
   // peak" on the real merits first, so it can never manufacture a top tier out of nothing.
-  if (capped === 'Greatest peak' && ctx.playerName && GOAT_NAMES.has(normalizePlayerName(ctx.playerName))) {
+  if (capped === 'Legend' && ctx.playerName && GOAT_NAMES.has(normalizePlayerName(ctx.playerName))) {
     return 'GOAT';
   }
   // 'Sixth Man' is a role RELABEL, not a rank — same "independent of the cap-folding above"
   // shape as the GOAT raise, just never able to conflict with it in practice (`isSixthManProfile`
-  // requires TAL<80, GOAT requires 'Greatest peak' i.e. TAL>=94 first).
+  // requires TAL<80, GOAT requires 'Legend' i.e. TAL>=94 first).
   let result: OverallTier = ctx.isSixthMan ? 'Sixth Man' : capped;
   // 2026-09-01 (Bosh/Gasol/Aldridge): a sustained real plus-minus record (`realValueFloor.ts`) the
   // box-score base badly understates for high-volume mid-range scoring bigs. Raise only, capped at
@@ -1330,7 +1330,7 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
 
 /** The top of each tier's own band — one below the next tier's floor, so a capped player's
  * displayed number can never read as high as a real, uncapped member of the tier above. The
- * top two tiers ('Greatest peak', 'GOAT') have no ceiling of their own (nothing to cap
+ * top two tiers ('Legend', 'GOAT') have no ceiling of their own (nothing to cap
  * against) — GOAT isn't in `OVERALL_TIER_FLOORS` at all (TAL itself never earns it, see above),
  * so it needs its own explicit case rather than falling through the floor lookup. */
 function tierCeiling(tier: OverallTier): number {
@@ -1476,7 +1476,7 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Ray Allen', 85], // high-mid All-NBA
     ['Kevin Johnson', 85], // high-mid All-NBA
     ['Chris Mullin', 83],
-    ['Joel Embiid', 95], // top of MVP, not Greatest peak
+    ['Joel Embiid', 95], // top of MVP, not Legend
     ['Donovan Mitchell', 86], // All-NBA, not MVP
   ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
 );
@@ -1635,7 +1635,7 @@ function smoothedDisplayTalent(ctx: TierGateContext): number {
 }
 
 function tierBand(tier: OverallTier): [number, number] {
-  if (tier === 'GOAT') return [OVERALL_TIER_FLOORS.find(([, n]) => n === 'Greatest peak')![0], Infinity];
+  if (tier === 'GOAT') return [OVERALL_TIER_FLOORS.find(([, n]) => n === 'Legend')![0], Infinity];
   if (tier === 'Sixth Man') return [tierFloor('Role Player'), tierCeiling('Sixth Man')];
   return [tierFloor(tier), tierCeiling(tier)];
 }
@@ -1669,7 +1669,7 @@ function legacyOverallTierForSpan(ctx: TierGateContext): OverallTier {
   const [lo, hi] = tierBand(rule);
   if (number >= lo && number <= hi) return rule;
   const byNumber = overallTier(number);
-  if (rule === 'GOAT' && byNumber === 'Greatest peak') return 'GOAT';
+  if (rule === 'GOAT' && byNumber === 'Legend') return 'GOAT';
   return byNumber;
 }
 

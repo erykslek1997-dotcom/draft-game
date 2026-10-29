@@ -43,12 +43,17 @@ function listNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
+const CORE_SIZE = 5;
+
 export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
   const rotation = team.players.filter((p) => p.minutes >= ROTATION_MINUTES).sort((a, b) => b.minutes - a.minutes);
-  const movers = rotation.filter((p) => p.offensiveArchetype === 'Movement Shooter' || p.offensiveArchetype === 'Off Screen Shooter');
-  const corners = rotation.filter((p) => p.offensiveArchetype === 'Stationary Shooter' && (p.threePA ?? 0) >= 3);
-  const cutters = rotation.filter((p) => (p.cutShare ?? 0) >= CUTTER_SHARE);
-  const passer = rotation.filter((p) => (p.astPct ?? 0) >= PASSER_AST_PCT).sort((a, b) => (b.astPct ?? 0) - (a.astPct ?? 0))[0];
+  // 2026-10-29 (the user: "Sefolosha cuts backdoor" — the eighth man as the headline; "it should
+  // praise the top"): a style line names the five who play the most, never the bench.
+  const core = rotation.slice(0, CORE_SIZE);
+  const movers = core.filter((p) => p.offensiveArchetype === 'Movement Shooter' || p.offensiveArchetype === 'Off Screen Shooter');
+  const corners = core.filter((p) => p.offensiveArchetype === 'Stationary Shooter' && (p.threePA ?? 0) >= 3);
+  const cutters = core.filter((p) => (p.cutShare ?? 0) >= CUTTER_SHARE);
+  const passer = core.filter((p) => (p.astPct ?? 0) >= PASSER_AST_PCT).sort((a, b) => (b.astPct ?? 0) - (a.astPct ?? 0))[0];
   const out: StyleLine[] = [];
 
   const runners = movers.filter((p) => p.offensiveArchetype === 'Movement Shooter');

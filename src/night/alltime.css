@@ -719,7 +719,7 @@ h3 .sw a.on { color: var(--ink); border-bottom-color: var(--ink); }
 /* phone the desk */
 .pd-line { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--rule); }
 .pd-line.off { opacity: 0.4; }
-.pd-av { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--ink3); display: grid; place-items: center; font: 700 14px var(--cond); color: var(--ink); letter-spacing: 0.04em; }
+.pd-av { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--sans); color: #fff; letter-spacing: 0.02em; }
 .pd-av.tv { border-radius: 3px; background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .pd-line b { font: 700 18px/1.1 var(--cond); }
 .pd-line b small { margin-left: 8px; font: italic 500 13px var(--sans); color: var(--ink3); }
@@ -1325,3 +1325,45 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .poster.ig .po-ph img { width: min(100px, 100%); }
 .poster.ig .po-foot { margin-top: auto; }
 .poster.ig .po-head h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(28px, 7.2vw, 40px); }
+
+/* 2026-10-29: the call sheet rebuilt — pips for the calls left, a short row an expert with a Call
+   button, the desk as its own card, what can't be called yet at the bottom, dimmed. */
+.nt .dlg.calls .cs-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0 8px; font: 500 13px var(--sans); color: var(--ink3); }
+.nt .dlg.calls .cs-pips { display: inline-flex; align-items: center; gap: 5px; }
+.nt .dlg.calls .cs-pips i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink3); }
+.nt .dlg.calls .cs-pips i.on { background: var(--gold); border-color: var(--gold); }
+.nt .dlg.calls .cs-pips b { margin-left: 4px; font: 700 13px var(--sans); color: var(--ink); }
+.nt .dlg.calls .cs-list { display: flex; flex-direction: column; }
+.nt .dlg.calls .cs-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--rule); background: none; text-align: left; color: inherit; cursor: pointer; }
+.nt .dlg.calls .cs-row:hover:not(:disabled) .cs-go { background: var(--ink); color: var(--bg); }
+.nt .dlg.calls .cs-row.desk { margin: 8px 0; padding: 12px; border: 1px solid var(--rule3); border-radius: 6px; background: var(--surf); }
+.nt .dlg.calls .cs-row.off { cursor: default; opacity: 0.45; }
+.nt .dlg.calls .cs-txt { display: flex; flex-direction: column; min-width: 0; }
+.nt .dlg.calls .cs-txt b { font: 700 16px/1.2 var(--sans); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nt .dlg.calls .cs-txt b small { margin-left: 6px; font: 400 12px var(--sans); color: var(--ink3); }
+.nt .dlg.calls .cs-txt > span { margin-top: 2px; font: 400 13px/1.35 var(--sans); color: var(--ink2); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.nt .dlg.calls .cs-go { padding: 6px 14px; border: 1px solid var(--ink2); border-radius: 999px; font: 700 13px var(--sans); color: var(--ink); white-space: nowrap; }
+.nt .dlg.calls .cs-go.free { border-color: var(--green); color: var(--green); }
+.nt .dlg.calls .cs-row.off .cs-go { border: 0; padding: 6px 0; font-weight: 500; color: var(--ink3); }
+/* 2026-10-29: the card's other years as even rows — years, box line (award as a small chip after
+   it), tier, cost with its coin inline, the caret; the open row's details under a rule. */
+.nt .pk2-head .pk2-yrs { white-space: nowrap; }
+.nt .pk2-list { display: flex; flex-direction: column; border-top: 1px solid var(--rule); }
+.nt .pk2-li { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto 14px; align-items: center; gap: 10px; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--rule); background: none; color: inherit; text-align: left; cursor: pointer; }
+.nt .pk2-li .y { font: 700 18px var(--cond); color: var(--ink); white-space: nowrap; }
+.nt .pk2-li .bx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; font: 500 14px var(--num); color: var(--ink2); }
+.nt .pk2-li .bx .pk2-aw { display: inline-block; margin: 0; font-size: 10.5px; padding: 1px 7px; border-color: var(--rule3); color: var(--ink2); }
+.nt .pk2-li .t { font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink2); white-space: nowrap; }
+.nt .pk2-li .cap { display: inline-flex; align-items: center; gap: 4px; font: 600 14px var(--num); color: var(--gold); white-space: nowrap; }
+.nt .pk2-li .car { color: var(--ink3); font-size: 12px; }
+.nt .pk2-li:hover .y { text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+.nt .pk2-list .pk2-open { padding: 4px 0 14px; border-bottom: 1px solid var(--rule); }
+/* Phone: every dialog is a full-screen sheet with its header held at the top, so nothing of the page
+   shows above it and the list scrolls under the header, not past the edge of the screen. */
+@media (max-width: 600px) {
+  .nt .dlg, .nt .dlg.sm, .nt .dlg.pcard, .nt .modal { top: 0; left: 0; transform: none; width: 100%; max-height: none; height: 100dvh; border-top: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); box-shadow: none; }
+  .nt .modal .pk2-head { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: calc(12px + env(safe-area-inset-top)) 0 10px; margin: 0 0 10px; }
+  .nt .pk2-li { grid-template-columns: 62px minmax(0, 1fr) auto auto 12px; gap: 8px; }
+  .nt .pk2-li .bx { font-size: 13px; }
+  .nt .dlg .dlg-head { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: calc(12px + env(safe-area-inset-top)) 0 8px; margin: 0 0 6px; }
+}

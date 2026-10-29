@@ -13,7 +13,7 @@ import type { OverallTier } from './grades';
  */
 const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
   GOAT: [104, 105],
-  'Greatest peak': [96, 99],
+  'Legend': [96, 99],
   MVP: [88, 95],
   'All-NBA': [80, 87],
   'All-star': [70, 79],

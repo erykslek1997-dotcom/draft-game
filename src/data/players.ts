@@ -355,12 +355,12 @@ const POSITION_OVERRIDES: { name: string; spanLabel: string; position: Position;
   // the rest of his career rather than inventing a secondary tag nothing else in his data has.
   { name: 'Kyrie Irving', spanLabel: '2022-24', position: 'PG' },
   // 2026-08-31, user-reported ("AK to SF"), found while investigating Kirilenko 2003-05 reading
-  // Greatest peak: it is the ONLY one of his 9 real spans not tagged SF-primary (and the only one
+  // Legend: it is the ONLY one of his 9 real spans not tagged SF-primary (and the only one
   // with an empty secondary list at all) — every other span is SF-primary / PF-secondary. Same
   // one-span classifier artifact as Pierce 2001-03 above. As a PF that span dodged the SF elite-D
   // tier cap (`tierCaps`: A-+ defense with sub-B- offense caps at All-star) that his structurally
   // identical 2002-04 / 2004-06 SF spans — and Draymond Green's near-identical SF span — all hit,
-  // so it alone rocketed to Greatest peak on a 16/7/3 defense-first profile. `keepOldAsSecondary`
+  // so it alone rocketed to Legend on a 16/7/3 defense-first profile. `keepOldAsSecondary`
   // because PF is a genuine secondary for him (every other span carries it) — this is a Harden-
   // style dual-role correction, not a Pierce-style purge.
   { name: 'Andrei Kirilenko', spanLabel: '2003-05', position: 'SF', keepOldAsSecondary: true },
@@ -414,7 +414,7 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // band's documented fragility — see talent.ts's own `SOFT_CAP_FLOOR` docstring on the
   // reverted 2026-08-08 widen attempt): Taylor top-10 Spearman and Backpicks GOAT-40 both hold
   // exactly at their prior values (0.867 / 0.730) with this applied, and his own headline spans
-  // (2001-03, 2002-04, both TAL97) land at "Greatest peak" either way — PF's own tier-cap rule
+  // (2001-03, 2002-04, both TAL97) land at "Legend" either way — PF's own tier-cap rule
   // was already lenient enough not to block him there, so this isn't unlocking a tier he
   // couldn't otherwise reach. Real effect: he now ties into the C pool's already-acknowledged
   // top-cluster crowding (Jokić/Kareem/Shaq/Embiid/Hakeem/Robinson all bunched 95-98) — a couple

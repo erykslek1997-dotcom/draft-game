@@ -14,7 +14,12 @@ import { Btn, CapI, Dialog, NFace, fmtCaps } from '../night/ui';
 
 function Badge({ id }: { id: CallId }) {
   if (id === 'desk') return <span className="pd-av tv" aria-hidden>TV</span>;
-  return <span className="pd-av" aria-hidden>{DESK_CAST[id].mono}</span>;
+  // The same filled disc in the expert's colour as in the room (ui.tsx `NightVoices`).
+  return (
+    <span className="pd-av" style={{ background: `hsl(${DESK_CAST[id].hue} 42% 36%)` }} aria-hidden>
+      {DESK_CAST[id].mono}
+    </span>
+  );
 }
 
 /** The voices of a call (mockup `alltime.html#call`): the one you rang speaks plain, anyone who
@@ -55,32 +60,46 @@ export function PhoneChip({ left, live, onOpen }: { left: number; live: boolean;
   );
 }
 
-/** Tonight's on-call experts, the desk and Moonbat (mockup `alltime.html#callSheet`). */
+/** Tonight's on-call experts, the desk and Moonbat (mockup `alltime.html#callSheet`).
+ * 2026-10-29 (the user: "needs a rebuild, looks bad"): calls left as pips in the header, a short row
+ * each — the expert's disc, name and line, a Call button or why not — open calls first, the desk as
+ * its own card, then Moonbat, what can't be called yet at the bottom. */
 export function CallSheet({ options, left, pickLabel, onCall, onClose }: { options: CallOption[]; left: number; pickLabel: string; onCall: (id: CallId) => void; onClose: () => void }) {
+  const rank = (o: CallOption) => (o.unavailable ? 3 : o.id === 'moonbat' ? 2 : o.id === 'desk' ? 1 : 0);
+  const ordered = [...options].sort((x, y) => rank(x) - rank(y));
   return (
-    <Dialog title="Who are you calling?" onClose={onClose}>
-      <p className="lead" style={{ margin: '6px 0 4px' }}>
-        {pickLabel} · <b style={{ color: 'var(--ink)' }}>{left} of {CALLS_PER_DRAFT} calls left</b>
-      </p>
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          className={`pd-line${o.unavailable ? ' off' : ''}${o.free ? ' free' : ''}`}
-          disabled={!!o.unavailable}
-          onClick={() => onCall(o.id)}
-        >
-          <Badge id={o.id} />
-          <div>
-            <b>
-              {o.name}
-              {o.tag && <small>{o.tag}</small>}
-            </b>
-            <p>{o.blurb}</p>
-          </div>
-          <span className="bdg">{o.unavailable ?? o.badge}</span>
-        </button>
-      ))}
+    <Dialog title="Who are you calling?" onClose={onClose} className="calls">
+      <div className="cs-top">
+        <span>{pickLabel}</span>
+        <span className="cs-pips" aria-label={`${left} of ${CALLS_PER_DRAFT} calls left`}>
+          {Array.from({ length: CALLS_PER_DRAFT }, (_, i) => (
+            <i key={i} className={i < left ? 'on' : undefined} />
+          ))}
+          <b>{left} left</b>
+        </span>
+      </div>
+      <div className="cs-list">
+        {ordered.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            className={`cs-row${o.unavailable ? ' off' : ''}${o.id === 'desk' ? ' desk' : ''}`}
+            disabled={!!o.unavailable}
+            onClick={() => onCall(o.id)}
+          >
+            <Badge id={o.id} />
+            <span className="cs-txt">
+              <b>
+                {o.name}
+                {/* "On call tonight" on every row said nothing; the desk's card needs no tag. */}
+                {o.tag && o.tag !== 'On call tonight' && o.id !== 'desk' && <small>{o.tag}</small>}
+              </b>
+              <span>{o.blurb}</span>
+            </span>
+            <span className={`cs-go${o.free ? ' free' : ''}`}>{o.unavailable ?? (o.free ? 'Free' : o.id === 'desk' ? 'Chalk talk' : o.badge === '3 NAMES' ? 'Call' : o.badge)}</span>
+          </button>
+        ))}
+      </div>
       <Btn kind="line" className="pd-back" onClick={onClose}>
         Back to the board
       </Btn>

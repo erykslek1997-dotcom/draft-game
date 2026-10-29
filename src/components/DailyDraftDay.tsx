@@ -84,7 +84,7 @@ export function DailyDraftDayScreen({
                   <p>
                     The CPU can still take them.
                     {topOut !== null && topOut > 0 && ` ${topOut} of the top players are out for you.`}
-                    {day.rule.kind === 'stars' && ' MVP, Greatest peak and GOAT count.'}
+                    {day.rule.kind === 'stars' && ' MVP, Legend and GOAT count.'}
                   </p>
                 </div>
               </div>

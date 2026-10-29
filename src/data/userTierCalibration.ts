@@ -5,7 +5,7 @@ import type { OverallTier } from '../engine/grades';
  * two review pages (top 100, then 101-200). This table is the tier authority for these players:
  * `tierCalibration.ts` reads it to place each one's reviewed window in its tier and to derive the
  * player's other windows from it. The reasons the user gave for the calls the data does not make
- * on its own: Magic Johnson and Curry at Greatest peak ("status"); Oscar, Russell, Baylor held
+ * on its own: Magic Johnson and Curry at Legend ("status"); Oscar, Russell, Baylor held
  * down ("surowe podejście do graczy starej ery"); Luka at MVP (weak defense, exposed in the
  * playoffs); Howard, Ewing, Walton, Iverson, Erving at All-NBA; Marion, Jrue Holiday, Porziņģis,
  * Jalen Williams, Gobert at All-NBA (two-way and defensive value); Kyrie at All-NBA (engine
@@ -19,23 +19,23 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   // GOAT
   ['Michael Jordan', '1988-90', 163, 'GOAT'],
   ['LeBron James', '2008-10', 162, 'GOAT'],
-  // Greatest peak
-  ['Stephen Curry', '2014-16', 147, 'Greatest peak'],
-  ['Nikola Jokic', '2023-25', 147, 'Greatest peak'],
-  ['Kareem Abdul-Jabbar', '1975-77', 140, 'Greatest peak'],
-  ['Hakeem Olajuwon', '1992-94', 138, 'Greatest peak'],
-  ['Giannis Antetokounmpo', '2020-22', 134, 'Greatest peak'],
-  ['David Robinson', '1993-95', 133, 'Greatest peak'],
-  ['Tim Duncan', '2001-03', 132, 'Greatest peak'],
-  ['Kawhi Leonard', '2015-17', 132, 'Greatest peak'],
-  ['Larry Bird', '1986-88', 131, 'Greatest peak'],
-  ['Shaquille O\'Neal', '1999-01', 130, 'Greatest peak'],
-  ['Kevin Durant', '2012-14', 130, 'Greatest peak'],
-  ['James Harden', '2017-19', 122, 'Greatest peak'],
-  ['Kevin Garnett', '2002-04', 120, 'Greatest peak'],
-  ['Dwyane Wade', '2008-10', 117, 'Greatest peak'],
-  ['Magic Johnson', '1989-91', 109, 'Greatest peak'],
-  ['Kobe Bryant', '2008-10', 106, 'Greatest peak'],
+  // Legend
+  ['Stephen Curry', '2014-16', 147, 'Legend'],
+  ['Nikola Jokic', '2023-25', 147, 'Legend'],
+  ['Kareem Abdul-Jabbar', '1975-77', 140, 'Legend'],
+  ['Hakeem Olajuwon', '1992-94', 138, 'Legend'],
+  ['Giannis Antetokounmpo', '2020-22', 134, 'Legend'],
+  ['David Robinson', '1993-95', 133, 'Legend'],
+  ['Tim Duncan', '2001-03', 132, 'Legend'],
+  ['Kawhi Leonard', '2015-17', 132, 'Legend'],
+  ['Larry Bird', '1986-88', 131, 'Legend'],
+  ['Shaquille O\'Neal', '1999-01', 130, 'Legend'],
+  ['Kevin Durant', '2012-14', 130, 'Legend'],
+  ['James Harden', '2017-19', 122, 'Legend'],
+  ['Kevin Garnett', '2002-04', 120, 'Legend'],
+  ['Dwyane Wade', '2008-10', 117, 'Legend'],
+  ['Magic Johnson', '1989-91', 109, 'Legend'],
+  ['Kobe Bryant', '2008-10', 106, 'Legend'],
   // MVP
   ['Luka Doncic', '2022-24', 123, 'MVP'],
   ['Oscar Robertson', '1961-63', 119, 'MVP'],
@@ -228,10 +228,10 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
 /**
  * Single windows the user tiered on their own, beyond the one reviewed window per player. The
  * window reads at least the bottom of that tier's band (never above the player's own tier).
- * 2026-09-27: Curry 2016-18 at Greatest peak (the user, on the review page).
+ * 2026-09-27: Curry 2016-18 at Legend (the user, on the review page).
  */
 export const USER_WINDOW_TIERS: ReadonlyArray<readonly [name: string, spanLabel: string, tier: OverallTier]> = [
-  ['Stephen Curry', '2016-18', 'Greatest peak'],
+  ['Stephen Curry', '2016-18', 'Legend'],
 ];
 
 /**

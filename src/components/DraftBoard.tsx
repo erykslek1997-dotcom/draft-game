@@ -154,7 +154,7 @@ const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
   'All-star': 'rating-allstar',
   'All-NBA': 'rating-allnba',
   MVP: 'rating-mvp',
-  'Greatest peak': 'rating-peak',
+  'Legend': 'rating-peak',
   GOAT: 'rating-goat',
 };
 
@@ -852,7 +852,7 @@ export default function DraftBoard({
       // 2026-08-05 follow-up: picking by raw `computeTalent` could surface a span whose own
       // tier gate caps it *harder* than a different, lower-raw-TAL span of the same player —
       // David Robinson's highest-TAL span (1993-95, A+ defense) caps to MVP, while a slightly
-      // lower-TAL span (1990-92, true S-grade defense) reaches "Greatest peak" uncapped, so
+      // lower-TAL span (1990-92, true S-grade defense) reaches "Legend" uncapped, so
       // showing his max-raw-TAL span was hiding his actual best achievable tier. Picks by the
       // capped/displayed value instead, so "this player's best" always means their best real,
       // in-game result, not just their highest hidden number.
@@ -909,7 +909,7 @@ export default function DraftBoard({
         // 2026-08-08, user's v0.2 rating batch: GOAT has no ceiling of its own
         // (`tierCeiling('GOAT')` is `Infinity`), so a GOAT-tier span's `bestTalent` number can
         // land on the exact same value as a merely-Greatest-Peak span (both 98, say) — found
-        // via LeBron (GOAT) sorting BELOW Bird (Greatest peak) purely because the tied number
+        // via LeBron (GOAT) sorting BELOW Bird (Legend) purely because the tied number
         // fell back to incidental array order. Stored alongside `bestTalent` so the sort below
         // can break that specific tie by tier rank instead.
         // 2026-09-02: `bestTier` is the one quality signal both modes now show in the header

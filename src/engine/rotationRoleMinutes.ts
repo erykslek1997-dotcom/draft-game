@@ -14,7 +14,7 @@ export interface TierMinuteProfile {
 /** One source of truth for both automatic minute allocation and rotation grading. */
 export const TIER_MINUTE_PROFILE: Record<OverallTier, TierMinuteProfile> = {
   GOAT: { optimal: 36, minimal: 32, ceiling: 40 },
-  'Greatest peak': { optimal: 36, minimal: 32, ceiling: 40 },
+  'Legend': { optimal: 36, minimal: 32, ceiling: 40 },
   MVP: { optimal: 36, minimal: 32, ceiling: 40 },
   'All-NBA': { optimal: 34, minimal: 24, ceiling: 40 },
   'All-star': { optimal: 32, minimal: 24, ceiling: 38 },
@@ -35,7 +35,7 @@ const MAX_REAL_MINUTES_CEILING = 40;
  * All-star the real minutes only ever raise the tier ceiling: as a hard limit they starved
  * rotations of bench minutes.
  */
-const STAR_MINUTE_TIERS = new Set<OverallTier>(['GOAT', 'Greatest peak', 'MVP', 'All-NBA', 'All-star']);
+const STAR_MINUTE_TIERS = new Set<OverallTier>(['GOAT', 'Legend', 'MVP', 'All-NBA', 'All-star']);
 export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
   if (span.fga < 2) return { optimal: 0, minimal: null, ceiling: 0 };
   const tier = overallTierForSpan(tierContextWithSixthMan(span));

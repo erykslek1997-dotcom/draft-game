@@ -112,7 +112,7 @@ export const THREE_LAYER_CORE_DRTG_BLEND = 0.15;
  * above already use) can be sized directly instead of fighting that arithmetic ceiling.
  *
  * User's explicit requirement: "jeśli Nash ma greatest peak, to drużyna z nim musi być w stanie
- * wygrać draft" — if the engine's own tier system calls a player's peak "Greatest peak" (one step
+ * wygrać draft" — if the engine's own tier system calls a player's peak "Legend" (one step
  * below GOAT), a team built around him must have a real path to being the league's best, the same
  * way a real NBA team schemes around and conceals one historically extreme defensive liability
  * when everyone else on the floor is elite. Deliberately narrow on BOTH gates so this can't become
