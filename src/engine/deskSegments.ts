@@ -69,6 +69,12 @@ const MVP_ASK = ['ok quick one. MVP of this roster. go', 'one player you keep fr
 const WORST_ASK = ['worst pick on this roster. be honest. you won’t be', 'who should not have been drafted here. go', 'one player you cut tomorrow. go'];
 const WORD_ASK = ['one word for this team. one', 'describe this roster in one word. Jake, one WORD'];
 const WRAP = ['great. very helpful. moving on', 'nobody agrees. as usual. next', 'ok that went exactly how I expected', 'I hate all of you. next'];
+const COMEBACK = [
+  '{at} says the guy who picked {p}',
+  '{at} {p}. on air. with your whole chest. incredible',
+  '{at} ok and? {p} wouldn’t make my bench',
+  '{at} I’ll remember this when {p} disappears in May',
+];
 const JAB = [
   '{at} {p}?? be serious',
   '{at} {p}. imagine saying that on air',
@@ -96,6 +102,7 @@ export function deskSegment(read: RosterRead, good: boolean, rng: () => number, 
   for (const c of chosen) lines.push({ who: c.who, kind: 'reply', text: c.line, reply: true, seg: kind });
   const [a, b] = [chosen[chosen.length - 1], chosen[0]];
   lines.push({ who: a.who, kind: 'reply', text: pick(rng, JAB).replace('{at}', handle(b.who, names)).replace('{p}', sur(b.p)), reply: true, seg: kind });
+  lines.push({ who: b.who, kind: 'reply', text: pick(rng, COMEBACK).replace('{at}', handle(a.who, names)).replace('{p}', sur(a.p)), reply: true, seg: kind });
   lines.push({ who: 'host', kind: 'host', text: pick(rng, WRAP), seg: kind });
   return lines;
 }

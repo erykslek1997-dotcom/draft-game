@@ -527,7 +527,9 @@ const PILE_ON: Record<'praise' | 'concern', string[]> = {
 };
 const PILE_ON_ANSWER = ['took you long enough', 'see? one of you watches basketball', 'screenshotting this before you delete it', 'welcome to the right side'];
 const PILE_ON_CHANCE = 0.6;
-const EXCHANGE_CHANCE = 0.7;
+const EXCHANGE_CHANCE = 0.9;
+/** After a push-back, the chance a third expert jumps in on one side, and the target answers. */
+const ESCALATE_CHANCE = 0.55;
 const SEGMENT_CHANCE = 0.55;
 const PILE_ON_ANSWER_CHANCE = 0.45;
 function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
@@ -538,6 +540,39 @@ function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
   const out: DeskLine[] = [{ who: by, kind: 'reply', text: `${at(line.who)} ${pick(rng, PILE_ON[line.kind])}`, reply: true, pile: true }];
   if (rng() < PILE_ON_ANSWER_CHANCE) out.push({ who: line.who, kind: 'reply', text: `${at(by)} ${pick(rng, PILE_ON_ANSWER)}`, reply: true, pile: true });
   return out;
+}
+
+/**
+ * 2026-10-29 (the user: "więcej dymów"): a third expert jumps into a two-man fight — on one side, at
+ * the other — and the one he went at answers. Takes, not facts: nothing here says anything about
+ * the roster, so it never contradicts a finding.
+ */
+const JUMP_IN = [
+  '@{t} you’ve been wrong about this since {year} and you’re still posting',
+  '@{t} sit down. {s} is right and it physically hurts me to say it',
+  '@{t} this is the worst take on the desk tonight and Bart is here',
+  '@{t} log off. I’m begging',
+  '@{t} cooked. absolutely cooked',
+  '@{t} imagine having this many opinions and zero rings',
+];
+const JUMP_BACK = [
+  '@{j} nobody asked you',
+  '@{j} who invited you',
+  '@{j} go back to your podcast. all 40 of them miss you',
+  '@{j} you agreed with me last week. I have the clip',
+  '@{j} bold from a guy who drafted a center who can’t catch',
+  '@{j} blocked. again',
+];
+function escalate(a: ExpertId, b: ExpertId, rng: () => number, beef?: string): DeskLine[] {
+  const pool = (Object.keys(DESK_CAST) as ExpertId[]).filter((w) => w !== 'host' && w !== 'moonbat' && w !== 'rightwing' && w !== a && w !== b);
+  const j = pick(rng, pool);
+  const [target, side] = rng() < 0.5 ? [a, b] : [b, a];
+  const sur = (w: ExpertId) => DESK_CAST[w].name.split(' ').at(-1)!;
+  const year = String(2014 + Math.floor(rng() * 10));
+  return [
+    { who: j, kind: 'reply', text: pick(rng, JUMP_IN).replace('{t}', sur(target)).replace('{s}', sur(side)).replace('{year}', year), reply: true, ...(beef ? { beef } : { pile: true }) },
+    { who: target, kind: 'reply', text: pick(rng, JUMP_BACK).replace('{j}', sur(j)), reply: true, ...(beef ? { beef } : { pile: true }) },
+  ];
 }
 
 /** About one show in four — its own stream, so it doesn't depend on how many lines came before. */
@@ -571,8 +606,9 @@ const HOST_CLOSE_PODIUM = ['podium. not bad. break', 'podium, and nobody got blo
 /** Arguments per show at most, and the chance that a take able to start one does. */
 // 2026-10-29 (the user: the room "should be a multi-stage discussion — replies and so on"): more
 // arguments, and plain takes draw replies (`pileOn`).
-const MAX_BEEFS = 3;
-const BEEF_CHANCE = 0.85;
+// 2026-10-29 (the user: "więcej dymów, więcej kłótni"): up from 3 and 0.85.
+const MAX_BEEFS = 4;
+const BEEF_CHANCE = 0.95;
 
 export interface DeskInput {
   team: Team;
@@ -660,7 +696,15 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   for (const [i, t] of onAir.entries()) {
     if (segment && i === segmentAt) lines.push(...segment);
     const thread = beefsUsed.size < MAX_BEEFS && beefRng() < BEEF_CHANCE ? beefFor(t, read, beefRng, beefsUsed) : null;
-    if (thread) { lines.push(...thread); continue; }
+    if (thread) {
+      // the two who argued most in the thread; a third may jump in before the host gets a word in
+      const voices = [...new Set(thread.filter((l) => l.who !== 'host').map((l) => l.who))];
+      const hostAt = thread.findIndex((l, k) => k > 0 && l.who === 'host');
+      const extra = voices.length >= 2 && beefRng() < ESCALATE_CHANCE ? escalate(voices[0], voices[1], beefRng, thread[0].beef) : [];
+      if (hostAt > 0) lines.push(...thread.slice(0, hostAt), ...extra, ...thread.slice(hostAt));
+      else lines.push(...thread, ...extra);
+      continue;
+    }
     // 2026-10-29 (the user picked "B + C": arguments that run over several lines): a take on a
     // finding first draws somebody who disagrees about that very point, and its author answers.
     const ex = t.insight && (t.line.kind === 'praise' || t.line.kind === 'concern') && beefRng() < EXCHANGE_CHANCE
@@ -669,6 +713,7 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
     if (ex) {
       lines.push(t.line, { who: ex.by as ExpertId, kind: 'reply', text: ex.push, reply: true, pile: true }, { who: t.who, kind: 'reply', text: ex.answer, reply: true, pile: true });
       if (ex.last) lines.push({ who: ex.by as ExpertId, kind: 'reply', text: ex.last, reply: true, pile: true });
+      if (beefRng() < ESCALATE_CHANCE) lines.push(...escalate(t.who, ex.by as ExpertId, beefRng));
       continue;
     }
     lines.push(t.line, ...pileOn(t.line, beefRng));
