@@ -188,7 +188,11 @@ i szum (±20). Pomiary (`scripts/measureStarPower.ts`, 6 draftów samej AI na wa
   od TAL 88.
 
 Decyzja użytkownika: drobny spadek siły AI jest OK, jeśli blokuje graczowi absurdalne piątki —
-bezpiecznik po 1 rundzie. Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
+bezpiecznik po 1 rundzie. Brany na siłę kosztował fit −5 i spacing −4 (gwiazdy, które nie pasują),
+więc ostatecznie gwiazda wchodzi tylko, jeśli jej drużyna (dopełniona najlepszymi dostępnymi) ma
+ocenę najwyżej 0,5 niższą niż przy normalnym wyborze („ma brać gwiazdy które pasują, nic na siłę”).
+Wersja końcowa: 15,7 wyborów z lepszym o 8+ na stole, najgorszy spadek 32, Overall AI 80,5
+(margines 0: 17,2 · 34 · 80,4; margines 1: 15,5 · 32 · 80,2). Kara za drugiego rozgrywającego idzie za kosztem posiadania piłki z oceny
 drużyny (`ballHandling.ts`, AST% i USG%), nie za „7+ asyst” (LeBron, Bird, Jokić w składzie nie
 znaczą, że drugi rozgrywający jest zbędny). **Jeśli AI zacznie draftować dziwnie** (za mocne
 drużyny AI, gwiazdy na siłę obok siebie, trzech centrów, za słabe ławki): wrócić tutaj, przełączniki
