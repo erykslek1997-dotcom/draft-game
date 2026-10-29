@@ -1309,7 +1309,10 @@ export default function DraftBoard({
           <Kv k="Starters" v={startersSet === STARTER_SLOTS.length ? 'Set' : `${startersSet} of 5`} />
           <Kv k="Years" v="Click to change" />
         </section>
-        <Actions links={links}>
+        {/* 2026-10-29 (playtest 2: the ‹ on Your team threw you to the main menu): from your team the
+            back arrow goes one step back — out of a player's years, then to the draft board; the
+            menu, with its "leave the draft?" check, is one more tap from there. */}
+        <Actions links={{ ...links, onMenu: () => (yearsFor ? setYearsFor(null) : setActiveTab('draft')), menuLabel: yearsFor ? 'Your team' : 'Draft' }}>
           <Btn disabled={!canSubmit} title={!state.complete ? `Finish drafting all ${ROSTER_SIZE} picks first.` : chosenRosterOverCap ? 'Over the cap: pick cheaper years.' : rotStatus.reason} onClick={() => submitRef.current?.()}>
             Play the season
           </Btn>
