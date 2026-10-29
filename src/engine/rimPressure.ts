@@ -452,9 +452,25 @@ const RIM_TEAM_BASE_ANCHOR = 55; // starters-mean rimPressureForFit that reads a
 const RIM_TEAM_FT_BONUS_MAX = 16;
 const RIM_TEAM_OREB_BONUS_MAX = 12;
 
+/**
+ * 2026-10-29 (the user: "Shaq case w rimP… jak Curry w spacingu, powinien znacznie zawyżać. Podobnie
+ * Giannis"): one dominant rim force bends a defense more than the five's mean says. On 600 real
+ * team-seasons (`scripts/measureRimTeam.ts`) teams whose best rim player reads 95+ scored 1.04 per 100
+ * more than the team rim number predicted, 80-94 1.18 more. The team base moves `share` of the way
+ * from the mean to the best player, ramping in from 70 to 95. Measured at share 0 / 0.2 / 0.4 / 0.6:
+ * those misses 1.04 / 0.15 / 0.13 / 0.20 and 1.18 / 0.58 / 0.22 / 0.11; team rim vs ORtg r 0.290 →
+ * 0.316 at 0.4; Overall vs SRS 0.772 → 0.772, Offense vs SRS 0.513 → 0.515, Overall → mechanics R²
+ * 0.55 → 0.56.
+ */
+const DOMINANT_RIM = { from: 70, full: 95, share: 0.4 };
+
 export function rimPressureTeam(starters: PlayerSpan[]): number {
   if (starters.length === 0) return 0;
-  const base = starters.reduce((sum, p) => sum + rimPressureForFit(p), 0) / starters.length;
+  const each = starters.map(rimPressureForFit);
+  const mean = each.reduce((sum, v) => sum + v, 0) / each.length;
+  const best = Math.max(...each);
+  const ramp = clamp((best - DOMINANT_RIM.from) / (DOMINANT_RIM.full - DOMINANT_RIM.from), 0, 1);
+  const base = mean + DOMINANT_RIM.share * ramp * (best - mean);
   const baseComponent = clamp((base / RIM_TEAM_BASE_ANCHOR) * 100, 0, 100);
 
   const frontcourt = starters.filter((p) => p.primaryPosition === 'C' || p.primaryPosition === 'PF');

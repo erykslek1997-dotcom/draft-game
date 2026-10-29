@@ -97,3 +97,20 @@ for (const k of [0, 0.15, 0.3, 0.5, 0.75, 1]) {
 }
 const vd = late.map((r) => r.drv);
 console.log(`  drive alone         r ${corr(vd, relL).toFixed(3)}, beyond Offense ${corr(resid(vd, offL), relLR).toFixed(3)}`);
+
+// 2026-10-29 (the user: "Shaq case w rimP… jak Curry w spacingu, powinien znacznie zawyżać. Podobnie
+// Giannis"): does a team with one dominant rim force score more than the five's mean says? Fit ORtg
+// on the engine's team rim (and on Offense), then the miss for teams by their best rim player.
+{
+  const team = rows.map((r) => r.team);
+  const rR = resid(rel, team), rO = resid(rel, off);
+  const band = (r: Row) => (r.rims[0] >= 95 ? 'best 95+' : r.rims[0] >= 80 ? 'best 80-94' : r.rims[0] >= 60 ? 'best 60-79' : 'best <60');
+  console.log('\nORtg miss by the best rim player (+ = the team scored more than predicted):');
+  console.log('  band          n    vs team rim   vs Offense   example');
+  for (const k of ['best 95+', 'best 80-94', 'best 60-79', 'best <60']) {
+    const idx = rows.map((r, i) => (band(r) === k ? i : -1)).filter((i) => i >= 0);
+    if (!idx.length) continue;
+    const ex = idx.slice(0, 2).map((i) => rows[i].label).join('; ');
+    console.log(`  ${k.padEnd(12)} ${String(idx.length).padStart(4)}   ${mean(idx.map((i) => rR[i])).toFixed(2).padStart(6)}       ${mean(idx.map((i) => rO[i])).toFixed(2).padStart(6)}     ${ex}`);
+  }
+}
