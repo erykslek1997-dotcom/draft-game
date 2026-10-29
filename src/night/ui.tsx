@@ -136,7 +136,7 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                   <NFace name={starter.span.playerName} span={starter.span} />
                 </span>
                 <span className="rc-main">
-                  <b>{maskName(starter.span.playerName)}</b> <em>{shortYears(maskYears(starter.span.playerName, starter.span.spanLabel))}</em> {Math.round(starter.minutes)}m
+                  <b>{maskName(starter.span.playerName)}</b> <span className="rc-meta">{shortYears(maskYears(starter.span.playerName, starter.span.spanLabel))} · {Math.round(starter.minutes)}m</span>
                 </span>
                 <span className="rc-bench">
                   {bench.map((b) => (
@@ -146,7 +146,7 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                         <NFace name={b.span.playerName} span={b.span} />
                       </span>
                       <span className="rc-bt">
-                        <span className="rc-bn">{maskName(b.span.playerName)}</span> <em>{shortYears(maskYears(b.span.playerName, b.span.spanLabel))}</em> {Math.round(b.minutes)}m
+                        <span className="rc-bn">{maskName(b.span.playerName)}</span> <span className="rc-meta">{shortYears(maskYears(b.span.playerName, b.span.spanLabel))} · {Math.round(b.minutes)}m</span>
                       </span>
                     </span>
                   ))}
