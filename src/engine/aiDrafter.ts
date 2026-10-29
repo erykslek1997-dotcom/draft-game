@@ -321,6 +321,44 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
   return GREATEST_PEAK_TIER_BONUS[entry.tier];
 }
 
+/**
+ * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
+ * Chris Paul to 42, Malone to 55, Barkley to 112: "w pierwszych rundach powinno się stackować star
+ * power a nie lower fga opcje" and "w pewnym momencie powinien wchodzić zdrowy rozsądek"). Two
+ * rules, each measured on its own (scripts/measureStarPower.ts):
+ *  - `starPhase`: a team's first `STAR_PHASE_PICKS` picks chase talent. Positional need still
+ *    discounts a duplicate, but its pull toward an open slot is capped at `STAR_PHASE_NEED_CAP`,
+ *    so a TAL 80 who fills a hole no longer outbids a TAL 95 who doesn't (need multiplies talent).
+ *  - `fallNet`: common sense. A player whose TAL ranks him a full round (`FALL_NET_SLACK`) above
+ *    the current pick is taken now — the same hard net the named legends have, by talent.
+ * Mutable only so the measurement can switch each off.
+ */
+export const AI_STAR_RULES = { starPhase: true, fallNet: true };
+const STAR_PHASE_PICKS = 3;
+const STAR_PHASE_NEED_CAP = 0.25;
+const FALL_NET_FROM_PICK = 20;
+const FALL_NET_SLACK = 16;
+/** Every player's best TAL across his windows, highest first: where TAL says he goes. */
+let bestTalentsDesc: number[] | null = null;
+function talentRankPick(talent: number): number {
+  if (!bestTalentsDesc) {
+    const best = new Map<string, number>();
+    for (const p of draftPool) {
+      const k = normalizePlayerName(p.playerName);
+      best.set(k, Math.max(best.get(k) ?? 0, effectiveTalent(p)));
+    }
+    bestTalentsDesc = [...best.values()].sort((a, b) => b - a);
+  }
+  let lo = 0;
+  let hi = bestTalentsDesc.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (bestTalentsDesc[mid] > talent) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo + 1;
+}
+
 /** See the "steal" safety-net's own comment on its one use site (`pickForAi`) for the full case.
  * Measured against Kevin Garnett 2002-04's own real observed range (picks 9-15 across 15 fresh
  * drafts, `scripts` — temp, not kept) — comfortably past the worst legitimate lottery outcome
@@ -1924,6 +1962,17 @@ export function pickForAi(
     }
   }
 
+  // The common-sense net (see `AI_STAR_RULES`): a player TAL puts a round ahead of this pick is
+  // taken now, the one who fills a real gap first, then the best; never a third at one position.
+  if (AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK) {
+    const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
+    const fallen = planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + FALL_NET_SLACK < pickNumber && atPosition(p.primaryPosition) < 2);
+    if (fallen.length > 0) {
+      const fillsRealGap = (p: PlayerSpan) => needs.emptySlots.includes(p.primaryPosition) || needs.thinSlots.includes(p.primaryPosition);
+      return fallen.sort((a, b) => Number(fillsRealGap(b)) - Number(fillsRealGap(a)) || effectiveTalent(b) - effectiveTalent(a) || a.fga - b.fga)[0];
+    }
+  }
+
   // 2026-08-07, user's own diagnosis: force the starting five to actually complete EARLY, while
   // the pool is still deep at every position (100+ per position), not late. Two hard-filter
   // attempts scoped to the ENDGAME (last 1-3 picks, pool already thinned by 13+ other teams'
@@ -2205,6 +2254,8 @@ export function pickForAi(
     // a team's first few picks — see NEED_RAMP_ROSTER_SIZE above. At roster.length 0 this
     // collapses `need` to a flat 1 for everyone (pure best-talent-available); by
     // NEED_RAMP_ROSTER_SIZE picks in, `need` applies at its full computed value.
+    // A team's first picks chase talent (`AI_STAR_RULES.starPhase`): need's pull is capped.
+    if (AI_STAR_RULES.starPhase && roster.length < STAR_PHASE_PICKS && need > 1) need = 1 + Math.min(need - 1, STAR_PHASE_NEED_CAP);
     const rampedNeed = 1 + (need - 1) * needRampProgress;
 
     // 2026-08-05, experiment per explicit user request: durability REMOVED from the AI's draft
