@@ -590,3 +590,32 @@
   /* the + / × button fits its 26px column (it was 30px and stuck out past the edge; playtest 1) */
   .nt .r3x { width: 26px; height: 26px; font-size: 14px; }
 }
+
+/* the season card's verdict (2026-10-29, the user: where the season ended was hidden in a small red
+   kicker and the last cell of the strip): a dark band under the name, the round big, the series beside */
+.po-verdict { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin: 8px 0 12px; padding: 9px 12px 8px; background: var(--cink); color: var(--card); border-radius: 3px; }
+.po-verdict b { font: 800 30px/1 var(--cond); text-transform: uppercase; white-space: nowrap; }
+.po-verdict span { font: 600 12px var(--num); white-space: nowrap; opacity: 0.85; }
+.champ-p .po-verdict { background: var(--cgold2); color: var(--cink); }
+.story .po-verdict { margin: 4px 0 6px; padding: 6px 9px 5px; }
+.story .po-verdict b { font-size: 20px; }
+.story .po-verdict span { font-size: 9px; }
+
+/* the bench (2026-10-29, "ławka źle wygląda"): no faces, one row of equal cells across the card,
+   ruled like the strip under it — the name and position, then points and minutes */
+.poster .po-bench { display: block; }
+.poster .po-bench > .po-bl { display: block; margin-bottom: 5px; }
+.poster .po-bench .po-bp { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 8px 0; }
+/* four or five on the bench: a smaller line so the minutes fit */
+.poster .po-bp.many .po-b3 { padding: 0 6px; }
+.poster .po-bp.many .po-b3:first-child { padding-left: 0; }
+.poster .po-bp.many .po-b3 b { font-size: 15px; }
+.poster .po-bp.many .po-b3 em { font-size: 10px; }
+.poster .po-b3 { min-width: 0; padding: 0 8px; }
+.poster .po-b3:first-child { padding-left: 0; }
+.poster .po-b3 + .po-b3 { border-left: 1px solid var(--cline); }
+.poster .po-b3 b { display: block; font: 800 16px/1.05 var(--cond); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.poster .po-b3 b small { font: 700 9px var(--sans); color: var(--cink2); margin-left: 4px; }
+.poster .po-b3 em { display: block; margin-top: 3px; font: 500 11px var(--num); font-style: normal; color: var(--cink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the strip takes as many equal cells as it is given (the season's lost its Result to the band) */
+.poster .po-strip, .story .po-strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }

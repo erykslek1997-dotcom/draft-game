@@ -25,6 +25,9 @@ export interface PosterData {
   kick: string;
   head: string;
   line: string;
+  /** Where the season ended, as a band under the name (2026-10-29, the user: "ważna informacja czyli
+   * gdzie skończyliśmy jest ukryta"): "Out in the semifinals" and "1–4 to the Gators". */
+  verdict?: [string, string?];
   five: PosterPlayer[];
   unit: 'caps' | 'ppg';
   bench?: PosterPlayer[];
@@ -130,10 +133,16 @@ export function Poster({ d }: { d: PosterData }) {
         <span>{d.mode}</span>
       </div>
       <div className="po-head">
-        <span className="po-kick">{d.kick}</span>
+        {d.kick && <span className="po-kick">{d.kick}</span>}
         <h2>{d.head}</h2>
-        <p>{d.line}</p>
+        {d.line && <p>{d.line}</p>}
       </div>
+      {d.verdict && (
+        <div className="po-verdict">
+          <b>{d.verdict[0]}</b>
+          {d.verdict[1] && <span>{d.verdict[1]}</span>}
+        </div>
+      )}
       <div className="po-five">
         {d.hidden
           ? SLOT_ORDER.map((ps) => (
@@ -162,22 +171,17 @@ export function Poster({ d }: { d: PosterData }) {
       {d.bench && d.bench.length > 0 && (
         <div className="po-bench">
           <span className="po-bl">Bench</span>
-          <div className="po-bp">
-            {d.bench.slice(0, 5).map(({ span, num, min }) => (
-              <div key={span.id} className="po-b2" style={teamVar(span)}>
-                <span className="po-bf">
-                  <NFace name={span.playerName} />
-                </span>
-                <span>
-                  <b>
-                    {lastName(span.playerName)}
-                    <small>{span.primaryPosition.split('/')[0]}</small>
-                  </b>
-                  <em>
-                    {numLabel(num, d.unit)}
-                    {min != null && ` · ${Math.round(min)} min`}
-                  </em>
-                </span>
+          <div className={`po-bp${d.bench.length > 3 ? ' many' : ''}`} style={{ '--n': Math.min(4, d.bench.length) } as CSSProperties}>
+            {d.bench.slice(0, 8).map(({ span, num, min }) => (
+              <div key={span.id} className="po-b3">
+                <b>
+                  {lastName(span.playerName)}
+                  <small>{span.primaryPosition.split('/')[0]}</small>
+                </b>
+                <em>
+                  {numLabel(num, d.unit)}
+                  {min != null && ` · ${Math.round(min)} min`}
+                </em>
               </div>
             ))}
           </div>
@@ -210,10 +214,16 @@ export function Story({ d }: { d: PosterData }) {
         <span>{d.mode}</span>
       </div>
       <div className="po-head">
-        <span className="po-kick">{d.kick}</span>
+        {d.kick && <span className="po-kick">{d.kick}</span>}
         <h2>{d.head}</h2>
-        <p>{d.line}</p>
+        {d.line && <p>{d.line}</p>}
       </div>
+      {d.verdict && (
+        <div className="po-verdict">
+          <b>{d.verdict[0]}</b>
+          {d.verdict[1] && <span>{d.verdict[1]}</span>}
+        </div>
+      )}
       <div className="st-sec">Starting five</div>
       <div className="st-rows">
         {d.hidden
