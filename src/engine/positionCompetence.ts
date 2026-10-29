@@ -3,7 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import competenceData from '../data/positionCompetence.json';
 import { per36 } from './minutesPerGame';
 import { isNamedPgEligible } from './pgEligibility';
-import { getHeightInches } from '../data/heightLookup';
+import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 
 /**
  * 2026-09-25, user's multi-position ask ("wielopozycyjność ... na marginalnych spadkach"): how
@@ -73,6 +73,30 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     const height = getHeightInches(span.playerName);
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
+  return Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot));
+}
+
+/**
+ * 2026-10-28, the user's export (Chris Mullin 1998-00 — 6'7", 4.8 rebounds a 36, 215 lb — starting at
+ * PF; Anthony Edwards, 6'4", starting at SF): moving UP a position needs the body for it, whatever
+ * the skill profile reads. Into SF from the guard spots under 6'5": at most `partial` (a small-lineup
+ * stretch, not a starter's job). Into PF from the wing under 6'8" with neither a forward's
+ * rebounding (5.5 a 36) nor his weight (225 lb): at most `emergency` — small-ball fours such as
+ * Melo, Butler 2020-22 and Anunoby keep it.
+ */
+const SIZE_CAP = { sfMinInches: 77, pfMinInches: 80, pfRebounds36: 5.5, pfMinLbs: 225, partial: 0.6, emergency: 0.4 };
+function sizeCap(span: PlayerSpan, slot: Position): number {
+  const from = POSITION_ORDER.indexOf(span.primaryPosition);
+  const to = POSITION_ORDER.indexOf(slot);
+  if (to <= from) return 1;
+  const height = getHeightInches(span.playerName);
+  if (height === undefined) return 1;
+  if (slot === 'SF' && height < SIZE_CAP.sfMinInches) return SIZE_CAP.partial;
+  if (slot === 'PF' && height < SIZE_CAP.pfMinInches && per36(span.box.rpg, span) < SIZE_CAP.pfRebounds36 && (getBodyWeightLbs(span.playerName) ?? 0) < SIZE_CAP.pfMinLbs) return SIZE_CAP.emergency;
+  return 1;
+}
+
+function rawCompetenceScore(span: PlayerSpan, slot: Position): number {
   const entry = entryFor(span);
   if (!entry) {
     if (span.secondaryPositions.includes(slot)) return UNLISTED_SECONDARY_SCORE;
