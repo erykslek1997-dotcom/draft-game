@@ -738,7 +738,11 @@ const MAX_FGA_PENALTY = 1.3;
 // per open slot buys a real eighth man instead of glue. 200 drafts: bench minute-weighted TAL
 // 60.8 -> 61.8 (worst decile 54.3 -> 56.5), teams without a perimeter backup 358 -> 24, without a
 // big backup 558 -> 195, 3+ centres 1,044 -> 626, overall 79.58 -> 79.76, five TAL -0.49.
-const PLAYABLE_RESERVE_FGA_PER_SLOT = 6;
+// 2026-10-29 (the user: "the AI stacks the five, takes a garbage bench and off it goes"), with the
+// bench floors below at 58 / 62 (`scripts/measureAiBench.ts`, 64 AI teams): bench minute-weighted
+// TAL 66.5 -> 68.9, teams with a sub-56 player at 10+ minutes 47% -> 11%, five TAL -0.65, Overall
+// 80.98 -> 81.41. The sub-2-FGA ninth man (cap glue) is untouched by both.
+const PLAYABLE_RESERVE_FGA_PER_SLOT = 7;
 const TRUE_CAP_GLUE_FGA_CEILING = 2;
 
 function plannedPlayableReserveFga(slotsRemaining: number): number {
@@ -819,8 +823,8 @@ const RESERVE_HARD_FLOOR_FRACTION = 0.7;
 /** A 12-minute specialist may be narrow; an 18-24 minute backup cannot be replacement-level. */
 const MATERIAL_BENCH_MINUTES = 18;
 const USEFUL_BENCH_MINUTES = 12;
-const MATERIAL_BENCH_TALENT_FLOOR = 52;
-const PENULTIMATE_ROTATION_TALENT_FLOOR = 56;
+const MATERIAL_BENCH_TALENT_FLOOR = 58;
+const PENULTIMATE_ROTATION_TALENT_FLOOR = 62;
 const BENCH_QUALITY_SCAN_SIZE = 40;
 
 /**
