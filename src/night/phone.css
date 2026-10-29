@@ -554,5 +554,4 @@
 /* the poster (2026-10-29, "wykonanie takie sobie"): a starter's face grows with its box — 80% of
    its height, at the foot, whole in frame — and a bench line is the name and position, then points
    and minutes, so nothing runs into the next cell */
-.poster.ig .po-ph img { width: auto; height: 80%; max-width: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; margin-bottom: 0; }
 .po-b2 b small { font: 700 9px var(--sans); color: var(--cink2); margin-left: 3px; }
