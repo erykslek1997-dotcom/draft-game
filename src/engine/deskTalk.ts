@@ -15,7 +15,11 @@ import type { InsightCategory, RosterInsight } from './insights';
  * falls back on the finding itself (`voiced` in desk.ts). No "you"/"your": the same lines serve a
  * rival's panel.
  *
- * Voices (the user, 2026-10-29): Shyman says it plainly. Sosini is the modern-game guy who can't
+ * Tone (the user, 2026-10-29: "toksyczna dyskusja z najgorszych zakątków Twittera z nutką
+ * profesjonalizmu", then "dokręć tą toksyczność"): they insult each other's takes, never the person,
+ * and back it with a real number from the roster.
+ *
+ * Voices (the user, 2026-10-29): Shyman says it plainly, in short sentences. Sosini is the modern-game guy who can't
  * stand a long two. Batterista is two-way first. Jertcheck keeps lists nobody asked for. Lex is the
  * villain. Mark worries about February. Natalie counts caps. Prabuckov measures everything in Kobe.
  */
@@ -25,305 +29,308 @@ const TALK: Partial<Record<string, Lines>> = {
   // ── creation: Prabuckov ────────────────────────────────────────────────
   ELITE_PRIMARY_CREATOR: {
     praise: [
-      'Ten seconds left, down one. Who gets it? {a}. Nobody on this desk even has to think about it.',
-      '{a} can get his shot whenever he wants. Late clock, broken play, doesn’t matter. That’s the Kobe gene, my friend.',
-      'I’ve looked at this roster for two minutes and I already know who takes the last shot. {a}. That’s how it should be.',
+      'Ten seconds left, down one, ball goes to {a}. Anyone on this desk who disagrees has never watched a fourth quarter.',
+      '{a} gets a bucket whenever he wants. Late clock, broken play, doesn’t matter. That’s the Kobe gene. Cope.',
+      'Imagine not having {a} with the clock running out. Couldn’t be this team. Couldn’t be me.',
     ],
   },
   SINGLE_CREATOR_DEPENDENCY: {
     concern: [
-      'It’s {a} or nothing. He sits for five minutes and the offense just stops. I’ve seen it, my friend.',
-      'Everything goes through {a}. Fine in November. In a Game 7 they put two guys on him and then what?',
+      'It’s {a} or nothing. He sits five minutes and the offense flatlines. Not a team. A one-man podcast.',
+      'Everything through {a}. Cute in November. In a Game 7 they send two at him and the other four start looking at the floor.',
     ],
   },
   NO_GO_TO_SCORER: {
     concern: [
-      'Down two, ten seconds left. Who gets the ball? {a}? I’m asking. Honestly asking.',
-      'Nobody here wants the last shot. I can tell. Kobe wanted every last shot. Even the ones he shouldn’t have taken.',
+      'Down two, ten seconds left. Who gets it? {a}? Be serious. I’ll wait.',
+      'Nobody on this roster wants the last shot. You can feel it. Kobe would’ve walked out of the building.',
     ],
   },
   NO_TRUE_PLAYMAKER: {
-    concern: ['Who runs the offense? I keep looking. Nobody. Five guys waiting for someone else to make the play.'],
+    concern: ['Who runs this offense? Genuinely asking. Five guys standing around waiting for a play that isn’t coming.'],
   },
   OFFENSE_IS_THE_WEAK_SIDE: {
-    concern: ['They’ll guard. Great. Then they come back down and somebody has to score, and I don’t see who.'],
+    concern: ['They’ll guard, sure. Then they come back down and brick for 24 seconds. Watchable? No.'],
   },
   ELITE_FLOOR_GENERAL: {
-    praise: ['{a} running the show, everybody else just catches and finishes. Easiest job in basketball, playing next to him.'],
+    praise: ['{a} running the show and everybody else just catches and dunks. Easiest job in the league, playing next to him.'],
   },
 
   // ── spacing: Sosini ────────────────────────────────────────────────────
   ELITE_STARTING_SPACING: {
     praise: [
-      'Five guys who can shoot. FIVE. The paint is empty, the lanes are open, this is the sport now. Finally somebody drafted for it.',
-      'Look at this floor. Nobody to sag off. Every closeout is a guess. This is what I’ve been yelling about for years.',
+      'Five shooters. FIVE. Paint is empty, lanes are open. Every “defense wins” guy on this desk should log off.',
+      'Nobody to sag off. Every closeout is a coin flip. This is basketball in 2026. Some of you are still in 2004.',
     ],
   },
   GOOD_STARTING_SPACING: {
-    praise: ['Four real shooters. One more and I’d frame it, but four is a real offense. I’ll take it.'],
+    praise: ['Four real shooters. One short of perfect, still better than whatever Davyd would’ve drafted.'],
   },
   SPACING_DISTRIBUTED: {
-    praise: ['Doesn’t matter who sits, somebody on the floor can shoot. That’s how you build in 2026.'],
+    praise: ['Doesn’t matter who sits, somebody can shoot. That’s called drafting with a brain. Rare on this desk.'],
   },
   BENCH_SPACING: {
-    praise: ['{a} and {b} keep shooting when the starters sit. The second unit doesn’t turn into a museum. Love that.'],
+    praise: ['{a} and {b} keep shooting when the starters sit. Second unit isn’t a museum. Take notes, Mark.'],
   },
   MOVEMENT_SHOOTING_GRAVITY: {
-    praise: ['{a} doesn’t even need the ball. He runs off a screen and two guys panic. That’s gravity.', 'Watch the defense when {a} moves. Nobody watches the ball. That’s the whole trick.'],
+    praise: ['{a} runs off one screen and two defenders panic. That’s gravity. Look it up, Matt.', '{a} doesn’t even need the ball. The defense is losing its mind anyway.'],
   },
   SPACING_WITH_TWO_BIGS_VIABLE: {
-    praise: ['Two bigs, and it still works, because everybody else can shoot. Fine. I’m open-minded. Sometimes.'],
+    praise: ['Two bigs and it still works, because everybody else can shoot. I hate admitting it. Fine.'],
   },
   SPACING_CONCENTRATED: {
     concern: [
-      '{a} is the only real shooter. He sits down and the paint is a parking lot. Five guys, nowhere to go.',
-      'All the shooting is {a}. One cold night from him and this offense is dead. One night.',
+      '{a} is the only real shooter. He sits and the paint turns into a parking lot. Embarrassing.',
+      'All the shooting is {a}. One cold night from him and this offense is a crime scene.',
     ],
   },
   ONE_CRITICAL_SHOOTER: {
-    concern: ['Everything outside hangs on {a}. They’ll chase him off the line and dare everybody else. And everybody else can’t.'],
+    concern: ['Everything outside is {a}. They run him off the line and dare the rest. The rest can’t. L.'],
   },
   LOW_STARTING_SPACING: {
-    concern: ['Nobody can shoot. In 2026. The other team just stands in the paint and waits. Who drafted this?'],
+    concern: ['Nobody can shoot. In 2026. The defense will literally stand in the paint and wave. Who approved this?'],
   },
   NON_SPACER_OVERLOAD: {
-    concern: ['{a} and {b} don’t shoot threes. Their defenders won’t even guard them, they’ll just stand in the paint and wave.'],
+    concern: ['{a} and {b} don’t shoot threes. Their defenders will be sitting in the paint eating popcorn.'],
   },
   MULTIPLE_NON_SPACERS: {
-    concern: ['{a}, {b}, {c}. None of them shoot. That’s not a lineup, that’s a traffic jam.'],
+    concern: ['{a}, {b}, {c}. Zero shooters between them. That’s not a lineup, that’s a traffic jam. Ratio.'],
   },
   NO_FRONTCOURT_SPACING: {
-    concern: ['{a} and {b} together and neither of them shoots. Two big guys, one small paint. Good luck driving.'],
+    concern: ['{a} and {b} together, neither of them shoots. Two big guys, one tiny paint. Good luck, genius.'],
   },
 
-  // ── defense: Shyman ────────────────────────────────────────────────────
+  // ── defense: Shyman (short) ────────────────────────────────────────────
   ELITE_DEFENSIVE_LAYERING: {
-    praise: ['{a} takes their best guy, {b} is waiting at the rim. Beat one, the other gets you. Good luck.', '{a} on the ball, {b} behind him. Two stops on every play. I love this team.'],
+    praise: ['{a} on the ball. {b} at the rim. No points.', '{a} takes the star. {b} cleans up. Next.'],
   },
   BALANCED_DEFENSIVE_COVERAGE: {
-    praise: ['Where do you attack this team? You don’t. No weak guy, no hole, nowhere to hide. Good defense.'],
+    praise: ['No weak spot. Nowhere to hide. Good luck.', 'Where do you attack this? You don’t.'],
   },
   DEFENSIVE_COVERAGE_CAPACITY_ELITE: {
-    praise: ['A guy for the ball, a guy for the wing, a guy at the rim, and they switch everything. Every matchup is bad for the other team.'],
+    praise: ['Ball, wing, rim. All covered. They switch everything.', 'Every matchup is bad for them. Every one.'],
   },
   ELITE_PERIMETER_DEFENSE: {
-    praise: ['{a}, {b}, {c}. Any of them can take the best scorer. Pick one. They’re all bad news.', 'There’s always a stopper on the floor. Always. Their best guy is going to have a long night.'],
+    praise: ['{a}. {b}. {c}. All stoppers. Pick one.', 'Always a stopper out there. Always.'],
   },
   MULTIPLE_PERIMETER_DEFENDERS: {
-    praise: ['{a}, {b}, {c}. Three guys who can guard. That’s how you win in May.'],
+    praise: ['{a}, {b}, {c}. Three stoppers. May is theirs.'],
   },
   POA_DEFENDER_PRESENT: {
-    praise: ['{a} picks up the ball handler full court. Every possession. Their point guard is going to hate this.'],
+    praise: ['{a} picks up full court. Their point guard is done.'],
   },
   WING_STOPPER_PRESENT: {
-    praise: ['{a} takes the best wing every night. Done. That’s one problem solved.'],
+    praise: ['{a} takes the best wing. Problem solved.'],
   },
   PERIMETER_DEFENSE_BENCH_DEPTH: {
-    praise: ['{a} and {b} off the bench and the defense doesn’t drop. That’s rare.'],
+    praise: ['{a}, {b} off the bench. Defense stays.'],
   },
   BALL_HAWKS: {
-    praise: ['{a} jumps a pass, runs, layup. Easy points. I love easy points.', '{a} and {b} have quick hands. Turnover, fast break, again. Their guards won’t sleep.'],
+    praise: ['{a} jumps the pass. Layup. Again.', '{a} and {b}. Quick hands. Free points.'],
   },
   ELITE_RIM_PROTECTION: {
-    praise: ['Drive in there? Against {a}? Bad idea. Nobody scores at the rim on this team.'],
+    praise: ['Drive on {a}? Bad idea.', 'Nobody scores at the rim. Nobody.'],
   },
   SHOT_BLOCKING_ANCHOR: {
-    praise: ['{a} blocks {n} a game. Every layup is a coin flip. Every one.', 'Go ahead, drive on {a}. See what happens.'],
+    praise: ['{a}. {n} blocks a game. Try it.', 'Go at {a}. See what happens.'],
   },
   RIM_PROTECTION_CONTINUITY: {
-    praise: ['{a} sits, {b} comes in, still somebody at the rim. Smart. Most teams forget that.'],
+    praise: ['{a} sits. {b} comes in. Still a wall.'],
   },
   DEFENSE_SURVIVES_SUBSTITUTIONS: {
-    praise: ['Starters sit and the defense stays the same. That almost never happens.'],
+    praise: ['Starters sit. Defense stays. Rare.'],
   },
   HUNTABLE_STARTER_EXPOSED: {
-    concern: ['They’ll find {a}. Every play. Regular season you hide him. In May you can’t.', '{a} can’t guard. In a series they go at him every single time down the floor.'],
+    concern: ['They’ll find {a}. Every play.', '{a} can’t guard. In May he sits.'],
   },
   MULTIPLE_DEFENSIVE_WEAK_LINKS: {
-    concern: ['{a} and {b} can’t guard. You can hide one guy. Not two. Never two.'],
+    concern: ['{a} and {b} can’t guard. Hide one. Not two.'],
   },
   DEFENSE_DEPENDS_ON_STARTERS: {
-    concern: ['When {a} comes in, the defense falls off a cliff. The starters do all the work.'],
+    concern: ['{a} comes in. Defense dies.'],
   },
   NO_RIM_PROTECTOR: {
-    concern: ['Nobody at the rim. Get past one man and it’s a free layup. All night.'],
+    concern: ['Nobody at the rim. Layup line.'],
   },
   SINGLE_RIM_PROTECTOR_DEPENDENCY: {
-    concern: ['{a} sits and the paint is wide open. One guy can’t play forty-eight.'],
+    concern: ['{a} sits. Paint is open. Bad.'],
   },
   NO_POA_DEFENDER: {
-    concern: ['Nobody can stay in front of the ball. Their point guard is going to have a great night.'],
+    concern: ['Nobody stops the ball. Bad night.'],
   },
   NO_WING_STOPPER: {
-    concern: ['Nobody to guard a great wing. Whoever they have out there is getting forty.'],
+    concern: ['Nobody for a great wing. He gets forty.'],
   },
 
   // ── rebounding: Solin ──────────────────────────────────────────────────
   STRONG_STARTING_REBOUNDING: {
-    praise: ['{a} and {b} own the glass. Miss and it’s gone. One shot, and it better go in.'],
+    praise: ['{a} and {b} own the glass. You miss, it’s gone. Grown men. Spreadsheet guys can cry about it.'],
   },
   WEAK_STARTING_REBOUNDING: {
-    concern: ['Soft on the boards. They’ll give up second chances all night and wonder why they lost.', 'Nobody boxes out on this team. Nobody. That’s ten points a night they hand the other team.'],
+    concern: ['Soft on the boards. Soft. Second chances all night and then a thread about “bad luck”.', 'Nobody boxes out. My grandma boxes out harder. Ten free points a night, gift-wrapped.'],
   },
 
   // ── rotation and depth: Mark Rotation ──────────────────────────────────
   DEEP_PLAYOFF_ROTATION: {
-    praise: ['{n} guys I’d trust in a playoff game. {n}! Somebody gets hurt and nothing breaks. I can finally relax.'],
+    praise: ['{n} guys I’d trust in a playoff game. {n}. Lex can keep his “stars only” cope.'],
   },
   HIGH_VALUE_ROLE_PLAYERS: {
-    praise: ['{a} and {b}. Cheap, useful, never waste a shot. That’s my kind of bench.'],
+    praise: ['{a} and {b}. Cheap, useful, never waste a shot. The bench Lex pretends doesn’t matter.'],
   },
   MATCHUP_SPECIALIST_AVAILABLE: {
-    praise: ['{a} on the bench for the right matchup. That’s the guy who wins a Game 5 nobody remembers.'],
+    praise: ['{a} on the bench for the right matchup. That’s how you steal a Game 5. Not that the stars-only crowd would know.'],
   },
   TOP_HEAVY_ROTATION: {
-    concern: ['The starters are amazing. And then? February comes, somebody’s ankle goes, and this falls apart.'],
+    concern: ['Starters: amazing. Bench: a group chat. February comes, an ankle goes, and this is over.'],
   },
   DEAD_SLOT_HURTS_ROTATION: {
-    concern: ['{a} can’t play real minutes, so everybody else plays too many. That’s how people get hurt in March.'],
+    concern: ['{a} can’t play real minutes, so everyone else plays too many. This is how ACLs happen.'],
   },
   DEAD_NINTH_SLOT_ACCEPTABLE: {
-    praise: ['{a} won’t play much, and that’s fine. Eight guys cover it. Cheap ninth man. Smart.'],
+    praise: ['{a} won’t play and that’s fine. Eight guys cover it. Cheap ninth man. Adults drafted this.'],
   },
   CLOSING_FIVE_STABLE: {
-    praise: ['Same five at the end, both ends. No coin flip in the last two minutes. I’ll sleep tonight.'],
+    praise: ['Same five at the end, both ends. No coin flip. Whoever drafted this has a brain.'],
   },
   CLOSING_FIVE_REQUIRES_TRADEOFF: {
-    concern: ['Last two minutes: shooters or defenders? They can’t have both. I hate that choice.'],
+    concern: ['Last two minutes: shooters or defenders? Can’t have both. Enjoy guessing.'],
   },
   PLAYER_ABOVE_MINUTES_CEILING: {
-    concern: ['{a} is playing way too many minutes. He’s going to break down. I can feel it in my own knees.'],
+    concern: ['{a} on these minutes? He’s going to break. Book it.'],
   },
   MULTIPLE_MINUTES_CEILING_VIOLATIONS: {
-    concern: ['Too many guys on too many minutes. That’s how a season ends in March.'],
+    concern: ['Too many guys on too many minutes. Season ends in March. Screenshot this.'],
   },
   STAR_MINUTES_UNDERUSED: {
-    concern: ['{a} sitting this much? Why? Play the best guy. Please.'],
+    concern: ['{a} sitting this much? Play the best guy. It’s not that hard.'],
   },
 
   // ── caps: Natalie ──────────────────────────────────────────────────────
   STAR_FGA_COST_HURTS_DEPTH: {
-    concern: ['{a} eats {n} caps and look what’s left around him. That’s not a team. That’s a receipt.'],
+    concern: ['{a} eats {n} caps and look at the scraps around him. That’s not a team, that’s a receipt. Fraud contract.'],
   },
   ELITE_DEFENSE_LOW_FGA_COST: {
-    praise: ['Elite defense from cheap guys, so the money goes to the scorers. That’s how you build. I’m a little emotional.'],
+    praise: ['Elite defense from guys who cost nothing. That’s how you build. Lex could never.'],
   },
 
   // ── off the ball: Jeremy ───────────────────────────────────────────────
   OFF_BALL_SUPPORT_STRONG: {
-    praise: ['{a}, {b}, {c}. Guys who cut, shoot and finish without needing the ball. That’s ’90s basketball. Go watch the tape.'],
+    praise: ['{a}, {b}, {c}. Cut, shoot, finish, no ball needed. That’s ’90s basketball. Go watch the tape before you reply.'],
   },
 
   // ── usage: Zoran ───────────────────────────────────────────────────────
   MULTIPLE_HIGH_USAGE_PLAYERS: {
-    concern: ['{a}, {b}, {c}. All of them want the ball. There is one ball, my brother. One.'],
+    concern: ['{a}, {b}, {c}. All want the ball. One ball, my brother. One. Somebody is sulking by December.'],
   },
   SEVERE_USAGE_COLLISION: {
-    concern: ['{a}, {b} and {c} all need the ball to score. Listen to me. That ends with three guys watching one guy dribble.'],
+    concern: ['{a}, {b}, {c}. All need the ball to score. That ends with three guys watching one guy dribble. Classic American basketball.'],
   },
 
   // ── two-way: Batterista ────────────────────────────────────────────────
   ELITE_TWO_WAY_CORE: {
-    praise: ['{a} and {b} play both ends. BOTH. Nobody comes off for defense, nobody comes off for offense. That’s basketball.'],
+    praise: ['{a} and {b} play both ends. BOTH. Nobody comes off. Half this desk only watches one end and it shows.'],
   },
 
   // ── fit and structure: Onoffsky ────────────────────────────────────────
   NO_MAJOR_STRUCTURAL_HOLE: {
-    praise: ['I went looking for the hole in this roster. Twice. There isn’t one. Honestly annoying.'],
+    praise: ['I looked for the hole in this roster. Twice. None. Disappointing, honestly. I had a thread ready.'],
   },
   ROLE_FLEXIBILITY_LOW: {
-    concern: ['Everybody here does exactly one thing. The lineups pick themselves, and not in a good way.'],
+    concern: ['Everybody does exactly one thing. The lineup data on this will be a crime scene.'],
   },
   MULTIPLE_POSITIONAL_COMPROMISES: {
-    concern: ['Too many guys out of position. The lineup data is going to look like a crime scene.'],
+    concern: ['Too many guys out of position. The numbers are going to be ugly. I’m already drafting the tweet.'],
   },
   SEVERE_POSITIONAL_STRAIN: {
-    concern: ['Guys playing positions they’ve never played. On paper it’s a team. On the floor, no.'],
+    concern: ['Guys at positions they’ve never played. On paper, a team. On the floor, a war crime.'],
   },
   DEFENSE_AT_COST_OF_SPACING: {
-    concern: ['The best defensive five can’t shoot and the best shooting five can’t guard. Every night is a choice.'],
+    concern: ['Best defensive five can’t shoot, best shooting five can’t guard. Pick your L.'],
   },
   ELITE_CREATION_POOR_SPACING: {
-    concern: ['{a} can create anything, but nobody around him shoots. They’ll send three guys at him. Every time.'],
+    concern: ['{a} can create anything and nobody around him shoots. They’ll send three. Every time. Enjoy.'],
   },
   ELITE_SPACING_WEAK_CREATION: {
-    concern: ['Shooters everywhere and nobody to make the first move. Who gets them the ball?'],
+    concern: ['Shooters everywhere and nobody to make the first move. Who passes to them? Nobody. L.'],
   },
   GREAT_STARTERS_WEAK_BENCH: {
-    concern: ['Starters: great. Bench: I checked twice. It’s not great.'],
+    concern: ['Starters: great. Bench: I checked twice. It’s bad. Really bad.'],
   },
   PERIMETER_DEFENSE_BUT_NO_RIM_PROTECTION: {
-    concern: ['Great on the perimeter. Then somebody gets beat once and it’s a free layup. Nobody behind them.'],
+    concern: ['Great on the perimeter, then one blow-by and it’s a free layup. Nobody home behind them.'],
   },
   RIM_PROTECTION_BUT_POOR_PERIMETER_DEFENSE: {
-    concern: ['Great at the rim. Shame every guard gets past his man first.'],
+    concern: ['Great rim protection. Shame every guard is through the front door first.'],
   },
   STAR_POWER_WITH_USAGE_COLLISION: {
-    concern: ['Big stars, one ball. The on/off on this is going to be ugly. I can already see the numbers.'],
+    concern: ['Big names, one ball. The on/off is going to be hilarious. I can’t wait to post it.'],
   },
   STRONG_CORE_FRAGILE_ROTATION: {
-    concern: ['Great core. One injury and the whole thing falls apart. I ran it. It falls apart.'],
+    concern: ['Great core, made of glass. One injury and it’s over. I ran it. It’s over.'],
   },
 };
 
 /**
  * Who answers a take and how, by its field and side: [the one who pushes back, his push, the first
- * expert's answer]. The push is taste (style over results, stars over depth, the eye over the
- * numbers); the answer always holds the finding's ground. {who} is the first expert's surname.
+ * expert's answer, and sometimes the pusher's last word]. The push is taste (style over results,
+ * stars over depth, the eye over the numbers) and an insult about the take, never the person; the
+ * answer holds the finding's ground, often with a number.
+ * {who} is the first expert's surname.
  */
-type Exchange = [string, string, string];
+type Exchange = [string, string, string, string?];
 const PUSHBACK: Partial<Record<InsightCategory, { praise?: Exchange[]; concern?: Exchange[] }>> = {
   perimeter_defense: {
     praise: [
-      ['sosini', '@{who} great, they get stops. Then they walk it up and take a long two. A stop is worth what you do with it.', 'A stop is worth a stop, Mattia. Ask anybody who’s won one.'],
-      ['lex', '@{who} nobody buys a ticket to watch a charge.', 'Then don’t buy one. They’ll win without you.'],
+      ['sosini', '@{who} imagine celebrating a charge in 2026 💀', 'They win. You post.', 'ratio + nobody asked'],
+      ['lex', '@{who} nobody bought a ticket to watch a deflection, Matt', 'Rings, Lex. Count them.', 'you’ve never counted anything above two'],
+      ['sosini', '@{who} great, they get a stop and then walk it up for a long two. elite stuff', 'A stop is two points. Keep typing.'],
     ],
-    concern: [['sosini', '@{who} so they give up 115 and score 125. Next.', 'In May they score 98, Mattia. Then what?']],
+    concern: [['sosini', '@{who} so they give up 115 and score 125. who cares', 'In May they score 98.', 'source: your feelings']],
   },
   rim_protection: {
-    praise: [['sosini', '@{who} rim protector. Cute. In 2026 people shoot over him from 28 feet.', 'Then he walks out and contests it. That’s why he’s good.']],
-    concern: [['lex', '@{who} rim protectors are for teams that can’t outscore people.', 'Lex, they give up a layup every time down. Even your stars can’t outscore that.']],
+    praise: [['sosini', '@{who} rim protector lmao. people shoot over him from 28 feet now', 'Then he walks out. Contests. Blocks.', 'bro thinks it’s 2004']],
+    concern: [['lex', '@{who} rim protectors are for teams that can’t outscore people', 'Layup every trip, Lex. Outscore that.', 'my stars would']],
   },
   defensive_structure: {
-    praise: [['lex', '@{who} defense is a hobby, Matt. Stars win.', 'Stars win when the other team can’t score, Lex. Look it up.']],
-    concern: [['sosini', '@{who} it’s the regular season, relax. Outscore them.', 'They’ll find that guy in the playoffs, Mattia. They always do.']],
+    praise: [['lex', '@{who} defense is a hobby. stars win. this is embarrassing for you', 'Stars win when the other team can’t score.', 'cope']],
+    concern: [['sosini', '@{who} it’s the regular season grandpa. outscore them', 'They find that guy in May.', 'they find your posts too']],
   },
   spacing: {
     praise: [
-      ['shyman', '@{who} great, they shoot. Who guards anybody?', 'Nobody needs to guard anybody when they’re up twenty, Matt.'],
-      ['solin', '@{who} jump shooters. Wait till it’s cold in May.', 'Davyd, the paint is empty. That doesn’t go cold.'],
+      ['shyman', '@{who} great. They shoot. Who guards?', 'Nobody needs to guard when you’re up 20, Matt.', 'Up 20 in November.'],
+      ['solin', '@{who} jump shooters. wait till it’s cold in May, kiddo', 'Davyd, an empty paint doesn’t go cold. Math.', 'math never boxed anybody out'],
+      ['jert', '@{who} for the record, the 1986 Celtics won a title barely shooting threes. I have the box scores. Laminated.', 'And they’d lose by 30 tonight.', 'pace-adjusted, they would not. footnote 3'],
     ],
-    concern: [['solin', '@{who} so what, they play inside. Real basketball.', 'Inside where, Davyd? There’s no room inside. That’s the point.']],
+    concern: [['solin', '@{who} so they play inside. real basketball. not your little math', 'Inside where, Davyd? There’s no room inside. That’s the point.', 'come to the paint and say that']],
   },
   creation: {
-    praise: [['zoran', '@{who} one guy with the ball, four guys watching. Beautiful for one man.', 'When that one man is this good, Zoran, the four guys get rings.']],
-    concern: [['lex', '@{who} give it to the best player and get out of the way. Simple.', 'Lex, I’m saying there isn’t a best player to give it to.']],
+    praise: [['zoran', '@{who} one guy dribbles, four guys watch. beautiful. for him', 'When he’s this good, the four guys get rings.', 'rings are an American disease']],
+    concern: [['lex', '@{who} give it to the best player and move. this isn’t hard', 'There is no best player, Lex. That’s the take.', 'then this team doesn’t matter']],
   },
   rebounding: {
-    praise: [['onoffsky', '@{who} rebounding matters less every year. I have the numbers.', 'Numbers don’t box out, Jake.']],
-    concern: [['onoffsky', '@{who} offensive rebounds are overrated, actually.', 'Tell that to the guy who gets dunked on after the second miss.']],
+    praise: [['onoffsky', '@{who} rebounding matters less every season. I have the data. you have vibes', 'Numbers don’t box out, Jake.', 'they do. it’s called DREB%. you’re welcome']],
+    concern: [['onoffsky', '@{who} offensive rebounds are overrated, actually. 🤓', 'Tell that to the guy who gets dunked on after the second miss.', 'anecdotal']],
   },
   depth: {
-    praise: [['lex', '@{who} nice bench. Where are the stars?', 'Lex, stars get hurt. Benches don’t.']],
-    concern: [['lex', '@{who} stars play forty minutes, Mark. Who needs a bench?', 'Everybody in February, Lex. Everybody.']],
+    praise: [['lex', '@{who} lovely bench. where are the stars? oh. there aren’t any', 'Stars get hurt, Lex. Benches don’t.', 'benches don’t get banners either']],
+    concern: [['lex', '@{who} stars play 40. who needs a bench. this take is unemployed', 'Everybody in February, Lex.', 'February is for losers']],
   },
   rotation: {
-    concern: [['lex', '@{who} the stars play, the rest watch. That’s a rotation.', 'Until a star sprains an ankle in March, Lex.']],
+    concern: [['lex', '@{who} stars play, the rest watch. that’s a rotation', 'Until a star sprains an ankle in March.', 'my stars don’t sprain']],
   },
   two_way: {
-    praise: [['sosini', '@{who} both ends, sure. Can they shoot from 30 feet?', 'They don’t need to when they guard, Mattia. That’s what both ends means.']],
+    praise: [['sosini', '@{who} both ends sure, can any of them hit a 30-footer', 'They don’t need to when they guard.', 'L']],
   },
   usage: {
-    concern: [['lex', '@{who} stars figure it out.', 'Stars figure it out with one ball, Lex? Show me when.']],
+    concern: [['lex', '@{who} stars figure it out', 'With one ball? Show me once.', 'this you? 👇 “stars always find a way” — you, last week']],
   },
   fga: {
-    concern: [['lex', '@{who} stars cost money. Deal with it.', 'Stars cost money. Nine stars don’t fit. That’s the rule, Lex.']],
+    concern: [['lex', '@{who} stars cost money. deal with it, accountant', 'Nine stars don’t fit under 100.9 caps. That’s the rule.', 'rules are for role players']],
   },
   fit: {
-    concern: [['solin', '@{who} put good players out there and let them play.', 'Good players out of position are average players, Davyd.']],
+    concern: [['solin', '@{who} put good players out there and let them hoop', 'Good players out of position are average players.', 'nerd']],
   },
 };
-
 const surnameOf = (name: string) => name.split(' ').slice(-1)[0];
 
 /** The players a finding names, in the order it names them: its evidence, else the roster names
@@ -353,9 +360,9 @@ export function talkFor(insight: RosterInsight, kind: 'praise' | 'concern', rost
 
 /** A real answer to a take on a finding: who pushes back, his line, and the first expert's reply —
  * or null when nobody in that field argues (`pileOn` then backs it instead). */
-export function exchangeFor(insight: RosterInsight, kind: 'praise' | 'concern', who: string, whoSurname: string, rng: () => number): { by: string; push: string; answer: string } | null {
+export function exchangeFor(insight: RosterInsight, kind: 'praise' | 'concern', who: string, whoSurname: string, rng: () => number): { by: string; push: string; answer: string; last?: string } | null {
   const options = (PUSHBACK[insight.category]?.[kind] ?? []).filter(([by]) => by !== who);
   if (!options.length) return null;
-  const [by, push, answer] = options[Math.floor(rng() * options.length)];
-  return { by, push: push.replace('{who}', whoSurname), answer };
+  const [by, push, answer, last] = options[Math.floor(rng() * options.length)];
+  return { by, push: push.replace('{who}', whoSurname), answer, last };
 }

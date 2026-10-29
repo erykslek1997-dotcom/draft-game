@@ -94,7 +94,7 @@ const CORE_BEEFS: Beef[] = [
               ['jert', '@Sosini Russell has eleven rings. ELEVEN. How many do you have?'],
               ['sosini', 'Eleven rings in an eight-team league. Trust Uncle Mattia.'],
               ['binash', '@Sosini right. Zero rings and a ring light. Sit down.', 'cuts'],
-              ['host', 'Okay. OKAY. Nobody gets blocked live on air. Again.', 'host'],
+              ['host', 'nobody gets blocked live on air. again', 'host'],
             ],
         };
       },
@@ -184,7 +184,7 @@ const CORE_BEEFS: Beef[] = [
           ['jeremy', '@Prabuckov cute. Michael went 6–0 in the Finals.'],
           ['prab', 'Three of yours came before the league even had a team in Toronto. Different times, my friend.'],
           ['jeremy', '*takes off his glasses* Say that again. Slowly.'],
-          ['host', 'We are NOT doing this for the fourth show in a row. Moving on.', 'host'],
+          ['host', 'we are not doing this for the fourth show in a row. moving on', 'host'],
         ],
       }),
       (c) => c.read.jordan ? null : ({
@@ -199,7 +199,7 @@ const CORE_BEEFS: Beef[] = [
         lines: [
           ['jeremy', '@Prabuckov Kobe AND Michael on one roster. Finally, Kobe gets to learn from the best.'],
           ['prab', '*grips the desk* Michael gets to learn what a work ethic looks like, my friend.'],
-          ['host', 'Both of you, hands where I can see them.', 'host'],
+          ['host', 'both of you. hands where I can see them', 'host'],
         ],
       }) : null,
     ],
@@ -261,7 +261,7 @@ const CORE_BEEFS: Beef[] = [
           ['sosini', '@Bannerman kiddo, half those banners are older than colour TV.'],
           ['bannerman', 'And every one of them is still hanging, Mattia. Where’s your podcast’s banner?'],
           ['sosini', '…We have a mug.'],
-          ['host', 'Somebody get Igor a tissue. And Mattia a second mug.', 'host'],
+          ['host', 'somebody get Igor a tissue', 'host'],
         ],
       }),
     ],
@@ -308,11 +308,11 @@ const CORE_BEEFS: Beef[] = [
       }),
       () => ({
         lines: [
-          ['shyman', '@Lex stars, sure. And who guards anybody?'],
+          ['shyman', '@Lex stars. Who guards?'],
           ['lex', 'Nobody needs to guard anybody when you score 140.'],
           ['batt', 'And give up 145. Half a team!', 'cuts'],
           ['lex', 'I muted the entire desk. Peace at last.'],
-          ['host', 'Lex, you can’t mute the desk. You’re ON the desk.', 'host'],
+          ['host', 'Lex you can’t mute the desk. you’re on the desk', 'host'],
         ],
       }),
     ],
@@ -459,7 +459,7 @@ const CORE_BEEFS: Beef[] = [
           ['onoffsky', 'They do, actually. It’s called defensive rebounding percentage. You’re welcome.'],
           ['solin', 'Come to the paint and say that. I’ll be waiting with an elbow.'],
           ['onoffsky', 'That’s a flagrant 2. I have the rulebook open in another tab.'],
-          ['host', 'Okay. Okay. Davyd, put the chair down. Jake, close the spreadsheet.', 'host'],
+          ['host', 'Davyd put the chair down. Jake close the spreadsheet. thank you', 'host'],
         ],
       }),
       () => ({
@@ -519,15 +519,15 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Shyman kiddo, it’s not 1994. Make more threes than them and go home. Defense is a hobby.'],
-          ['shyman', '“Defense is a hobby.” Screenshot it. I want that on his tombstone.'],
+          ['shyman', '“Defense is a hobby.” Screenshotted. Tombstone material.'],
           ['sosini', 'Write that down, kiddo.'],
-          ['host', 'Okay. OKAY. Phones down, both of you.', 'host'],
+          ['host', 'phones down. both of you', 'host'],
         ],
       }),
       () => ({
         lines: [
           ['lex', '@Shyman nobody cares about your stops. They’ll score 140 and laugh.'],
-          ['shyman', 'And give up 145. You can’t win like that, Lex. Nobody ever has.'],
+          ['shyman', 'And give up 145. Nobody wins like that.'],
           ['batt', 'Half a team.', 'cuts'],
           ['lex', 'Nightmares is what the other team has when my guys get hot.'],
         ],
@@ -535,7 +535,7 @@ const CORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['onoffsky', '*adjusts glasses* For once the numbers and the yelling agree.', 'cuts'],
-          ['shyman', 'I’m not yelling. *yelling* I’M PASSIONATE.'],
+          ['shyman', 'NOT YELLING. PASSIONATE.'],
         ],
       }),
     ],
@@ -582,7 +582,7 @@ const CORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['shyman', '@Sosini great. They shoot. Who guards anybody?'],
+          ['shyman', '@Sosini great. Who guards?'],
           ['sosini', 'The scoreboard does.'],
           ['shyman', '“The scoreboard does.” Okay. I’m going home.'],
         ],
@@ -633,7 +633,7 @@ const CORE_BEEFS: Beef[] = [
           ['jeremy', '@Prabuckov a closer? Michael was a closer. This is a guy who takes the last shot. Sometimes.'],
           ['prab', '*stands up* He takes it EVERY time, Jeremy. That’s what closers do.'],
           ['jeremy', 'And makes it?'],
-          ['prab', '…Next question.'],
+          ['prab', '…next question. and log off, Jeremy'],
         ],
       }),
       () => ({
@@ -648,7 +648,7 @@ const CORE_BEEFS: Beef[] = [
         lines: [
           ['zoran', '@Prabuckov one man takes every big shot? Listen to me. In Europe we call that a problem.'],
           ['prab', 'In Los Angeles we call it a statue outside the arena, my friend.'],
-          ['zoran', '*hand on heart* Statues don’t pass either.'],
+          ['zoran', 'Statues don’t pass either. Like your guy.'],
         ],
       }),
     ],
@@ -676,7 +676,7 @@ const CORE_BEEFS: Beef[] = [
           ['solin', '@Onoffsky numbers don’t box out.'],
           ['onoffsky', 'They do, actually. It’s called defensive rebounding percentage. You’re welcome.'],
           ['solin', 'Come to the paint and say that. I’ll be waiting with an elbow.'],
-          ['host', 'Okay. Okay. Davyd, put the chair down. Jake, close the spreadsheet.', 'host'],
+          ['host', 'Davyd put the chair down. Jake close the spreadsheet. thank you', 'host'],
         ],
       }),
     ],
@@ -796,14 +796,14 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['lex', '@Shyman he drops 30 a night. Your stopper drops nothing.'],
-          ['shyman', 'He scores 30. He gives up 32. That’s minus two, Lex. Bum maths.'],
+          ['shyman', 'Scores 30. Gives up 32. Minus two, genius.'],
           ['lex', 'Blocked. Goodbye, little man.'],
         ],
       }),
       () => ({
         lines: [
           ['sosini', '@Shyman he spaces the floor. Defense is optional in November.'],
-          ['shyman', 'Then he sits in May. Can’t guard, can’t play. Simple.'],
+          ['shyman', 'Can’t guard. Sits in May.'],
           ['rotation', '*quietly* And guess who has to find those minutes.', 'cuts'],
         ],
       }),
@@ -819,7 +819,7 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Shyman relax. It’s the regular season. Outscore them.'],
-          ['shyman', 'Playoffs, Mattia. They find the weak guy. They go at him. Every trip. Then he sits.'],
+          ['shyman', 'Playoffs. They find him. Every trip.'],
           ['rotation', '*quietly* And then I’m the one crying. Thanks, Matt.', 'cuts'],
           ['shyman', 'Any time, Mark.'],
         ],
@@ -827,7 +827,7 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['onoffsky', '*adjusts glasses* Opponents score more per trip when they can pick on one defender. It compounds.', 'cuts'],
-          ['shyman', 'See? Even the nerd agrees. Write the date down.'],
+          ['shyman', 'Even the nerd agrees. Write the date.'],
           ['sosini', 'Two grumpy men and a spreadsheet. My favourite podcast.', 'cuts'],
         ],
       }),
@@ -863,10 +863,10 @@ const MORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['shyman', '@Sosini I hate this. He’s right. Nobody guards a guy who can’t shoot.', 'cuts'],
+          ['shyman', '@Sosini I hate this. He’s right.', 'cuts'],
           ['sosini', 'Can I get that in writing, Matt?'],
           ['shyman', 'No.'],
-          ['host', 'Shyman agrees with Sosini. Somebody check on the producer.', 'host'],
+          ['host', 'Shyman agrees with Sosini. somebody check on the producer', 'host'],
         ],
       }),
       () => ({
@@ -891,10 +891,10 @@ const MORE_BEEFS: Beef[] = [
         if (!fav || !hater) return null;
         return {
           lines: [
-            [hater, `@${HANDLE[c.anchor.who]} ${c.sur(fav)}? Overrated. Fraud. There, I said it.`],
-            [c.anchor.who, `*stands up* Say his name again. I dare you.`],
-            [hater, `${c.sur(fav)}. Fraud.`],
-            ['host', 'Okay. OKAY. Sit down, both of you. Nobody says anybody’s name again.', 'host'],
+            [hater, `@${HANDLE[c.anchor.who]} ${c.sur(fav)}? Fraud. Overrated. Glazed by people like you for a decade.`],
+            [c.anchor.who, `Say his name one more time. Go on. I have your old takes screenshotted.`],
+            [hater, `${c.sur(fav)}. Fraud. Post them, nobody cares.`],
+            ['host', 'sit down. both of you. nobody says anybody’s name again', 'host'],
           ],
         };
       },
@@ -905,7 +905,7 @@ const MORE_BEEFS: Beef[] = [
         return {
           lines: [
             [hater, `@${HANDLE[c.anchor.who]} imagine drafting ${c.sur(fav)} on purpose. Couldn’t be me.`],
-            [c.anchor.who, `Couldn’t be you because you’ve never been right, ${HANDLE[hater]}.`],
+            [c.anchor.who, `Couldn’t be you because you’ve never been right once, ${HANDLE[hater]}. Not once.`],
             [hater, 'Blocked.'],
             [c.anchor.who, 'You can’t block me, we’re sitting next to each other.'],
           ],
@@ -921,7 +921,7 @@ const MORE_BEEFS: Beef[] = [
             [ally, `@${HANDLE[c.anchor.who]} wait. You like ${c.sur(fav)} too?`, 'cuts'],
             [c.anchor.who, 'Always have.'],
             [ally, '*long pause* I don’t know how to feel about this.'],
-            ['host', 'Two experts agreeing. Somebody check on the producer.', 'host'],
+            ['host', 'two experts agreeing. somebody check on the producer', 'host'],
           ],
         };
       },
@@ -932,7 +932,7 @@ const MORE_BEEFS: Beef[] = [
           lines: [
             [rival, `@${HANDLE[c.anchor.who]} calm down, it’s a draft, not a wedding.`],
             [c.anchor.who, `I’d marry ${c.sur(c.anchor.fav)}’s ${c.anchor.fav.spanLabel} and I’m not ashamed.`],
-            ['host', 'Nobody is marrying anybody on my show.', 'host'],
+            ['host', 'nobody is marrying anybody on my show', 'host'],
           ],
         };
       },
@@ -951,7 +951,7 @@ const MORE_BEEFS: Beef[] = [
       (c) => c.anchor.who !== 'shyman' || !c.anchor.fav || c.anchor.fav.box.threePA < 3 ? null : ({
         lines: [
           ['sosini', `@Shyman you’re the defense guy. You love ${c.sur(c.anchor.fav!)}?`],
-          ['shyman', 'He shoots threes. I like threes. Sue me.'],
+          ['shyman', 'He shoots. I like it. Sue me.'],
           ['sosini', 'Welcome to 2026, Matt.'],
         ],
       }),
@@ -979,7 +979,7 @@ const MORE_BEEFS: Beef[] = [
           lines: [
             [fan, `@${HANDLE[c.anchor.who]} take that back. ${c.sur(p)} is a LEGEND.`],
             [c.anchor.who, 'Bum. Look it up.'],
-            [fan, 'I did. He’s great. You’re wrong. As usual.'],
+            [fan, 'I did. He’s great. You’re wrong. Again. It’s your brand at this point.'],
           ],
         };
       },
@@ -992,7 +992,7 @@ const MORE_BEEFS: Beef[] = [
             [fan, `@${HANDLE[c.anchor.who]} say one more thing about ${c.sur(p)}. One more.`],
             [c.anchor.who, `${c.sur(p)}.`],
             [fan, '*stands up*'],
-            ['host', 'SIT. DOWN. We are live, people.', 'host'],
+            ['host', 'sit down. we are live', 'host'],
           ],
         };
       },
@@ -1035,7 +1035,7 @@ const MORE_BEEFS: Beef[] = [
     variants: [
       () => ({
         lines: [
-          ['shyman', '@Prabuckov twelve All-Defensive teams? Half of them on reputation.'],
+          ['shyman', '@Prabuckov twelve All-Defense? Half reputation.'],
           ['prab', '*stands up* Say that again, Matt. Slowly.'],
           ['shyman', 'Re. Pu. Ta. Tion.'],
           ['prab', 'Blocked. Unblocked so you can watch his highlights. Blocked again.'],
@@ -1091,22 +1091,22 @@ const MORE_BEEFS: Beef[] = [
       () => ({
         lines: [
           ['sosini', '@Shyman great, they get stops. Then they walk it up and take a contested long two. A stop is only worth what you do with it.'],
-          ['shyman', 'A stop is a stop, Mattia. Your guys give up buckets and call it pace.'],
-          ['sosini', 'My guys SCORE 1.2 a trip. Yours score when the other team forgets to show up.'],
-          ['shyman', '*leans in* Seven games. They find your worst defender. Then we talk.'],
+          ['shyman', 'A stop is a stop. Yours call it pace.'],
+          ['sosini', 'my guys score 1.2 a trip. yours score when the other team forgets to show up. ratio'],
+          ['shyman', 'Seven games. They find your guy. Then talk.'],
         ],
       }),
       () => ({
         lines: [
           ['lex', '@Shyman nobody buys a ticket to watch a charge, Matt. Nobody.'],
           ['shyman', 'I do. Best part of the game.'],
-          ['lex', 'That explains a lot about you, Matt.'],
+          ['lex', 'explains your entire personality, Matt'],
         ],
       }),
       () => ({
         lines: [
           ['batt', '@Shyman brother! Defense! Now tell me they score too and I’ll cry with you.', 'cuts'],
-          ['shyman', 'One thing at a time, Filippo. Let me have this.'],
+          ['shyman', 'Let me have this, Filippo.'],
         ],
       }),
     ],
@@ -1120,7 +1120,7 @@ const MORE_BEEFS: Beef[] = [
           ['sosini', '@Solinhakov rebounds are for teams that miss.'],
           ['solin', 'Everybody misses, Mattia. Even your podcast.'],
           ['sosini', 'My podcast has never missed an episode.'],
-          ['solin', 'It has missed every listener.'],
+          ['solin', 'It has missed every listener. All 40 of them.'],
         ],
       }),
       () => ({
@@ -1141,7 +1141,7 @@ const MORE_BEEFS: Beef[] = [
           ['lex', '@Rotation lovely bench. Truly. Where are the stars? Oh. There aren’t any.'],
           ['rotation', 'Some of them are ON the bench, Lex, resting. That’s the point.'],
           ['lex', 'Stars don’t rest. Role players rest. You rest.'],
-          ['rotation', '*softly* Everybody rests, Lex.'],
+          ['rotation', 'Everybody rests, Lex. Even your ego, apparently, because it hasn’t shown up to a playoff game.'],
         ],
       }),
     ],
@@ -1292,7 +1292,7 @@ const MORE_VARIANTS: Record<string, Variant[]> = {
         ['binash', '@Solinhakov 2004 grit? The Bad Boys would eat your 2004 for breakfast.'],
         ['solin', 'The Bad Boys were cosplay. We were the real thing.'],
         ['binash', '*stands up* Take that back.'],
-        ['host', 'Sit down. Both of you. This is a basketball show, not a parking lot.', 'host'],
+        ['host', 'sit down. both of you. this is a basketball show', 'host'],
       ],
     }),
   ],

@@ -61,7 +61,7 @@ export const TEAM_HATE: Partial<Record<ExpertId, string[]>> = {
 
 /** How each expert gushes; `{p}` is the player's surname. */
 export const FAV_LINES: Partial<Record<ExpertId, string[]>> = {
-  sosini: ['{p}! His shot chart is my phone background, kiddo. Ask Aunt Rosa.', '{p}. Uncle Mattia has his jersey. Two of them.', '{p}. Range, taste, everything. I’m getting emotional at the grill.'],
+  sosini: ['{p}! His shot chart is my phone background, kiddo. Ask Aunt Rosa.', '{p}. Uncle Mattia has his jersey. Two of them.', '{p}. Range, taste, everything. Anyone who disagrees can log off.'],
   shyman: ['{p}. Good player. Simple.', '{p}! Love him. Don’t need to explain.', '{p}. Ballplayer.'],
   solin: ['{p}. Pure eye test. You just know.', '{p}! Grown man. You don’t need a spreadsheet for this one. Just eyes.', '{p}. Watch him for five minutes. That’s all the data you need.'],
   binash: ['{p}! Somebody pass me the short shorts. This is a holy day.', '{p}! Totally tubular, dudes. *finger guns at the camera*', '{p}. *dims the studio lights, puts on a synth track* Let me just enjoy this.'],
