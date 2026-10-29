@@ -73,8 +73,14 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     const height = getHeightInches(span.playerName);
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
-  return Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot));
+  return Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), NAMED_SLOT_CAPS[normalizePlayerName(span.playerName)]?.[slot] ?? 1);
 }
+
+/** 2026-10-29, the user (Porziņģis starting at PF beside Embiid: "a 7'4\" PF makes no real sense"):
+ * named players who play a slot at most as a stretch (`partial`), whatever their career says. */
+const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
+  'kristaps porzingis': { PF: 0.6 },
+};
 
 /**
  * 2026-10-28, the user's export (Chris Mullin 1998-00 — 6'7", 4.8 rebounds a 36, 215 lb — starting at

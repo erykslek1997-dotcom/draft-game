@@ -751,8 +751,10 @@ const playoffDefensiveTalentCache = new Map<string, number>();
  * weak around him and never made an All-Defense team in an era whose forward spots went to
  * Kirilenko, Artest, Duncan, Garnett and Ben Wallace — so the recognition-driven parts of D-TAL
  * never credit him. Added on top of the measured value, every window.
+ * 2026-10-29, the user: P.J. Tucker (+22, best window TAL 59) — guarded 1 through 5 for contenders,
+ * strength and versatility the box and his stocks (`scripts/auditLowStockDefense.ts`) do not see.
  */
-const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Shawn Marion'), 10]]);
+const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Shawn Marion'), 10], [normalizePlayerName('P.J. Tucker'), 22]]);
 
 /**
  * 2026-09-30, engine calibration session 1 (the user, on Brook Lopez 66 / Mikal Bridges 66 /
