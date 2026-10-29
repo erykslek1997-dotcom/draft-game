@@ -98,6 +98,23 @@ export function TeamMark({ code, bg, fg, lg }: { code: string; bg: string; fg: s
  * prostu jest krótszy"): band with team and slot, face, name, years and caps; the line under it is
  * the mode's (All-Time: who comes in for him; Mini: what he does).
  */
+/** A bench player's line on a results card: surname, his window (short), minutes (2026-10-29, the
+ * user: "nie widzę lat w rotacji"). */
+export function BenchRow({ span, minutes }: { span: PlayerSpan; minutes: number }) {
+  return (
+    <span className="bn-row">
+      <span className="bn-f">
+        <NFace name={span.playerName} />
+      </span>
+      <i>
+        {lastName(maskText(span.playerName))} <em className="bn-y">{shortYears(maskYears(span.playerName, span.spanLabel))}</em>
+      </i>
+      <b>{Math.round(minutes)}m</b>
+    </span>
+  );
+}
+const shortYears = (label: string) => label.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2-$3');
+
 export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot: string; extra?: ReactNode; foot: ReactNode }) {
   return (
     <div className="card" style={bandStyle(span)}>
@@ -111,8 +128,12 @@ export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot
       <div className="nm">{shortName(span.playerName)}</div>
       <div className="sb">
         <span className="sb-yc">
-          {maskYears(span.playerName, span.spanLabel)} · <CapI />
-          {fmtCaps(span.fga)}
+          <span className="sb-yr">{maskYears(span.playerName, span.spanLabel)}</span>
+          <span className="sb-cp">
+            {' · '}
+            <CapI />
+            {fmtCaps(span.fga)}
+          </span>
         </span>
         {extra}
       </div>

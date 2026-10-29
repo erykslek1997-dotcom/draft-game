@@ -54,7 +54,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, NFace, RosterCard, Tally, lastName, fmtCaps } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, NFace, BenchRow, RosterCard, Tally, lastName, fmtCaps } from '../night/ui';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -1243,11 +1243,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                 slot={slot}
                 extra={
                   <>
-                    <span className="sb-yc"> · </span>
+                    <span className="sb-sep"> · </span>
                     <b>{Math.round(starter.minutes)}m</b>
                   </>
                 }
-                foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><span className="bn-f"><NFace name={o.player.playerName} /></span><i>{lastName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
+                foot={others.length ? others.map((o) => <BenchRow key={o.player.id} span={o.player} minutes={o.minutes} />) : 'no one else here'}
               />
             ) : (
               <div key={slot} className="slot empty">
@@ -1356,11 +1356,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                                   slot={x.slot}
                                   extra={
                                     <>
-                                      <span className="sb-yc"> · </span>
+                                      <span className="sb-sep"> · </span>
                                       <b>{Math.round(own?.minutes ?? x.minutes)}m</b>
                                     </>
                                   }
-                                  foot={others.length ? others.map((o) => <span key={o.player.id} className="bn-row"><span className="bn-f"><NFace name={o.player.playerName} /></span><i>{lastName(maskText(o.player.playerName))}</i><b>{Math.round(o.minutes)}m</b></span>) : 'no one else here'}
+                                  foot={others.length ? others.map((o) => <BenchRow key={o.player.id} span={o.player} minutes={o.minutes} />) : 'no one else here'}
                                 />
                               );
                             });

@@ -315,7 +315,7 @@
   .nt .five-row .card .sb, .nt .five-row .card .roles { display: block; padding: 0 3px 5px; font-size: 11px; line-height: 1.2; text-align: center; }
   .nt .five-row .card .roles { font-style: italic; color: var(--cink2); }
   /* on a phone the roster card says minutes only: no years, no caps (playtest: "rozwala całość") */
-  .nt .five-row .card .sb-yc { display: none; }
+  .nt .five-row .card .sb-yc .sb-cp { display: none; }
   .nt .five-row .card .sb { font-size: 12px; }
 }
 @media (max-width: 600px) {
