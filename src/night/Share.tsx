@@ -173,15 +173,18 @@ export function Poster({ d }: { d: PosterData }) {
           <span className="po-bl">Bench</span>
           <div className={`po-bp${d.bench.length > 3 ? ' many' : ''}`} style={{ '--n': Math.min(4, d.bench.length) } as CSSProperties}>
             {d.bench.slice(0, 8).map(({ span, num, min }) => (
-              <div key={span.id} className="po-b3">
-                <b>
-                  {lastName(span.playerName)}
-                  <small>{span.primaryPosition.split('/')[0]}</small>
-                </b>
-                <em>
-                  {numLabel(num, d.unit)}
-                  {min != null && ` · ${Math.round(min)} min`}
-                </em>
+              <div key={span.id} className="po-b3" style={teamVar(span)}>
+                <span className="po-bt">
+                  <NFace name={span.playerName} />
+                </span>
+                <span>
+                  <b>
+                    {lastName(span.playerName)}
+                    <small>{span.primaryPosition.split('/')[0]}</small>
+                  </b>
+                  <em>{numLabel(num, d.unit)}</em>
+                  {min != null && <em>{Math.round(min)} min</em>}
+                </span>
               </div>
             ))}
           </div>
