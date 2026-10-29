@@ -578,3 +578,15 @@
 .nt .sprof-n { font: 500 13px var(--num); color: var(--ink3); }
 .nt .sprof-n b { color: var(--ink); font-weight: 600; }
 .nt .sprof small { font-size: 13px; color: var(--ink3); }
+
+/* Your team on a phone: the tier by the name, and the four grades on one line */
+.nt .roster .rs-tier { display: none; }
+@media (max-width: 600px) {
+  .nt .roster .nm .rs-tier { display: inline; margin-left: 7px; font: 700 11px var(--cond); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink3); vertical-align: 1px; }
+  .nt .roster .rs-g { flex-wrap: nowrap; gap: 4px 7px; }
+}
+@media (max-width: 600px) {
+  .nt .roster .rs-g span { white-space: nowrap; }
+  /* the + / × button fits its 26px column (it was 30px and stuck out past the edge; playtest 1) */
+  .nt .r3x { width: 26px; height: 26px; font-size: 14px; }
+}
