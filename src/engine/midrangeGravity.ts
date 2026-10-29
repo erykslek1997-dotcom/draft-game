@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { computeSpacing } from './spacing';
+import preZoneModel from '../data/preZoneMidrange.json';
 
 /**
  * 2026-09-25, user-confirmed ("KG vs Ryan Anderson do sprawdzenia" -> option A): `computeSpacing`
@@ -79,9 +80,21 @@ const PRE_ZONE_MIDRANGE_SPACING: ReadonlyMap<string, number> = new Map(
   ).map(([name, value]) => [normalizePlayerName(name), value]),
 );
 
+/**
+ * 2026-10-29 (the user: the hand list "będzie długo z bólem robiona sesja, chyba że masz jakiś
+ * pomysł"): every other pre-zone span reads the model `scripts/fitPreZoneMidrange.ts` fits on the
+ * zone data — box numbers every era has (free throws, two-point volume and accuracy, free-throw rate,
+ * offensive rebounding, height, position, AST%), nearest neighbours among 2005-on spans, quantile-
+ * mapped to the zone data's spread. On 1997-2004 spans it never saw: R² 0.44, r 0.68; against the
+ * hand list r 0.69. It reads perimeter jump shooters well (Gervin, English, Havlicek, Bird) and
+ * undersells midrange bigs (Malone 1996-98 14 against 66 from zones), hence the hand list first.
+ */
+const PRE_ZONE_MODEL = preZoneModel as Record<string, number>;
+export const PRE_ZONE_RULES = { model: true };
+
 function preZoneMidrangeSpacing(span: PlayerSpan): number {
   if (runtimeZoneTotalsForSpan(span)) return 0;
-  return PRE_ZONE_MIDRANGE_SPACING.get(normalizePlayerName(span.playerName)) ?? 0;
+  return PRE_ZONE_MIDRANGE_SPACING.get(normalizePlayerName(span.playerName)) ?? (PRE_ZONE_RULES.model ? (PRE_ZONE_MODEL[span.id] ?? 0) : 0);
 }
 
 /** A player's spacing as the TEAM's floor geometry sees it: three-point spacing, or partial
