@@ -1426,7 +1426,11 @@ export default function DraftBoard({
                         <NFace name={pl.playerName} span={pl} />
                       </td>
                       <td>
-                        <div className="nm">{masked ? BOMB_NAME : pl.playerName}</div>
+                        <div className="nm">
+                          {masked ? BOMB_NAME : pl.playerName}
+                          {/* 2026-10-29 (the user: the tier "obok imienia i nazwiska"): on a phone the tier sits by the name */}
+                          {!masked && <span className="rs-tier">{displayedOverallTier(eff)}</span>}
+                        </div>
                         <div className="mt">
                           {masked ? (
                             <i>Revealed on the results · plays {BOMB_MIN_MINUTES}+ min</i>
@@ -1440,13 +1444,14 @@ export default function DraftBoard({
                           )}
                         </div>
                         {/* 2026-10-28 (mockup draft-grades-phone.html): the phone hides the grade columns, so
-                            the awards and tier get their own line and the four grades another one */}
+                            the awards get their own line and the four grades another one; the tier sits by the name */}
                         {!masked && (
                           <>
-                            <div className="rs-ph rs-t">
-                              {spanAwards(eff.playerName, eff.spanLabel).length > 0 && <span className="pk2-aw">{spanAwards(eff.playerName, eff.spanLabel).join(' · ')}</span>}
-                              <span>{displayedOverallTier(eff)}</span>
-                            </div>
+                            {spanAwards(eff.playerName, eff.spanLabel).length > 0 && (
+                              <div className="rs-ph rs-t">
+                                <span className="pk2-aw">{spanAwards(eff.playerName, eff.spanLabel).join(' · ')}</span>
+                              </div>
+                            )}
                             <div className="rs-ph rs-g">
                               {(
                                 [

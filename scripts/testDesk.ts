@@ -32,7 +32,7 @@ function league(seed: number): Team[] {
 }
 
 const badText = (lines: DeskLine[]) => lines.filter((l) => /undefined|NaN|\{m\}|\{team\}|\{place\}|\[object/.test(l.text) || !l.text.trim());
-const opens = (lines: DeskLine[]) => lines.filter((l) => l.who !== 'host' && !l.reply && l.kind !== 'burst' && l.who !== 'moonbat');
+const opens = (lines: DeskLine[]) => lines.filter((l) => l.who !== 'host' && !l.reply && !l.seg && l.kind !== 'burst' && l.who !== 'moonbat');
 
 let shows = 0;
 let moonbatShows = 0;
@@ -67,7 +67,7 @@ function checkLines(lines: DeskLine[], where: string): void {
     }
     // A pile-on reply hangs right under the take it backs (or under the reply it answers).
     if (l.pile && !(i > 0 && (lines[i - 1].pile || ((lines[i - 1].kind === 'praise' || lines[i - 1].kind === 'concern') && !lines[i - 1].reply)))) offTopicReplies.push(`${where}: pile-on “${l.text}” not under a take`);
-    if (l.reply && !l.beef && !l.pile && !lines.slice(0, i).some((o) => o.who === 'moonbat')) offTopicReplies.push(`${where}: stray reply “${l.text}”`);
+    if (l.reply && !l.beef && !l.pile && !l.seg && !lines.slice(0, i).some((o) => o.who === 'moonbat')) offTopicReplies.push(`${where}: stray reply “${l.text}”`);
     if (/\bOnly 0\b|(?:—|:) [A-Z][a-z]+ \d+ real\b|(?<![Vv]an )\b(?:Lier|Exel|Horn|Gundy)\b/.test(l.text)) clumsy.push(`${where}: ${l.text}`);
   }
 }
