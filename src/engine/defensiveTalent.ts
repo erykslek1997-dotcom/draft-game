@@ -776,10 +776,14 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerN
 const RECOGNIZED_DEFENDER_FLOOR_MIN = 60;
 const RECOGNIZED_DEFENDER_FLOOR_MAX = 88;
 const RECOGNIZED_DEFENDER_FULL_RATE = 0.75;
+/** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
+ * the accolade floor counts — 1 as before, 0 off. */
+export const DTAL_RULES = { recognitionShare: 1 };
 function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
-  if (rate <= 0) return 0;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
+  const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
+  return RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
 }
 
 const RIM_PROTECTOR_MIN_BLOCKS = 1.6;
