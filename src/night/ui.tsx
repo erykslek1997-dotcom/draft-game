@@ -415,8 +415,17 @@ export function NightVoices({ voices, cast, fold }: { voices: { who: string; kin
     while (cut < posts.length && posts[cut].reply) cut += 1;
   }
   const rest = posts.length - cut;
+  // 2026-10-30, the user ("the room jest długi i nie ma opcji zwinięcia w topie"): an opened room
+  // folds back from the top as well as the bottom.
+  const foldable = open && fold != null && posts.length > fold + 1;
+  const less = foldable && (
+    <button type="button" className="lk-inline voices-more" onClick={() => setOpen(false)}>
+      Show less ▴
+    </button>
+  );
   return (
     <div className="xfeed">
+      {less}
       {posts.slice(0, cut).map((v, i) => {
         const x = cast[v.who];
         const name = x?.name ?? v.who;
@@ -450,6 +459,7 @@ export function NightVoices({ voices, cast, fold }: { voices: { who: string; kin
           Show {rest} more {rest === 1 ? 'post' : 'posts'} ▾
         </button>
       )}
+      {less}
     </div>
   );
 }

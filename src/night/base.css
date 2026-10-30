@@ -35,6 +35,10 @@ aside { display: flex; flex-direction: column; gap: 24px; }
    all, instead of a 1360px strip in the middle of a 1920 or 2560 screen. */
 @media (min-width: 1700px) { .game { --z: 1.2; zoom: 1.2; } }
 @media (min-width: 2200px) { .game { --z: 1.5; zoom: 1.5; } }
+/* 2026-10-30, the user ("skalowanie wielkości okien", the desk's call sheet small on a big screen): a
+   dialog or drawer rendered outside the frame scales with it; one inside already does. */
+@media (min-width: 1700px) { :is(.dlg, .modal, .drawer-panel):not(.game *) { zoom: 1.2; } }
+@media (min-width: 2200px) { :is(.dlg, .modal, .drawer-panel):not(.game *) { zoom: 1.5; } }
 main { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 i.note, .it { font-style: italic; }
 
