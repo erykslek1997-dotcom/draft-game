@@ -1234,6 +1234,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .roster td.gd b { display: inline-block; width: 2.4ch; text-align: left; font-weight: 800; }
 .roster td.gd b.hi, .roster .rs-g b.hi { color: var(--green); }
 .roster td.gd b.lo, .roster .rs-g b.lo { color: var(--red); }
+/* 2026-10-30, the user: "S nie ma koloru, może być jakiś złoty". */
+.roster td.gd b.top, .roster .rs-g b.top { color: var(--gold); }
 .roster .rs-aw { display: block; margin-top: 2px; font: 600 11px var(--cond); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink3); }
 .roster .rs-ph { display: none; }
 @media (max-width: 600px) {

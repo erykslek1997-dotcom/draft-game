@@ -1161,7 +1161,7 @@ export default function DraftBoard({
   const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
   const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size;
   const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
-  const gradeTone = (v: string) => (v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
+  const gradeTone = (v: string) => (v === 'S' ? 'top' : v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   const gradesOf = (sp: PlayerSpan) => ({
     off: offensiveGrade(computeOffensiveTalent(sp), computeUncappedOffensiveTalent(sp)),
     def: defensiveGradeForSpan(sp, computeDefensiveTalent(sp)),

@@ -274,7 +274,7 @@ export const USER_WINDOW_ORDER: Readonly<Record<string, readonly string[]>> = {
 const NUDGE = 3;
 export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   'Andre Iguodala': NUDGE,
-  'Anfernee Hardaway': NUDGE,
+  'Anfernee Hardaway': 5,
   'Bam Adebayo': NUDGE,
   'Bill Russell': NUDGE,
   'Derrick White': NUDGE,
@@ -282,13 +282,15 @@ export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   'Jalen Brunson': NUDGE,
   'Jimmy Butler': NUDGE,
   'Kyle Lowry': NUDGE,
-  'Mike Conley': NUDGE,
+  'Mike Conley': 6,
   'Paul George': NUDGE,
   'Shai Gilgeous-Alexander': NUDGE,
   'Yao Ming': NUDGE,
   // 2026-10-30, the user: "Oscar bliżej Westa", "Gobert all-nba ok, ale 87 też za dużo".
   'Oscar Robertson': -4,
   'Rudy Gobert': -NUDGE,
+  // 2026-10-30, the user after the window cap: Conley and Penny underrated, Manu 80-83.
+  'Manu Ginóbili': 1,
   'Gilbert Arenas': -NUDGE,
   'Victor Oladipo': -NUDGE,
 };
