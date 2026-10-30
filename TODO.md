@@ -267,6 +267,25 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 | 6 | Strategia SM, testy kont i tabeli przez ludzi, poprawki przed launchem, wyłączenie trybów testowych |
 | 7 | Zapas na poprawki → launch (ok. 2. tydzień grudnia) |
 
+### Lista bezpieczeństwa i produkcji przed launchem (Eryk 2026-10-30: „to, na czym się nie znam”)
+Każdy punkt ma tydzień i właściciela (C = Claude, E = Eryk). Przed launchem (tydz. 6) przejść całą listę jeszcze raz.
+
+| | Punkt | Tydz. | Co konkretnie | Kto |
+|---|---|---|---|---|
+| 🔐 | Brak wycieków kluczy | 4 | W przeglądarce tylko klucz publiczny (anon); klucz serwisowy wyłącznie w funkcjach serwera / sekretach hostingu. `.env` w `.gitignore`, skan repo i historii gita na sekrety (secret scanning GitHub). | C, E (włącza skan w GitHub) |
+| 🔐 | Auth / uprawnienia | 4 | Row Level Security na każdej tabeli: gracz czyta i pisze tylko swoje; wynik w tabeli dziennej wpisuje wyłącznie serwer po przeliczeniu. Test: drugie konto próbuje czytać/zmieniać cudze dane. | C |
+| 🗄️ | Bezpieczeństwo bazy | 4 | Brak publicznego zapisu, zapytania tylko przez API z RLS, ograniczona długość pól (nick), bez danych wrażliwych poza e-mailem. | C |
+| 💸 | Limity kosztów | 4 | Plan darmowy na start, alert budżetowy i twardy limit w panelu dostawcy; limit zapytań na gracza (np. 1 wynik dziennie, ograniczenie liczby zapisów na minutę). | E (panel), C (limity w kodzie) |
+| 🧪 | Testy złych inputów | 4 | Serwer odrzuca: zmyślone picki, picki spoza puli/seeda, podwójne zgłoszenie, zbyt długi nick, zmanipulowany wynik. Testy automatyczne na każdy przypadek. | C |
+| 📱 | Mobile | 5–6 | Przegląd wszystkich ekranów na 390 px (Playwright, zrzuty) + test na prawdziwych telefonach (iOS Safari, Android Chrome). | C (zrzuty), E (telefony) |
+| 🌐 | Domena + HTTPS | 5 | Zakup domeny, podpięcie do hostingu, certyfikat automatyczny, przekierowanie http→https i starego adresu; przepięcie logowania (adresy zwrotne Google). | E (zakup, DNS), C (konfiguracja) |
+| 💥 | Obsługa błędów | 4–5 | Gra działa bez serwera (tryby offline jak dziś); przy błędzie serwera czytelny komunikat zamiast pustego ekranu, ponowienie zapisu wyniku, granica błędów React na każdym ekranie. | C |
+| 💾 | Backup | 4 | Codzienny automatyczny backup bazy (u dostawcy — w Supabase płatny plan, na darmowym własny eksport raz dziennie), raz próba odtworzenia. | E (plan), C (eksport) |
+| 📈 | Analytics + monitoring błędów | 5 | Prosta analityka bez ciasteczek (np. Plausible / Umami lub wbudowana u hostingu) i monitoring błędów (Sentry, plan darmowy) z alertem na e-mail. | E (konta), C (podpięcie) |
+| 🔄 | Rollback | 4 | Każdy merge = wersja na hostingu, powrót jednym kliknięciem do poprzedniej; zmiany bazy tylko przez migracje z wersją wstecz; tagi wydań w gicie. | C, E (zna przycisk) |
+
+**Zakładka na limity (Eryk 2026-10-30):** tydzień 3 może zabrać do ~30% limitu tygodnia 4, jeśli kalibracja się nie zepnie; to, czego wtedy nie skończy tydzień 4 (backend), przechodzi na tydzień 5. Tydzień 5 jest lżejszy (brand, domena, testy ludzi to głównie praca Eryka), więc go wchłonie. Kolejność się nie zmienia: najpierw kończymy kalibrację, potem backend. Launch zostaje na 2. tydzień grudnia, zapasem jest tydzień 7.
+
 MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
