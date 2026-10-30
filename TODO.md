@@ -1612,4 +1612,16 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    „ilu twórców na boisku w każdej minucie” (próg self-creation/O-TAL, KG się łapie), 3 z 5 = premia, 1 = kara. Zmierzyć
    na prawdziwych drużynach (SRS) i symulacji przed wprowadzeniem; razem z przebudową ataku (punkt 1).
    Punkt odniesienia od Eryka: ten skład (CP3, Edwards, KG, Anunoby, Gobert) realnie 74-76 w ataku, dziś 69.
+7. AI i rotacja — draft Eryka 3385276503 (2026-10-30):
+   a) Specjaliści 3&D bez ataku w piątce: Caruso (O 48) startuje 32 min u lidera (Fort Worth, #1), Smart (O 45) + Bowen (O 42)
+      razem w piątce Knoxville. Zasada: O-TAL < ~50 nie startuje, jeśli na ławce jest zastępca; najwyżej jeden taki w piątce.
+   b) Rotacja przerzuca gracza między odległymi slotami: Artest 19 min SG + 19 min PF.
+   c) AI dubluje archetypy: CP3 + Oscar (Oscar 25 min na SG), Penny + Wade — dwóch Primary Ball Handlerów o dużym
+      udziale piłki; sieć „ball share” tego nie łapie.
+   d) Ławka za drogo: Bill Russell (12,3 caps) 14 min z ławki; AI przy picku na ławkę powinno liczyć caps na minutę.
+   e) Ławkowe PG bez wkładu: McMillan (TAL 59) + Prigioni (TAL 50) po 14 min w jednej drużynie.
+   f) Shreveport ostatni (Nash, Edwards, Butler, JJJ, Duncan): Defense 71 — Nash D 21 polowany (hunt 50, switch 46),
+      sim 26-56, rywale 54,6% z gry. Kara za polowanie prawdopodobnie za ostra (Suns Nasha wygrywali 60+); przebudowa
+      polowania jest „po launchu”, ale ten przypadek sprawdzić wcześniej. Do tego Bobby Jones (SPC 9) 26 min na PF obok
+      Duncana, JJJ tylko 22 min.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
