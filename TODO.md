@@ -1626,4 +1626,9 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
       Pomiar z 28.10 (372 piątki) mówi, że najsłabsze ogniwo prawie nie dodaje do DRtg ponad średnią D-TAL — kara za
       polowanie powinna być ogólnie dużo mniejsza; sprawdzić w tygodniu 3. Do tego Bobby Jones (SPC 9) 26 min na PF obok
       Duncana, JJJ tylko 22 min.
+8. Obrona wysokich pod obecne zasady (Eryk 2026-10-30): gra ceni Goberta i Eatona podobnie w obronie, a we współczesnej
+   koszykówce (zmiany krycia, pick-and-roll, rozciągnięci wysocy, brak illegal defense przed 2001) Eaton ze słabą
+   mobilnością byłby niegrywalny w obronie na obwodzie. Pomysł: składnik „mobilność / zasięg krycia” dla C/PF z ery przed
+   2001 (rozmiar, przechwyty, faule, dane o obronie pick-and-roll gdzie są) obniża wartość czystego obrońcy kosza w
+   obronie zespołowej (switchability, hunt) — nie samo D-TAL. Zmierzyć na sędziach razem z punktem 2 (rim protectorzy).
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
