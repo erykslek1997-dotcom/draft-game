@@ -901,6 +901,9 @@ function neighbourAwareFloor(span: PlayerSpan): number {
 const CARRY_DISCOUNT = 8;
 const CARRY_DBPM_SLACK = 0.2;
 const CARRY_DWS_SLACK = 0.5;
+/** Klay Thompson's All-Defense 2019 came with a DBPM of −1.7, so his post-injury windows (−1.6)
+ * matched it and carried the floor: only a window whose own DBPM is genuinely positive carries. */
+const CARRY_MIN_DBPM = 0.5;
 let windowsByName: Map<string, PlayerSpan[]> | null = null;
 const carryCache = new Map<string, number>();
 function accoladeFloor(span: PlayerSpan): number {
@@ -917,7 +920,7 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
   let result = 0;
   const own = realSpan(span);
   const ownDws = dwsPerSeason(span);
-  if (own?.dbpm != null && ownDws != null) {
+  if (own?.dbpm != null && own.dbpm >= CARRY_MIN_DBPM && ownDws != null) {
     if (!windowsByName) {
       windowsByName = new Map();
       for (const p of draftPool) {
