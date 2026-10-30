@@ -1599,6 +1599,12 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
   (spany tego samego gracza znikają razem; tańszy span Shaqa to celowy wybór).
 
 ## Kalibracje po drugim przeglądzie tierów (2026-10-30) — DO ZROBIENIA
+0. NAJPIERW sprzątanie kodu (Eryk 2026-10-30: „przed każdymi testami czyścimy kod, mam wrażenie że może być tego za dużo”).
+   Zasada stała: przed każdą rundą kalibracji/testów. Bez zmiany zachowania: martwy kod i nieużywane eksporty (ts-prune /
+   tsc noUnusedLocals), wyłączone flagi i porzucone eksperymenty, nazwane poprawki, które silnik już sam odtwarza (sprawdzić
+   wyłączając każdą), zduplikowane progi/stałe, stare skrypty pomiarowe bez użycia, przerośnięte komentarze-historie.
+   Dowód: zrzut TAL / O / D / ocen drużyn dla całej puli i seedowanych lig identyczny przed i po + test:fast zielony.
+   W raporcie: ile linii/plików ubyło i co usunięte.
 1. Atak: wzór przecenia strzelców (LaVine 100 przy OBPM +4,3, Reggie, Mullin, Ray 100, Dantley 99, Vince 95)
    i nie docenia rozgrywających atakujących kosz (Maxey 73 przy +4,2, Parker, Haliburton, Morant, Rose).
    Dodatek za atak kosza ma limit 5 i liczy się z wykończenia — przebudować (FT, penetracja), skalibrować do OBPM, zmierzyć na SRS/sim.
