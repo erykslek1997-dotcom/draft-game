@@ -289,8 +289,9 @@ export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   // 2026-10-30, the user: "Oscar bliżej Westa", "Gobert all-nba ok, ale 87 też za dużo".
   'Oscar Robertson': -4,
   'Rudy Gobert': -NUDGE,
-  // 2026-10-30, the user after the window cap: Conley and Penny underrated, Manu 80-83.
+  // 2026-10-30, the user after the window cap: Conley and Penny underrated, Manu 80-83, Dwight 87.
   'Manu Ginóbili': 1,
+  'Dwight Howard': 2,
   'Gilbert Arenas': -NUDGE,
   'Victor Oladipo': -NUDGE,
 };

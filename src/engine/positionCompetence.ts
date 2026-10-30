@@ -93,6 +93,8 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
  * slot at least at the given score, whatever their career data says. */
 const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
   'dennis rodman': { C: 0.95 },
+  // The user: a centre who can play the four, with the partial-position penalty.
+  'bam adebayo': { PF: 0.6 },
 };
 
 /**

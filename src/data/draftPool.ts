@@ -31,6 +31,11 @@ function applyRuntimeParity(span: PlayerSpan): PlayerSpan {
   if (span.playerName === 'Andrei Kirilenko' && span.spanLabel === '2003-05' && span.primaryPosition === 'PF') {
     return { ...span, primaryPosition: 'SF', secondaryPositions: ['PF'] };
   }
+  // 2026-10-30, the user: Bam Adebayo is a centre (PF at `partial`, positionCompetence.ts); his
+  // 2019-21 and 2020-22 windows were tagged PF (players.ts `PRIMARY_POSITION_RECLASSIFICATIONS`).
+  if (span.playerName === 'Bam Adebayo' && span.primaryPosition === 'PF') {
+    return { ...span, primaryPosition: 'C', secondaryPositions: span.secondaryPositions.filter((p) => p !== 'C') };
+  }
   if (
     span.playerName === 'Pau Gasol' &&
     ['2007-09', '2008-10', '2009-11'].includes(span.spanLabel) &&

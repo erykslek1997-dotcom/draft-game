@@ -421,6 +421,9 @@ const PRIMARY_POSITION_RECLASSIFICATIONS: { name: string; from: Position; to: Po
   // more ties at 96-97, not a new class of problem, same "mild, not the PG session's 8-way tie"
   // scale flagged before.
   { name: 'Tim Duncan', from: 'PF', to: 'C' },
+  // 2026-10-30, the user: "Bam Adebayo -> C który może grać na PF za karą" (PF at `partial`,
+  // positionCompetence.ts).
+  { name: 'Bam Adebayo', from: 'PF', to: 'C' },
   // 2026-08-12, user's explicit ask: Kyle Korver's real career splits nearly evenly between
   // auto-tagged SF (10 spans, all with SG as a real secondary) and SG (6 spans) — a genuine
   // "which position does his whole career belong to" call, same shape as the entries above.
