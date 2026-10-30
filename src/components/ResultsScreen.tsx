@@ -1110,7 +1110,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     </>
   );
 
-  const extras = reportExtras(heroTeam, hero.breakdown, heroFit ?? fitScore(heroTeam));
+  // 2026-10-30, the user ("te metryki by można dać po lewej stronie"): your own score details sit
+  // under "Why you finished here", beside the room, instead of in the accordion below it.
+  const extras = reportExtras(heroTeam, hero.breakdown, heroFit ?? fitScore(heroTeam)).filter((e) => e.id !== 'details');
   const overlay = (
     <>
       {shareOpen && <ShareNight d={poster} link={daily ? undefined : link} fileName={teamLabel(hero.team)} onClose={() => setShareOpen(false)} />}
@@ -1282,6 +1284,9 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               ))}
             </tbody>
           </table>
+          <div className="sd-left">
+            <ScoreDetails team={heroTeam} breakdown={hero.breakdown} fit={heroFit ?? fitScore(heroTeam)} field={fieldMetrics} />
+          </div>
         </section>
         {heroVoices.length > 0 && (
           <section className="voices">
