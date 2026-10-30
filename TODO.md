@@ -210,6 +210,18 @@ znaczą, że drugi rozgrywający jest zbędny). **Jeśli AI zacznie draftować d
 drużyny AI, gwiazdy na siłę obok siebie, trzech centrów, za słabe ławki): wrócić tutaj, przełączniki
 w `AI_STAR_RULES` (aiDrafter.ts), pomiar `npx tsx scripts/measureStarPower.ts 6`.
 
+### Spacing w playoffach i w symulacji (2026-10-30) — DO ZROBIENIA
+
+Prawdziwe drużyny 2015–2026 w playoffach: udział trójek przewiduje wygrane serie ponad SRS (r +0,12,
+192 drużyny; 1997–2014: −0,03). W sezonie zasadniczym spacing nic nie dokłada ponad obecną ocenę
+(`scripts/measureSpacingWeight.ts`: dodatkowa waga ~0). Zrobione: reguła odpuszczania
+(`closeout.ts`: mało prawdziwych trójek + słaby atak → mniej spacingu; Bowen 71 → 54, McMillan
+41 → 25, Kidd bez zmian). Do zrobienia: w symulacji serii playoffowych (i szansach na tytuł)
+dodatkowa waga spacingu skalibrowana na tych 192 drużynach — słabo rozstawiony skład może wygrać
+sezon, ale w playoffach ma pod górkę (Denver z LeBronem 2012-14, Kareemem, Kiddem, Jonesem i
+Bowenem, eksport 1425223907). Sprawdzone i odrzucone: słaby spacing → więcej strat/kontr rywala
+(2015–2026: udział trójek a własne TOV% +0,09, odwrotnie niż zakładaliśmy).
+
 ### Znane, zaakceptowane ograniczenia (nie odgrzewać bez nowych dowodów)
 
 - **Więcej gry pod koszem niż w NBA** (2026-10-08): punkty z pomalowanego 55.9 / 100 posiadań vs

@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { computeSpacing } from './spacing';
 import { preZoneShootingSkill } from './preZoneShooting';
+import { closeoutFactor } from './closeout';
 
 /**
  * 2026-09-25, user-confirmed ("KG vs Ryan Anderson do sprawdzenia" -> option A): `computeSpacing`
@@ -54,5 +55,5 @@ function preZoneMidrangeSpacing(span: PlayerSpan): number {
 /** A player's spacing as the TEAM's floor geometry sees it: three-point spacing, or partial
  * midrange-gravity credit when that is higher (measured from zone data, or hand-set before it). */
 export function teamSpacingValue(span: PlayerSpan): number {
-  return Math.max(computeSpacing(span), midrangeGravitySpacing(span), preZoneMidrangeSpacing(span));
+  return Math.max(computeSpacing(span), midrangeGravitySpacing(span), preZoneMidrangeSpacing(span)) * closeoutFactor(span);
 }
