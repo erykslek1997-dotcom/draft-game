@@ -1344,6 +1344,13 @@ export default function DraftBoard({
               </div>
             </div>
             <p>Which years does he play for you? Cheaper years free caps for the rest.</p>
+            {/* A long career's list pushes the bottom Done off the screen (2026-10-30, Malone's 18
+                stretches: "zbyt nisko przycisk done") — one more on top. */}
+            {options.length > 8 && (
+              <div style={{ maxWidth: 320, marginTop: 12 }}>
+                <Btn onClick={() => setYearsFor(null)}>Done</Btn>
+              </div>
+            )}
           </div>
           <section>
             <H3 note={`${options.length} stretches`}>His stretches</H3>
