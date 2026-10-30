@@ -1621,7 +1621,9 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    d) Ławka za drogo: Bill Russell (12,3 caps) 14 min z ławki; AI przy picku na ławkę powinno liczyć caps na minutę.
    e) Ławkowe PG bez wkładu: McMillan (TAL 59) + Prigioni (TAL 50) po 14 min w jednej drużynie.
    f) Shreveport ostatni (Nash, Edwards, Butler, JJJ, Duncan): Defense 71 — Nash D 21 polowany (hunt 50, switch 46),
-      sim 26-56, rywale 54,6% z gry. Kara za polowanie prawdopodobnie za ostra (Suns Nasha wygrywali 60+); przebudowa
-      polowania jest „po launchu”, ale ten przypadek sprawdzić wcześniej. Do tego Bobby Jones (SPC 9) 26 min na PF obok
+      sim 26-56, rywale 54,6% z gry. Osłona z 28.10 (krok 6.1: obrońca na obwodzie też zmniejsza karę) prawie tu nie
+      działa: próg D-TAL 88 — Duncan daje ~23%, Ward (90, ławka 24 min) ~3%, Butler 68 / Edwards 59 / Sefolosha 87 nic.
+      Pomiar z 28.10 (372 piątki) mówi, że najsłabsze ogniwo prawie nie dodaje do DRtg ponad średnią D-TAL — kara za
+      polowanie powinna być ogólnie dużo mniejsza; sprawdzić w tygodniu 3. Do tego Bobby Jones (SPC 9) 26 min na PF obok
       Duncana, JJJ tylko 22 min.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
