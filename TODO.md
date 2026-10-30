@@ -284,6 +284,8 @@ Każdy punkt ma tydzień i właściciela (C = Claude, E = Eryk). Przed launchem 
 | 📈 | Analytics + monitoring błędów | 5 | Prosta analityka bez ciasteczek (np. Plausible / Umami lub wbudowana u hostingu) i monitoring błędów (Sentry, plan darmowy) z alertem na e-mail. | E (konta), C (podpięcie) |
 | 🔄 | Rollback | 4 | Każdy merge = wersja na hostingu, powrót jednym kliknięciem do poprzedniej; zmiany bazy tylko przez migracje z wersją wstecz; tagi wydań w gicie. | C, E (zna przycisk) |
 
+**Zakładka na limity (Eryk 2026-10-30):** tydzień 3 może zabrać do ~30% limitu tygodnia 4, jeśli kalibracja się nie zepnie; to, czego wtedy nie skończy tydzień 4 (backend), przechodzi na tydzień 5. Tydzień 5 jest lżejszy (brand, domena, testy ludzi to głównie praca Eryka), więc go wchłonie. Kolejność się nie zmienia: najpierw kończymy kalibrację, potem backend. Launch zostaje na 2. tydzień grudnia, zapasem jest tydzień 7.
+
 MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.
 
