@@ -12,7 +12,7 @@ import { STARTER_SLOTS } from '../src/engine/positions';
  * spacing under 55, Overall (mean, the worst tenth, sd), and how far 90+ players fall past their
  * TAL rank. Runs on any commit (the AI rules are switched only where they exist).
  *
- *   NET=0 SLACK=48 npx tsx scripts/measureRosterSense.ts [drafts]
+ *   NET=0 SLACK=48 CAP=105 npx tsx scripts/measureRosterSense.ts [drafts]
  */
 const rules = await import('../src/engine/aiDrafter')
   .then((m: Record<string, unknown>) => m.AI_STAR_RULES as Record<string, number | boolean> | undefined)
@@ -38,7 +38,8 @@ const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
 const five: number[] = [], bench: number[] = [], weak: number[] = [], lowFit: number[] = [], lowSpc: number[] = [], ov: number[] = [], falls: number[] = [];
 const t0 = Date.now();
 for (let d = 0; d < N; d++) {
-  const s = autoFinishDraft(createDraft(false, activeDraftPool, 'Test', 7_000 + d));
+  const fresh = createDraft(false, activeDraftPool, 'Test', 7_000 + d);
+  const s = autoFinishDraft(process.env.CAP ? { ...fresh, capLimit: Number(process.env.CAP) } : fresh);
   const byId = new Map(activeDraftPool.map((p) => [p.id, p]));
   for (const e of s.history) {
     const p = byId.get(e.playerId)!;
@@ -65,7 +66,7 @@ const worstTenth = mean(sorted.slice(0, Math.ceil(sorted.length / 10)));
 const sd = Math.sqrt(mean(ov.map((x) => (x - mean(ov)) ** 2)));
 const fs = [...falls].sort((a, b) => a - b);
 const label = (spacingRules ? `spacing need ${spacingRules.threshold}/${spacingRules.scale} · ` : '') + (rules ? `net ${rules.fallNet ? `on (slack ${rules.fallSlack})` : 'off'} · ball share ${rules.playmakingByBallShare ? 'on' : 'off'}` : 'old AI');
-console.log(`${label} · ${N} drafts · ${((Date.now() - t0) / N / 1000).toFixed(0)} s each`);
+console.log(`${process.env.CAP ? `cap ${process.env.CAP} · ` : ''}${label} · ${N} drafts · ${((Date.now() - t0) / N / 1000).toFixed(0)} s each`);
 console.log(
   `  Overall ${mean(ov).toFixed(2)} (sd ${sd.toFixed(2)}, worst tenth ${worstTenth.toFixed(1)}) · five TAL ${mean(five).toFixed(1)} · bench TAL ${mean(bench).toFixed(1)} · sub-60 at 10+ min ${(100 * mean(weak)).toFixed(0)}% · fit<55 ${(100 * mean(lowFit)).toFixed(0)}% · spacing<55 ${(100 * mean(lowSpc)).toFixed(0)}% · 90+ falls: 90th pct ${fs[Math.floor(fs.length * 0.9)]}, worst ${fs[fs.length - 1]}`,
 );
