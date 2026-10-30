@@ -1317,8 +1317,11 @@ const DEFENSIVE_DEPTH_BONUS_SCALE = 0.5;
  * can fully close the gap without reopening the round-1 talent-first design. */
 /** 2026-10-30, the user ("17% składów ma słaby spacing, nieakceptowane"): the five's spacing and
  * the candidate's read the team spacing value (midrange, the closeout rule), the same number the
- * team score uses, not three-point spacing alone. Mutable only so the measurement can tune it. */
-export const AI_SPACING_RULES = { threshold: 65, scale: 1.1 };
+ * team score uses, not three-point spacing alone, and pulls harder (65/1.1 → 78/4). 6 all-AI drafts
+ * (scripts/measureRosterSense.ts): teams under 55 spacing 16% → 7%, Overall 80.87 → 81.33, the worst
+ * tenth 75.3 → 75.6. A 105 cap instead did not help spacing (16% → 15%). Mutable only so the
+ * measurement can tune it. */
+export const AI_SPACING_RULES = { threshold: 78, scale: 4 };
 
 /**
  * 2026-08-07, offensiveProfile.ts synergy signals — see `NeedContext.hasRimGravityStarter`/
