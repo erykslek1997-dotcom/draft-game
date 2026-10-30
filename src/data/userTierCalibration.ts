@@ -228,6 +228,26 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
 ];
 
 /**
+ * 2026-10-30, the user's second review (the tier page, every player All-star and up): tier changes
+ * that win over the table above. They move a player between bands but do not stretch a band's raw
+ * range (that stays the table's), so nobody else in the band moves. Chris Bosh is new (raw 68).
+ */
+export const USER_TIER_REVIEW_2: ReadonlyArray<readonly [name: string, spanLabel: string, rawAtReview: number, tier: OverallTier]> = [
+  ['Damian Lillard', '2019-21', 109, 'All-NBA'],
+  ['Bam Adebayo', '2019-21', 78, 'All-NBA'],
+  ['Tony Parker', '2011-13', 77, 'All-NBA'],
+  ['Chris Bosh', '2007-09', 68, 'All-NBA'],
+  ['Walt Bellamy', '1961-63', 85, 'Starter'],
+  ['Kiki Vandeweghe', '1982-84', 87, 'Starter'],
+  ['Michael Ray Richardson', '1979-81', 78, 'Starter'],
+  ['Jeff Hornacek', '1990-92', 80, 'Starter'],
+  ['Fat Lever', '1987-89', 88, 'Starter'],
+  ['Domantas Sabonis', '2022-24', 92, 'Starter'],
+  ['Zach LaVine', '2020-22', 88, 'Starter'],
+  ['Ron Harper', '1988-90', 81, 'Starter'],
+];
+
+/**
  * Single windows the user tiered on their own, beyond the one reviewed window per player. The
  * window reads at least the bottom of that tier's band (never above the player's own tier).
  * 2026-09-27: Curry 2016-18 at Legend (the user, on the review page).
@@ -266,7 +286,9 @@ export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   'Paul George': NUDGE,
   'Shai Gilgeous-Alexander': NUDGE,
   'Yao Ming': NUDGE,
-  'Damian Lillard': -NUDGE,
+  // 2026-10-30, the user: "Oscar bliżej Westa", "Gobert all-nba ok, ale 87 też za dużo".
+  'Oscar Robertson': -4,
+  'Rudy Gobert': -NUDGE,
   'Gilbert Arenas': -NUDGE,
   'Victor Oladipo': -NUDGE,
 };

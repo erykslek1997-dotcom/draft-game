@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 
 /**
@@ -39,7 +39,7 @@ interface CalibrationEntry {
 }
 
 const entries = new Map<string, CalibrationEntry>(
-  USER_TIER_CALIBRATION.map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
+  [...USER_TIER_CALIBRATION, ...USER_TIER_REVIEW_2].map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
 );
 
 const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
@@ -56,7 +56,9 @@ const windowTiers = new Map<string, OverallTier>(
 );
 
 const rawRangeByTier = new Map<OverallTier, [number, number]>();
-for (const { rawAtReview, tier } of entries.values()) {
+// Each band's raw range comes from the first table only, so a later tier change moves that player
+// without moving everyone else in the band.
+for (const [, , rawAtReview, tier] of USER_TIER_CALIBRATION) {
   const range = rawRangeByTier.get(tier);
   if (!range) rawRangeByTier.set(tier, [rawAtReview, rawAtReview]);
   else rawRangeByTier.set(tier, [Math.min(range[0], rawAtReview), Math.max(range[1], rawAtReview)]);
@@ -70,6 +72,9 @@ function placeInBand(tier: OverallTier, raw: number, keepInBand = true): number 
   const share = keepInBand ? Math.max(0, Math.min(1, unclamped)) : unclamped;
   return Math.round(lo + share * (hi - lo));
 }
+
+const OTHER_WINDOW_RAW_SHARE = 0.5;
+const RAW_SCALE_TOP = 100;
 
 const windowOrders = new Map<string, readonly string[]>(Object.entries(USER_WINDOW_ORDER).map(([name, order]) => [normalizePlayerName(name), order]));
 
@@ -117,7 +122,13 @@ function calibratedUnordered(
   const value = Math.round(reviewed - (anchor.measure - measure));
   const windowTier = windowTiers.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
   const floor = windowTier ? TIER_BANDS[windowTier]![0] : 0;
-  return Math.max(floor, Math.min(TIER_BANDS[entry.tier]![1], value));
+  // 2026-10-30, the user's review (Jaylen Brown 2021-26 at 87 beside his reviewed 82 on the same
+  // raw talent; Conley 2010-12 at 77, raw 58, beside his reviewed 74): another window reads above
+  // the reviewed one only by what its own raw talent is higher, at half rate, and a window with less
+  // raw talent reads at least that much lower. Raw talent past 100 is compressed (LeBron 161), so
+  // differences up there do not count.
+  const ceiling = Math.round(reviewedTalent(playerName, entry.tier, anchor.rawTal) + OTHER_WINDOW_RAW_SHARE * (Math.min(RAW_SCALE_TOP, rawTal) - Math.min(RAW_SCALE_TOP, anchor.rawTal)));
+  return Math.max(floor, Math.min(TIER_BANDS[entry.tier]![1], ceiling, value));
 }
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below

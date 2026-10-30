@@ -1,6 +1,8 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
+import { realSpan } from './realAdvancedLookup';
+import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
 import { functionalPosition } from './functionalPosition';
@@ -776,10 +778,14 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerN
 const RECOGNIZED_DEFENDER_FLOOR_MIN = 60;
 const RECOGNIZED_DEFENDER_FLOOR_MAX = 88;
 const RECOGNIZED_DEFENDER_FULL_RATE = 0.75;
+/** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
+ * the accolade floor counts — 1 as before, 0 off. */
+export const DTAL_RULES = { recognitionShare: 1, carry: true };
 function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
-  if (rate <= 0) return 0;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
+  const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
+  return RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
 }
 
 const RIM_PROTECTOR_MIN_BLOCKS = 1.6;
@@ -885,8 +891,59 @@ function neighbourAwareFloor(span: PlayerSpan): number {
   return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
 }
 
+/**
+ * 2026-10-30, the user (Karl Malone 1991-93 at 58 beside his 1997-99 at 88, the same real defense):
+ * the accolade floors lift only the seasons a vote happened to land in. A window carries the floor
+ * of another window of the same player when its own real defense (BBRef DBPM, and defensive Win
+ * Shares a full season) is as good — less `CARRY_DISCOUNT`, since no vote confirmed it. Over 40
+ * players read 15-35 lower in such windows (Marion, Rondo, Eddie Jones, Mourning, Horry, Cheeks…).
+ */
+const CARRY_DISCOUNT = 8;
+const CARRY_DBPM_SLACK = 0.2;
+const CARRY_DWS_SLACK = 0.5;
+/** Klay Thompson's All-Defense 2019 came with a DBPM of −1.7, so his post-injury windows (−1.6)
+ * matched it and carried the floor: only a window whose own DBPM is genuinely positive carries. */
+const CARRY_MIN_DBPM = 0.5;
+let windowsByName: Map<string, PlayerSpan[]> | null = null;
+const carryCache = new Map<string, number>();
+function accoladeFloor(span: PlayerSpan): number {
+  return Math.max(recognizedDefenderFloor(span), neighbourAwareFloor(span));
+}
+function dwsPerSeason(span: PlayerSpan): number | null {
+  const r = realSpan(span);
+  return r?.dws != null && r.minutes > 0 ? (r.dws / r.minutes) * 36 * 82 : null;
+}
+function carriedAccoladeFloor(span: PlayerSpan): number {
+  if (!DTAL_RULES.carry) return 0;
+  const hit = carryCache.get(span.id);
+  if (hit !== undefined) return hit;
+  let result = 0;
+  const own = realSpan(span);
+  const ownDws = dwsPerSeason(span);
+  if (own?.dbpm != null && own.dbpm >= CARRY_MIN_DBPM && ownDws != null) {
+    if (!windowsByName) {
+      windowsByName = new Map();
+      for (const p of draftPool) {
+        const k = normalizePlayerName(p.playerName);
+        windowsByName.set(k, [...(windowsByName.get(k) ?? []), p]);
+      }
+    }
+    for (const w of windowsByName.get(normalizePlayerName(span.playerName)) ?? []) {
+      if (w.spanLabel === span.spanLabel) continue;
+      const floor = accoladeFloor(w);
+      if (floor <= 0) continue;
+      const r = realSpan(w);
+      const dws = dwsPerSeason(w);
+      if (r?.dbpm == null || dws == null) continue;
+      if (own.dbpm >= r.dbpm - CARRY_DBPM_SLACK && ownDws >= dws - CARRY_DWS_SLACK) result = Math.max(result, floor - CARRY_DISCOUNT);
+    }
+  }
+  carryCache.set(span.id, result);
+  return result;
+}
+
 function ownWindowDefense(span: PlayerSpan): number {
-  return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span));
+  return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span), carriedAccoladeFloor(span));
 }
 
 /** The D-TAL everything else reads: the base plus its share of a named TAL adjustment

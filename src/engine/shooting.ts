@@ -1,4 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
+import { closeoutFactor } from './closeout';
 import { eraBaseline } from './era';
 import { computeSpacing } from './spacing';
 
@@ -39,5 +40,5 @@ export const PLUS_SHOOTER_THRESHOLD = 0.15;
 export const PLUS_SHOOTER_SPACING = 65;
 
 export function isPlusShooter(span: PlayerSpan): boolean {
-  return computeSpacing(span) >= PLUS_SHOOTER_SPACING;
+  return computeSpacing(span) * closeoutFactor(span) >= PLUS_SHOOTER_SPACING;
 }

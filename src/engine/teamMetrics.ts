@@ -1,6 +1,6 @@
 import type { Team } from './types';
 import { fitScore, type FitScoreResult } from './fit';
-import { offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale } from './scoring';
+import { offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, spacingScore } from './scoring';
 
 export type TeamMetricValues = Record<string, number>;
 
@@ -13,7 +13,9 @@ export function teamMetricValues(team: Team, fit: FitScoreResult = fitScore(team
   return {
     otal: o(offense.otal),
     creation: o(c.creationStructure),
-    spacing: o(offense.spacing),
+    // The team Spacing score itself, the number the summary bars show (2026-10-30, the user: the table
+    // read 50 where the bars read 63 — the offense part on the defense scale under the same name).
+    spacing: Math.round(spacingScore(team)),
     rim: o(c.rimPressureTeam),
     playmaking: o(offense.playmaking),
     selfCreation: o(offense.selfCreation),
