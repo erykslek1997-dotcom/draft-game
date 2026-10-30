@@ -1552,8 +1552,18 @@ registerNamedShift(namedShiftForSpan);
 const rimBonusHolds = new Map<string, OverallTier>(
   RIM_BONUS_TIER_HOLDS.map(([name, spanLabel, tier]) => [`${normalizePlayerName(name)}|${spanLabel}`, tier]),
 );
+/** 2026-10-30, the user's tier review ("Bo Outlaw realnie role player", "Nate McMillan realnie role
+ * player"): players held to a tier in every window, whatever the engine reads. */
+const NAMED_PLAYER_TIER_HOLDS: ReadonlyMap<string, OverallTier> = new Map([
+  [normalizePlayerName('Bo Outlaw'), 'Role Player'],
+  [normalizePlayerName('Nate McMillan'), 'Role Player'],
+]);
 function rimBonusHold(ctx: TierGateContext): OverallTier | undefined {
-  return ctx.playerName && ctx.spanLabel ? rimBonusHolds.get(`${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}`) : undefined;
+  if (!ctx.playerName) return undefined;
+  const player = NAMED_PLAYER_TIER_HOLDS.get(normalizePlayerName(ctx.playerName));
+  const window = ctx.spanLabel ? rimBonusHolds.get(`${normalizePlayerName(ctx.playerName)}|${ctx.spanLabel}`) : undefined;
+  if (player && window) return tierRank(player) < tierRank(window) ? player : window;
+  return player ?? window;
 }
 
 /** 2026-09-30, the user ("GOAT - TAL 99+"): the TAL scale tops out at 99 on screen — a GOAT-tier
