@@ -73,19 +73,26 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     const height = getHeightInches(span.playerName);
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
-  return Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), NAMED_SLOT_CAPS[normalizePlayerName(span.playerName)]?.[slot] ?? 1);
+  const name = normalizePlayerName(span.playerName);
+  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
 }
 
 /** 2026-10-29, the user (Porziņģis starting at PF beside Embiid: "a 7'4\" PF makes no real sense"):
  * named players who play a slot at most at the given score, whatever their career says. */
 const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   'kristaps porzingis': { PF: 0.6 },
-  // The user (export 1497221832, "Rodman na SG i SF??"): a four from his Pistons years on — the
-  // wing at most as a stretch, never the two.
-  'dennis rodman': { SG: 0, SF: 0.6 },
+  // The user (export 1497221832, "Rodman na SG i SF??"; 2026-10-30: "PF/C zamiast PF/SF"): a four
+  // who backs up the five, never a wing.
+  'dennis rodman': { SG: 0, SF: 0 },
   // The user (Jason Collins, TAL 58, the four's 13 minutes beside Giannis while Ben Wallace sat:
   // "zablokuj Collinsa na PF"): a centre only.
   'jason collins': { PF: 0 },
+};
+
+/** 2026-10-30, the user ("Rodman ręcznie przypisany PF/C zamiast PF/SF"): named players who play a
+ * slot at least at the given score, whatever their career data says. */
+const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
+  'dennis rodman': { C: 0.95 },
 };
 
 /**
