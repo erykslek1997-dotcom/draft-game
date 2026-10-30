@@ -17,6 +17,13 @@ import { STARTER_SLOTS } from '../src/engine/positions';
 const rules = await import('../src/engine/aiDrafter')
   .then((m: Record<string, unknown>) => m.AI_STAR_RULES as Record<string, number | boolean> | undefined)
   .catch(() => undefined);
+const spacingRules = await import('../src/engine/aiDrafter')
+  .then((m: Record<string, unknown>) => m.AI_SPACING_RULES as Record<string, number> | undefined)
+  .catch(() => undefined);
+if (spacingRules) {
+  if (process.env.SPT) spacingRules.threshold = Number(process.env.SPT);
+  if (process.env.SPS) spacingRules.scale = Number(process.env.SPS);
+}
 if (rules) {
   if (process.env.NET) rules.fallNet = process.env.NET !== '0';
   if (process.env.SLACK) rules.fallSlack = Number(process.env.SLACK);
@@ -57,7 +64,7 @@ const sorted = [...ov].sort((a, b) => a - b);
 const worstTenth = mean(sorted.slice(0, Math.ceil(sorted.length / 10)));
 const sd = Math.sqrt(mean(ov.map((x) => (x - mean(ov)) ** 2)));
 const fs = [...falls].sort((a, b) => a - b);
-const label = rules ? `net ${rules.fallNet ? `on (slack ${rules.fallSlack})` : 'off'} · ball share ${rules.playmakingByBallShare ? 'on' : 'off'}` : 'old AI';
+const label = (spacingRules ? `spacing need ${spacingRules.threshold}/${spacingRules.scale} · ` : '') + (rules ? `net ${rules.fallNet ? `on (slack ${rules.fallSlack})` : 'off'} · ball share ${rules.playmakingByBallShare ? 'on' : 'off'}` : 'old AI');
 console.log(`${label} · ${N} drafts · ${((Date.now() - t0) / N / 1000).toFixed(0)} s each`);
 console.log(
   `  Overall ${mean(ov).toFixed(2)} (sd ${sd.toFixed(2)}, worst tenth ${worstTenth.toFixed(1)}) · five TAL ${mean(five).toFixed(1)} · bench TAL ${mean(bench).toFixed(1)} · sub-60 at 10+ min ${(100 * mean(weak)).toFixed(0)}% · fit<55 ${(100 * mean(lowFit)).toFixed(0)}% · spacing<55 ${(100 * mean(lowSpc)).toFixed(0)}% · 90+ falls: 90th pct ${fs[Math.floor(fs.length * 0.9)]}, worst ${fs[fs.length - 1]}`,

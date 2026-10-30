@@ -35,6 +35,7 @@ import { hashSeed, mixSeed } from './rng';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
 import { ballHandlerCost } from './ballHandling';
+import { teamSpacingValue } from './midrangeGravity';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -722,7 +723,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     avgSpacing:
       starterPlayers.length === 0
         ? 50
-        : starterPlayers.reduce((sum, p) => sum + computeSpacing(p), 0) / starterPlayers.length,
+        : starterPlayers.reduce((sum, p) => sum + teamSpacingValue(p), 0) / starterPlayers.length,
     // 2026-10-02: a rim protector by the numbers (rimProtection.ts), not by the role label.
     lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))),
     perimeterDefenderStarterCount: starterPlayers.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)).length,
@@ -1314,8 +1315,10 @@ const DEFENSIVE_DEPTH_BONUS_SCALE = 0.5;
  * bonus at zero for a team's first 3 picks (pure best-talent-available, by design), and those
  * early picks are exactly the ones most likely to end up starting, so no draft-time need signal
  * can fully close the gap without reopening the round-1 talent-first design. */
-const SPACING_DEPTH_THRESHOLD = 65;
-const SPACING_DEPTH_BONUS_SCALE = 1.1;
+/** 2026-10-30, the user ("17% składów ma słaby spacing, nieakceptowane"): the five's spacing and
+ * the candidate's read the team spacing value (midrange, the closeout rule), the same number the
+ * team score uses, not three-point spacing alone. Mutable only so the measurement can tune it. */
+export const AI_SPACING_RULES = { threshold: 65, scale: 1.1 };
 
 /**
  * 2026-08-07, offensiveProfile.ts synergy signals — see `NeedContext.hasRimGravityStarter`/
@@ -2167,9 +2170,9 @@ export function pickForAi(
     }
     need += starterUpgradeBonus(p, needs);
     if (fillsHole(p)) need += HOLE_URGENCY_NEED_BONUS;
-    if (needs.avgSpacing < SPACING_DEPTH_THRESHOLD) {
-      const deficitRatio = (SPACING_DEPTH_THRESHOLD - needs.avgSpacing) / SPACING_DEPTH_THRESHOLD;
-      need += deficitRatio * (computeSpacing(p) / 100) * SPACING_DEPTH_BONUS_SCALE;
+    if (needs.avgSpacing < AI_SPACING_RULES.threshold) {
+      const deficitRatio = (AI_SPACING_RULES.threshold - needs.avgSpacing) / AI_SPACING_RULES.threshold;
+      need += deficitRatio * (teamSpacingValue(p) / 100) * AI_SPACING_RULES.scale;
     }
     if (needs.lacksRimProtection && isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) need += 0.6;
     // A real contender stacks 2-3 perimeter defenders, not one — taper the bonus over the first
