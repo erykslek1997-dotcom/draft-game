@@ -1553,10 +1553,18 @@ const rimBonusHolds = new Map<string, OverallTier>(
   RIM_BONUS_TIER_HOLDS.map(([name, spanLabel, tier]) => [`${normalizePlayerName(name)}|${spanLabel}`, tier]),
 );
 /** 2026-10-30, the user's tier review ("Bo Outlaw realnie role player", "Nate McMillan realnie role
- * player"): players held to a tier in every window, whatever the engine reads. */
+ * player", then the review page): players held to a tier in every window, whatever the engine reads. */
 const NAMED_PLAYER_TIER_HOLDS: ReadonlyMap<string, OverallTier> = new Map([
   [normalizePlayerName('Bo Outlaw'), 'Role Player'],
   [normalizePlayerName('Nate McMillan'), 'Role Player'],
+  // The same review page: All-star by the engine, a starter by the user.
+  ...[
+    'Dennis Johnson', 'Amen Thompson', 'Cliff Hagan', 'Raja Bell', 'Shane Battier', 'Andrew Toney', 'Arvydas Sabonis',
+    'Hassan Whiteside', 'Bob Cousy', 'Vlade Divac', 'Lamar Odom', 'Eric Bledsoe', 'Andrew Bogut', 'Nenê', 'Michael Porter Jr.',
+    'Dolph Schayes', 'Byron Scott', 'Andre Miller', 'DeAndre Jordan', 'Neil Johnston', 'Dan Roundfield', 'Nic Claxton',
+    'Jack Twyman', 'Michael Adams', 'Tyson Chandler', 'Dennis Rodman', 'Ed Macauley', 'Clint Capela', 'Mark Eaton',
+    'Gus Williams', 'Danny Ainge', 'Dale Ellis', 'Jason Richardson', 'Rod Strickland',
+  ].map((name) => [normalizePlayerName(name), 'Starter' as OverallTier] as const),
 ]);
 function rimBonusHold(ctx: TierGateContext): OverallTier | undefined {
   if (!ctx.playerName) return undefined;
