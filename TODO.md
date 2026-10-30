@@ -1631,4 +1631,7 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    mobilnością byłby niegrywalny w obronie na obwodzie. Pomysł: składnik „mobilność / zasięg krycia” dla C/PF z ery przed
    2001 (rozmiar, przechwyty, faule, dane o obronie pick-and-roll gdzie są) obniża wartość czystego obrońcy kosza w
    obronie zespołowej (switchability, hunt) — nie samo D-TAL. Zmierzyć na sędziach razem z punktem 2 (rim protectorzy).
+   Zakres (Eryk): dotyczy większości centrów starszej daty, nie tylko Eatona — wyjątkiem są pojedynczy wyjątkowo atletyczni
+   (do ustalenia z danymi: np. Hakeem, Robinson, Russell, Garnett-typy; kandydaci do sprawdzenia: Ewing, Mutombo, Mourning,
+   Thurmond). Reguła ogólna dla ery, z listą wyjątków potwierdzoną przez Eryka, nie ręczne kary dla pojedynczych graczy.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
