@@ -1606,4 +1606,9 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    Płynne progi zamiast klifów: podłoga "elitarne dane" (2 źródła >= +2,0) i carry (DBPM -0,2) — Gerald Wallace 2006-08 64 między 90 a 85; Manu limit 85.
 3. Lowry obrona 58 (szarże poza danymi) — ręczny dodatek jak Tucker (~65).
 4. ~40 okien spoza tabeli stoi 8+ ponad surowym talentem (Kemp 1994-96 76 przy 66, Dandridge 79 przy 61, Bosh) — znaleźć starą regułę.
+6. Atak: „ratunek posiadania” (Eryk 2026-10-30, export 794617224 — CP3 + Edwards + KG A-, Offense 69): kilku graczy,
+   którzy umieją sami wykreować rzut, podnosi podłogę ataku (brak przestojów), nawet przy niskim suficie. Dziś jest tylko
+   średnia `selfCreation` (tam 65 — KG jako Versatile Big liczy się nisko) i `creationStructure` (98). Pomysł: składnik
+   „ilu twórców na boisku w każdej minucie” (próg self-creation/O-TAL, KG się łapie), 3 z 5 = premia, 1 = kara. Zmierzyć
+   na prawdziwych drużynach (SRS) i symulacji przed wprowadzeniem; razem z przebudową ataku (punkt 1).
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
