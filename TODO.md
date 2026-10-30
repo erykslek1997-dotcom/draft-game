@@ -1605,6 +1605,10 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    wyłączając każdą), zduplikowane progi/stałe, stare skrypty pomiarowe bez użycia, przerośnięte komentarze-historie.
    Dowód: zrzut TAL / O / D / ocen drużyn dla całej puli i seedowanych lig identyczny przed i po + test:fast zielony.
    W raporcie: ile linii/plików ubyło i co usunięte.
+   Korekty (uzgodnione z Erykiem): (a) duże sprzątanie raz teraz, potem przy każdej rundzie tylko to, co ta runda uczyniła
+   zbędnym; (b) komentarze skracać do jednego zdania „co i dlaczego” — decyzje Eryka zostają, wylatuje historia zmian;
+   (c) usunięcie nazwanej poprawki, które rusza czyjś TAL choćby o 1-2 pkt, to ZMIANA, nie sprzątanie — osobny commit
+   i lista w raporcie.
 1. Atak: wzór przecenia strzelców (LaVine 100 przy OBPM +4,3, Reggie, Mullin, Ray 100, Dantley 99, Vince 95)
    i nie docenia rozgrywających atakujących kosz (Maxey 73 przy +4,2, Parker, Haliburton, Morant, Rose).
    Dodatek za atak kosza ma limit 5 i liczy się z wykończenia — przebudować (FT, penetracja), skalibrować do OBPM, zmierzyć na SRS/sim.
