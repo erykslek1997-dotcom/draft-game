@@ -73,7 +73,9 @@ function placeInBand(tier: OverallTier, raw: number, keepInBand = true): number 
   return Math.round(lo + share * (hi - lo));
 }
 
-const OTHER_WINDOW_RAW_SHARE = 0.5;
+/** Half rate up; a quarter down (the user on the first cut: Kirilenko 2002-04 74 "bardziej 80-81",
+ * Danny Green a bench warmer, Penny and Conley underrated). */
+const windowRawShare = (gap: number) => (gap > 0 ? 0.5 : 0.25);
 const RAW_SCALE_TOP = 100;
 
 const windowOrders = new Map<string, readonly string[]>(Object.entries(USER_WINDOW_ORDER).map(([name, order]) => [normalizePlayerName(name), order]));
@@ -125,9 +127,9 @@ function calibratedUnordered(
   // 2026-10-30, the user's review (Jaylen Brown 2021-26 at 87 beside his reviewed 82 on the same
   // raw talent; Conley 2010-12 at 77, raw 58, beside his reviewed 74): another window reads above
   // the reviewed one only by what its own raw talent is higher, at half rate, and a window with less
-  // raw talent reads at least that much lower. Raw talent past 100 is compressed (LeBron 161), so
+  // raw talent reads lower, at a quarter rate. Raw talent past 100 is compressed (LeBron 161), so
   // differences up there do not count.
-  const ceiling = Math.round(reviewedTalent(playerName, entry.tier, anchor.rawTal) + OTHER_WINDOW_RAW_SHARE * (Math.min(RAW_SCALE_TOP, rawTal) - Math.min(RAW_SCALE_TOP, anchor.rawTal)));
+  const ceiling = Math.round(reviewedTalent(playerName, entry.tier, anchor.rawTal) + windowRawShare(rawTal - anchor.rawTal) * (Math.min(RAW_SCALE_TOP, rawTal) - Math.min(RAW_SCALE_TOP, anchor.rawTal)));
   return Math.max(floor, Math.min(TIER_BANDS[entry.tier]![1], ceiling, value));
 }
 
