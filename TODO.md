@@ -1578,3 +1578,13 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
   `salaries.json`; Shaq przypięty na 1999-01; wyjątek Skilesa usunięty; stackowanie obrony
   Nash/Kerr/Schrempf zaadresowane (`886ad0b`); dwa zgłoszenia AI draft-value okazały się nie-błędami
   (spany tego samego gracza znikają razem; tańszy span Shaqa to celowy wybór).
+
+## Kalibracje po drugim przeglądzie tierów (2026-10-30) — DO ZROBIENIA
+1. Atak: wzór przecenia strzelców (LaVine 100 przy OBPM +4,3, Reggie, Mullin, Ray 100, Dantley 99, Vince 95)
+   i nie docenia rozgrywających atakujących kosz (Maxey 73 przy +4,2, Parker, Haliburton, Morant, Rose).
+   Dodatek za atak kosza ma limit 5 i liczy się z wykończenia — przebudować (FT, penetracja), skalibrować do OBPM, zmierzyć na SRS/sim.
+2. Obrona: podłoga obrońców kosza (Capela 82 przy DBPM ~0, Claxton) — wymagać DBPM albo średniej wszystkich źródeł.
+   Płynne progi zamiast klifów: podłoga "elitarne dane" (2 źródła >= +2,0) i carry (DBPM -0,2) — Gerald Wallace 2006-08 64 między 90 a 85; Manu limit 85.
+3. Lowry obrona 58 (szarże poza danymi) — ręczny dodatek jak Tucker (~65).
+4. ~40 okien spoza tabeli stoi 8+ ponad surowym talentem (Kemp 1994-96 76 przy 66, Dandridge 79 przy 61, Bosh) — znaleźć starą regułę.
+5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
