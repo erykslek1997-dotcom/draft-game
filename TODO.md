@@ -1634,4 +1634,12 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    Zakres (Eryk): dotyczy większości centrów starszej daty, nie tylko Eatona — wyjątkiem są pojedynczy wyjątkowo atletyczni
    (do ustalenia z danymi: np. Hakeem, Robinson, Russell, Garnett-typy; kandydaci do sprawdzenia: Ewing, Mutombo, Mourning,
    Thurmond). Reguła ogólna dla ery, z listą wyjątków potwierdzoną przez Eryka, nie ręczne kary dla pojedynczych graczy.
+   Metodyka (zaakceptowana przez Eryka 2026-10-30) — SRS starych drużyn tego nie potwierdzi (grały na starych zasadach),
+   więc: (1) dowód na danych 2014-26 (tracking/playtypes: częstość switchy, PPP w obronie PnR, FG% rywali na obwodzie):
+   czy wolni wysocy tracą minuty w PO, mają gorszą obronę na boisku niż ich D-TAL, są polowani — siła efektu = siła kary;
+   brak efektu = brak reguły ogólnej (tylko skrajne przypadki: Eaton, Bol). (2) wskaźnik mobilności z boxa i ciała
+   (STL/36, faule, waga, wzrost, BLK vs faule, DBPM) uczony na współczesnych wysokich (musi odróżnić Bama/Mobleya od wolnych,
+   i Goberta od Eatona), dopiero potem na starą erę. (3) lista starych C posortowana wg wskaźnika z proponowanym progiem
+   wyjątków do potwierdzenia przez Eryka; kara w obronie zespołowej (switch/hunt), nie w D-TAL; SRS może spaść najwyżej
+   minimalnie — inaczej kara idzie do symulacji zamiast do oceny.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
