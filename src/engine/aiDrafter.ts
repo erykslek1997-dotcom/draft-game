@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { offenseRating } from './ratingScale';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { isRealRimProtector } from './rimProtection';
@@ -495,7 +496,13 @@ function secondBallStarPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
  * already on the roster — one defensive specialist is a role, a bench of them is a hole.
  */
 const NO_OFFENSE = { otal: 45, perPlayer: 6, max: 14 };
+const NO_OFF_CARD = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.NO_OFF_CARD;
 function noOffenseStackPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (NO_OFF_CARD) {
+    const none = (x: PlayerSpan) => offenseRating(x) < NO_OFFENSE.otal;
+    if (!none(p)) return 0;
+    return Math.min(NO_OFFENSE.max, Number(NO_OFF_CARD) + roster.filter(none).length * NO_OFFENSE.perPlayer);
+  }
   if (computeOffensiveTalent(p) >= NO_OFFENSE.otal) return 0;
   const already = roster.filter((x) => computeOffensiveTalent(x) < NO_OFFENSE.otal).length;
   return Math.min(NO_OFFENSE.max, already * NO_OFFENSE.perPlayer);
