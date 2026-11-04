@@ -228,6 +228,10 @@ const MAX_ANCHOR_DAMPENING = 0.35;
  * for a Point of Attack / Wing Stopper / Chaser; the stronger of the two covers gives its full
  * share, the other half of its own, together at most `MAX_COVER_DAMPENING`.
  */
+/** 2026-11-04, week 3 (the user: Shreveport's Defense 71 with Nash the only weak defender; 372 real
+ * five-man units show the weakest link adds next to nothing to DRtg beyond the five's mean D-TAL):
+ * how much of the hunting penalty counts. */
+export const HUNT_RULES = { scale: 0.25 };
 const PERIMETER_COVER_ROLES = ['Point of Attack', 'Wing Stopper', 'Chaser'];
 const MAX_COVER_DAMPENING = 0.55;
 
@@ -289,6 +293,8 @@ export interface DefensiveHuntabilityOffender {
 
 export interface DefensiveHuntabilityResult {
   penalty: number;
+  /** The full penalty before `HUNT_RULES.scale`, for the prose that names who gets hunted. */
+  exposurePenalty: number;
   resistance: number;
   /** The Hunt resistance shown to the user (team analysis), graded by the weakest starter's headroom. */
   displayResistance: number;
@@ -378,8 +384,8 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     MAX_HUNTABILITY_PENALTY,
     (shortfallMinutes / (NORMALIZATION_DTAL * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
   );
-  const penalty =
-    rawPenalty * anchorDampening(team, minutesByPlayer);
+  const exposure = rawPenalty * anchorDampening(team, minutesByPlayer);
+  const penalty = exposure * HUNT_RULES.scale;
   // 2026-10-02, the user (Hunt resistance 100 for 30% of teams): the shown reading also grades how
   // close the five's weakest defender sits to his position's huntable bar, so a five with nobody
   // to hunt still reads 85 when one starter is right at the bar and 100 only with real headroom.
@@ -396,6 +402,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   const headroomPenalty = (HEADROOM_NEUTRAL - headroom) * HEADROOM_DEFENSE_POINTS;
   return {
     penalty: penalty + headroomPenalty,
+    exposurePenalty: exposure + headroomPenalty,
     resistance,
     displayResistance: Math.max(0, Math.round(resistance - (1 - headroom) * DISPLAY_HEADROOM_SPAN)),
     targetableMinutes: offenders.reduce((sum, offender) => sum + offender.minutes, 0),

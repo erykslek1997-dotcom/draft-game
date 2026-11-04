@@ -291,7 +291,10 @@ check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsel
 // starter average, 47), so this roster's own penalty is smaller and its Defense reads a bit
 // higher. Re-measured directly (71), not guessed; still well short of an elite reading, and
 // Brunson/Barros's real weak-link minutes (see the check above) are still fully charged.
-check(threeLayerDefense >= 65 && threeLayerDefense <= 76, 'Jordan plus the two-anchor backline lifts Defense without hiding the real Brunson/Barros weak-link minutes');
+// 2026-11-04: band 65-76 -> 70-82 after the hunting penalty went to a quarter (`HUNT_RULES`, 372 real
+// five-man units: the weakest link adds next to nothing beyond the five's mean D-TAL). Re-measured
+// directly (78); the weak-link minutes above are still charged, and it is still short of elite.
+check(threeLayerDefense >= 70 && threeLayerDefense <= 82, 'Jordan plus the two-anchor backline lifts Defense without hiding the real Brunson/Barros weak-link minutes');
 // 2026-09-12: band lowered 95-98 -> 94-98 after `rotation.ts`'s new `consolidateOffPositionFillers`
 // pass (user-reported live: a versatile bench player's limited distinct-slot budget was getting
 // spent on a worse fit before a closer one was even discovered) redirected 4 of Dana Barros's 6
