@@ -1677,11 +1677,12 @@ export const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<s
 /**
  * 2026-11-04, the user ("jakby uznać wszystkie spany do 5 TAL różnicy za równe temu w peaku?
  * Ewentualnie delikatne bonusy jeśli zespół stać na to"): a player's windows within `within` TAL of
- * his best one count as equal but for the price; the better one keeps `keepComfortable` of its TAL
+ * his best one (`withinBelowStar` when that best is under `starPeak`: five points is a tier for a role
+ * player) count as equal but for the price; the better one keeps `keepComfortable` of its TAL
  * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
  * spends what cap is left on the better windows.
  */
-const WINDOW_EQUAL = { within: 5, keepComfortable: 0.5, keepTight: 0.2 };
+const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
   const grouped = new Map<string, T[]>();
@@ -1702,7 +1703,8 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
   return [...grouped.values()].map((entries) => {
     const bestDraftEntry = entries[0];
     const peak = Math.max(...entries.map((entry) => entry.talent));
-    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= WINDOW_EQUAL.within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    const within = peak >= WINDOW_EQUAL.starPeak ? WINDOW_EQUAL.within : WINDOW_EQUAL.withinBelowStar;
+    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
     const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
