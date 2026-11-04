@@ -1,4 +1,5 @@
 import { spanAwards } from '../engine/spanAwards';
+import { offenseRatingGrade, defenseRatingGrade } from '../engine/ratingScale';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
@@ -8,7 +9,6 @@ import { TEAM_COUNT, ROUNDS, currentTeamIndex, dailyAlternative, draftBombSpan, 
 import { dailyRuleWords } from '../dailyDraftDay';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
-import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
 import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
@@ -17,8 +17,6 @@ import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
 import {
-  offensiveGrade,
-  defensiveGradeForSpan,
   spacingGrade,
   durabilityGrade,
   overallTierForSpan,
@@ -1120,8 +1118,8 @@ export default function DraftBoard({
   const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
   const gradeTone = (v: string) => (v === 'S' ? 'top' : v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   const gradesOf = (sp: PlayerSpan) => ({
-    off: offensiveGrade(computeOffensiveTalent(sp), computeUncappedOffensiveTalent(sp)),
-    def: defensiveGradeForSpan(sp, computeDefensiveTalent(sp)),
+    off: offenseRatingGrade(sp),
+    def: defenseRatingGrade(sp),
     tp: spacingUngraded(sp) ? '—' : spacingGrade(computeSpacing(sp), sp),
     dur: durabilityGrade(computeDurability(sp)),
   });
@@ -1286,7 +1284,6 @@ export default function DraftBoard({
       const current = chosenHumanRoster.find((pl) => normalizePlayerName(pl.playerName) === teamYears.key) ?? teamYears.draftedSpan;
       const options = [...yearsAllowedToday(teamYears, current.id)].sort((x, y) => x.spanLabel.localeCompare(y.spanLabel));
       const peakId = [...options].sort((x, y) => effectiveTalent(y) - effectiveTalent(x))[0]?.id;
-      const scouted = scoutedPlayers.has(teamYears.playerName);
       main = (
         <>
           <div className="prompt">
@@ -1317,7 +1314,9 @@ export default function DraftBoard({
                 return {
                   span: o,
                   tier: displayedOverallTier(o),
-                  grades: scouted ? `${g.off} · ${g.def}` : null,
+                  // 2026-11-04, the user ("fajnie jakbym tu widział OFF DEF 3PT"): he is on your team,
+                  // so his grades are no longer a scouting secret here.
+                  grades: `${g.off} · ${g.def} · ${g.tp} · ${g.dur}`,
                   peak: o.id === peakId,
                   current: o.id === current.id,
                   action:
@@ -1601,7 +1600,7 @@ export default function DraftBoard({
               return {
                 span: sp,
                 tier: displayedOverallTier(sp),
-                grades: scouted ? `${g.off} · ${g.def}` : null,
+                grades: scouted ? `${g.off} · ${g.def} · ${g.tp} · ${g.dur}` : null,
                 peak: sp.id === best.id,
                 action: { label: 'Draft', disabled: !legal, title: draftButtonTitle(state, sp.id, canPick, currentTeam), onClick: () => onPick(sp.id) },
               };
