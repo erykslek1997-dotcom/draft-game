@@ -1874,6 +1874,10 @@ export const AI_ROLE_RULES = {
   ballSecondUsage: 0.25,
   ballCostPoints: 0.8,
   passFirstPoints: 0.4,
+  /** 2026-11-04, the user (Tucson: Alvin Robertson, spacing 12, beside Nash, McHale and Duncan):
+   * two starting bigs who don't shoot need a perimeter that does. */
+  nonShootingBig: 36,
+  perimeterSpacingPoints: 1.2,
 };
 function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: PlayerSpan, capLimit: number) {
   const rotation = autoAssignRotation(completed);
@@ -1902,7 +1906,12 @@ function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: Pl
       ballFit += AI_ROLE_RULES.passFirstPoints * clamp01(((playmakingScoreForPlayer(p) ?? 0) - 80) / 15);
     }
   }
-  return { benchCost, starGap, ballFit };
+  let perimeterSpacing = 0;
+  const nonShootingBigs = five.filter((x) => isBig(x) && teamSpacingValue(x) < AI_ROLE_RULES.nonShootingBig).length;
+  if (nonShootingBigs >= 2 && !isBig(p) && starterIds.has(p.id)) {
+    perimeterSpacing = AI_ROLE_RULES.perimeterSpacingPoints * Math.max(-0.5, Math.min(1, (teamSpacingValue(p) - 40) / 40));
+  }
+  return { benchCost, starGap, ballFit: ballFit + perimeterSpacing };
 }
 
 /** How well a candidate fills the five's biggest gap, 0..1. */

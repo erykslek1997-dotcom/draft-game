@@ -2,21 +2,36 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, computeUncappedOffensiveTalent } from './talent';
 import { effectiveTalent, type Grade } from './grades';
+import { realSpan } from './realAdvancedLookup';
 
 /**
  * 2026-11-04, the user ("lepszy niż 89% i tylko 73, no to dziwnie wygląda"; "jedna skala atak +
  * obrona i miękki sufit", "tylko rotacja"): the offense and defense the player sees, on one scale.
  * A window's number is its place among rotation players (TAL 55+) at its own position, mapped onto
- * fixed anchors (the user's pick, the compromise): 60 the median rotation player, 75 the top quarter,
+ * fixed anchors (the user's pick, the compromise; the bottom reworked below): 60 the median rotation player, 75 the top quarter,
  * 85 the top tenth, 92 the top 2.5%, and a soft top where only the best ever reach 97-100. The engine's own O-TAL / D-TAL are untouched; this is
  * what cards, boards and exports show.
  */
 const ROTATION_TAL = 55;
-const ANCHORS: readonly [percentile: number, rating: number][] = [
-  [0, 25], [0.25, 45], [0.5, 60], [0.75, 75], [0.9, 85], [0.975, 92], [0.995, 97], [1, 100],
-];
+/**
+ * 2026-11-04, the user (George Hill 2010-12, OBPM +0.8, read 40: "+1 czy 0,0 znaczy że są po prostu
+ * średniakami, wynik 40 sugeruje że są słabi"; "najgorszy ustaw jako 20"): rotation players are
+ * mostly better than the league on offense, so a league-average scorer sat at the 12-18th percentile
+ * and read ~38, while a league-average defender read ~54. Below the median the scale now runs from
+ * 20 (the worst rotation window at the position) through 50 at the league average — the windows of
+ * that side's BPM within half a point of zero (`LEAGUE_AVERAGE_BAND`) — to 60 at the median; the top
+ * keeps its anchors. The same number means the same on both sides.
+ */
+const UPPER_ANCHORS: readonly [percentile: number, rating: number][] = [[0.75, 75], [0.9, 85], [0.975, 92], [0.995, 97], [1, 100]];
+const FLOOR_RATING = 20;
+const LEAGUE_AVERAGE_RATING = 50;
+const LEAGUE_AVERAGE_BAND = 0.5;
+const LEAGUE_AVERAGE_MIN_MINUTES = 2000;
+/** Where the league average may sit, so a thin position cannot bend the scale. */
+const LEAGUE_AVERAGE_PERCENTILE_RANGE = [0.05, 0.7] as const;
 /** The median rotation player at any position. */
 export const RATING_MEDIAN = 60;
+
 /** Letters on the same scale, so a number and its letter always agree. */
 const LETTERS: readonly [rating: number, grade: Exclude<Grade, 'S'>][] = [
   [96, 'A+'], [91, 'A'], [87, 'A-'], [83, 'B+'], [78, 'B'], [73, 'B-'], [66, 'C+'], [58, 'C'], [50, 'C-'], [44, 'D+'], [38, 'D'], [32, 'D-'], [0, 'F'],
@@ -26,20 +41,38 @@ const S_RATING = 98.5;
 
 type Side = 'offense' | 'defense';
 const sideValue = (span: PlayerSpan, side: Side) => (side === 'offense' ? computeUncappedOffensiveTalent(span) : computeDefensiveTalent(span));
-let pools: Map<string, number[]> | null = null;
-function poolFor(position: Position, side: Side): number[] {
+const sideBpm = (span: PlayerSpan, side: Side): number | null => {
+  const real = realSpan(span);
+  if (real?.bpm == null || real.dbpm == null || real.minutes < LEAGUE_AVERAGE_MIN_MINUTES) return null;
+  return side === 'offense' ? real.bpm - real.dbpm : real.dbpm;
+};
+let pools: Map<string, { values: number[]; anchors: [number, number][] }> | null = null;
+function poolFor(position: Position, side: Side): { values: number[]; anchors: [number, number][] } {
   if (!pools) {
-    pools = new Map();
+    const values = new Map<string, number[]>();
+    const average = new Map<string, number[]>();
     for (const span of draftPool) {
       if (effectiveTalent(span) < ROTATION_TAL) continue;
       for (const s of ['offense', 'defense'] as const) {
         const key = `${span.primaryPosition}|${s}`;
-        pools.set(key, [...(pools.get(key) ?? []), sideValue(span, s)]);
+        const v = sideValue(span, s);
+        values.set(key, [...(values.get(key) ?? []), v]);
+        const bpm = sideBpm(span, s);
+        if (bpm !== null && Math.abs(bpm) < LEAGUE_AVERAGE_BAND) average.set(key, [...(average.get(key) ?? []), v]);
       }
     }
-    for (const list of pools.values()) list.sort((a, b) => a - b);
+    pools = new Map();
+    for (const [key, list] of values) {
+      list.sort((a, b) => a - b);
+      const near = (average.get(key) ?? []).sort((a, b) => a - b);
+      const raw = near.length ? percentileOf(list, near[Math.floor(near.length / 2)]) : 0.5;
+      const avg = Math.min(LEAGUE_AVERAGE_PERCENTILE_RANGE[1], Math.max(LEAGUE_AVERAGE_PERCENTILE_RANGE[0], raw));
+      const anchors: [number, number][] = [[0, FLOOR_RATING], [avg, LEAGUE_AVERAGE_RATING]];
+      if (avg < 0.5) anchors.push([0.5, RATING_MEDIAN]);
+      pools.set(key, { values: list, anchors: [...anchors, ...UPPER_ANCHORS] });
+    }
   }
-  return pools.get(`${position}|${side}`) ?? [];
+  return pools.get(`${position}|${side}`) ?? { values: [], anchors: [[0, FLOOR_RATING], [0.5, RATING_MEDIAN], ...UPPER_ANCHORS] };
 }
 
 function percentileOf(values: number[], value: number): number {
@@ -51,11 +84,11 @@ function percentileOf(values: number[], value: number): number {
   return (lo + hi) / 2 / values.length;
 }
 
-function ratingAt(percentile: number): number {
-  for (let i = 1; i < ANCHORS.length; i++) {
-    const [p1, r1] = ANCHORS[i];
+function ratingAt(percentile: number, anchors: readonly [number, number][]): number {
+  for (let i = 1; i < anchors.length; i++) {
+    const [p1, r1] = anchors[i];
     if (percentile <= p1) {
-      const [p0, r0] = ANCHORS[i - 1];
+      const [p0, r0] = anchors[i - 1];
       return r0 + ((percentile - p0) / (p1 - p0)) * (r1 - r0);
     }
   }
@@ -67,7 +100,8 @@ function rating(span: PlayerSpan, side: Side): number {
   const key = `${span.id}|${side}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
-  const result = Math.round(ratingAt(percentileOf(poolFor(span.primaryPosition, side), sideValue(span, side))));
+  const pool = poolFor(span.primaryPosition, side);
+  const result = Math.round(ratingAt(percentileOf(pool.values, sideValue(span, side)), pool.anchors));
   cache.set(key, result);
   return result;
 }
