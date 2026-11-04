@@ -73,7 +73,21 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
   const name = normalizePlayerName(span.playerName);
-  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, shootingPointAtTwo(span, slot), Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+}
+
+/**
+ * 2026-11-04, the user's round-4 review (Chauncey Billups 2004-06, TAL 81, off the bench behind Kyle
+ * Lowry while Wesley Person, 70, started at the two: "I po Billups na ławkę?"): a point guard with a
+ * two's size who shoots from three plays the two well enough (`SHOOTING_POINT.score`). Five players:
+ * Billups, Kidd, Nash, Gilgeous-Alexander 2019-21, Damon Jones; a real organiser still runs the point
+ * (`comboGuardAtTwo`, rotation.ts).
+ */
+const SHOOTING_POINT = { minInches: 75, threePA: 3.5, threePct: 0.36, score: 0.9 };
+function shootingPointAtTwo(span: PlayerSpan, slot: Position): number {
+  if (slot !== 'SG' || span.primaryPosition !== 'PG') return 0;
+  if ((getHeightInches(span.playerName) ?? 0) < SHOOTING_POINT.minInches) return 0;
+  return span.box.threePA >= SHOOTING_POINT.threePA && span.box.threePct >= SHOOTING_POINT.threePct ? SHOOTING_POINT.score : 0;
 }
 
 /**
