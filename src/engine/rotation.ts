@@ -11,6 +11,7 @@ import { maxSustainableMinutes } from './durability';
 import { allocateMinutes } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent } from './grades';
+import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { teamSpacingValue } from './midrangeGravity';
@@ -208,6 +209,18 @@ const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
  * for a bare 5-man roster (see Best Five's own `lineupTeam` docstring: it "leaves sub-Starter-tier
  * slots empty and overworks the rest" there). Pure export, zero behavior change to any existing
  * caller — the function body is untouched. */
+/**
+ * 2026-11-04, week 3 (the user: Caruso starting 32 minutes for the league's best team, Smart and
+ * Bowen in one five — "gracz jak Caruso nie gra nawet irl w s5"): a starter below `floor` O-TAL is
+ * valued down `perPoint` for each point short (at most to `min`), so a five takes a real scorer
+ * when the roster has one and two non-scorers start together only when nothing else is there.
+ */
+export const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
+function starterOffenseFactor(player: PlayerSpan): number {
+  const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
+  return Math.max(STARTER_OFFENSE_FLOOR.min, 1 - STARTER_OFFENSE_FLOOR.perPoint * gap);
+}
+
 export function bestPrimaryAssignment(
   roster: PlayerSpan[],
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
@@ -295,7 +308,7 @@ export function bestPrimaryAssignment(
       v =
         maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER) <= 0 || belowStarterTier
           ? 0
-          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot);
+          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot) * starterOffenseFactor(player);
       valueByPlayerSlot.set(key, v);
     }
     return v;
