@@ -51,8 +51,8 @@
       "shaquille o'neal",
       "kevin durant"
     ],
-    "expectedPickId": "olajuha01-cw-1993-1994",
-    "expectedPickLabel": "Hakeem Olajuwon | 1992-94"
+    "expectedPickId": "jokicni01-cw-2022-2023",
+    "expectedPickLabel": "Nikola Jokic | 2021-23"
   },
   {
     "seed": 7,
@@ -120,7 +120,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jordan-87-89",
-      "malonka01-cw-1996-1997"
+      "malonka01-cw-1994-1995"
     ],
     "draftedNames": [
       "michael jordan",
@@ -275,13 +275,13 @@
       "reggie miller",
       "al horford",
       "evan mobley",
-      "robert horry",
-      "kristaps porzingis",
       "chris mullin",
+      "kristaps porzingis",
+      "mike conley",
       "shane battier"
     ],
-    "expectedPickId": "porteot01-2017-2018",
-    "expectedPickLabel": "Otto Porter Jr. | 2016-18"
+    "expectedPickId": "wallara01-2008-2009",
+    "expectedPickLabel": "Rasheed Wallace | 2007-09"
   },
   {
     "seed": 7,
@@ -289,7 +289,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jordan-87-89",
-      "malonka01-cw-1996-1997",
+      "malonka01-cw-1994-1995",
       "paulch01-cw-2014-2015"
     ],
     "draftedNames": [
@@ -343,22 +343,22 @@
       "reggie miller",
       "al horford",
       "evan mobley",
-      "robert horry",
-      "kristaps porzingis",
       "chris mullin",
+      "kristaps porzingis",
+      "mike conley",
       "shane battier",
-      "bruce bowen",
+      "bobby jones",
       "ray allen",
       "dirk nowitzki",
       "mikal bridges",
       "vince carter",
-      "ben wallace",
+      "bill russell",
       "pascal siakam",
       "jaylen brown",
       "chauncey billups"
     ],
-    "expectedPickId": "mutomdi01-cw-1998-1999",
-    "expectedPickLabel": "Dikembe Mutombo | 1997-99"
+    "expectedPickId": "wallabe01-cw-2002-2003",
+    "expectedPickLabel": "Ben Wallace | 2001-03"
   },
   {
     "seed": 42,
@@ -393,8 +393,8 @@
       "kevin durant",
       "larry bird"
     ],
-    "expectedPickId": "giannis-20-22",
-    "expectedPickLabel": "Giannis Antetokounmpo | 2020-22"
+    "expectedPickId": "shaq-99-01",
+    "expectedPickLabel": "Shaquille O'Neal | 1999-01"
   },
   {
     "seed": 42,
@@ -481,7 +481,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2012-2013",
-      "mutomdi01-cw-1998-1999"
+      "russell-61-63"
     ],
     "draftedNames": [
       "lebron james",
@@ -515,7 +515,7 @@
       "scottie pippen",
       "rudy gobert",
       "andrei kirilenko",
-      "dikembe mutombo"
+      "bill russell"
     ],
     "expectedPickId": "nashst01-cw-2007-2008",
     "expectedPickLabel": "Steve Nash | 2006-08"
@@ -560,7 +560,7 @@
       "scottie pippen",
       "rudy gobert",
       "andrei kirilenko",
-      "dikembe mutombo",
+      "bill russell",
       "chauncey billups",
       "paul george",
       "eddie jones",
@@ -569,19 +569,19 @@
       "dirk nowitzki",
       "manu ginobili",
       "draymond green",
-      "kristaps porzingis",
+      "paul pierce",
       "reggie miller",
-      "bobby jones"
+      "al horford"
     ],
-    "expectedPickId": "malonka01-cw-1995-1996",
-    "expectedPickLabel": "Karl Malone | 1994-96"
+    "expectedPickId": "hardaan01-1995-1996",
+    "expectedPickLabel": "Anfernee Hardaway | 1994-96"
   },
   {
     "seed": 42,
     "pickNumber": 55,
     "teamIdx": 9,
     "rosterIds": [
-      "giannis-20-22",
+      "antetgi01-cw-2020-2021",
       "westje01-cw-1970-1971",
       "millere01-cw-1993-1994"
     ],
@@ -617,7 +617,7 @@
       "scottie pippen",
       "rudy gobert",
       "andrei kirilenko",
-      "dikembe mutombo",
+      "bill russell",
       "chauncey billups",
       "paul george",
       "eddie jones",
@@ -626,23 +626,23 @@
       "dirk nowitzki",
       "manu ginobili",
       "draymond green",
-      "kristaps porzingis",
+      "paul pierce",
       "reggie miller",
-      "bobby jones",
-      "karl malone",
-      "bob mcadoo",
-      "tracy mcgrady",
+      "al horford",
       "donovan mitchell",
+      "karl malone",
+      "tracy mcgrady",
+      "ray allen",
       "evan mobley",
-      "vince carter",
+      "shawn marion",
       "chris mullin",
       "mike conley",
       "wilt chamberlain",
-      "charlie ward",
-      "jimmy butler"
+      "shane battier",
+      "wesley person"
     ],
-    "expectedPickId": "middlkh01-2019-2020",
-    "expectedPickLabel": "Khris Middleton | 2018-20"
+    "expectedPickId": "butleji01-cw-2023-2024",
+    "expectedPickLabel": "Jimmy Butler | 2022-24"
   },
   {
     "seed": 42,
@@ -650,7 +650,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2012-2013",
-      "mutomdi01-cw-1998-1999",
+      "russell-61-63",
       "billuch01-2005-2006"
     ],
     "draftedNames": [
@@ -685,7 +685,7 @@
       "scottie pippen",
       "rudy gobert",
       "andrei kirilenko",
-      "dikembe mutombo",
+      "bill russell",
       "chauncey billups",
       "paul george",
       "eddie jones",
@@ -694,32 +694,32 @@
       "dirk nowitzki",
       "manu ginobili",
       "draymond green",
-      "kristaps porzingis",
+      "paul pierce",
       "reggie miller",
-      "bobby jones",
-      "karl malone",
-      "bob mcadoo",
-      "tracy mcgrady",
+      "al horford",
       "donovan mitchell",
+      "karl malone",
+      "tracy mcgrady",
+      "ray allen",
       "evan mobley",
-      "vince carter",
+      "shawn marion",
       "chris mullin",
       "mike conley",
       "wilt chamberlain",
-      "charlie ward",
-      "jimmy butler",
-      "marc gasol",
-      "terry porter",
-      "paul pierce",
-      "al horford",
       "shane battier",
-      "ray allen",
+      "wesley person",
+      "jimmy butler",
+      "jason kidd",
+      "jalen williams",
+      "khris middleton",
+      "andre iguodala",
+      "vince carter",
       "kyle lowry",
       "jayson tatum",
       "dwight howard"
     ],
-    "expectedPickId": "mariosh01-2003-2004",
-    "expectedPickLabel": "Shawn Marion | 2002-04"
+    "expectedPickId": "majerda01-1993-1994",
+    "expectedPickLabel": "Dan Majerle | 1992-94"
   },
   {
     "seed": 123456,
@@ -842,7 +842,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jordan-87-89",
-      "pippesc01-cw-1994-1995"
+      "paulch01-cw-2013-2014"
     ],
     "draftedNames": [
       "michael jordan",
@@ -868,18 +868,18 @@
       "shai gilgeous-alexander",
       "joel embiid",
       "wilt chamberlain",
-      "manu ginobili",
-      "steve nash",
-      "alonzo mourning",
-      "chris paul",
-      "evan mobley",
-      "bill russell",
-      "john stockton",
       "kobe bryant",
-      "scottie pippen"
+      "john stockton",
+      "alonzo mourning",
+      "scottie pippen",
+      "evan mobley",
+      "kristaps porzingis",
+      "paul george",
+      "draymond green",
+      "chris paul"
     ],
-    "expectedPickId": "nowitdi01-cw-2005-2006",
-    "expectedPickLabel": "Dirk Nowitzki | 2004-06"
+    "expectedPickId": "howardw01-2011-2012",
+    "expectedPickLabel": "Dwight Howard | 2010-12"
   },
   {
     "seed": 123456,
@@ -913,29 +913,29 @@
       "shai gilgeous-alexander",
       "joel embiid",
       "wilt chamberlain",
-      "manu ginobili",
-      "steve nash",
-      "alonzo mourning",
-      "chris paul",
-      "evan mobley",
-      "bill russell",
-      "john stockton",
       "kobe bryant",
+      "john stockton",
+      "alonzo mourning",
       "scottie pippen",
-      "karl malone",
-      "draymond green",
-      "tracy mcgrady",
+      "evan mobley",
+      "kristaps porzingis",
       "paul george",
+      "draymond green",
+      "chris paul",
+      "dwight howard",
+      "manu ginobili",
+      "jerry west",
+      "eddie jones",
       "jayson tatum",
-      "paul pierce",
+      "reggie miller",
       "anfernee hardaway",
-      "andrei kirilenko",
-      "gary payton",
+      "dirk nowitzki",
+      "karl malone",
       "oscar robertson",
-      "kyle lowry"
+      "steve nash"
     ],
-    "expectedPickId": "klay-14-16",
-    "expectedPickLabel": "Klay Thompson | 2014-16"
+    "expectedPickId": "piercpa01-2007-2008",
+    "expectedPickLabel": "Paul Pierce | 2006-08"
   },
   {
     "seed": 123456,
@@ -970,37 +970,37 @@
       "shai gilgeous-alexander",
       "joel embiid",
       "wilt chamberlain",
-      "manu ginobili",
-      "steve nash",
-      "alonzo mourning",
-      "chris paul",
-      "evan mobley",
-      "bill russell",
-      "john stockton",
       "kobe bryant",
+      "john stockton",
+      "alonzo mourning",
       "scottie pippen",
-      "karl malone",
-      "draymond green",
-      "tracy mcgrady",
+      "evan mobley",
+      "kristaps porzingis",
       "paul george",
-      "jayson tatum",
-      "paul pierce",
-      "anfernee hardaway",
-      "andrei kirilenko",
-      "gary payton",
-      "oscar robertson",
-      "kyle lowry",
+      "draymond green",
+      "chris paul",
+      "dwight howard",
+      "manu ginobili",
+      "jerry west",
       "eddie jones",
-      "vince carter",
-      "kevin mchale",
-      "alvin robertson",
+      "jayson tatum",
+      "reggie miller",
+      "anfernee hardaway",
       "dirk nowitzki",
-      "shane battier",
+      "karl malone",
+      "oscar robertson",
+      "steve nash",
+      "klay thompson",
+      "vince carter",
+      "andrei kirilenko",
+      "alvin robertson",
+      "julius erving",
       "al horford",
+      "chet holmgren",
       "chauncey billups",
       "chris mullin",
-      "rasheed wallace",
-      "ray allen"
+      "bobby jones",
+      "wesley person"
     ],
     "expectedPickId": "korver-13-15",
     "expectedPickLabel": "Kyle Korver | 2013-15"
@@ -1011,8 +1011,8 @@
     "teamIdx": 0,
     "rosterIds": [
       "jordan-87-89",
-      "pippesc01-cw-1994-1995",
-      "malonka01-cw-1995-1996"
+      "paulch01-cw-2013-2014",
+      "howardw01-2011-2012"
     ],
     "draftedNames": [
       "michael jordan",
@@ -1038,48 +1038,48 @@
       "shai gilgeous-alexander",
       "joel embiid",
       "wilt chamberlain",
-      "manu ginobili",
-      "steve nash",
-      "alonzo mourning",
-      "chris paul",
-      "evan mobley",
-      "bill russell",
-      "john stockton",
       "kobe bryant",
+      "john stockton",
+      "alonzo mourning",
       "scottie pippen",
-      "karl malone",
-      "draymond green",
-      "tracy mcgrady",
+      "evan mobley",
+      "kristaps porzingis",
       "paul george",
-      "jayson tatum",
-      "paul pierce",
-      "anfernee hardaway",
-      "andrei kirilenko",
-      "gary payton",
-      "oscar robertson",
-      "kyle lowry",
+      "draymond green",
+      "chris paul",
+      "dwight howard",
+      "manu ginobili",
+      "jerry west",
       "eddie jones",
-      "vince carter",
-      "kevin mchale",
-      "alvin robertson",
+      "jayson tatum",
+      "reggie miller",
+      "anfernee hardaway",
       "dirk nowitzki",
-      "shane battier",
+      "karl malone",
+      "oscar robertson",
+      "steve nash",
+      "klay thompson",
+      "vince carter",
+      "andrei kirilenko",
+      "alvin robertson",
+      "julius erving",
       "al horford",
+      "chet holmgren",
       "chauncey billups",
       "chris mullin",
-      "rasheed wallace",
-      "ray allen",
-      "trevor ariza",
+      "bobby jones",
+      "wesley person",
+      "paul pierce",
+      "robert horry",
       "jimmy butler",
+      "ray allen",
+      "terry porter",
       "donovan mitchell",
-      "clyde drexler",
-      "rudy gobert",
-      "reggie miller",
       "jason kidd",
-      "bill walton",
-      "shawn marion"
+      "bruce bowen",
+      "bill walton"
     ],
-    "expectedPickId": "wardch01-1999-2000",
-    "expectedPickLabel": "Charlie Ward | 1998-00"
+    "expectedPickId": "stojape01-2003-2004",
+    "expectedPickLabel": "Peja Stojaković | 2002-04"
   }
 ]

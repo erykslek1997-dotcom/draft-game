@@ -1,4 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
+import { eraBlocksPerGame } from './era';
 import { per36 } from './minutesPerGame';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { getHeightInches } from '../data/heightLookup';
@@ -16,7 +17,7 @@ const UNDERSIZED_SHARE = 0.85;
 
 export function rimProtectionByNumbers(span: PlayerSpan): number | null {
   if (Number(span.spanLabel.slice(0, 4)) < FIRST_BLOCKS_SEASON_START) return null;
-  const blocks = per36(span.box.bpg, span);
+  const blocks = per36(eraBlocksPerGame(span), span);
   const blockTerm = Math.max(0, Math.min(1, (blocks - 0.6) / 1.4));
   const raw = 50 + 35 * blockTerm + 0.5 * (computeDefensiveTalent(span) - 60);
   const height = getHeightInches(span.playerName);

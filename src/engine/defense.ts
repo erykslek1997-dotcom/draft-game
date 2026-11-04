@@ -1,5 +1,5 @@
 import type { DefensiveRole, PlayerSpan, Position } from '../data/schema';
-import { eraBaseline, LEAGUE_PACE_BASELINE, reboundAvailabilityFactor, stealRateEraResidual } from './era';
+import { eraBaseline, eraBlocksPerGame, LEAGUE_PACE_BASELINE, reboundAvailabilityFactor, stealRateEraResidual } from './era';
 
 /**
  * Box-score-only defensive impact — split out from talent.ts so `darkoCorrection.ts` can
@@ -127,7 +127,7 @@ export function defensiveBoxParts(span: PlayerSpan): {
   // correction, not a second full era-scale) to avoid double-counting what paceFactor already
   // corrects for.
   const stealActivity = box.spg * paceFactor * stealRateEraResidual(span.spanLabel);
-  const blockActivity = box.bpg * paceFactor;
+  const blockActivity = eraBlocksPerGame(span) * paceFactor;
   const activity = (stealActivity + blockActivity) * 4.5;
   const rebounding = reboundingTerm(span) - reboundTrim(span);
 

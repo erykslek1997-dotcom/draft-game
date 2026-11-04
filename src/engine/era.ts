@@ -412,3 +412,29 @@ export function reboundAvailabilityFactor(spanLabel: string): number {
   reboundFactorCache.set(spanLabel, result);
   return result;
 }
+
+/**
+ * 2026-11-04, the user ("zawyżają mu bloki" — Mark Eaton's 5.1 a game rated above every all-time
+ * rim protector): opponent two-point attempts per team game by season (playerSeasonStats.csv). In
+ * 1985 a rim protector faced 87 a game, today about 52, so the same block rate made far more blocks
+ * a game (Eaton's BLK% 8.4 equals Jaren Jackson Jr.'s). Blocks are read at today's shot diet: scaled
+ * by the 2014-26 mean over the season's own volume. Before 1973-74 blocks were not kept (factor 1).
+ */
+const TWO_POINT_ATTEMPTS_BY_END_YEAR = new Map<number, number>([[1974, 101.1], [1975, 99.1], [1976, 94.2], [1977, 92.1], [1978, 92.9], [1979, 91.5], [1980, 87.0], [1981, 86.2], [1982, 86.0], [1983, 87.5], [1984, 85.3], [1985, 86.7], [1986, 84.8], [1987, 83.5], [1988, 82.3], [1989, 81.9], [1990, 80.0], [1991, 79.5], [1992, 79.1], [1993, 76.4], [1994, 74.2], [1995, 65.7], [1996, 63.7], [1997, 63.3], [1998, 67.9], [1999, 65.9], [2000, 69.4], [2001, 67.7], [2002, 67.4], [2003, 66.9], [2004, 65.8], [2005, 65.4], [2006, 63.8], [2007, 63.5], [2008, 64.3], [2009, 63.6], [2010, 64.4], [2011, 64.0], [2012, 63.9], [2013, 62.9], [2014, 62.3], [2015, 62.0], [2016, 61.4], [2017, 59.3], [2018, 58.0], [2019, 58.1], [2020, 55.7], [2021, 54.6], [2022, 53.8], [2023, 54.9], [2024, 54.6], [2025, 51.8], [2026, 52.3]]);
+export const BLOCK_ERA_RULES = { on: true };
+const MODERN_TWO_POINT_ATTEMPTS = 56.8;
+const blockFactorCache = new Map<string, number>();
+export function blockOpportunityFactor(spanLabel: string): number {
+  if (!BLOCK_ERA_RULES.on) return 1;
+  const hit = blockFactorCache.get(spanLabel);
+  if (hit !== undefined) return hit;
+  const values = spanEndYears(spanLabel).map((y) => TWO_POINT_ATTEMPTS_BY_END_YEAR.get(y)).filter((v): v is number => v !== undefined);
+  const result = values.length ? Math.min(1.05, MODERN_TWO_POINT_ATTEMPTS / (values.reduce((s, v) => s + v, 0) / values.length)) : 1;
+  blockFactorCache.set(spanLabel, result);
+  return result;
+}
+
+/** Blocks a game read at today's shot diet (`blockOpportunityFactor`). */
+export function eraBlocksPerGame(span: { spanLabel: string; box: { bpg: number } }): number {
+  return span.box.bpg * blockOpportunityFactor(span.spanLabel);
+}
