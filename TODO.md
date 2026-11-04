@@ -39,6 +39,7 @@ Liczy to, co Eryk wyłapuje w składach: nadmiarowi PG przy rozgrywającym w sk�
 13. „Ulubieńcy” AI (Mbah a Moute, Odom, Person, Ostertag): zmierzyć częstotliwość; ewentualnie lekka premia za rangę gracza przy podobnej wartości.
 
 ### Poziom 4 — TAL
+15. Spójność TAL i karty (Brunson 2024-26: TAL 83, a atak 81, niżej niż 2023-25 z 86): gdy TAL okna jest podniesiony ponad to, co dają atak i obrona (nagrody, play-offy, ręczny tier), różnica rozkłada się na wyświetlany atak/obronę — głównie stronę, za którą przyszła nagroda. Wypisać wszystkie okna, gdzie TAL rośnie, a atak lub obrona na karcie spada względem sąsiedniego okna; Brunson porównać z PG o podobnym OBPM (Lillard, Kyrie, Paul).
 14. Batum 2020-22 TAL 68 → ok. 62. Ogólnie: przy małym FGA TAL nie wychodzi dużo ponad atak i obronę (Batum O 52 / D 54). Lista graczy przed/po do akceptacji Eryka + sędziowie.
 
 ## Jedna duża poprawka — przegląd draftu 3009740454 (spisane 2026-11-04, czeka na start)
