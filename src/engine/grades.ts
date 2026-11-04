@@ -419,8 +419,10 @@ export type OverallTier =
 
 const OVERALL_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
   [0, 'Cigarette Butt'],
-  [40, 'Bench Warmer'],
-  [50, 'Role Player'],
+  // 2026-11-04, the user (30-minute starters of playoff teams read "Bench Warmer": "to przesada"):
+  // 40 -> 35 and 50 -> 45 — a rotation player at about the league average reads Role Player.
+  [35, 'Bench Warmer'],
+  [45, 'Role Player'],
   [60, 'Starter'],
   [70, 'All-star'],
   [80, 'All-NBA'],
@@ -1439,11 +1441,11 @@ const LOW_VOLUME = { fga: 9, margin: 8 };
  * 30-minute starters of playoff teams: "bench warmer to przesada ... i to działa w dwie strony"):
  * how a coach used a role player, and how good his team was, nudge his TAL — minutes past what his
  * TAL would earn (`ROLE_CONTEXT.perMinute` a minute, against `expectedMinutes`) plus his teams'
- * SRS (`ROLE_CONTEXT.perSrs` a point, teamContext.json), up to `ROLE_CONTEXT.cap` either way. Only
+ * SRS (`ROLE_CONTEXT.perSrs` a point, teamContext.json), up to `ROLE_CONTEXT.cap` either way (4 -> 6, the user). Only
  * at the bottom of the scale: full below TAL `ROLE_CONTEXT.fullBelow`, gone at `ROLE_CONTEXT.noneAt`,
  * so a star's number is his own. Big minutes on a bad team (Elton Brand 1999-01) cancel out.
  */
-export const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 4, fullBelow: 65, noneAt: 70 };
+export const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 6, fullBelow: 65, noneAt: 70 };
 /** Minutes a game a window of this TAL usually plays (pool fit, 8,459 windows). */
 const expectedMinutes = (tal: number) => 26.6 + 0.29 * (tal - 48.9);
 function roleContextShift(ctx: TierGateContext, tal: number): number {
