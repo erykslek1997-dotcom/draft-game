@@ -97,7 +97,8 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   'kristaps porzingis': { PF: 0.6 },
   // The user (export 1497221832, "Rodman na SG i SF??"; 2026-10-30: "PF/C zamiast PF/SF"): a four
   // who backs up the five, never a wing.
-  'dennis rodman': { SG: 0, SF: 0 },
+  // 2026-11-04, the user (Raleigh round 2: "zróbmy Rodmanowi pozycję tylko PF"): a four only.
+  'dennis rodman': { SG: 0, SF: 0, C: 0 },
   // The user (Jason Collins, TAL 58, the four's 13 minutes beside Giannis while Ben Wallace sat:
   // "zablokuj Collinsa na PF"): a centre only.
   'jason collins': { PF: 0 },
@@ -113,7 +114,6 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
 /** 2026-10-30, the user ("Rodman ręcznie przypisany PF/C zamiast PF/SF"): named players who play a
  * slot at least at the given score, whatever their career data says. */
 const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
-  'dennis rodman': { C: 0.95 },
   // The user: a centre who can play the four, with the partial-position penalty.
   'bam adebayo': { PF: 0.6 },
 };

@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, positionCompetenceScore, realSecondaryPositions, PARTIAL_SCORE } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
@@ -459,8 +459,10 @@ function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): nu
  * Embiid beside Robinson): every position, not only centre — a star who plays one position only
  * beside a star who plays only the same one. 0.8 -> 1.2 a TAL point past the floor. */
 const TWIN_CENTRE = { floor: 80, share: 1.2 };
+// A part-time second position (a centre's 0.6 at the four: Embiid, Wembanyama, Bam) is not a real
+// one for this cost — two such centres still collide (2026-11-04, round-2 review).
 const onlyPosition = (p: PlayerSpan): boolean =>
-  (['PG', 'SG', 'SF', 'PF', 'C'] as const).every((slot) => slot === p.primaryPosition || positionCompetenceScore(p, slot) < PARTIAL_SCORE);
+  (['PG', 'SG', 'SF', 'PF', 'C'] as const).every((slot) => slot === p.primaryPosition || positionCompetenceScore(p, slot) < FULL_SCORE);
 function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
   if (!onlyPosition(p)) return 0;
   const talent = effectiveTalent(p);
@@ -694,7 +696,10 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     if (player && top.minutes >= MIN_STARTER_MINUTES_AT_SLOT && isRealPositionFit(player, slot)) {
       starterPlayers.push(player);
       starterTalentBySlot[slot] = effectiveTalent(player);
-      if (!meetsStarterStandard(player)) substandardSlots.push(slot);
+      // 2026-11-04, the user's round-2 review ("pojedyncze pozycje w starting5 cały czas są dziwne":
+      // Ariza at the four, Marion and Cooper at the two, Royce O'Neale at the four, Mikal Bridges at
+      // the two): a slot held by someone off his own position is a hole too, until a real one comes.
+      if (!meetsStarterStandard(player) || positionCompetenceScore(player, slot) < NATURAL_SLOT_SCORE) substandardSlots.push(slot);
     } else {
       emptySlots.push(slot);
     }
@@ -1590,6 +1595,8 @@ const MAX_FGA_WASTE_ON_BENCH_PENALTY = 10;
 const NEED_RAMP_ROSTER_SIZE = 4;
 /** See `holesOpen` in `pickForAi`. */
 const HOLE_URGENCY_NEED_BONUS = 1.0;
+/** A slot's starter counts as its own man from this competence (natural 1, another natural 0.95). */
+const NATURAL_SLOT_SCORE = 0.95;
 const HOLE_GM_TASTE_SHARE = 0.5;
 /**
  * 2026-10-01, bench-quality pass (user-approved): traced pick by pick, a team's bench coverage is
@@ -2015,7 +2022,9 @@ export function pickForAi(
   const fillsHole = (p: PlayerSpan) =>
     holesOpen &&
     meetsStarterStandard(p) &&
-    needs.holeSlots.some((slot) => slot === p.primaryPosition || realSecondaryPositions(p).includes(slot));
+    // 2026-11-04: a hole is filled by a player who really plays the slot, not one more stretch (Royce
+    // O'Neale "filling" the four he was already covering off position).
+    needs.holeSlots.some((slot) => slot === p.primaryPosition || (realSecondaryPositions(p).includes(slot) && positionCompetenceScore(p, slot) >= NATURAL_SLOT_SCORE));
 
   // A DNP-tier span (maxSustainableMinutes <= 0 — the player physically couldn't stay on the
   // floor across that real stretch, e.g. Joel Embiid's 2023-25 games-missed span) isn't a real

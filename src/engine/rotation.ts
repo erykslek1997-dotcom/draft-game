@@ -132,6 +132,8 @@ const STARTER_FALLBACK_UP_MULTIPLIER = 0.7;
 const STARTER_FALLBACK_UP_MULTIPLIER_ORDINARY = 0.55;
 const STARTER_UP_SLIDE_ELITE_TALENT_FLOOR = 85;
 const STARTER_FALLBACK_DOWN_MULTIPLIER = 0.12;
+const PARTIAL_BIG_DOWN_SHARE = 0.9;
+const isBigOneSlotDown = (player: PlayerSpan, slot: Position) => player.primaryPosition === 'C' && slot === 'PF';
 /**
  * 2026-08-15, user-reported (real diagnostics: "główny problem to że Duncan gra z ławki" — Tim
  * Duncan 2005-07, TAL89, real EXPLICIT PF secondary, lost the PF starting job to Bobby Jones
@@ -171,6 +173,10 @@ function starterFitMultiplier(player: PlayerSpan, slot: Position): number {
   }
   if (competence === 'natural' || competence === 'full') return positionFitMultiplier(player, slot);
   if (competence === 'emergency' || competence === 'partial') {
+    // 2026-11-04, the user (San Jose: Bam Adebayo, TAL 83, on the bench while Royce O'Neale, 67,
+    // started at the four): a big one slot down — a centre at the four he really can play part of —
+    // starts there at `PARTIAL_BIG_DOWN_SHARE` of his fit, not as a far-off-position fallback.
+    if (competence === 'partial' && isBigOneSlotDown(player, slot)) return positionFitMultiplier(player, slot) * PARTIAL_BIG_DOWN_SHARE;
     if (!isUpwardSlide(player, slot)) return STARTER_FALLBACK_DOWN_MULTIPLIER;
     return effectiveTalent(player) >= STARTER_UP_SLIDE_ELITE_TALENT_FLOOR
       ? STARTER_FALLBACK_UP_MULTIPLIER
