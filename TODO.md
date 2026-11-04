@@ -1598,7 +1598,21 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
   Nash/Kerr/Schrempf zaadresowane (`886ad0b`); dwa zgłoszenia AI draft-value okazały się nie-błędami
   (spany tego samego gracza znikają razem; tańszy span Shaqa to celowy wybór).
 
-## Kalibracje po drugim przeglądzie tierów (2026-10-30) — DO ZROBIENIA
+## Kalibracje po drugim przeglądzie tierów (2026-10-30) — STAN 2026-11-04 (tydzień 3, noc)
+Zrobione (gałąź claude/game-ui-ux-analysis-p9x9ga, NIE na main — czeka na OK Eryka):
+- 0 sprzątanie: −2690 linii / 43 pliki, zachowanie identyczne (cała pula + 3 ligi). Komentarzy jeszcze nie skracane.
+- 1 atak: kotwica do realnego OBPM (60%, w obrębie pozycji). SRS r 0,779→0,798. „Ratunek posiadania” zmierzony
+  i odrzucony (zero zysku na SRS). Maxey/Parker/Ray/Vince: OBPM nie potwierdza zmian, o które prosił Eryk.
+- 2 polowanie: kara ×0,25. SRS 0,798→0,811, Defense r 0,623→0,702, sim R² 0,59→0,60. Shreveport D 72→78.
+- 3 rotacja: próg ataku startera (O<50), zakaz skoków SG↔PF bez własnej pozycji (5→2 na 3 ligach).
+- 4 AI: siatka spadających gwiazd nie bierze drugiego piłkożernego (Oscar obok CP3).
+- 5 obrona: podłoga rim protectora ze wszystkich źródeł (Capela 82→68), łagodny próg box-elite (G. Wallace 64→70),
+  Lowry +7, Manu cap 85. Mobilność starych C: krok 1 bez efektu (r 0,06 / 0,11) → brak reguły ogólnej.
+Odłożone: 4 (~40 okien spoza tabeli), 6 (jedna skala ocen), 7 (symulacja), AI d/e (caps/min ławki, słabe ławkowe PG,
+Bam po zmianie na C), skracanie komentarzy. Do decyzji Eryka: Eaton/Bol ręcznie? (model atletyzmu daje Eatonowi 61,
+czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
+
+### Lista pierwotna (2026-10-30)
 0. NAJPIERW sprzątanie kodu (Eryk 2026-10-30: „przed każdymi testami czyścimy kod, mam wrażenie że może być tego za dużo”).
    Zasada stała: przed każdą rundą kalibracji/testów. Bez zmiany zachowania: martwy kod i nieużywane eksporty (ts-prune /
    tsc noUnusedLocals), wyłączone flagi i porzucone eksperymenty, nazwane poprawki, które silnik już sam odtwarza (sprawdzić
