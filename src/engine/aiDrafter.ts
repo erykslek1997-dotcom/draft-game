@@ -1,5 +1,4 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { offenseRating } from './ratingScale';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { isRealRimProtector } from './rimProtection';
@@ -505,13 +504,7 @@ function secondBallStarPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
  * already on the roster — one defensive specialist is a role, a bench of them is a hole.
  */
 const NO_OFFENSE = { otal: 45, perPlayer: 6, max: 14 };
-const NO_OFF_CARD = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.NO_OFF_CARD;
 function noOffenseStackPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
-  if (NO_OFF_CARD) {
-    const none = (x: PlayerSpan) => offenseRating(x) < NO_OFFENSE.otal;
-    if (!none(p)) return 0;
-    return Math.min(NO_OFFENSE.max, Number(NO_OFF_CARD) + roster.filter(none).length * NO_OFFENSE.perPlayer);
-  }
   if (computeOffensiveTalent(p) >= NO_OFFENSE.otal) return 0;
   const already = roster.filter((x) => computeOffensiveTalent(x) < NO_OFFENSE.otal).length;
   return Math.min(NO_OFFENSE.max, already * NO_OFFENSE.perPlayer);
@@ -2708,14 +2701,19 @@ export function pickForAi(
     logDraftDebug(roster, pickNumber, top, weights, rolledFrom, totalWeight, chosenIndex);
   }
   const normal = top[chosenIndex].player;
-  if (fallen.length === 0 || fallen.some((p) => p.id === normal.id)) return normal;
+  // 2026-11-04: a fallen star comes in at the window the board chose for him (`uniqueRankedPlayers`
+  // — cheaper within `WINDOW_EQUAL`), not at his peak: taken by `effectiveTalent` below, every
+  // fallen Shaq was 1999-01.
+  const windowByName = new Map(scored.map((entry) => [normalizePlayerName(entry.player.playerName), entry.player]));
+  const fallenWindows = [...new Map(fallen.map((p) => [normalizePlayerName(p.playerName), windowByName.get(normalizePlayerName(p.playerName)) ?? p])).values()];
+  if (fallenWindows.length === 0 || fallenWindows.some((p) => p.playerName === normal.playerName)) return normal;
   // A fallen star comes in only if he fits (2026-10-29, the user: "ma brać gwiazdy które pasują,
   // nic na siłę"): his team, completed with the best affordable players left, scores within
   // `fallFitMargin` of the normal pick's; of several, the one whose team scores best.
   if (!teamScorer) return normal;
   const byTalent = available.filter((p) => isDraftableDurability(p)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
   const teamWith = (p: PlayerSpan) => teamScorer!(completeRosterGreedy([...roster, p], byTalent, capLimit - spent - p.fga, rosterSize - roster.length - 1));
-  const best = [...fallen]
+  const best = fallenWindows
     .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
     .slice(0, FALL_NET_CHECKED)
     .map((p) => ({ p, score: teamWith(p) }))
