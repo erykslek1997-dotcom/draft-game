@@ -1955,8 +1955,8 @@ function startingFiveGaps(roster: PlayerSpan[]): FiveGaps {
  */
 export const AI_ROLE_RULES = {
   on: true,
-  capSlack: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_SLACK ?? 1.3),
-  benchCostPerCap: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_COST ?? 0.12),
+  capSlack: 1.3,
+  benchCostPerCap: 0.12,
   starTal: 85,
   starWeakD: 62,
   starGapPoints: 0.6,
