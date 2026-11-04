@@ -350,15 +350,15 @@
       "evan mobley",
       "shane battier",
       "dirk nowitzki",
-      "dan majerle",
+      "bill walton",
       "walt frazier",
       "jayson tatum",
       "jaylen brown",
       "otto porter jr.",
-      "bill walton"
+      "bam adebayo"
     ],
-    "expectedPickId": "whitede01-2024-2025",
-    "expectedPickLabel": "Derrick White | 2023-25"
+    "expectedPickId": "majerda01-1993-1994",
+    "expectedPickLabel": "Dan Majerle | 1992-94"
   },
   {
     "seed": 42,
@@ -1079,7 +1079,7 @@
       "jae crowder",
       "marc gasol"
     ],
-    "expectedPickId": "middlkh01-2019-2020",
-    "expectedPickLabel": "Khris Middleton | 2018-20"
+    "expectedPickId": "porteot01-2018-2019",
+    "expectedPickLabel": "Otto Porter Jr. | 2017-19"
   }
 ]
