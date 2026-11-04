@@ -756,7 +756,16 @@ const playoffDefensiveTalentCache = new Map<string, number>();
  * 2026-10-29, the user: P.J. Tucker (+22, best window TAL 59) — guarded 1 through 5 for contenders,
  * strength and versatility the box and his stocks (`scripts/auditLowStockDefense.ts`) do not see.
  */
-const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Shawn Marion'), 10], [normalizePlayerName('P.J. Tucker'), 22]]);
+const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
+  [normalizePlayerName('Shawn Marion'), 10],
+  [normalizePlayerName('P.J. Tucker'), 22],
+  // 2026-11-04, the user ("Lowry dlaczego tylko 58 w obronie"): charges drawn and strength the box
+  // and his modest DBPM (+0.3 to +0.8) don't see.
+  [normalizePlayerName('Kyle Lowry'), 7],
+]);
+/** 2026-11-04, the user ("Dlaczego Manu ma 90 obrony"): named ceilings on the final D-TAL — a fine
+ * team defender, not Pippen's level. */
+const NAMED_DTAL_CAP: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Manu Ginóbili'), 85]]);
 
 /**
  * 2026-09-30, engine calibration session 1 (the user, on Brook Lopez 66 / Mikal Bridges 66 /
@@ -803,7 +812,9 @@ function rimProtectorFloor(span: PlayerSpan): number {
   if (tracking.some((v) => v < RIM_PROTECTOR_SOURCE_VETO)) return 0;
   const all = [...tracking, ...(detail.matchupDefense !== null && detail.matchupDefense !== undefined ? [detail.matchupDefense] : [])].sort((a, b) => b - a);
   if (all.length < 2) return 0;
-  const strength = (all[0] + all[1]) / 2;
+  // 2026-11-04, week 3 (the user: Capela and Claxton overrated; Capela 2018-20 read 82 at a real
+  // DBPM of about 0): every source counts, not the best two.
+  const strength = all.reduce((sum, v) => sum + v, 0) / all.length;
   if (strength < RIM_PROTECTOR_SOURCE_MIN) return 0;
   const frac = Math.min(1, (strength - RIM_PROTECTOR_SOURCE_MIN) / (RIM_PROTECTOR_SOURCE_FULL - RIM_PROTECTOR_SOURCE_MIN));
   return RIM_PROTECTOR_FLOOR_MIN + frac * (RIM_PROTECTOR_FLOOR_MAX - RIM_PROTECTOR_FLOOR_MIN);
@@ -826,15 +837,22 @@ function rimProtectorFloor(span: PlayerSpan): number {
 const BOX_ELITE_RUNG_INDEX = 7;
 const BOX_ELITE_SOURCE_MIN = 2.0;
 const BOX_ELITE_CONFIRMED_CAP = 90;
+const BOX_ELITE_SOURCE_START = 1.0;
+const BOX_ELITE_RAMP_POINTS = 20;
 function boxEliteConfirmedFloor(span: PlayerSpan): number {
   const detail = realDefenseExcessDetail(span);
   if (!detail) return 0;
-  const strong = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense].filter((v): v is number => v != null && v >= BOX_ELITE_SOURCE_MIN);
-  if (strong.length < 2) return 0;
+  // 2026-11-04, week 3 (the user: Gerald Wallace 2006-08 at 64 between windows at 90 and 85): the
+  // floor ramps in as the second-best source climbs from `BOX_ELITE_SOURCE_START` to
+  // `BOX_ELITE_SOURCE_MIN` instead of switching on.
+  const sources = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense].filter((v): v is number => v != null).sort((a, b) => b - a);
+  if (sources.length < 2) return 0;
+  const ramp = Math.max(0, Math.min(1, (sources[1] - BOX_ELITE_SOURCE_START) / (BOX_ELITE_SOURCE_MIN - BOX_ELITE_SOURCE_START)));
+  if (ramp <= 0) return 0;
   const position = functionalPosition(span);
   const raw = displayDefenseRaw(span);
   if (raw < LADDER_RAW_BY_POSITION[position][BOX_ELITE_RUNG_INDEX]) return 0;
-  return Math.min(BOX_ELITE_CONFIRMED_CAP, ladderPoints(position, raw));
+  return Math.min(BOX_ELITE_CONFIRMED_CAP, ladderPoints(position, raw)) - (1 - ramp) * BOX_ELITE_RAMP_POINTS;
 }
 
 const NEUTRAL_DATA_MIN_SOURCES = 3;
@@ -959,7 +977,7 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
   const blended = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
-  const result = withHustleBonus(span, blended);
+  const result = Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended));
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }
