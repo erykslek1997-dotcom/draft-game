@@ -22,6 +22,9 @@ import type { Team } from '../src/engine/types';
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const TOP = Number(args.top ?? 8);
 const LAMBDA = Number(args.lambda ?? 6);
+/** `--quick` (2026-11-04, fast calibration): every third team-season — ~3x faster, for iterating;
+ * the full run stays the number of record before a merge. */
+const QUICK = 'quick' in args || process.env.JUDGE_QUICK === '1';
 
 const byName = new Map<string, PlayerSpan[]>();
 for (const s of draftPool) {
@@ -49,7 +52,8 @@ const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
 type Row = { label: string; end: number; srs: number; ovr: number; off: number; def: number; tal: number; spans: PlayerSpan[]; minShare: number[] };
 const rows: Row[] = [];
 let skipped = 0;
-for (const ts of teamSeasons as { season: string; team: string; srs: number }[]) {
+for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs: number }[]).entries()) {
+  if (QUICK && tsIndex % 3 !== 0) continue;
   const end = parseInt(ts.season.slice(0, 4), 10) + 1;
   const all = [...(byTeam[`${end}|${ts.team}`] ?? [])].sort((p, q) => q.minutes - p.minutes);
   const top = all.slice(0, TOP);

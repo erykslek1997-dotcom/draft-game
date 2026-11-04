@@ -29,7 +29,7 @@ if (rules) {
   if (process.env.SLACK) rules.fallSlack = Number(process.env.SLACK);
   if (process.env.BS) rules.playmakingByBallShare = process.env.BS !== '0';
 }
-const N = Number(process.argv[2] ?? 10);
+const N = Number(process.argv.slice(2).find((a) => /^\d+$/.test(a)) ?? (process.argv.includes('--quick') || process.env.JUDGE_QUICK === '1' ? 4 : 10));
 const key = (n: string) => normalizePlayerName(n);
 const bestTal = new Map<string, number>();
 for (const p of activeDraftPool) bestTal.set(key(p.playerName), Math.max(bestTal.get(key(p.playerName)) ?? 0, effectiveTalent(p)));
