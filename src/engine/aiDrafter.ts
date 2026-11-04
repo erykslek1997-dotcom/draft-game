@@ -330,9 +330,10 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
 /**
  * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?"): the legend
  * bonus went to the peak window only, so Shaq 2000-02 (TAL 96, 1.4 FGA cheaper) gave up 35 points
- * to 1999-01 (97) and lost every time. Full within `full` TAL of the peak, gone `none` under it.
+ * to 1999-01 (97) and lost every time. Full within `full` TAL of the peak (`WINDOW_EQUAL.within`),
+ * gone `none` under it.
  */
-const GREATEST_PEAK_WINDOW = { full: 2, none: 6 };
+const GREATEST_PEAK_WINDOW = { full: 5, none: 8 };
 
 /**
  * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
@@ -1673,7 +1674,16 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
  */
 export const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
 
-function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number }>(ranked: T[]): T[] {
+/**
+ * 2026-11-04, the user ("jakby uznać wszystkie spany do 5 TAL różnicy za równe temu w peaku?
+ * Ewentualnie delikatne bonusy jeśli zespół stać na to"): a player's windows within `within` TAL of
+ * his best one count as equal but for the price; the better one keeps `keepComfortable` of its TAL
+ * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
+ * spends what cap is left on the better windows.
+ */
+const WINDOW_EQUAL = { within: 5, keepComfortable: 0.5, keepTight: 0.2 };
+
+function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
   const grouped = new Map<string, T[]>();
   for (const entry of ranked) {
     const key = normalizePlayerName(entry.player.playerName);
@@ -1691,7 +1701,9 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
   // every Shaq at 1999-01.
   return [...grouped.values()].map((entries) => {
     const bestDraftEntry = entries[0];
-    const window = entries.reduce((best, entry) => (entry.windowValue > best.windowValue ? entry : best), bestDraftEntry);
+    const peak = Math.max(...entries.map((entry) => entry.talent));
+    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= WINDOW_EQUAL.within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
     const preferredEntry = preferredSpan ? entries.find((entry) => entry.player.spanLabel === preferredSpan && entry.talent >= window.talent) : undefined;
@@ -2501,7 +2513,8 @@ export function pickForAi(
     // Same player, another window: the shots one saves are worth what they buy on the rest of the
     // roster (`WINDOW_FGA_RATE`), not the star-dampened `fgaCost`.
     const windowValue = value + fgaCost - p.fga * WINDOW_FGA_RATE;
-    return { player: p, value, talent, windowValue, debug };
+    const windowTalentCredit = rampedNeed * (1 - (WINDOW_EQUAL.keepComfortable + (WINDOW_EQUAL.keepTight - WINDOW_EQUAL.keepComfortable) * pressure));
+    return { player: p, value, talent, windowValue, windowTalentCredit, debug };
   });
 
   // A player may have several legal spans. The context-optimal representative used for draft
