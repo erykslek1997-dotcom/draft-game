@@ -1798,6 +1798,17 @@ const BOARD_NOISE_TEAM_POINTS = 0.7;
  * `BOARD_NOISE_POINTS` at TAL `BOARD_NOISE_STAR_FROM` to `BOARD_NOISE_STAR_POINTS` at
  * `BOARD_NOISE_STAR_FULL`, so it reshuffles role players and never jumps eight points of TAL.
  */
+/**
+ * 2026-11-04, the user ("AI zawsze te same spany graczy wybiera" — 51 of the 161 players taken 10+
+ * times in 30 drafts always came as the same window, Shaq 1999-01 30 of 30): each GM also holds a
+ * small opinion of each WINDOW (sd `WINDOW_NOISE_POINTS`), so among a player's windows close in
+ * value a different one comes some drafts; a clearly weaker window still never wins.
+ */
+const WINDOW_NOISE_POINTS = 4;
+function windowNoise(boardSeed: number | undefined, p: PlayerSpan): number {
+  if (boardSeed === undefined) return 0;
+  return boardNoise(boardSeed + 7919, { ...p, playerName: `${p.playerName}|${p.spanLabel}` } as PlayerSpan);
+}
 const BOARD_NOISE_STAR_FROM = 72;
 const BOARD_NOISE_STAR_FULL = 86;
 const BOARD_NOISE_STAR_POINTS = 3;
@@ -2448,7 +2459,7 @@ export function pickForAi(
       noOffenseStackPenalty: -noOffenseStackPenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
-      boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p),
+      boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p) + WINDOW_NOISE_POINTS * windowNoise(ruleset?.boardSeed, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
