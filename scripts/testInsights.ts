@@ -96,7 +96,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // the bench, two of them to the named targets. Re-measured directly (61).
 // 2026-11-04: 61 -> 59 once the GOAT tier's optimal load rose to 38 (Michael Jordan takes two of
 // the named targets' minutes). Re-measured directly (59).
-check(weakLinkInsight?.message.includes('59 targetable minutes'), 'weak-link description reports the real 59-minute cost');
+// 2026-11-04 (later): 59 -> 56 with the backup real-minute cap and the 18 own-slot bonus: Barros plays
+// fewer PG minutes and Larry Smith's PF stint makes him a named target again. Re-measured (56).
+check(weakLinkInsight?.message.includes('56 targetable minutes'), 'weak-link description reports the real 56-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),

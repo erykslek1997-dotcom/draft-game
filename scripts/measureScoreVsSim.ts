@@ -22,7 +22,7 @@ import type { PlayerSpan } from '../src/data/schema';
  * prints the change against a saved run.
  */
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
-const LEAGUES = Number(args.leagues ?? 8);
+const LEAGUES = Number(args.leagues ?? ('quick' in args || process.env.JUDGE_QUICK === '1' ? 3 : 8));
 const ENGINE_MARGIN_PER_OVERALL = 1.3;
 
 const leagues = benchTeams as { teams: { name: string; ids: string[] }[] }[];

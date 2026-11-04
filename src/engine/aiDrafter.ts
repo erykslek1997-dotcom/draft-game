@@ -24,7 +24,7 @@ import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
 import { computeFinishing } from './finishing';
-import { spanEndYears } from './era';
+import { spanEndYears, eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { isRimGravityScorer, isSelfSufficientEngine } from './offensiveProfile';
 import { isD1D2D3Player } from './d1d2d3Lookup';
 import { isSixthManProfile } from './sixthMan';
@@ -455,13 +455,17 @@ function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): nu
  * plays the four at least as a stretch, costs `TWIN_CENTRE.share` value a TAL point past
  * `TWIN_CENTRE.floor`. Twin towers who can (Duncan + Wembanyama) and backup centres are untouched.
  */
-const TWIN_CENTRE = { floor: 80, share: 0.8 };
-const playsFour = (p: PlayerSpan) => p.primaryPosition !== 'C' || positionCompetenceScore(p, 'PF') >= PARTIAL_SCORE;
+/** 2026-11-04, the user (Chicago: Barkley 1989-91 beside Giannis 2020-22, both fours only; Boise:
+ * Embiid beside Robinson): every position, not only centre — a star who plays one position only
+ * beside a star who plays only the same one. 0.8 -> 1.2 a TAL point past the floor. */
+const TWIN_CENTRE = { floor: 80, share: 1.2 };
+const onlyPosition = (p: PlayerSpan): boolean =>
+  (['PG', 'SG', 'SF', 'PF', 'C'] as const).every((slot) => slot === p.primaryPosition || positionCompetenceScore(p, slot) < PARTIAL_SCORE);
 function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
-  if (p.primaryPosition !== 'C' || playsFour(p)) return 0;
+  if (!onlyPosition(p)) return 0;
   const talent = effectiveTalent(p);
   if (talent < TWIN_CENTRE.floor) return 0;
-  const blocked = roster.some((r) => r.primaryPosition === 'C' && !playsFour(r) && effectiveTalent(r) >= TWIN_CENTRE.floor);
+  const blocked = roster.some((r) => r.primaryPosition === p.primaryPosition && onlyPosition(r) && effectiveTalent(r) >= TWIN_CENTRE.floor);
   return blocked ? TWIN_CENTRE.share * (talent - TWIN_CENTRE.floor) : 0;
 }
 
@@ -1897,7 +1901,9 @@ function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: Pl
     starGap = Math.max(starGap, AI_ROLE_RULES.starGapPoints * clamp01((computeDefensiveTalent(p) - 70) / 20));
   }
   let ballFit = 0;
-  const usage = (x: PlayerSpan) => usageForSpan(x)?.usgPct ?? null;
+  // Usage exists from 1977-78; before it (Oscar, Wilt, West) the share is read from shots on today's
+  // pace, the same scale (2026-11-04, the user: Oscar 1961-63 beside LeBron).
+  const usage = (x: PlayerSpan) => usageForSpan(x)?.usgPct ?? 0.1 + 0.009 * x.fga * (LEAGUE_PACE_BASELINE / eraBaseline(x.spanLabel).pace);
   const starUsage = Math.max(0, ...five.filter((x) => effectiveTalent(x) >= AI_ROLE_RULES.starTal).map((x) => usage(x) ?? 0));
   if (starUsage >= AI_ROLE_RULES.ballStarUsage && !isBig(p) && starterIds.has(p.id)) {
     const u = usage(p);

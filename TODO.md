@@ -12,6 +12,37 @@ Trudność: **S** = kilka godzin, **M** = jedna runda zmian, **L** = kilka rund.
 
 ---
 
+## Druga lista — drafty 314974948 i 199849769 (spisane 2026-11-04 wieczór, czeka na start)
+
+Zrobione już: Jokić na C we wszystkich oknach (#291). Najpierw sędzia z uwag Eryka (punkt 0), żeby każda zmiana była widoczna w liczbach, potem od najłatwiejszego.
+
+### 0. Sędzia z uwag Eryka (nowy skrypt, 30-50 draftów AI)
+Liczy to, co Eryk wyłapuje w składach: nadmiarowi PG przy rozgrywającym w składzie; dwóch dominujących kreatorów; dwie gwiazdy grające tylko jedną pozycję; dwóch graczy 20+ FGA; zmiennik z większymi minutami niż IRL; dwóch nierzucających wysokich naraz (także zmiennicy); gracz dwie pozycje od swojej (SG na PF, PF na SG); wymuszona gwiazda poza pozycją 30+ min; „ulubieńcy” AI (najczęściej brani tani gracze). Przed i po każdej zmianie.
+
+### Poziom 1 — dane i pojedyncze reguły
+1. Pozycje: Kukoč 1995-97 bez SG; ogólnie forward 6'9"+ nie gra SG, chyba że to jego główna pozycja. Roberson (SG) bez PF; ogólnie główny SG nie gra PF (dwie pozycje w górę). Mullin na PF (0,40) — sprawdzić. McGrady SG/SF (już 1,00 / 0,95; ewentualnie tylko stała pozycja na karcie).
+2. Kara za starych graczy (sprzed 1973-74) dopiero od dwóch takich graczy z 10+ min (pomiar: jeden −0,3, dwóch −3,4).
+3. Zamiana gwiazdy na SG przy dwóch PG (Luka / Porter): decydować tym, kto lepiej gra SG i kto bardziej potrzebuje piłki, nie twardym progiem posiadania 0,20 / różnicy 0,05.
+
+### Poziom 2 — rotacja
+4. Wymuszona gwiazda (MVP+): po wstawieniu przeliczyć piątkę od nowa z nią na stałe (Boise: Embiid PF → Erving SF, Majerle SG, Caruso ławka). Na wymuszonej pozycji limit ok. 24 min, resztę na swojej (Chicago: Barkley 23 SF + 10 PF, Posey więcej).
+5. Limit minut zmiennika = realne minuty z okna (plus mały margines), nie sufit tieru (Jon Barry 23 min przy 21 IRL, Bob Gross 28, Eaton 23). Gwiazda gra więcej zamiast słabego zmiennika (Holiday, Conley).
+6. Gwiazda C gra całe minuty na C, nie dzielona C/PF (Wemby 25 C + 10 PF → 34 C; Kukoč zmiennik PF, Eaton ok. 14 min). SGA cały na PG.
+7. Dominujący rozgrywający gra PG (Haliburton 23-25 na SG przy Wardzie i Anthonym).
+8. Dwóch nierzucających wysokich naraz także na minutach zmienników (Bam PF obok Bena Wallace'a): rotacja unika, ocena karze.
+
+### Poziom 3 — AI w drafcie
+9. Potrzeba PG liczona z rozgrywających w składzie (pozycja + rozgrywanie), nie ze slotu z bieżącej rotacji (Norfolk: Haliburton + Ward + Anthony).
+10. Dwie gwiazdy grające tylko jedną pozycję: kara jak dla pary centrów, dla każdej pozycji (Chicago: Giannis + Barkley; Boise: Robinson + Embiid — kara za parę C nie zadziałała).
+11. Dwóch dominujących kreatorów (Oscar + LeBron): reguła udziału piłki z #290 opiera się na usage, którego brak przed 1977-78 — oprzeć ją na FGA i asystach (każda era).
+12. Druga gwiazda 20+ FGA: realny koszt dla reszty składu (Mobile: SGA + Kobe, potem 25-minutowi zmiennicy).
+13. „Ulubieńcy” AI (Mbah a Moute, Odom, Person, Ostertag): zmierzyć częstotliwość; ewentualnie lekka premia za rangę gracza przy podobnej wartości.
+
+### Poziom 4 — TAL
+15. Spójność TAL i karty (Brunson 2024-26: TAL 83, a atak 81, niżej niż 2023-25 z 86): gdy TAL okna jest podniesiony ponad to, co dają atak i obrona (nagrody, play-offy, ręczny tier), różnica rozkłada się na wyświetlany atak/obronę — głównie stronę, za którą przyszła nagroda. Wypisać wszystkie okna, gdzie TAL rośnie, a atak lub obrona na karcie spada względem sąsiedniego okna; Brunson porównać z PG o podobnym OBPM (Lillard, Kyrie, Paul).
+    KIERUNEK (Eryk, 2026-11-04): karta ma się „sumować” z TAL, ale nie do pełnego TAL — Horford 2014-16 (TAL 80, dziś 65/63) ok. 73/71. Propozycja: wyświetlany atak/obrona = połowa obecnej skali (percentyl strony na pozycji) + połowa skali wokół TAL (średnia = TAL, różnica = profil gracza, przycięta). Przed wdrożeniem pokazać Erykowi listę (top 100 + przykłady) do akceptacji; dotyczy tylko wyświetlania.
+14. Batum 2020-22 TAL 68 → ok. 62. Ogólnie: przy małym FGA TAL nie wychodzi dużo ponad atak i obronę (Batum O 52 / D 54). Lista graczy przed/po do akceptacji Eryka + sędziowie.
+
 ## Jedna duża poprawka — przegląd draftu 3009740454 (spisane 2026-11-04, czeka na start)
 
 **WYKONANE 2026-11-04 (gałąź, nie main).** Sędziowie przed → po: SRS r 0,806 → 0,804 (sezonowo 0,826 → 0,824), symulacja R² 0,63 → 0,66, D-TAL r 0,772 → 0,772; składy AI (10 draftów): słaby gracz (<60) 10+ min 49% → 39%, spacing<55 7% → 4%, najgorszy spadek gwiazdy 69 → 39 miejsc, Overall 81,11 → 81,16. Bez zmian zostały: 7 (Hill/Davis — OBPM +0,8 / 0,0, dolna trzecia PG rotacji, ocena zgodna z danymi), 10 (Draymond — wchodzi przez nowe człony AI), 17 (wybór okna), 12 (McMillan na SF — skład Pittsburgha nie ma lepszego zmiennika). Kara za starych graczy: od 12% minut, 16 pkt za 1,0 udziału, maks. 6 (pomiar `_old.ts`: dwóch starych z 10+ min −3,4 Overall w symulacji). Półdystans wysokich 0,85 (0,7 dawało SRS 0,803). Konflikt Harden + post-center: kara 8 w creationStructure, na prawdziwych drużynach SRS bez zmian (nikt jej nie wyzwala).

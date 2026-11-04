@@ -1,3 +1,4 @@
+import { estimatedMinutesPerGame } from './minutesPerGame';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { positionCompetenceScore } from './positionCompetence';
@@ -35,6 +36,7 @@ const TIER_FLOOR_BONUS = 200;
 const USEFUL_BENCH_MINUTES = 12;
 const USEFUL_BENCH_TALENT_FLOOR = 55;
 const USEFUL_BENCH_BONUS = 25;
+const BACKUP_REAL_MINUTES_MARGIN = 1;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
 const PAST_OPTIMAL_FLAT_COST = 12;
 /** 2026-10-09: 150 -> 200. A role player 5+ minutes past his limit (Horry 36 of 24, TAL 55) came out
@@ -57,7 +59,10 @@ const FORCED_HOME_SLOT_SHARE = 0.75; // = rotation.ts FORCED_STAR_SLOT_FIT
  * needs him (Jordan sliding to SF so Kidd can cover SG, instead of a centre playing the wing). */
 const STARTER_CORE_MINUTES = 24;
 const STARTER_CORE_BONUS = 60;
-const OWN_SLOT_BONUS = 12;
+// 2026-11-04: 12 -> 18 (25 cost the score-vs-game fit 0.03 R², 18 0.01; the user, Raleigh: Wembanyama 25 at centre + 10 at the four, which handed
+// Mark Eaton 23 minutes at centre): a starter's minutes stay at his own position unless a real gap
+// elsewhere needs him; Wembanyama now plays 34 at centre and Eaton 14.
+const OWN_SLOT_BONUS = 18;
 const STAR_FRESH_CEILING = 40;
 const STAR_FRESH_EXTRA = 2;
 
@@ -83,6 +88,7 @@ const OFF_POSITION_MINUTE_ANCHORS: Array<[number, number]> = [
 const OFF_POSITION_DROP = [0.6, 0.35, 0.2];
 /** A must-start star forced to a neighbouring slot he can't play covers it like a 0.4 fit (6 minutes). */
 const FORCED_CLOSED_SLOT_SCORE = 0.4;
+const FORCED_STAR_SLOT_MINUTES = 24;
 const OFF_POSITION_FLOOR_SHARE = 0.2;
 /** 2026-10-02, the user (Collison at SF, Sabonis at SF): a big out of position costs the team the
  * same whoever he is, so every minute past his stretch also carries a flat cost, not only a share of
@@ -436,7 +442,11 @@ function solveMinutes(
     // durability.
     const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer, benchCap + MINUTES_CAP_TOLERANCE);
     // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
-    const ceiling = Math.min(profile.ceiling, durability, benchCap);
+    // 2026-11-04, the user (Jon Barry 23 minutes behind Jrue Holiday: "IRL grał 21, a dostaje tyle w
+    // all-time drafcie"): a backup plays at most his own real minutes plus `BACKUP_REAL_MINUTES_MARGIN`.
+    const real = starterSlotById.has(player.id) ? null : estimatedMinutesPerGame(player);
+    const realCap = real === null ? Infinity : Math.max(USEFUL_BENCH_MINUTES, Math.round(real + BACKUP_REAL_MINUTES_MARGIN));
+    const ceiling = Math.min(profile.ceiling, durability, benchCap, realCap);
     const talent = effectiveTalent(player);
     const homeSlot = starterSlotById.get(player.id);
     const usefulBench = !homeSlot && player.fga >= 2 && talent >= USEFUL_BENCH_TALENT_FLOOR ? Math.min(USEFUL_BENCH_MINUTES, ceiling) : 0;
@@ -487,11 +497,17 @@ function solveMinutes(
         // `FORCED_CLOSED_SLOT_SCORE`), then fades like any off-position stretch and plays the rest
         // at his own position.
         const offPosition = slot !== player.primaryPosition;
+        const forced = offPosition && positionCompetenceScore(player, slot) <= 0;
         const score = offPosition ? positionCompetenceScore(player, slot) || FORCED_CLOSED_SLOT_SCORE : 1;
-        const limit = offPosition ? offPositionMinutes(score) : GAME_SLOT_MINUTES;
+        // 2026-11-04, the user (Barkley, a four, 33 minutes at the three beside Giannis: "Barkley 23 /
+        // Posey 25", the rest at the four): a forced star holds the closed slot for a starter's
+        // `FORCED_STAR_SLOT_MINUTES`, then every further minute there costs like a big out of position.
+        const limit = forced ? FORCED_STAR_SLOT_MINUTES : offPosition ? offPositionMinutes(score) : GAME_SLOT_MINUTES;
         const core = Math.floor(Math.min(STARTER_CORE_MINUTES, ceiling, limit) / UNIT);
         flow.add(playerNode(i), slotNode(j), core, -(value + OWN_SLOT_BONUS + STARTER_CORE_BONUS) * UNIT);
-        if (!offPosition || limit >= GAME_SLOT_MINUTES) {
+        if (forced) {
+          flow.add(playerNode(i), slotNode(j), slotUnits - core, OFF_POSITION_EXCESS_COST * UNIT);
+        } else if (!offPosition || limit >= GAME_SLOT_MINUTES) {
           flow.add(playerNode(i), slotNode(j), slotUnits, -(value + OWN_SLOT_BONUS) * UNIT);
         } else {
           let reached = core * UNIT;

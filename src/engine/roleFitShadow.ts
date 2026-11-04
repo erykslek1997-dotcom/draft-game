@@ -189,7 +189,7 @@ function roleEvidence(
     const height = getHeightInches(span.playerName);
     const weight = getBodyWeightLbs(span.playerName);
     return [
-      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}\"`,
+      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}"`,
       weight === undefined ? 'weight unavailable' : `weight ${weight} lb`,
       'size + strength profile',
     ];
@@ -197,7 +197,7 @@ function roleEvidence(
   if (role === 'Anchor Big') {
     const height = getHeightInches(span.playerName);
     return [
-      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}\"`,
+      height === undefined ? 'height unavailable' : `height ${Math.floor(height / 12)}'${height % 12}"`,
       `BPG ${span.box.bpg.toFixed(1)}`,
       `RPG ${span.box.rpg.toFixed(1)}`,
     ];
