@@ -14,6 +14,8 @@ Trudność: **S** = kilka godzin, **M** = jedna runda zmian, **L** = kilka rund.
 
 ## Jedna duża poprawka — przegląd draftu 3009740454 (spisane 2026-11-04, czeka na start)
 
+**WYKONANE 2026-11-04 (gałąź, nie main).** Sędziowie przed → po: SRS r 0,806 → 0,804 (sezonowo 0,826 → 0,824), symulacja R² 0,63 → 0,66, D-TAL r 0,772 → 0,772; składy AI (10 draftów): słaby gracz (<60) 10+ min 49% → 39%, spacing<55 7% → 4%, najgorszy spadek gwiazdy 69 → 39 miejsc, Overall 81,11 → 81,16. Bez zmian zostały: 7 (Hill/Davis — OBPM +0,8 / 0,0, dolna trzecia PG rotacji, ocena zgodna z danymi), 10 (Draymond — wchodzi przez nowe człony AI), 17 (wybór okna), 12 (McMillan na SF — skład Pittsburgha nie ma lepszego zmiennika). Kara za starych graczy: od 12% minut, 16 pkt za 1,0 udziału, maks. 6 (pomiar `_old.ts`: dwóch starych z 10+ min −3,4 Overall w symulacji). Półdystans wysokich 0,85 (0,7 dawało SRS 0,803). Konflikt Harden + post-center: kara 8 w creationStructure, na prawdziwych drużynach SRS bez zmian (nikt jej nie wyzwala).
+
 Robimy wszystko naraz, na sygnał Eryka, w kolejności od najłatwiejszego. Każdą zmianę silnika mierzymy sędziami (auditTeams/SRS, measureScoreVsSim, auditDTal, measureRosterSense). Razem z tym wchodzi niezmergowany commit afc2ce6 (podpowiedź obrony).
 
 ### Poziom 1 — dane, minuty pracy
