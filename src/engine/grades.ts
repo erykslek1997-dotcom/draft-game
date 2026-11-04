@@ -3,6 +3,8 @@ import { ratingSpan } from './ratingPosition';
 import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputedTiers';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
+import TEAM_CONTEXT from '../data/teamContext.json';
+import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
 import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
@@ -908,6 +910,10 @@ export interface TierGateContext {
   spanLabel?: string;
   /** Raw (uncapped) TAL — places a player the user tiered inside his tier's band (tierCalibration.ts). */
   rawTal?: number;
+  /** Real (or playoff-estimated) minutes a game and the minute-weighted SRS of his teams — the role
+   * context at the bottom of the scale (`roleContextShift`). */
+  minutes?: number;
+  teamSrs?: number;
   /** Optional — the span's playoff impact in TAL points (`playoffImpact.ts`'s `playoffTalentTerm`:
    * playoff offense + defense + Finals MVP; negative = worse than expected). Already inside `tal`;
    * carried here for display (the riser/dropper badge). Synthetic contexts default to 0. */
@@ -1414,7 +1420,8 @@ export function formatTal(value: number): string {
 }
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
-  const value = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
+  const base = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
+  const value = base + roleContextShift(ctx, base);
   const hold = rimBonusHold(ctx);
   return hold ? Math.min(value, tierCeiling(hold)) : value;
 }
@@ -1426,6 +1433,26 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * `LOW_VOLUME.margin` — efficiency and fit on six shots don't make a starter of a role player.
  */
 const LOW_VOLUME = { fga: 9, margin: 8 };
+
+/**
+ * 2026-11-04, the user (Jabari Smith Jr. 2023-25 TAL 40 "Bench Warmer" and Rui Hachimura 39 as
+ * 30-minute starters of playoff teams: "bench warmer to przesada ... i to działa w dwie strony"):
+ * how a coach used a role player, and how good his team was, nudge his TAL — minutes past what his
+ * TAL would earn (`ROLE_CONTEXT.perMinute` a minute, against `expectedMinutes`) plus his teams'
+ * SRS (`ROLE_CONTEXT.perSrs` a point, teamContext.json), up to `ROLE_CONTEXT.cap` either way. Only
+ * at the bottom of the scale: full below TAL `ROLE_CONTEXT.fullBelow`, gone at `ROLE_CONTEXT.noneAt`,
+ * so a star's number is his own. Big minutes on a bad team (Elton Brand 1999-01) cancel out.
+ */
+export const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 4, fullBelow: 65, noneAt: 70 };
+/** Minutes a game a window of this TAL usually plays (pool fit, 8,459 windows). */
+const expectedMinutes = (tal: number) => 26.6 + 0.29 * (tal - 48.9);
+function roleContextShift(ctx: TierGateContext, tal: number): number {
+  if (ctx.minutes === undefined || ctx.teamSrs === undefined) return 0;
+  const fade = Math.max(0, Math.min(1, (ROLE_CONTEXT.noneAt - tal) / (ROLE_CONTEXT.noneAt - ROLE_CONTEXT.fullBelow)));
+  if (fade === 0) return 0;
+  const raw = ROLE_CONTEXT.perMinute * (ctx.minutes - expectedMinutes(tal)) + ROLE_CONTEXT.perSrs * ctx.teamSrs;
+  return fade * Math.max(-ROLE_CONTEXT.cap, Math.min(ROLE_CONTEXT.cap, raw));
+}
 function lowVolumeCeiling(ctx: TierGateContext): number {
   return ctx.fga < LOW_VOLUME.fga ? Math.max(ctx.otal, ctx.dtal) + LOW_VOLUME.margin : Infinity;
 }
@@ -1596,6 +1623,8 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
     playerName: span.playerName,
     spanLabel: span.spanLabel,
     rawTal: rawUncappedTalent(span),
+    minutes: estimatedMinutesPerGame(span) ?? undefined,
+    teamSrs: (TEAM_CONTEXT as Record<string, number>)[span.id],
     playoffCollapse: playoffTalentTerm(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,
