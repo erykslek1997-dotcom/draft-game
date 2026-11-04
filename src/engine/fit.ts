@@ -10,7 +10,7 @@ import {
   type ShadowRoleProfile,
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
-import { pairwiseFitNotes, mismatchStructureScore, offensiveSystemOverloadPenalty } from './pairwiseFit';
+import { pairwiseFitNotes, mismatchStructureScore, offensiveSystemOverloadPenalty, heliocentricPostConflict, HELIO_POST } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
 import { buildRoleFitContext, computeShadowRoleProfile } from './roleFitShadow';
@@ -176,8 +176,16 @@ const OFF_BALL_ROLL_RIM = 50;
 const INTERIOR_BOTTLENECK_RELIEF = 0.5;
 const SHOT_FIRST_FGA_START = 15;
 const SHOT_FIRST_FGA_FULL = 20;
-const SHOT_FIRST_SECOND_COST = 8;
-const SHOT_FIRST_THIRD_COST = 4;
+// 2026-11-04: 8 / 4 -> 3 / 1.5. Measured on real teams, the cost did nothing for SRS (r 0.806 at 8,
+// 4 and 0); the user kept a small one for the possessions two first options really fight over.
+const SHOT_FIRST_SECOND_COST = 3;
+const SHOT_FIRST_THIRD_COST = 1.5;
+/** 2026-11-04, the user (Paul George beside Jordan: "potrafi grać bez piłki mimo dużego FGA"): a
+ * scorer who also shoots off the catch (spacing from `SHOT_FIRST_OFF_BALL_START` up) gives up part
+ * of the fight, up to `SHOT_FIRST_OFF_BALL_RELIEF` at `SHOT_FIRST_OFF_BALL_FULL`. */
+const SHOT_FIRST_OFF_BALL_START = 60;
+const SHOT_FIRST_OFF_BALL_FULL = 85;
+const SHOT_FIRST_OFF_BALL_RELIEF = 0.6;
 const SHOT_FIRST_SHARING_START = 85;
 const SHOT_FIRST_SHARING_RELIEF = 0.6;
 const THREE_AND_D_SPACING = 70;
@@ -898,7 +906,9 @@ export function fitScore(team: Team): FitScoreResult {
   // 2026-09-05, user's call ("powinno to liczyć w fit"): a five committed to 3+ co-primary
   // offensive systems (pairwiseFit pattern 5) genuinely lacks a playoff identity — dock it from
   // creationStructure rather than leaving it note-only.
-  const systemOverloadPenalty = offensiveSystemOverloadPenalty(starters, demandByPlayer);
+  const helioPost = heliocentricPostConflict(starters, starterEntries.map((entry) => entry.slot), demandByPlayer);
+  if (helioPost) notes.push(`${helioPost.lead.playerName} wants an empty paint for his isolations and threes, ${helioPost.post.playerName} wants the ball on the block — two offenses that get in each other's way.`);
+  const systemOverloadPenalty = offensiveSystemOverloadPenalty(starters, demandByPlayer) + (helioPost ? HELIO_POST.penalty : 0);
   const creationStructure = Math.round(
     Math.max(
       0,
@@ -1145,7 +1155,8 @@ export function fitScore(team: Team): FitScoreResult {
       const paceAdjustedFga = player.fga * (LEAGUE_PACE_BASELINE / eraBaseline(player.spanLabel).pace);
       // A scorer who is also an elite passer (Bird, Wade) shares the ball more than his tag says.
       const sharing = clamp(((playmakingScoreForPlayer(player) ?? 0) - SHOT_FIRST_SHARING_START) / 10, 0, 1) * SHOT_FIRST_SHARING_RELIEF;
-      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) };
+      const offBall = clamp((computeSpacing(player) - SHOT_FIRST_OFF_BALL_START) / (SHOT_FIRST_OFF_BALL_FULL - SHOT_FIRST_OFF_BALL_START), 0, 1) * SHOT_FIRST_OFF_BALL_RELIEF;
+      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) * (1 - offBall) };
     })
     .filter(({ load }) => load > 0)
     .sort((a, b) => b.load - a.load);

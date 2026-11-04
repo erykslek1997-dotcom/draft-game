@@ -233,6 +233,25 @@ const HIGH_DEMAND_THRESHOLD = 0.5;
  * too many DIFFERENT systems (the original case) and too many players competing for the SAME one
  * (this one), without weakening the original check for the five it already worked correctly on.
  */
+/**
+ * 2026-11-04, the user (Fresno: Harden 2017-19 beside Kareem 1975-77 — "dwie sprzeczne filozofie"):
+ * a heliocentric perimeter engine who lives on isolation and threes (on-ball demand
+ * `HELIO_POST.leadDemand`+, spacing `HELIO_POST.leadSpacing`+) wants an empty paint, and a volume
+ * post centre (`Post Scorer` at the five, `HELIO_POST.postFga`+ shots, no jumper) wants the ball on
+ * the block. Each runs its offense at the other's expense: creation structure gives up
+ * `HELIO_POST.penalty`.
+ */
+export const HELIO_POST = { leadDemand: 0.9, leadSpacing: 70, postFga: 15, postSpacing: 25, penalty: 8 };
+export function heliocentricPostConflict(starters: PlayerSpan[], slots: Position[], demandByPlayer: number[]): { lead: PlayerSpan; post: PlayerSpan } | null {
+  const lead = starters.find(
+    (p, i) => slots[i] !== 'C' && slots[i] !== 'PF' && demandByPlayer[i] >= HELIO_POST.leadDemand && computeSpacing(p) >= HELIO_POST.leadSpacing,
+  );
+  const post = starters.find(
+    (p, i) => slots[i] === 'C' && p.offensiveArchetype === 'Post Scorer' && p.fga >= HELIO_POST.postFga && teamSpacingValue(p) < HELIO_POST.postSpacing,
+  );
+  return lead && post ? { lead, post } : null;
+}
+
 export function offensiveSystemOverloadPenalty(starters: PlayerSpan[], demandByPlayer: number[]): number {
   const distinctSystems = offensiveSystemBuckets(starters, demandByPlayer).length;
   const highDemandStarters = demandByPlayer.filter((d) => d >= HIGH_DEMAND_THRESHOLD).length;

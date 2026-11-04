@@ -1813,6 +1813,32 @@ export function ballLoadAdjustment(team: Team): number {
   return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));
 }
 
+/**
+ * 2026-11-04, the user (Syracuse: Frazier, Wilt and Bird — "za dużo dziadków ... dużo niewiadomych";
+ * "kara przy większym udziale zawodników"): before 1973-74 there is no BPM, no blocks and no
+ * steals, so an old window's numbers are partly estimated. One such player is no risk; a team built
+ * on several is. Measured on the bench leagues against the game's own mechanics (96 teams,
+ * `scripts/_old.ts`): no old player +0.3 Overall over what the number said, one with 10+ minutes
+ * -0.3, two -3.4. The cost starts past `from` of the minutes and grows `perShare` an Overall point
+ * per 1.0 of the minutes beyond it, up to `max`.
+ */
+export const DATA_CERTAINTY = { firstFullYear: 1973, from: 0.12, perShare: 16, max: 6 };
+export const isPreBoxEra = (span: PlayerSpan): boolean => Number(span.spanLabel.slice(0, 4)) < DATA_CERTAINTY.firstFullYear;
+export function preBoxEraShare(team: Team): number {
+  if (!team.rotation) return 0;
+  let total = 0;
+  let old = 0;
+  for (const p of team.roster) {
+    const minutes = totalMinutesForPlayer(team.rotation, p.id);
+    total += minutes;
+    if (isPreBoxEra(p)) old += minutes;
+  }
+  return total > 0 ? old / total : 0;
+}
+export function dataCertaintyAdjustment(team: Team): number {
+  return -Math.min(DATA_CERTAINTY.max, Math.max(0, preBoxEraShare(team) - DATA_CERTAINTY.from) * DATA_CERTAINTY.perShare);
+}
+
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
@@ -1830,8 +1856,14 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     liftAdjustment(team) +
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
     // for the five on the floor; the team's number takes it for the starters.
-    ballHandlerAdjustment(team);
+    ballHandlerAdjustment(team) +
+    dataCertaintyAdjustment(team);
   const overall = Math.round(overallExact);
+  const certainty = dataCertaintyAdjustment(team);
+  const certaintyNotes =
+    certainty <= -0.5
+      ? [`${Math.round(preBoxEraShare(team) * 100)}% of the minutes go to players from before 1973-74, whose numbers are partly estimated (no BPM, blocks or steals) — a riskier build (${certainty.toFixed(1)}).`]
+      : [];
   return {
     talentScore: talent,
     benchDepthScore: benchDepth,
@@ -1842,7 +1874,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     rotationScore: rotation.score,
     overall,
     overallExact,
-    notes: [...fit.notes, ...rotation.notes],
+    notes: [...fit.notes, ...rotation.notes, ...certaintyNotes],
   };
 }
 

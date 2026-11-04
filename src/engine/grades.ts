@@ -353,7 +353,18 @@ function rawSpacingGrade(span: PlayerSpan): Grade {
  * pool 3,797 spans at D-). Era scaling may credit volume, never accuracy: past the three-point line
  * the cap is the player's real 3P% (with real volume only for the top two letters).
  */
+/** 2026-11-04, the user (Bowen 72 on 2.7 threes a game, "liczba prób"): a shooter who takes few
+ * threes is not one a defense has to stay home on, so the volume caps the letter too. */
+const LOW_VOLUME_SPACING = [
+  [2, 'C+'],
+  [3, 'B-'],
+] as const;
 function accuracySpacingCap(threePct: number, threePA: number): Grade {
+  const volumeCap = LOW_VOLUME_SPACING.find(([attempts]) => threePA < attempts)?.[1];
+  const accuracyCap = accuracyOnlySpacingCap(threePct, threePA);
+  return volumeCap && gradeRank(volumeCap) < gradeRank(accuracyCap) ? volumeCap : accuracyCap;
+}
+function accuracyOnlySpacingCap(threePct: number, threePA: number): Grade {
   if (threePct >= 0.4 && threePA >= 5) return 'S';
   if (threePct >= 0.4 && threePA >= 3.5) return 'A+';
   if (threePct >= 0.38) return 'A-';
@@ -362,6 +373,9 @@ function accuracySpacingCap(threePct: number, threePA: number): Grade {
   if (threePct >= 0.32) return 'C+';
   return 'C-';
 }
+
+/** The card's spacing letter reads at least B: the bar a low-offense starter clears (rotation.ts). */
+export const spacesTheFloor = (span: PlayerSpan): boolean => gradeRank(spacingGrade(computeSpacing(span), span)) >= gradeRank('B');
 
 export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   if (spacingGradeSortedValues === null) {

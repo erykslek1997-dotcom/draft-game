@@ -85,6 +85,13 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   // The user (Jason Collins, TAL 58, the four's 13 minutes beside Giannis while Ben Wallace sat:
   // "zablokuj Collinsa na PF"): a centre only.
   'jason collins': { PF: 0 },
+  // 2026-11-04, the user's review of draft 3009740454: Bobby Jones is a four only, P.J. Brown a
+  // centre only; Bryon Russell and Trevor Ariza are threes who cover a guard spot only briefly.
+  'bobby jones': { SG: 0, SF: 0, C: 0 },
+  'p.j. brown': { SF: 0, PF: 0 },
+  'pj brown': { SF: 0, PF: 0 },
+  'bryon russell': { SG: 0.5 },
+  'trevor ariza': { SG: 0.5 },
 };
 
 /** 2026-10-30, the user ("Rodman ręcznie przypisany PF/C zamiast PF/SF"): named players who play a

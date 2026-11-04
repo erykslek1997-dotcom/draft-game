@@ -54,6 +54,14 @@ function preZoneMidrangeSpacing(span: PlayerSpan): number {
 
 /** A player's spacing as the TEAM's floor geometry sees it: three-point spacing, or partial
  * midrange-gravity credit when that is higher (measured from zone data, or hand-set before it). */
+/**
+ * 2026-11-04, the user (Detroit at spacing 71 beside Bill Russell; Garnett 2003-05 at 73 from the
+ * midrange alone): a big's eighteen-footer pulls his man out of the paint but does not stretch the
+ * floor the way a three does, so a four's or five's midrange credit counts at `BIG_MIDRANGE_SHARE` (0.7 measured SRS r 0.803, 0.85 0.804, 1 0.805: the judge barely moves, so the milder cut).
+ */
+export const BIG_MIDRANGE_SHARE = 0.85;
 export function teamSpacingValue(span: PlayerSpan): number {
-  return Math.max(computeSpacing(span), midrangeGravitySpacing(span), preZoneMidrangeSpacing(span)) * closeoutFactor(span);
+  const big = span.primaryPosition === 'PF' || span.primaryPosition === 'C';
+  const midrange = Math.max(midrangeGravitySpacing(span), preZoneMidrangeSpacing(span)) * (big ? BIG_MIDRANGE_SHARE : 1);
+  return Math.max(computeSpacing(span), midrange) * closeoutFactor(span);
 }

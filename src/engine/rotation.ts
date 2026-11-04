@@ -10,7 +10,7 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 import { maxSustainableMinutes } from './durability';
 import { allocateMinutes } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
-import { overallTierForSpan, effectiveTalent } from './grades';
+import { overallTierForSpan, effectiveTalent, spacesTheFloor } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
@@ -216,7 +216,11 @@ const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
  * when the roster has one and two non-scorers start together only when nothing else is there.
  */
 export const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
+/** 2026-11-04, the user (Battier 2008-10 at offense 37 while spacing B+: "kara na atak wchodzi poniżej
+ * spacingu B"): a starter whose card reads spacing B or better is exempt; the volume is already in
+ * that letter (grades.ts `LOW_VOLUME_SPACING`), so the card and the penalty always agree. */
 function starterOffenseFactor(player: PlayerSpan): number {
+  if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
   return Math.max(STARTER_OFFENSE_FLOOR.min, 1 - STARTER_OFFENSE_FLOOR.perPoint * gap);
 }
@@ -262,7 +266,7 @@ export function bestPrimaryAssignment(
     if ((starsByPosition.get(p.primaryPosition) ?? 0) > 1) return;
     pinnedIds.add(p.id);
   });
-  function valueFor(player: PlayerSpan, slot: Position): number {
+  let valueFor = function valueForPlain(player: PlayerSpan, slot: Position): number {
     const key = `${player.id}|${slot}`;
     let v = valueByPlayerSlot.get(key);
     if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition) {
@@ -312,7 +316,7 @@ export function bestPrimaryAssignment(
       valueByPlayerSlot.set(key, v);
     }
     return v;
-  }
+  };
 
   // Admissible branch-and-bound bound. `slotMax[i]` = the highest value ANY roster player could
   // bring to slot i, ignoring whether they are already used elsewhere — using a player at another
@@ -371,6 +375,38 @@ export function bestPrimaryAssignment(
   }
 
   search(0, 0, 0);
+  // 2026-11-04, the user (Reno: Horry 1997-99 at the four while Marion plays the three and Raja Bell
+  // sits; Tucson: Alvin Robertson beside Nash, McHale and Duncan): a five that doesn't space the
+  // floor is searched again with each player's spacing worth `SPACING_RESEARCH.perPoint` of TAL (up
+  // to `SPACING_RESEARCH.cap`), so whole reshuffles — Marion to the four, Bell to the three — are
+  // found, not only same-slot swaps. The new five is kept only when it really spaces better.
+  const firstSpacing = lineupSpacingOf(best);
+  if (bestScore > -Infinity && firstSpacing < SPACING_RESEARCH.need) {
+    const plainValue = valueFor;
+    const firstBest = { ...best };
+    const firstScore = bestScore;
+    valueFor = (player, slot) => {
+      const v = plainValue(player, slot);
+      return v <= 0 ? 0 : v + SPACING_RESEARCH.perPoint * Math.min(SPACING_RESEARCH.cap, teamSpacingValue(player));
+    };
+    for (const k of [...Object.keys(best)] as Position[]) delete best[k];
+    bestScore = -Infinity;
+    bestPrimaryMatches = -Infinity;
+    for (let i = 0; i < STARTER_SLOTS.length; i++) {
+      let m = 0;
+      for (const player of roster) m = Math.max(m, valueFor(player, STARTER_SLOTS[i]));
+      slotMax[i] = m;
+    }
+    for (let i = STARTER_SLOTS.length - 1; i >= 0; i--) suffixMax[i] = suffixMax[i + 1] + slotMax[i];
+    search(0, 0, 0);
+    valueFor = plainValue;
+    if (lineupSpacingOf(best) < firstSpacing + SPACING_RESEARCH.minGain) {
+      best = firstBest;
+      bestScore = firstScore;
+    } else {
+      bestScore = STARTER_SLOTS.reduce((sum, slot) => sum + (best[slot] ? valueFor(best[slot]!, slot) : 0), 0);
+    }
+  }
   const swapped = bestScore === -Infinity ? null : spacingAwareStarterSwaps(best, roster, valueFor);
   const searched = swapped ?? { assignment: best, score: bestScore === -Infinity ? 0 : bestScore };
   const result = comboGuardAtTwo(forceStarsIntoLineup(searched, roster, valueFor), valueFor);
@@ -388,6 +424,11 @@ export function bestPrimaryAssignment(
  * at least `SWAP_MIN_SPACING_GAIN`. One swap per slot, the largest spacing gain first.
  */
 const SWAP_SPACING_NEED = 60;
+export const SPACING_RESEARCH = { need: 55, perPoint: 0.12, cap: 75, minGain: 5 };
+function lineupSpacingOf(lineup: Partial<Record<Position, PlayerSpan>>): number {
+  const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
+  return five.length === 0 ? 0 : five.reduce((sum, p) => sum + teamSpacingValue(p), 0) / five.length;
+}
 const SWAP_MAX_TALENT_LOSS = 5;
 const SWAP_MIN_SPACING_GAIN = 8;
 function spacingAwareStarterSwaps(
