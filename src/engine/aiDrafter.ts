@@ -322,9 +322,17 @@ for (const [key, tier] of Object.entries(GREATEST_PEAK_DRAFT_TIERS)) {
 function greatestPeakTierBonus(p: PlayerSpan): number {
   if (!DRAFT_EXPERIMENT.greatestPeakBonus) return 0;
   const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
-  if (!entry || effectiveTalent(p) < entry.tal) return 0;
-  return GREATEST_PEAK_TIER_BONUS[entry.tier];
+  if (!entry) return 0;
+  const below = entry.tal - effectiveTalent(p);
+  const share = Math.max(0, Math.min(1, 1 - (below - GREATEST_PEAK_WINDOW.full) / (GREATEST_PEAK_WINDOW.none - GREATEST_PEAK_WINDOW.full)));
+  return GREATEST_PEAK_TIER_BONUS[entry.tier] * share;
 }
+/**
+ * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?"): the legend
+ * bonus went to the peak window only, so Shaq 2000-02 (TAL 96, 1.4 FGA cheaper) gave up 35 points
+ * to 1999-01 (97) and lost every time. Full within `full` TAL of the peak, gone `none` under it.
+ */
+const GREATEST_PEAK_WINDOW = { full: 2, none: 6 };
 
 /**
  * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
