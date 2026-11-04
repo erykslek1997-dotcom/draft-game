@@ -1934,13 +1934,23 @@ export const AI_PLAN = {
   cheapFga: 7,
   cheapAlternatives: 6,
   passes: 2,
+  crowdCost: 1.5,
 };
 function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, slots: number): PlayerSpan | null {
   if (!teamScorer || slots <= 0 || board.length === 0) return null;
   const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
   const plan = completeRosterGreedy(roster, board, capLeft, slots).slice(roster.length);
   if (plan.length === 0) return null;
-  let best = teamScorer([...roster, ...plan]);
+  // A third player at one position (three point guards: 15% of AI teams, 24% with plans, the cheap
+  // backups being guards) costs `crowdCost` team points each.
+  const score = (team: PlayerSpan[]) => {
+    const counts = new Map<Position, number>();
+    for (const p of team) counts.set(p.primaryPosition, (counts.get(p.primaryPosition) ?? 0) + 1);
+    let crowd = 0;
+    for (const n of counts.values()) crowd += Math.max(0, n - 2);
+    return teamScorer!(team) - AI_PLAN.crowdCost * crowd;
+  };
+  let best = score([...roster, ...plan]);
   for (let pass = 0; pass < AI_PLAN.passes; pass++) {
     let improved = false;
     for (let i = 0; i < plan.length; i++) {
@@ -1952,9 +1962,9 @@ function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, sl
       // The board's best, plus its best cheap ones: a 10-14-minute backup costs 5-6 shots (the user).
       const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives)])];
       for (const candidate of pool) {
-        const score = teamScorer([...roster, ...others, candidate]);
-        if (score > best + 1e-6) {
-          best = score;
+        const value = score([...roster, ...others, candidate]);
+        if (value > best + 1e-6) {
+          best = value;
           plan[i] = candidate;
           improved = true;
         }
@@ -1962,8 +1972,9 @@ function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, sl
     }
     if (!improved) break;
   }
-  const rank = new Map(board.map((p, index) => [p.id, index]));
-  return [...plan].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity))[0] ?? null;
+  // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
+  // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
+  return [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
 }
 
 interface FiveGaps {
