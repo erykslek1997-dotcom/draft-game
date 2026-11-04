@@ -31,10 +31,19 @@ import type { DailyBomb, DailyRule } from '../dailyDraftDay';
 import { dailyBombSpan } from './dailyBomb';
 
 // The AI's bench picks read the real team score (aiDrafter.ts `setAiTeamScorer`).
-setAiTeamScorer(
-  (roster) =>
-    scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact,
-);
+// Memoised by the roster's span ids: planned drafting (`AI_PLAN`) scores the same rosters again and
+// again across its swap passes and from pick to pick. Cleared when it grows past `TEAM_SCORE_MEMO_MAX`.
+const TEAM_SCORE_MEMO_MAX = 50_000;
+const teamScoreMemo = new Map<string, number>();
+setAiTeamScorer((roster) => {
+  const key = roster.map((p) => p.id).sort().join(',');
+  const hit = teamScoreMemo.get(key);
+  if (hit !== undefined) return hit;
+  const value = scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
+  if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
+  teamScoreMemo.set(key, value);
+  return value;
+});
 import type { DraftHistoryEntry, Team } from './types';
 
 export { TEAM_COUNT };
