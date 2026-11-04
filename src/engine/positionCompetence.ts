@@ -109,6 +109,12 @@ function crossCourtCap(span: PlayerSpan, slot: Position): number {
  * named players who play a slot at most at the given score, whatever their career says. */
 const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   'kristaps porzingis': { PF: 0.6 },
+  // 2026-11-04, the user's round-5 review ("Sam Perkins SF", Horry at SF, "Mike Dunleavy na SG
+  // dziwny": "zaostrz próg"): a stretch there off the bench, not a start. Their own-position windows
+  // (Horry 1993-95 at SF) are untouched — a cap applies off the primary only.
+  'robert horry': { SF: 0.6 },
+  'sam perkins': { SF: 0.6 },
+  'mike dunleavy': { SG: 0.6 },
   // The user (export 1497221832, "Rodman na SG i SF??"; 2026-10-30: "PF/C zamiast PF/SF"): a four
   // who backs up the five, never a wing.
   // 2026-11-04, the user (Raleigh round 2: "zróbmy Rodmanowi pozycję tylko PF"): a four only.
