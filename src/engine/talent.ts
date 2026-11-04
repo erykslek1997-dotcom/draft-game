@@ -16,6 +16,7 @@ import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
 import { liftForReducedRole } from './reducedRole';
 import { realSpan } from './realAdvancedLookup';
+import { draftPool } from '../data/draftPool';
 import roleResumeData from '../data/roleResume.json';
 import { individualDefenseRate } from './defensiveAccolades';
 import { ddpmCoverageForSpan, raptorCoverageForSpan } from './blendedDefenseLookup';
@@ -908,6 +909,56 @@ const EFFICIENCY_REFERENCE_TSA = 17;
 const EFFICIENCY_VOLUME_MIN = 0.6;
 const EFFICIENCY_VOLUME_MAX = 1.6;
 
+/**
+ * 2026-11-04, week 3 (the user's tier review: LaVine O-TAL 100 at a real OBPM of +4.3 beside Maxey
+ * 73 at +4.2, Parker, Haliburton, Morant underrated; Reggie, Mullin, Ray, Dantley, Vince over):
+ * the box formula over-credits efficient volume scoring and under-credits creators who attack the
+ * rim. Where BBRef data exists (1973-74 on), raw offense moves `share` of the way toward the
+ * offense the player's own OBPM implies, mapped onto the same position's spread (z-score match on
+ * the pool), weighted by minutes. Pre-BPM eras keep the box formula.
+ */
+export const OFFENSE_ANCHOR = { share: 0.6, fullMinutes: 4000, minFitMinutes: 3000, poolWide: false };
+let offenseAnchorFit: Map<Position, { meanOff: number; sdOff: number; meanObpm: number; sdObpm: number }> | null = null;
+let fittingOffenseAnchor = false;
+function realObpm(span: PlayerSpan): { obpm: number; minutes: number } | null {
+  const r = realSpan(span);
+  return r?.bpm != null && r.dbpm != null && r.minutes > 0 ? { obpm: r.bpm - r.dbpm, minutes: r.minutes } : null;
+}
+function fitOffenseAnchor(): NonNullable<typeof offenseAnchorFit> {
+  fittingOffenseAnchor = true;
+  const rows = new Map<Position, { off: number; obpm: number }[]>();
+  for (const raw of draftPool) {
+    const span = ratingSpan(raw);
+    const real = realObpm(span);
+    if (!real || real.minutes < OFFENSE_ANCHOR.minFitMinutes) continue;
+    const key: Position = OFFENSE_ANCHOR.poolWide ? 'SF' : span.primaryPosition;
+    const list = rows.get(key) ?? [];
+    list.push({ off: rawComponents(span, false).offense, obpm: real.obpm });
+    rows.set(key, list);
+  }
+  fittingOffenseAnchor = false;
+  const fit = new Map<Position, { meanOff: number; sdOff: number; meanObpm: number; sdObpm: number }>();
+  for (const [pos, list] of rows) {
+    const mean = (f: (r: { off: number; obpm: number }) => number) => list.reduce((s, r) => s + f(r), 0) / list.length;
+    const meanOff = mean((r) => r.off);
+    const meanObpm = mean((r) => r.obpm);
+    const sdOff = Math.sqrt(mean((r) => (r.off - meanOff) ** 2));
+    const sdObpm = Math.sqrt(mean((r) => (r.obpm - meanObpm) ** 2));
+    fit.set(pos, { meanOff, sdOff, meanObpm, sdObpm });
+  }
+  return fit;
+}
+function offenseAnchor(span: PlayerSpan, boxOffense: number): number {
+  if (fittingOffenseAnchor || !OFFENSE_ANCHOR.share) return 0;
+  const real = realObpm(span);
+  if (!real) return 0;
+  offenseAnchorFit ??= fitOffenseAnchor();
+  const f = offenseAnchorFit.get(OFFENSE_ANCHOR.poolWide ? 'SF' : span.primaryPosition);
+  if (!f || f.sdObpm <= 0) return 0;
+  const implied = f.meanOff + ((real.obpm - f.meanObpm) / f.sdObpm) * f.sdOff;
+  return OFFENSE_ANCHOR.share * Math.min(1, real.minutes / OFFENSE_ANCHOR.fullMinutes) * (implied - boxOffense);
+}
+
 function rawComponents(
   span: PlayerSpan,
   applyCurryException: boolean,
@@ -971,9 +1022,10 @@ function rawComponents(
   // for it. Selective and one-directional — 0 for guards/wings, stretch bigs, face-up PFs,
   // passing hubs, and low-usage lob threats; see rimPressure.ts. Same additive scale as `gravity`.
   const rimPressureOffense = rimPressureOffenseTerm(span);
-  const offense =
+  const boxOffense =
     (scoringRate + efficiency + playmaking + centerPlaymaking + gravity + playmakingThreeLevel + rimPressureOffense) *
     usageScale;
+  const offense = boxOffense + offenseAnchor(span, boxOffense);
 
   // Real DARKO plus-minus data (where it exists, 1997-98+) can reveal defensive value the
   // box score alone can't see (see darkoCorrection.ts) — Garnett and Duncan are the clearest
