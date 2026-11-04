@@ -153,6 +153,7 @@ export function createDraft(
   /** A daily's cap (every team) and rule (the human only) — 2026-10-16. */
   daily?: { day: string; cap: number; rule: DailyRule; bomb?: DailyBomb },
 ): DraftState {
+  planClaimsBySeed.delete(seed);
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
   if (import.meta.env?.DEV) {
@@ -616,6 +617,8 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     profile: aiProfileForTeam(state.seed, team),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
     boardSeed: mixSeed(state.seed, 0x7b00 + team.draftSlot),
+    planTeam: team.id,
+    planClaims: planClaimsFor(state.seed),
   };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
@@ -633,6 +636,19 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     if (next !== state) return next;
   }
   return null;
+}
+
+/** The AI teams' shared plan claims for one draft (`AiDraftRuleset.planClaims`), by seed; the last
+ * few drafts only. Rebuilt as teams replan, so a reloaded draft just starts them afresh. */
+const planClaimsBySeed = new Map<number, Map<string, string>>();
+function planClaimsFor(seed: number): Map<string, string> {
+  let claims = planClaimsBySeed.get(seed);
+  if (!claims) {
+    if (planClaimsBySeed.size >= 4) planClaimsBySeed.delete(planClaimsBySeed.keys().next().value!);
+    claims = new Map();
+    planClaimsBySeed.set(seed, claims);
+  }
+  return claims;
 }
 
 /** Resolves the current pick if it belongs to an AI team. Returns null if it's the human's turn or the draft is already complete. */

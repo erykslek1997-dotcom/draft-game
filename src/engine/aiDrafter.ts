@@ -1817,6 +1817,10 @@ export interface AiDraftRuleset {
   profileStrength?: number;
   /** Seed of this GM's own board (`boardNoise`); omitted means the shared board. */
   boardSeed?: number;
+  /** Planned drafting (`AI_PLAN`): this team's key and the draft's shared player claims
+   * (normalized name -> team key), so AI plans don't chase the same players. */
+  planTeam?: string;
+  planClaims?: Map<string, string>;
 }
 
 /**
@@ -1935,10 +1939,22 @@ export const AI_PLAN = {
   cheapAlternatives: 6,
   passes: 2,
   crowdCost: 1.5,
+  share: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SHARE ?? '0') === '1',
 };
-function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, slots: number): PlayerSpan | null {
-  if (!teamScorer || slots <= 0 || board.length === 0) return null;
+function planPick(
+  roster: PlayerSpan[],
+  fullBoard: PlayerSpan[],
+  capLeft: number,
+  slots: number,
+  team?: string,
+  claims?: Map<string, string>,
+): PlayerSpan | null {
+  if (!teamScorer || slots <= 0 || fullBoard.length === 0) return null;
   const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
+  // Stage 2 (`AI_PLAN.share`): players another AI team has planned for are off this team's board.
+  const shared = AI_PLAN.share && team !== undefined && claims !== undefined;
+  const board = shared ? fullBoard.filter((p) => (claims!.get(key(p)) ?? team) === team) : fullBoard;
+  if (board.length === 0) return null;
   const plan = completeRosterGreedy(roster, board, capLeft, slots).slice(roster.length);
   if (plan.length === 0) return null;
   // A third player at one position (three point guards: 15% of AI teams, 24% with plans, the cheap
@@ -1974,7 +1990,12 @@ function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, sl
   }
   // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
   // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
-  return [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  const pick = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  if (shared) {
+    for (const [name, owner] of claims!) if (owner === team) claims!.delete(name);
+    for (const p of plan) if (p !== pick) claims!.set(key(p), team!);
+  }
+  return pick;
 }
 
 interface FiveGaps {
@@ -2746,7 +2767,7 @@ export function pickForAi(
   }
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
-    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length);
+    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length, ruleset?.planTeam, ruleset?.planClaims);
     if (planned) return planned;
   }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
