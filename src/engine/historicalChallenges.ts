@@ -3,7 +3,6 @@ import type { FitScoreResult } from './fit';
 import { offenseScoreBreakdown, type ScoreBreakdown } from './scoring';
 import type { SeasonProfileResult } from './seasonProfile';
 import type { Team } from './types';
-import quantiles from '../data/challengeQuantiles.json';
 
 export interface HistoricalChallengeCondition {
   label: string;
@@ -75,12 +74,3 @@ export function challengeMetrics(
   };
 }
 
-/** `QUANTILES[metric][p]` = the value at percentile p (0-100) of drafted rosters. */
-const QUANTILES = quantiles as Partial<Record<ChallengeMetric, number[]>>;
-
-/** The value a roster needs to be in the top `topPct`% (or, `max`, the bottom `topPct`%). */
-export function challengeThreshold(metric: ChallengeMetric, topPct: number, side: 'min' | 'max' = 'min'): number {
-  const q = QUANTILES[metric];
-  if (!q || q.length !== 101) return side === 'min' ? Infinity : -Infinity;
-  return q[side === 'min' ? 100 - topPct : topPct];
-}

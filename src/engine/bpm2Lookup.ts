@@ -1,7 +1,4 @@
-import type { PlayerSpan } from '../data/schema';
-import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
-import { spanEndYears } from './era';
 // .pool.json is bpm2.json trimmed to only players who ever appear in draftPool.json, same
 // pattern as darkoLookup.ts/raptorLookup.ts/matchupDefenseLookup.ts's own trims.
 import bpm2Data from '../data/awards/bpm2.pool.json';
@@ -53,14 +50,3 @@ export function buildBpm2YearMap(field: 'dbpm' | 'bpm' = 'dbpm'): Map<string, Ma
   return byNameYear;
 }
 
-/** Averages whichever of a span's covered years the map actually has data for. Returns null if
- * there's no overlap at all. */
-export function avgBpm2DefenseForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): number | null {
-  const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
-  if (!yearMap) return null;
-  const values = spanEndYears(span.spanLabel)
-    .map((y) => yearMap.get(y))
-    .filter((v): v is number => v !== undefined);
-  if (values.length === 0) return null;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
