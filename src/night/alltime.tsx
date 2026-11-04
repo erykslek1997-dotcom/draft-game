@@ -218,7 +218,7 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
             <th className="c-hide">Team</th>
             <th className="c-hide">Tier</th>
             <th className="r">Pts · Reb · Ast</th>
-            <th className="r c-hide">Off · Def</th>
+            <th className="r c-hide">Off · Def · 3PT · Dur</th>
             <th className="r">Caps</th>
             <th />
           </tr>

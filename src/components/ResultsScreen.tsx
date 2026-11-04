@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
 import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
@@ -404,7 +405,7 @@ function offenseTip(team: Team): string {
     .map((k) => [k, parts[k]] as const)
     .sort((a, b) => a[1] - b[1])[0];
   if (!drag) return `The offense trailed the field. ${OFFENSE_PART_TIP[weakestPart]}`;
-  return `The offense trailed the field, and ${drag.row.player.playerName} gave it the least: O-TAL ${drag.otal} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${MEDIAN_OTAL_BY_SLOT[drag.slot]}. ${OFFENSE_PART_TIP[weakestPart]}`;
+  return `The offense trailed the field, and ${drag.row.player.playerName} gave it the least: offense ${offenseRating(drag.row.player)} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${RATING_MEDIAN}. ${OFFENSE_PART_TIP[weakestPart]}`;
 }
 
 export function nextDraftTip(label: string, team: Team): string | undefined {
@@ -490,7 +491,7 @@ function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldS
 
 /** Rotation players below their slot's value — named under Defense details. See
  * `WEAK_DEFENDER_DTAL`. */
-function weakDefendersFor(team: Team): { name: string; slot: Position; dtal: number; minutes: number }[] {
+function weakDefendersFor(team: Team): { name: string; slot: Position; dtal: number; rating: number; minutes: number }[] {
   const minutes = new Map<string, { player: ResolvedSlotAssignment['player']; minutes: number; bySlot: Map<Position, number> }>();
   for (const entry of allAssignments(team)) {
     const row = minutes.get(entry.player.id) ?? { player: entry.player, minutes: 0, bySlot: new Map<Position, number>() };
@@ -503,7 +504,7 @@ function weakDefendersFor(team: Team): { name: string; slot: Position; dtal: num
     .map((row) => {
       const slot = [...row.bySlot.entries()].sort((a, b) => b[1] - a[1])[0][0];
       const dtal = Math.round(computeDefensiveTalent(row.player));
-      return { name: row.player.playerName, slot, dtal, minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
+      return { name: row.player.playerName, slot, dtal, rating: defenseRating(row.player), minutes: Math.round(row.minutes), gap: WEAK_DEFENDER_DTAL[slot] - dtal };
     })
     .filter((row) => row.gap > 0)
     .sort((a, b) => b.gap - a.gap)
@@ -550,7 +551,7 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
               {weakDefenders.map((row, i) => (
                 <span key={row.name}>
                   {i > 0 && ' · '}
-                  <b>{shortenName(row.name)}</b> D-TAL {row.dtal} at {row.slot} ({row.minutes} min)
+                  <b>{shortenName(row.name)}</b> defense {row.rating} at {row.slot} ({row.minutes} min)
                 </span>
               ))}
             </p>
