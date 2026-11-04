@@ -1934,9 +1934,9 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
 export const AI_PLAN = {
   on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
   fromRoster: 2,
-  alternatives: 14,
+  alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? 14),
   cheapFga: 7,
-  cheapAlternatives: 6,
+  cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
   crowdCost: 1.5,
   share: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SHARE ?? '0') === '1',
