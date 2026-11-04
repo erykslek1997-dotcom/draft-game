@@ -131,7 +131,7 @@ export function buildTeamModelExtension(source: TeamModelSource): TeamModelExten
     0.45,
     defensiveCoverageCapacity * (0.20 + 0.25 * layerConfidence),
   );
-  const defensiveWeakLinkSeverity = clamp01(huntability.penalty / 20);
+  const defensiveWeakLinkSeverity = clamp01(huntability.exposurePenalty / 20);
   const huntabilityExposureScore = clamp01(
     defensiveWeakLinkSeverity * (1 - huntabilityMitigationScore),
   );

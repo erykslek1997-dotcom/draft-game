@@ -369,6 +369,17 @@ function smallestFragment(
         (player !== undefined && homeById.get(id) !== g.slot && positionCompetenceScore(player, g.slot) < THIRD_SLOT_MIN_SCORE),
     );
   };
+  // 2026-11-04, week 3 (the user: "Artest zaczyna na SG, kończy na PF"): two stints two or more
+  // slots apart, neither at the player's own position, make the away one a fragment (LeBron, a
+  // four who runs the point, keeps both).
+  const ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
+  const farJump = (g: MinuteGrant) => {
+    const player = byId.get(g.playerId);
+    if (!player || g.slot === player.primaryPosition) return false;
+    return (byPlayer.get(g.playerId) ?? []).some(
+      (o) => o.slot !== g.slot && o.slot !== player.primaryPosition && Math.abs(ORDER.indexOf(o.slot) - ORDER.indexOf(g.slot)) >= 2,
+    );
+  };
   const secondBackup = new Set<MinuteGrant>();
   for (const slot of STARTER_SLOTS) {
     const backups = grants.filter((g) => g.slot === slot && homeById.get(g.playerId) !== slot).sort((a, b) => a.minutes - b.minutes);
@@ -378,7 +389,7 @@ function smallestFragment(
     .filter((g) => homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
     .map((g) => {
       const original = grants.find((x) => x.playerId === g.playerId && x.slot === g.slot)!;
-      return { ...g, overSlots: tooManySlots(g.playerId), crowded: secondBackup.has(original) };
+      return { ...g, overSlots: tooManySlots(g.playerId) || farJump(original), crowded: secondBackup.has(original) };
     })
     .filter((g) => g.minutes < MIN_STINT_MINUTES || g.overSlots || g.crowded);
   return candidates.sort((a, b) => a.minutes - b.minutes)[0];

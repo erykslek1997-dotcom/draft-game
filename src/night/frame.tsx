@@ -20,7 +20,6 @@ export const CapI = () => <i className="capi" aria-hidden />;
 
 // Caps always carry one decimal, so a column of them lines up ("19.0" next to "22.5"; playtest 2026-10-22).
 export const fmtCaps = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
-export const fmt1 = (v: number) => v.toFixed(1);
 
 /* ---------------- page frame ---------------- */
 

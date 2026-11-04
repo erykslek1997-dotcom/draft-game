@@ -2,32 +2,6 @@ import type { Team } from './types';
 import { TEAM_COUNT } from './positions';
 import { projectMatchup, type MatchupTeamCache } from './matchup';
 import { buildMatchupCache, type SeasonStandingsRow } from './seasonSimulation';
-
-/**
- * 2026-08-19, user's follow-up on the just-shipped 82-game season sim ("can we add playoffs?"):
- * confirmed via AskUserQuestion before building — seeded by the JUST-SIMULATED season's own
- * standings (not the Final Power Ranking `leagueSimulation.ts`'s championship-odds % already uses),
- * and every series is genuinely played out game by game (not a single random draw against the
- * closed-form series-win probability) — same "simulate once, real result, re-rollable" spirit the
- * season sim itself already established, and it lets a playoff series show a real score line like
- * "4-2" instead of just a winner.
- *
- * Deliberately its own file, not folded into `seasonSimulation.ts` — a season and a playoff
- * bracket are two genuinely different rolls (re-rolling the playoffs alone, from the SAME already-
- * rolled season standings, is a real, expected use case: "same season, let's see the playoffs
- * again"), so they need independent state/re-roll buttons in the UI.
- * `leagueSimulation.ts` (the exact same bracket construction, just seeded by a different source and
- * resolved by a different method) rather than a second copy.
- */
-
-/**
- * 2026-09-24, user's own call ("po symulacji sezonu top8 wchodzi"): only the top 8 of the simulated
- * season make these playoffs — it used to seed all 16, so a 5-77 team still got a bracket spot.
- * Deliberately NOT applied to `leagueSimulation.ts`'s title odds (the hero's "Title odds"), which
- * stay the separate 16-team expectation they always were; the user chose to keep that as is.
- * Standard 8-team bracket: 1v8 / 4v5 on one side, 2v7 / 3v6 on the other.
- */
-export const PLAYOFF_TEAM_COUNT = 8;
 const SEED_ORDER_8 = [1, 8, 4, 5, 2, 7, 3, 6];
 const ROUND_LABELS: readonly string[] = ['Quarterfinals', 'Semifinals', 'Finals'];
 

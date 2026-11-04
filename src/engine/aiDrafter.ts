@@ -335,11 +335,13 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
  *    all in fit −5 and spacing −4 — stars who don't fit), hence the check.
  *  - `playmakingByBallShare`: the second-playmaker discount follows the ball-share cost the team
  *    score charges (ballHandling.ts), not "7+ assists": Overall unchanged, the worst fall 73 → 33.
+ *  - `fallHandlerCost` (2026-11-04, the user: Oscar beside Chris Paul): the net never takes a player
+ *    who adds this much ball-share cost to the five (Oscar beside Paul 1.79, Penny beside Wade 0.71).
  * Tried and dropped (no effect): talent-only first picks, the team-score lookahead from the second
  * pick, a cap on the need multiplier, a talent exemption from the playmaker discount.
  * Mutable so the measurement can switch each off.
  */
-export const AI_STAR_RULES = { fallNet: true, fallSlack: 48, fallFitMargin: 0.5, playmakingByBallShare: true };
+export const AI_STAR_RULES = { fallNet: true, fallSlack: 48, fallFitMargin: 0.5, playmakingByBallShare: true, fallHandlerCost: 0.7 };
 /** How many of the fallen (best TAL first) the net weighs by the team score. */
 const FALL_NET_CHECKED = 4;
 const FALL_NET_FROM_PICK = 20;
@@ -1494,10 +1496,6 @@ const LOTTERY_POOL = 5;
  */
 const LOTTERY_WEIGHT_EXPONENT = 2;
 let lotteryWeightExponent = LOTTERY_WEIGHT_EXPONENT;
-/** Test-only: sweep the lottery shape (`scripts/checkLotteryExponent.ts`). Not used in the app. */
-export function setLotteryWeightExponent(e: number): void {
-  lotteryWeightExponent = e;
-}
 
 /** `k` is the pool size; returns descending weights `[k^e, (k-1)^e, … 1^e]`. */
 function lotteryWeights(k: number): number[] {
@@ -1983,7 +1981,15 @@ export function pickForAi(
   const atPosition = (pos: Position) => roster.filter((r) => r.primaryPosition === pos).length;
   const fallen =
     AI_STAR_RULES.fallNet && pickNumber !== undefined && pickNumber > FALL_NET_FROM_PICK
-      ? planningCandidates.filter((p) => talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber && atPosition(p.primaryPosition) < 2)
+      ? planningCandidates.filter(
+          (p) =>
+            talentRankPick(effectiveTalent(p)) + AI_STAR_RULES.fallSlack < pickNumber &&
+            atPosition(p.primaryPosition) < 2 &&
+            // 2026-11-04 (the user: Oscar beside Chris Paul, Penny beside Wade — "trochę overkill"):
+            // never a second ball-dominant handler for the five.
+            !(needs.starterPlayers.length > 0 &&
+              ballHandlerCost([...needs.starterPlayers, p]) - ballHandlerCost(needs.starterPlayers) >= AI_STAR_RULES.fallHandlerCost),
+        )
       : [];
 
   // 2026-08-07, user's own diagnosis: force the starting five to actually complete EARLY, while

@@ -568,121 +568,11 @@ const PG_ARCHETYPE_MAX_TIER_DROP = 1;
 // 2026-09-25, user: Harden's 2015-onward spans are now primary PG (players.ts POSITION_OVERRIDES)
 // and his 2018-20 span was explicitly moved back to MVP 92 like the rest of his peak — the entry
 // was removed. The mechanism stays for a future explicit ask.
-const NAMED_TIER_EXCEPTIONS: ReadonlySet<string> = new Set(
-  ([] as { name: string; spanLabel: string }[]).map((e) => `${normalizePlayerName(e.name)}|${e.spanLabel}`),
-);
 
-function hasNamedTierException(playerName?: string, spanLabel?: string): boolean {
-  if (!playerName || !spanLabel) return false;
-  return NAMED_TIER_EXCEPTIONS.has(`${normalizePlayerName(playerName)}|${spanLabel}`);
-}
 
-/**
- * 2026-08-14, user-reported: Andrei Kirilenko's 2004-06 span (SF, O-TAL D+/62, D-TAL literal
- * S/99) displays MVP on defense alone — SF's own `tierCaps` case (below) has exactly one rule
- * (All-NBA needs A- on at least one side), no MVP-tier offense floor at all, unlike C's more
- * layered two-way rules.
- *
- * A general "SF needs B+ offense to reach MVP" rule was tried first and rejected on blast radius:
- * full archive, 25 spans, sweeping in real, externally-validated two-way wing peaks whose own
- * defense sits in the same S/A+ band as Kirilenko's and can't be told apart from his on grade
- * alone — Scottie Pippen (7 spans), Julius Erving (5), Kawhi 2014-16, Giannis 2016-18, Larry Bird,
- * Paul George, Grant Hill, Elgin Baylor, Jimmy Butler, Paul Pierce. Named downcap instead, same
- * shape as `NAMED_TIER_EXCEPTIONS` above but in the opposite direction (forces a tier DOWN rather
- * than bypassing a cap) — the same "scoped to exactly the one span asked about, not a new general
- * rule" reasoning as `talent.ts`'s own Durant SF-defense-cap exclusion / CP3 two-way exemption.
- */
-/**
- * 2026-08-19, user-reported: CJ McCollum's 2020-22 span (PG, O-TAL C+/65, D-TAL D/47) displays
- * All-NBA off raw TAL (81) alone landing in that tier's floor band — no PG-side rule pulls it
- * back down, since PG's own tierCaps case (unlike SG's) has no "needs real two-way value or
- * elite offense to reach All-NBA" downcap at all. Tried building that general rule first
- * (mirroring SG's exact threshold) and rejected it on blast radius before shipping: full PG
- * archive, 86 All-NBA+-tier spans would have been wrongly downcapped, including real MVP-caliber
- * peaks (Westbrook 2015-17, Magic 1986-88, Oscar Robertson 1965-67, Isiah Thomas 1984-86, Luka
- * 2019-21) whose own O-TAL grade (B/B+) sits well below SG's A- bar but is still a genuine star
- * profile for a PG specifically — PG's real O-TAL distribution runs structurally lower than SG's
- * (compared against an elite-playmaking-peak bar, not a scoring one), so SG's exact threshold
- * doesn't transfer. A narrower, PG-calibrated version (offense >= B- OR defense >= A-) fixed most
- * of that but still had real judgment calls left in the remainder (Chris Paul 2017-19, Kyrie
- * 2014-16 — genuinely no-standout-side profiles, arguably correct to downcap, but not clearly
- * asked for). User's own call: fix this one reported span directly, same shape as the two
- * existing named downcaps below, not a new general PG rule.
- */
-const NAMED_TIER_DOWNCAPS: ReadonlyMap<string, OverallTier> = new Map(
-  // 2026-09-27, engine audit: entries the engine now reproduces on its own were removed (checked by
-  // switching every named correction off and comparing TAL and tier on every span): Kirilenko,
-  // McCollum, McMillan, Jim Jackson, Stephen Jackson, Walt Williams, Jason Terry, Dirk Nowitzki,
-  // Gobert and Tatum. Second pass the same day, after the softer playoff penalty (every entry
-  // switched off one at a time, then all together, comparing TAL, tier, effective TAL, raw TAL,
-  // O-TAL and D-TAL on every span): Webber 1996-98, Cousins, Draymond Green (all four), Malone
-  // 1988-90/1989-91/1993-95, Ginóbili, Embiid, Barkley, four Drexler spans, Towns and Ingles.
-  // Comments below that still name them describe why they were added.
-  [
-    { name: 'Vince Carter', spanLabel: '2012-14', cap: 'Starter' as OverallTier },
-    // 2026-09-01, SG audit: two never-All-Star empty-volume scorers whose O-TAL alone carries them
-    // to All-star while every real plus-minus source has them clearly net-negative. The SG two-way
-    // cap holds them at All-star (out of All-NBA) but has no lower rung. Monta Ellis 2009-11 (25.5
-    // ppg on poor efficiency, D-TAL F, blendedRealValue -2.10 — the canonical "stats All-Star" who
-    // never actually made one); Jason Terry 2000-02 (young chucker on 25-win Hawks, rv -0.79,
-    // pre-Sixth-Man-of-the-Year). Both scoped single spans — their real, positive-value seasons
-    // (Terry's Mavs/Sixth Man years, Ellis's later Mavs/Pacers) are untouched.
-    { name: 'Monta Ellis', spanLabel: '2009-11', cap: 'Starter' as OverallTier },
-    // 2026-09-01, SF audit: same empty-volume pattern as the two SG downcaps above. Jalen Rose's
-    // 1999-2002 Pacers peak (19-20 ppg lead scorer, incl. the 2000 Finals run) reads All-star off
-    // O-TAL alone while every plus-minus source has him net-negative (rv -0.64 / -0.87, D-TAL D)
-    // and he was never a real All-Star. His genuine positive seasons aren't in the pool at
-    // All-star anyway; scoped to the two peak-usage spans.
-    { name: 'Jalen Rose', spanLabel: '1999-01', cap: 'Starter' as OverallTier },
-    { name: 'Jalen Rose', spanLabel: '2000-02', cap: 'Starter' as OverallTier },
-    // 2026-09-02, user batch feedback: Dirk / Malone read a "Legend" badge a rung too
-    // high, Cousins "MVP zbyt wysoko". All ride the +7 two-way synergy bonus (maxed — see
-    // talent.ts `MAX_TWO_WAY_SYNERGY_BONUS`); a synergy trim was measured (`scripts/_diagSynergy.ts`)
-    // and reverted — it cost GOAT-40 0.009 for near-zero effect at the very top (the 95-100
-    // soft-cap absorbs a -1) and no clean surgical parameter exists (Malone/Cousins clear the
-    // ramp on real box defense; Dirk can't be told apart from real 3-and-D wings by normalized
-    // defense). Named downcap on each affected span instead — display + gameplay number both
-    // drop (post-2026-08-19 `effectiveTalent` unification), `computeTalent` raw is untouched so
-    // Taylor top-10 / Backpicks GOAT-40 are unaffected (both validate off raw). (SGA / Kawhi /
-    // AD were also flagged "~3 too high" but a downcap to MVP over-corrects them to ~90 — that
-    // trio is the deferred "top of the scale is compressed" session, left alone here.)
-    { name: 'Karl Malone', spanLabel: '1992-94', cap: 'MVP' as OverallTier },
-    { name: 'Karl Malone', spanLabel: '1994-96', cap: 'MVP' as OverallTier },
-    // 2026-09-09, user batch feedback ("Webber zawsze narzekałem, reszta git" — of the
-    // AI-over-drafted volume forwards, Barkley/Drexler are friend-group taste to leave alone,
-    // Webber genuinely reads a rung high). Only 2000-02 (cTAL/eTAL 90) sits in 'MVP'; his other
-    // peak spans (1996-98, 1999-01 at 87, 2001-03 at 86) are already All-NBA. A 1st-team All-NBA
-    // but never-real-MVP-candidate season shouldn't clear the MVP floor; capping it to All-NBA
-    // brings it in line with the rest of his own prime. `computeTalent` raw untouched.
-    { name: 'Chris Webber', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
-    // 2026-09-16, user batch feedback ("Tatum/Ginóbili greatest peak", "Malone/Embiid/Barkley
-    // też... 93 TAL i MVP", then "w sumie Manu i Tatum nawet ALL-NBA", "Drexler i Ray Allen ->
-    // All-NBA"): the bestTalentSpan the browse-list card shows for each of these read a tier (or,
-    // for Drexler, a whole cluster of spans) higher than the friend group's own read of these
-    // careers. Tatum's own 2021-23 span already had a `NAMED_DISPLAY_TAL` fix (see below) for
-    // exactly this shape, but a DIFFERENT span (2022-24, raw 95) has since overtaken it as his
-    // bestTalentSpan — same for Malone, where the existing 1992-94/1994-96 downcaps (2026-09-02
-    // batch, below) left three sibling Greatest-peak spans (1993-95/1989-91/1988-90) untouched.
-    // Every span here is the one currently winning `bestTalentSpan` for its player (or, for
-    // Drexler, the full cluster of spans that would otherwise just hand the badge to the next one
-    // down) — see `NAMED_DISPLAY_TAL` below for the matching number on each of these.
-    // Drexler's entire peak cluster (6 spans, raw 90-92) sat in MVP with no single outlier, so all
-    // six were capped together; the two left are the ones still doing work.
-    { name: 'Clyde Drexler', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
-    { name: 'Clyde Drexler', spanLabel: '1990-92', cap: 'All-NBA' as OverallTier },
-    { name: 'Ray Allen', spanLabel: '2000-02', cap: 'All-NBA' as OverallTier },
-    // 2026-09-25, user ("Kevin Johnson przesada"): the every-position playmaking bonus lifted his
-    // 1989-91 O-TAL from 84 to exactly 85, the A- line PG's MVP gate reads, and the badge jumped
-    // All-NBA -> MVP (93). His neighbouring peak spans stay All-NBA; this keeps the one outlier in
-    // line with them.
-    { name: 'Kevin Johnson', spanLabel: '1989-91', cap: 'All-NBA' as OverallTier },
-  ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.cap]),
-);
 
-function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier | undefined {
-  if (!playerName || !spanLabel) return undefined;
-  return NAMED_TIER_DOWNCAPS.get(`${normalizePlayerName(playerName)}|${spanLabel}`);
-}
+
+
 
 /**
  * 2026-09-02, user batch feedback ("Tatum 84, powinien być 87"): the span the browse-list header
@@ -704,36 +594,25 @@ function namedTierDowncap(playerName?: string, spanLabel?: string): OverallTier 
 const NAMED_DISPLAY_TAL: ReadonlyMap<string, number> = new Map(
   // 2026-09-27, engine audit: Jayson Tatum's two entries removed — both spans read 87 without them.
   [
-    // 2026-09-16 batch (see the matching `NAMED_TIER_DOWNCAPS`/`NAMED_TIER_RAISES` entries above
-    // for the full "why" on each) — explicit numbers so the badge and the number agree without
-    // relying on `applyGradeCeiling`'s auto-compression, which has previously undershot a tier's
-    // real ceiling (the original reason `NAMED_DISPLAY_TAL` exists at all, per Tatum 2021-23
-    // above). All-NBA group lands at 87 (top of its 80-87 band); MVP group at 93 (top of its
-    // 88-93 band, the exact number the user asked for); West at 90 ("w okolicy 90" — mid-band,
-    // not the ceiling, since only a modest raise was asked for there).
-    { name: 'Manu Ginóbili', spanLabel: '2006-08', tal: 87 },
     { name: 'Karl Malone', spanLabel: '1993-95', tal: 93 },
     { name: 'Karl Malone', spanLabel: '1989-91', tal: 93 },
     { name: 'Karl Malone', spanLabel: '1988-90', tal: 93 },
     { name: 'Joel Embiid', spanLabel: '2020-22', tal: 93 },
-    { name: 'Charles Barkley', spanLabel: '1989-91', tal: 93 },
     { name: 'Clyde Drexler', spanLabel: '1991-93', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1986-88', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1988-90', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1987-89', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1989-91', tal: 87 },
     { name: 'Clyde Drexler', spanLabel: '1990-92', tal: 87 },
-    { name: 'Ray Allen', spanLabel: '2000-02', tal: 87 },
     // 2026-09-25, user ("Draymond, Towns, Ingles za wysoko" — all three drafted far above their
     // standing: Draymond ~30th, Ingles ~45th on average). Matching `NAMED_TIER_DOWNCAPS` entries.
     { name: 'Draymond Green', spanLabel: '2015-17', tal: 82 },
     { name: 'Draymond Green', spanLabel: '2014-16', tal: 81 },
     { name: 'Draymond Green', spanLabel: '2016-18', tal: 80 },
     { name: 'Draymond Green', spanLabel: '2017-19', tal: 78 },
-    { name: 'Karl-Anthony Towns', spanLabel: '2018-20', tal: 82 },
-    { name: 'Joe Ingles', spanLabel: '2019-21', tal: 68 },
-    { name: 'Joe Ingles', spanLabel: '2018-20', tal: 66 },
     { name: 'Jerry West', spanLabel: '1971-73', tal: 90 },
+    // Ray Allen 2000-02 (the user, 2026-09-16: "Drexler i Ray Allen -> All-NBA"); also steadies 2001-03 through smoothing.
+    { name: 'Ray Allen', spanLabel: '2000-02', tal: 87 },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tal] as const),
 );
 
@@ -795,16 +674,6 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // mechanically-luckier neighbouring span already earned; not All-NBA (our gate wants the
     // offense his real .473 TS genuinely lacked, even as the league voted him All-NBA on volume).
     { name: 'Elvin Hayes', spanLabel: '1972-74', tier: 'All-star' as OverallTier },
-    // 2026-09-01, PF audit: Larry Nance 1989-91 reads Role Player / TAL 55 wedged between 1988-90
-    // (Starter 67) and 1990-92 (All-star 77) with a nearly identical box line (0.8 spg / 2.3 bpg vs
-    // 0.8/2.4 and 0.9/2.8). The whole 12-point D-TAL crater is `darkoDefenseBonus` stepping to
-    // exactly 0.00 for this one span (neighbours 0.09-2.66) — his BPM2 that window is 1.11 vs
-    // ~1.5-1.7 around it, a real but small dip (age 30-31, knee, Phoenix->Cleveland trade) that
-    // tips the real-minus-box excess just under zero, and the bonus never subtracts so it floors.
-    // A step function at 0 over-reacting to a ~0.4 BPM2 move, amplified by the ladder being steep
-    // there. Raise to Starter (the lower bracket, 1988-90) — not All-star: rv 3.01 and BPM2 1.11
-    // both independently agree this was his weakest peak-era window, just not a Role-Player one.
-    { name: 'Larry Nance', spanLabel: '1989-91', tier: 'Starter' as OverallTier },
     // 2026-09-01, SG audit: George Gervin's 1979-84 scoring peak reads Role Player across four
     // straight spans despite being 4x scoring champion / 5x consecutive All-NBA 1st team, with a
     // still-positive blendedRealValue (2.2-2.3 in 1979-82). The cause is real — both his box stocks
@@ -826,7 +695,6 @@ const NAMED_TIER_RAISES: ReadonlyMap<string, OverallTier> = new Map(
     // the numbers stay where the cap put them.
     { name: 'Reggie Miller', spanLabel: '1999-01', tier: 'All-star' as OverallTier },
     { name: 'Reggie Miller', spanLabel: '2000-02', tier: 'All-star' as OverallTier },
-    { name: 'Ray Allen', spanLabel: '2010-12', tier: 'All-star' as OverallTier },
   ].map((e) => [`${normalizePlayerName(e.name)}|${e.spanLabel}`, e.tier]),
 );
 
@@ -1170,13 +1038,11 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
     otalGrade,
     dtalGrade,
     ctx.fga,
-    hasNamedTierException(ctx.playerName, ctx.spanLabel),
+    false,
     ctx.otal,
     cp3TwoWayExemptionShare(ctx.playerName ?? '', ctx.otal, ctx.dtal) > 0,
   );
   if (ctx.spanLabel && isUnvalidatedPre1976Span(ctx.spanLabel, ctx.playerName)) caps.push('All-NBA');
-  const downcap = namedTierDowncap(ctx.playerName, ctx.spanLabel);
-  if (downcap) caps.push(downcap);
   // 2026-09-01, user's long-open "PG overvalues defensive profiles" follow-up. A defensive PG with
   // a weak offensive grade can stack `twoWaySynergyBonus` + `darkoDefenseBonus` + the
   // `synergyGateDefense` corroboration bump into an All-NBA number — Mookie Blaylock x4 (1
@@ -1303,13 +1169,13 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   let result: OverallTier = ctx.isSixthMan ? 'Sixth Man' : capped;
   // 2026-09-01 (Bosh/Gasol/Aldridge): a sustained real plus-minus record (`realValueFloor.ts`) the
   // box-score base badly understates for high-volume mid-range scoring bigs. Raise only, capped at
-  // 'All-star' by construction, yields to an explicit `NAMED_TIER_DOWNCAPS` entry, and beats the
+  // 'All-star' by construction, and beats the
   // instant-offense-off-the-bench relabel (a genuine +4 real-value player is not a bench
   // specialist — the same case the `isSixthManProfile` real-value guard in `sixthMan.ts` handles).
-  if (ctx.realValueFloor && !downcap && tierRank(ctx.realValueFloor) > tierRank(result)) {
+  if (ctx.realValueFloor && tierRank(ctx.realValueFloor) > tierRank(result)) {
     result = ctx.realValueFloor;
   }
-  if (ctx.playoffValidatedAllNba && !downcap && tierRank(result) < tierRank('All-NBA')) {
+  if (ctx.playoffValidatedAllNba && tierRank(result) < tierRank('All-NBA')) {
     result = 'All-NBA';
   }
   // See NAMED_TIER_RAISES's own docstring — a direct override, not gated on any real tier the
@@ -1318,13 +1184,6 @@ function ruleTierForSpan(ctx: TierGateContext): OverallTier {
   // span if one ever existed.
   const raise = namedTierRaise(ctx.playerName, ctx.spanLabel);
   if (raise && tierRank(raise) > tierRank(result)) return raise;
-  // 2026-09-25, user-reported (Drexler's draft card framed All-star while it read TAL 87): a span
-  // with BOTH a named downcap and a named display number was hand-set to exactly that badge and
-  // number. Later formula drift (his D-TAL now grades C+, so the SG two-way cap fires) pulled the
-  // badge below the number it still shows. For those spans the named tier is exact, not a cap.
-  if (downcap && namedDisplayTal(ctx.playerName, ctx.spanLabel) !== undefined && tierRank(result) < tierRank(downcap)) {
-    return downcap;
-  }
   return result;
 }
 
@@ -1473,11 +1332,11 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Anthony Edwards', 87], // top of All-NBA
     ['Gilbert Arenas', 84], // mid All-NBA
     ['DeMarcus Cousins', 81], // low All-NBA
-    ['Ray Allen', 85], // high-mid All-NBA
-    ['Kevin Johnson', 85], // high-mid All-NBA
     ['Chris Mullin', 83],
     ['Joel Embiid', 95], // top of MVP, not Legend
     ['Donovan Mitchell', 86], // All-NBA, not MVP
+    ['Ray Allen', 85], // high-mid All-NBA
+    ['Kevin Johnson', 85], // high-mid All-NBA
   ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
 );
 

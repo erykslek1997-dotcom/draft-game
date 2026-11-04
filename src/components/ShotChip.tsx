@@ -82,24 +82,4 @@ export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
   );
 }
 
-/** 2026-09-11, user-reported live on Szybka 5 ("cap bardziej widoczny"): the plain-text "Cap
- * remaining: N / M shots" label was easy to miss. Same real meter Best Five already has (label +
- * filled track), shared so both modes get one visible, consistent cap readout instead of two
- * different-looking ones. Whole-number display throughout — the underlying cap math stays exact
- * decimal, only what's shown is rounded (same "zaokrąglnijmy shots" ask applied everywhere). */
-export function ShotsMeter({ used, cap, label = 'Caps' }: { used: number; cap: number; label?: string }) {
-  const over = used > cap;
-  return (
-    <div className={`bf-shots-meter ${over ? 'bf-shots-meter--over' : ''}`}>
-      <span className="bf-shots-label">
-        <CapIcon size={16} /> {label}: <b>{Math.round(used)}</b> / {Math.round(cap)}
-        {over && ' — over the cap'}
-      </span>
-      <span className="bf-shots-track">
-        <span className="bf-shots-fill" style={{ width: `${Math.min(100, (used / cap) * 100)}%` }} />
-      </span>
-    </div>
-  );
-}
-
 export { CapIcon, Caps, CapsInfoHost } from './CapIcon';

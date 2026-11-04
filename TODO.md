@@ -1598,7 +1598,31 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
   Nash/Kerr/Schrempf zaadresowane (`886ad0b`); dwa zgłoszenia AI draft-value okazały się nie-błędami
   (spany tego samego gracza znikają razem; tańszy span Shaqa to celowy wybór).
 
-## Kalibracje po drugim przeglądzie tierów (2026-10-30) — DO ZROBIENIA
+## Kalibracje po drugim przeglądzie tierów (2026-10-30) — STAN 2026-11-04 (tydzień 3, noc)
+Zrobione (gałąź claude/game-ui-ux-analysis-p9x9ga, NIE na main — czeka na OK Eryka):
+- 0 sprzątanie: −2690 linii / 43 pliki, zachowanie identyczne (cała pula + 3 ligi). Komentarzy jeszcze nie skracane.
+- 1 atak: kotwica do realnego OBPM (60%, w obrębie pozycji). SRS r 0,779→0,798. „Ratunek posiadania” zmierzony
+  i odrzucony (zero zysku na SRS). Maxey/Parker/Ray/Vince: OBPM nie potwierdza zmian, o które prosił Eryk.
+- 2 polowanie: kara ×0,25. SRS 0,798→0,811, Defense r 0,623→0,702, sim R² 0,59→0,60. Shreveport D 72→78.
+- 3 rotacja: próg ataku startera (O<50), zakaz skoków SG↔PF bez własnej pozycji (5→2 na 3 ligach).
+- 4 AI: siatka spadających gwiazd nie bierze drugiego piłkożernego (Oscar obok CP3).
+- 5 obrona: podłoga rim protectora ze wszystkich źródeł (Capela 82→68), łagodny próg box-elite (G. Wallace 64→70),
+  Lowry +7, Manu cap 85. Mobilność starych C: krok 1 bez efektu (r 0,06 / 0,11) → brak reguły ogólnej.
+Odłożone: 4 (~40 okien spoza tabeli), 6 (jedna skala ocen), 7 (symulacja), AI d/e (caps/min ławki, słabe ławkowe PG,
+Bam po zmianie na C), skracanie komentarzy. Do decyzji Eryka: Eaton/Bol ręcznie? (model atletyzmu daje Eatonowi 61,
+czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
+
+### Lista pierwotna (2026-10-30)
+0. NAJPIERW sprzątanie kodu (Eryk 2026-10-30: „przed każdymi testami czyścimy kod, mam wrażenie że może być tego za dużo”).
+   Zasada stała: przed każdą rundą kalibracji/testów. Bez zmiany zachowania: martwy kod i nieużywane eksporty (ts-prune /
+   tsc noUnusedLocals), wyłączone flagi i porzucone eksperymenty, nazwane poprawki, które silnik już sam odtwarza (sprawdzić
+   wyłączając każdą), zduplikowane progi/stałe, stare skrypty pomiarowe bez użycia, przerośnięte komentarze-historie.
+   Dowód: zrzut TAL / O / D / ocen drużyn dla całej puli i seedowanych lig identyczny przed i po + test:fast zielony.
+   W raporcie: ile linii/plików ubyło i co usunięte.
+   Korekty (uzgodnione z Erykiem): (a) duże sprzątanie raz teraz, potem przy każdej rundzie tylko to, co ta runda uczyniła
+   zbędnym; (b) komentarze skracać do jednego zdania „co i dlaczego” — decyzje Eryka zostają, wylatuje historia zmian;
+   (c) usunięcie nazwanej poprawki, które rusza czyjś TAL choćby o 1-2 pkt, to ZMIANA, nie sprzątanie — osobny commit
+   i lista w raporcie.
 1. Atak: wzór przecenia strzelców (LaVine 100 przy OBPM +4,3, Reggie, Mullin, Ray 100, Dantley 99, Vince 95)
    i nie docenia rozgrywających atakujących kosz (Maxey 73 przy +4,2, Parker, Haliburton, Morant, Rose).
    Dodatek za atak kosza ma limit 5 i liczy się z wykończenia — przebudować (FT, penetracja), skalibrować do OBPM, zmierzyć na SRS/sim.
@@ -1611,4 +1635,35 @@ co dzień inny, loteria dalej się kręci, ale ląduje na numerze dnia.
    średnia `selfCreation` (tam 65 — KG jako Versatile Big liczy się nisko) i `creationStructure` (98). Pomysł: składnik
    „ilu twórców na boisku w każdej minucie” (próg self-creation/O-TAL, KG się łapie), 3 z 5 = premia, 1 = kara. Zmierzyć
    na prawdziwych drużynach (SRS) i symulacji przed wprowadzeniem; razem z przebudową ataku (punkt 1).
+   Punkt odniesienia od Eryka: ten skład (CP3, Edwards, KG, Anunoby, Gobert) realnie 74-76 w ataku, dziś 69.
+7. AI i rotacja — draft Eryka 3385276503 (2026-10-30):
+   a) Specjaliści 3&D bez ataku w piątce: Caruso (O 48) startuje 32 min u lidera (Fort Worth, #1), Smart (O 45) + Bowen (O 42)
+      razem w piątce Knoxville. Zasada: O-TAL < ~50 nie startuje, jeśli na ławce jest zastępca; najwyżej jeden taki w piątce.
+   b) Rotacja przerzuca gracza między odległymi slotami: Artest 19 min SG + 19 min PF.
+   c) AI dubluje archetypy: CP3 + Oscar (Oscar 25 min na SG), Penny + Wade — dwóch Primary Ball Handlerów o dużym
+      udziale piłki; sieć „ball share” tego nie łapie.
+   d) Ławka za drogo: Bill Russell (12,3 caps) 14 min z ławki; AI przy picku na ławkę powinno liczyć caps na minutę.
+   e) Ławkowe PG bez wkładu: McMillan (TAL 59) + Prigioni (TAL 50) po 14 min w jednej drużynie.
+   f) Shreveport ostatni (Nash, Edwards, Butler, JJJ, Duncan): Defense 71 — Nash D 21 polowany (hunt 50, switch 46),
+      sim 26-56, rywale 54,6% z gry. Osłona z 28.10 (krok 6.1: obrońca na obwodzie też zmniejsza karę) prawie tu nie
+      działa: próg D-TAL 88 — Duncan daje ~23%, Ward (90, ławka 24 min) ~3%, Butler 68 / Edwards 59 / Sefolosha 87 nic.
+      Pomiar z 28.10 (372 piątki) mówi, że najsłabsze ogniwo prawie nie dodaje do DRtg ponad średnią D-TAL — kara za
+      polowanie powinna być ogólnie dużo mniejsza; sprawdzić w tygodniu 3. Do tego Bobby Jones (SPC 9) 26 min na PF obok
+      Duncana, JJJ tylko 22 min.
+8. Obrona wysokich pod obecne zasady (Eryk 2026-10-30): gra ceni Goberta i Eatona podobnie w obronie, a we współczesnej
+   koszykówce (zmiany krycia, pick-and-roll, rozciągnięci wysocy, brak illegal defense przed 2001) Eaton ze słabą
+   mobilnością byłby niegrywalny w obronie na obwodzie. Pomysł: składnik „mobilność / zasięg krycia” dla C/PF z ery przed
+   2001 (rozmiar, przechwyty, faule, dane o obronie pick-and-roll gdzie są) obniża wartość czystego obrońcy kosza w
+   obronie zespołowej (switchability, hunt) — nie samo D-TAL. Zmierzyć na sędziach razem z punktem 2 (rim protectorzy).
+   Zakres (Eryk): dotyczy większości centrów starszej daty, nie tylko Eatona — wyjątkiem są pojedynczy wyjątkowo atletyczni
+   (do ustalenia z danymi: np. Hakeem, Robinson, Russell, Garnett-typy; kandydaci do sprawdzenia: Ewing, Mutombo, Mourning,
+   Thurmond). Reguła ogólna dla ery, z listą wyjątków potwierdzoną przez Eryka, nie ręczne kary dla pojedynczych graczy.
+   Metodyka (zaakceptowana przez Eryka 2026-10-30) — SRS starych drużyn tego nie potwierdzi (grały na starych zasadach),
+   więc: (1) dowód na danych 2014-26 (tracking/playtypes: częstość switchy, PPP w obronie PnR, FG% rywali na obwodzie):
+   czy wolni wysocy tracą minuty w PO, mają gorszą obronę na boisku niż ich D-TAL, są polowani — siła efektu = siła kary;
+   brak efektu = brak reguły ogólnej (tylko skrajne przypadki: Eaton, Bol). (2) wskaźnik mobilności z boxa i ciała
+   (STL/36, faule, waga, wzrost, BLK vs faule, DBPM) uczony na współczesnych wysokich (musi odróżnić Bama/Mobleya od wolnych,
+   i Goberta od Eatona), dopiero potem na starą erę. (3) lista starych C posortowana wg wskaźnika z proponowanym progiem
+   wyjątków do potwierdzenia przez Eryka; kara w obronie zespołowej (switch/hunt), nie w D-TAL; SRS może spaść najwyżej
+   minimalnie — inaczej kara idzie do symulacji zamiast do oceny.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.

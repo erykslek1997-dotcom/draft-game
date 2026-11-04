@@ -1,14 +1,12 @@
 import type { ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
-import { teamLabel } from '../engine/teamNames';
 import { naturalPosition } from '../engine/naturalPosition';
 import { hadThreePointLine, NOT_YET } from '../components/eraNotes';
 import { cardRoles } from '../components/cardRoles';
 import { maskName, maskYears } from '../components/bombMask';
-import { LeagueMark } from './league';
 export { LeagueMark, NightLottery, leagueColors, snakePicks } from './league';
-import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, shortName } from './ui';
+import { CapI, H3, NFace, SLOTS, Slot, fmtCaps } from './ui';
 
 /**
  * The draft pieces the Mini and the All-Time Draft share (mockups `mini.html`, `alltime.html`,
@@ -311,98 +309,11 @@ export interface BoardPick {
   span: PlayerSpan;
 }
 
-/** The draft board (mockup `mini.html#board`): one row per team in draft order, one column per
- * round, your row in reverse, "on the clock" in red. */
-export function DraftBoardTable({ teams, rounds, picks, onClockTeamId, codeOf, wide }: { teams: Team[]; rounds: number; picks: BoardPick[]; onClockTeamId?: string; codeOf: (t: Team) => string; wide?: boolean }) {
-  const order = [...teams].sort((a, b) => a.draftSlot - b.draftSlot);
-  const byTeam = new Map<string, PlayerSpan[]>();
-  for (const p of [...picks].sort((a, b) => a.pickNumber - b.pickNumber)) byTeam.set(p.teamId, [...(byTeam.get(p.teamId) ?? []), p.span]);
-  return (
-    <div className="dboard-wrap">
-      <table className={`dboard${wide ? ' dboard9' : ''}`}>
-        <thead>
-          <tr>
-            <th>Team</th>
-            {Array.from({ length: rounds }, (_, r) => (
-              <th key={r}>{wide ? `R${r + 1}` : `Round ${r + 1}`}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {order.map((t) => {
-            const got = byTeam.get(t.id) ?? [];
-            return (
-              <tr key={t.id} className={t.isHuman ? 'you' : undefined}>
-                <td className="tn">
-                  <LeagueMark name={t.name} code={codeOf(t)} />
-                  <span className="nk">{teamLabel(t).split(' ').slice(-1)[0]}</span>
-                </td>
-                {Array.from({ length: rounds }, (_, r) => {
-                  const p = got[r];
-                  if (p)
-                    return (
-                      <td key={r} title={`${maskName(p.playerName)} ${maskYears(p.playerName, p.spanLabel)}`}>
-                        {shortName(p.playerName)}
-                        <small>{p.primaryPosition}</small>
-                      </td>
-                    );
-                  if (r === got.length && t.id === onClockTeamId)
-                    return (
-                      <td key={r} className="clk">
-                        on the clock
-                      </td>
-                    );
-                  return (
-                    <td key={r} className="e">
-                      —
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export interface TickerRow {
   n: number;
   team: Team;
   code: string;
   span: PlayerSpan;
-}
-
-/** The CPU picks as they come (mockup `mini.html#wait`): newest last, your rows in reverse, the
- * team on the clock in red. */
-export function Ticker({ rows, now }: { rows: TickerRow[]; now?: { n: number; team: Team; code: string } | null }) {
-  return (
-    <ul className="ticker">
-      {rows.map((r) => (
-        <li key={r.n} className={r.team.isHuman ? 'you' : undefined}>
-          <span className="n">{r.n}</span>
-          <LeagueMark name={r.team.name} code={r.code} />
-          <span>
-            <b>{maskName(r.span.playerName)}</b>
-          </span>
-          <span className="ps">{r.span.primaryPosition}</span>
-          <span className="c">{fmtCaps(r.span.fga)}</span>
-        </li>
-      ))}
-      {now && (
-        <li className="now">
-          <span className="n">{now.n}</span>
-          <LeagueMark name={now.team.name} code={now.code} />
-          <span>
-            <i>on the clock…</i>
-          </span>
-          <span />
-          <span />
-        </li>
-      )}
-    </ul>
-  );
 }
 
 /** The aside's log of the latest picks around the league (`.log` with team codes). */

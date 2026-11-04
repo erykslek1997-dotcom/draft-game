@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { maskName } from './bombMask';
 import { Face } from './ShotChip';
-import { teamNickname } from '../engine/teamNames';
 
 /** "LeBron James" → "L. James"; a one-word name stays as it is. */
 function shortPlayerName(name: string): string {
@@ -99,56 +98,5 @@ export function FitName({ name, className, as: Tag = 'span', faceNextToIt }: { n
     <Tag ref={ref as RefObject<never>} className={className} title={maskName(name)}>
       {content}
     </Tag>
-  );
-}
-
-/**
- * A team's name, same rule as a player's: "Long Beach Sea Lions", else "Sea Lions", else
- * the code (when there is one). `mascotFirst` starts at the mascot (the bracket). `after` (a "you" tag) rides along.
- */
-/** Any label that must not show clipped: the first of `variants` that fits, else the last. */
-export function FitText({ variants, title, className }: { variants: ReactNode[]; title: string; className?: string }) {
-  const { ref, content } = useFit<HTMLSpanElement>(variants, title);
-  return (
-    <span ref={ref} className={className} title={title}>
-      {content}
-    </span>
-  );
-}
-
-export function FitTeam({ name, code, className, after, mascotFirst }: { name: string; code?: string; className?: string; after?: ReactNode; mascotFirst?: boolean }) {
-  const sr = <span className="at-sr-only">{name}</span>;
-  const mascot = teamNickname(name);
-  const variants: ReactNode[] = [
-    ...(mascotFirst ? [] : [<>{name}{after}</>]),
-    <>{mascot}{sr}{after}</>,
-    ...(code ? [<>{code}{sr}{after}</>] : []),
-  ];
-  const { ref, content } = useFit<HTMLSpanElement>(variants, `${name}|${mascotFirst}`);
-  return (
-    <span ref={ref} className={className} title={name}>
-      {content}
-    </span>
-  );
-}
-
-/** Just the surname where a slot only has room for one word ("Pierce"); if even that doesn't fit, the face. */
-export function FitSurname({ name, className }: { name: string; className?: string }) {
-  const sr = <span className="at-sr-only">{name}</span>;
-  const surname = name.split(' ').slice(-1)[0];
-  const { ref, content } = useFit<HTMLSpanElement>(
-    [
-      surname,
-      <>
-        <Face name={name} size="xs" />
-        {sr}
-      </>,
-    ],
-    name,
-  );
-  return (
-    <span ref={ref} className={className} title={name}>
-      {content}
-    </span>
   );
 }

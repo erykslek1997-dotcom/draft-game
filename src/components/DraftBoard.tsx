@@ -34,7 +34,6 @@ import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
 import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
 import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
-import { buildEvidenceReport } from '../engine/evidenceReport';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { upcomingPicks } from './DraftWarRoom';
@@ -181,7 +180,6 @@ function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
    cooler/bluer (indigo, not lavender) so it stays clearly on the blue side of MVP's pink — same
    "cyan -> indigo -> magenta -> gold" ladder this palette was always meant to read as. */
 
-
 /** Shared by `OverallTierBadge` and every "TAL {number}" display site — building this once and
  * reusing it for both the badge and the number next to it is what guarantees they can never
  * disagree (see `displayTalentForSpan`'s own docstring for why they used to). `playerName` is
@@ -213,12 +211,10 @@ export function draftButtonTitle(state: DraftState, spanId: string, canPick: boo
   return label;
 }
 
-
 /** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
  * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
  * defense itd"): how many full scouting reports a draft allows. */
 export const SCOUT_REPORTS_PER_DRAFT = 3;
-
 
 /** Real playoff-performance tag (see `playoffPerformanceLookup.ts`) — a third, fully distinct
  * palette (red family = dropped efficiency, green family = rose above it) so it can't be
@@ -273,34 +269,6 @@ export function SmallSampleBadge({ span }: { span: PlayerSpan }) {
     <span className="tier-badge sample-limited" title={games !== null ? `${games} real games in this span` : undefined}>
       Limited sample
     </span>
-  );
-}
-
-/** G_BLACK_BOX — real, deterministic "why this rating" breakdown (see `evidenceReport.ts`'s own
- * header for the full design rationale). A plain expandable panel, not a badge: the content is
- * full sentences, not a single tier word, so it doesn't fit the `.tier-badge` pill pattern the
- * rest of this file uses. */
-export function EvidenceReportPanel({ span }: { span: PlayerSpan }) {
-  const report = buildEvidenceReport(span);
-  return (
-    <div className="evidence-report">
-      <div className="evidence-column">
-        <h4>Evidence for this rating</h4>
-        <ul>
-          {report.evidence.map((item, i) => (
-            <li key={i}>{item.text}</li>
-          ))}
-        </ul>
-      </div>
-      <div className="evidence-column">
-        <h4>Counter-evidence</h4>
-        <ul>
-          {report.counterEvidence.map((item, i) => (
-            <li key={i}>{item.text}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
   );
 }
 
@@ -366,15 +334,6 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
-/** 2026-08-16, user's own ask: a hover tooltip on the Overview grid's own pick cells, once a
- * player is actually drafted — same `.at-name-tip`/`data-tip` popover mechanics as team names
- * above, just built from this specific drafted SPAN's own real box line (`pick.box`) rather than
- * a career average, since that's the exact season this roster spot actually rosters. */
-export function pickStatTip(pick: PlayerSpan): string {
-  const b = pick.box;
-  return `${b.ppg.toFixed(1)} PPG · ${b.apg.toFixed(1)} APG · ${b.rpg.toFixed(1)} RPG · ${(b.fgPct * 100).toFixed(1)}% FG · ${(b.threePct * 100).toFixed(1)}% 3PT`;
-}
-
 // 2026-09-11, user-reported live ("4) brak koloru" — the Team tab's OFF/DEF/O-POR/D-POR pills all
 // reading as the same navy regardless of grade): these used to share the app-wide `at-t1..at-t6`
 // tone ramp, which is a deliberately monochrome-BLUE "how exceptional is this" scale (also used
@@ -418,7 +377,6 @@ export function AtGrade({ grade, label, ungraded }: { grade: Grade; label?: Grad
     </span>
   );
 }
-
 
 /** How long the taken cards take to fold away when the player's own turn comes. */
 const GHOST_SWEEP_MS = 1300;
@@ -765,7 +723,6 @@ export default function DraftBoard({
 
   // 2026-10-14: the Draft Desk (three pundits after your third pick) and the rim-pressure note
   // left the free flow with the screen redesign; they come back as lifelines (TODO.md).
-
 
   // True whenever the Team tab's roster table is actually showing the human's own roster — always
   // true outside Commissioner Mode (`teamForPanels` IS `humanTeam` then), only sometimes true

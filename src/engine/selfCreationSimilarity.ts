@@ -220,9 +220,6 @@ export function selfCreationIsMeasured(span: PlayerSpan): boolean {
 export function selfCreation3PtEstimate(span: PlayerSpan): number {
   return threePtEstimator.estimate(span);
 }
-export function selfCreation3PtIsMeasured(span: PlayerSpan): boolean {
-  return threePtEstimator.isMeasured(span);
-}
 
 /**
  * The volume gate below which a player isn't a real enough shooter for the 3PT-specific
