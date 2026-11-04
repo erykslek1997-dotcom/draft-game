@@ -1,5 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { eraBlocksPerGame } from './era';
+import { eraBlocksPerGame, spanEndYears } from './era';
+import { per36 } from './minutesPerGame';
+import { athleticismScoreForSpan } from './athleticismLookup';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
@@ -961,6 +963,32 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
   return result;
 }
 
+/**
+ * 2026-11-04, the user ("Eaton dalej za dużo" after the era blocks; "gramy na obecne zasady"): a
+ * big from an era without the three who defended by standing at the rim gives part of that back at
+ * today's rules, where offenses pull the five out to the arc. The cut grows with how few threes the
+ * league took (`(0.40 - share) / 0.40`) times how immobile he was — few steals a 36, a heavy frame,
+ * a low athleticism read (athleticismLookup.ts) — up to `max` points. Mobile old bigs (Hakeem,
+ * Robinson, Duncan) and every big of the three-point era keep their number. Not before 1979-80
+ * (no line) or for spans without steals data.
+ */
+const LEAGUE_THREE_SHARE_BY_END_YEAR = new Map<number, number>([[1980, 0.026], [1981, 0.020], [1982, 0.022], [1983, 0.023], [1984, 0.027], [1985, 0.035], [1986, 0.038], [1987, 0.053], [1988, 0.057], [1989, 0.074], [1990, 0.076], [1991, 0.082], [1992, 0.087], [1993, 0.104], [1994, 0.117], [1995, 0.188], [1996, 0.200], [1997, 0.212], [1998, 0.160], [1999, 0.168], [2000, 0.167], [2001, 0.170], [2002, 0.181], [2003, 0.182], [2004, 0.187], [2005, 0.196], [2006, 0.202], [2007, 0.213], [2008, 0.222], [2009, 0.224], [2010, 0.222], [2011, 0.222], [2012, 0.226], [2013, 0.243], [2014, 0.259], [2015, 0.268], [2016, 0.285], [2017, 0.316], [2018, 0.337], [2019, 0.359], [2020, 0.382], [2021, 0.393], [2022, 0.399], [2023, 0.387], [2024, 0.395], [2025, 0.421], [2026, 0.415]]);
+export const MODERN_RULES_DEFENSE = { max: 14, modernShare: 0.4 };
+function modernRulesDefenseCut(span: PlayerSpan): number {
+  if (!MODERN_RULES_DEFENSE.max || (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF')) return 0;
+  const shares = spanEndYears(span.spanLabel).map((y) => LEAGUE_THREE_SHARE_BY_END_YEAR.get(y)).filter((v): v is number => v !== undefined);
+  if (shares.length === 0) return 0;
+  const share = shares.reduce((a, b) => a + b, 0) / shares.length;
+  const eraGap = Math.max(0, Math.min(1, (MODERN_RULES_DEFENSE.modernShare - share) / MODERN_RULES_DEFENSE.modernShare));
+  const steals = per36(span.box.spg, span);
+  const lowSteals = Math.max(0, Math.min(1, (1.3 - steals) / 0.9));
+  const weight = getBodyWeightLbs(span.playerName) ?? 240;
+  const heavy = weight >= 260 ? 1 : weight >= 245 ? 0.75 : 0.5;
+  const athleticism = athleticismScoreForSpan(span);
+  const unathletic = athleticism == null ? 1 : Math.max(0, Math.min(1, (80 - athleticism) / 20));
+  return MODERN_RULES_DEFENSE.max * eraGap * lowSteals * heavy * unathletic;
+}
+
 function ownWindowDefense(span: PlayerSpan): number {
   return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span), carriedAccoladeFloor(span));
 }
@@ -978,7 +1006,7 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
   const blended = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
-  const result = Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended));
+  const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
 }
