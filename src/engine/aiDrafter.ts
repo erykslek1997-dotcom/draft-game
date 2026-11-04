@@ -1494,10 +1494,6 @@ const LOTTERY_POOL = 5;
  */
 const LOTTERY_WEIGHT_EXPONENT = 2;
 let lotteryWeightExponent = LOTTERY_WEIGHT_EXPONENT;
-/** Test-only: sweep the lottery shape (`scripts/checkLotteryExponent.ts`). Not used in the app. */
-export function setLotteryWeightExponent(e: number): void {
-  lotteryWeightExponent = e;
-}
 
 /** `k` is the pool size; returns descending weights `[k^e, (k-1)^e, … 1^e]`. */
 function lotteryWeights(k: number): number[] {

@@ -38,8 +38,6 @@ const POSITION_ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 /** Multipliers on a player's value in a slot at the score anchors (0.9 and 0.6), interpolated in
  * between by `positionFitMultiplier` (positions.ts); `emergency` keeps the old adjacent fallback. */
 export const COMPETENCE_MULTIPLIER = { natural: 1, full: 0.975, partial: 0.945 } as const;
-export const EMERGENCY_UP_MULTIPLIER = 0.85;
-export const EMERGENCY_DOWN_MULTIPLIER = 0.5;
 /** A `partial` player covers this many minutes at a lower slot before the downward penalty
  * starts ramping (the user's "do ~12-15 min, dłużej spada"). */
 export const PARTIAL_POSITION_GRACE_MINUTES = 15;

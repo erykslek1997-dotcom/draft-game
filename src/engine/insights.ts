@@ -438,7 +438,6 @@ function eliteRimMessage(t: TeamFeatureSnapshot): string {
   ]);
 }
 
-
 function weakBenchMessage(t: TeamFeatureSnapshot): string {
   const weakest = t.bench
     .filter(p => p.minutes >= 8)
@@ -458,7 +457,6 @@ function creatorsPoorSpacingMessage(t: TeamFeatureSnapshot): string {
     ? `${displayNames(creators)} can create ${plural(creators, 'his', 'their')} own shots, but poor spacing lets defenses load up on ${plural(creators, 'him', 'them')}.`
     : 'Great shot creators, but poor spacing makes their job harder.';
 }
-
 
 /** Names the bench players who don't shoot, so the concern says who drags the spacing down. */
 
@@ -1917,17 +1915,4 @@ export function generateRosterInsights(
   const eligible = ranked.filter(i => i.score >= config.minScore);
   // `allActiveInsights` stays in raw score order (debug/tooling reads it as a priority ranking).
   return { ...selectForDisplay(eligible, config, context), allActiveInsights: ranked };
-}
-
-export function toInsightDebugRows(output: InsightEngineOutput) {
-  return output.allActiveInsights.map(i => ({
-    id: i.id,
-    type: i.type,
-    score: Number(i.score.toFixed(3)),
-    severity: Number(i.severity.toFixed(3)),
-    relevance: Number(i.relevance.toFixed(3)),
-    confidence: Number(i.confidence.toFixed(3)),
-    message: i.message,
-    evidence: i.evidence,
-  }));
 }

@@ -1,16 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { maskName, maskYears } from './bombMask';
+import { type ReactNode } from 'react';
 import { STARTER_SLOTS } from '../engine/positions';
 import { allAssignments, primaryStarters } from '../engine/rotation';
 import type { Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { compBadge, type HistoricalCompMatch } from '../engine/historicalComps';
 import { TeamTile } from './TeamBadge';
-import { Face } from './ShotChip';
-import { FitName } from './FitName';
 import { TeamLogo } from './TeamLogo';
 import { hasTeamLogo, teamHue } from './teamLogoKit';
-import type { DeskLine } from '../engine/desk';
 import { DeskVoices } from './DeskVoices';
 
 export { DeskVoices };
@@ -59,42 +55,6 @@ export interface LineupEntry {
 }
 
 /**
- * 2026-10-08, the user (the roster looked flat; "coś pomiędzy A i B"): the starting five, PG to C,
- * each with all his minutes; then one bench list, most minutes first, each backup once with where
- * his minutes went (a combo backup used to show up under every position he covered); then whoever
- * didn't play.
- */
-export function rosterLineup(team: Team): { starters: (LineupEntry & { slot: Position })[]; bench: LineupEntry[]; dnp: LineupEntry[] } {
-  const firsts = primaryStarters(team);
-  const starterIds = new Set(firsts.map((s) => s.player.id));
-  const bySlot = new Map<string, { slot: Position; minutes: number }[]>();
-  for (const a of allAssignments(team)) {
-    if (a.minutes <= 0) continue;
-    bySlot.set(a.player.id, [...(bySlot.get(a.player.id) ?? []), { slot: a.slot, minutes: Math.round(a.minutes) }]);
-  }
-  const order = (slot: Position) => STARTER_SLOTS.indexOf(slot);
-  const where = (stints: { slot: Position; minutes: number }[]) =>
-    [...stints].sort((x, y) => order(x.slot) - order(y.slot)).map((x) => `${x.slot} ${x.minutes}`).join(' · ');
-  const entry = (p: Team['roster'][number]) => {
-    const stints = bySlot.get(p.id) ?? [];
-    return { id: p.id, name: p.playerName, years: p.spanLabel, minutes: stints.reduce((n, x) => n + x.minutes, 0), stints };
-  };
-  const starters = STARTER_SLOTS.flatMap((slot) => {
-    const first = firsts.find((s) => s.slot === slot);
-    if (!first) return [];
-    const e = entry(first.player);
-    return [{ ...e, slot, where: where(e.stints.filter((x) => x.slot !== slot)) }];
-  });
-  const rest = team.roster.filter((p) => !starterIds.has(p.id)).map(entry);
-  const bench = rest
-    .filter((e) => e.minutes > 0)
-    .sort((x, y) => y.minutes - x.minutes)
-    .map((e) => ({ ...e, where: e.stints.length === 1 ? e.stints[0].slot : where(e.stints) }));
-  const dnp = rest.filter((e) => e.minutes === 0).map((e) => ({ ...e, where: '' }));
-  return { starters, bench, dnp };
-}
-
-/**
  * 2026-10-08, the user ("może rozdzielimy bench na każdą pozycję?"): the roster by position — each
  * column the starter, then the backups with their minutes AT THAT POSITION (a combo backup shows
  * under both slots he covers), short stints on one quiet line, and whoever didn't play below.
@@ -116,54 +76,6 @@ export function rosterBySlot(team: Team): { slots: { slot: Position; main: SlotE
   const played = new Set(assignments.filter((a) => a.minutes > 0).map((a) => a.player.id));
   const dnp = team.roster.filter((p) => !played.has(p.id)).map((p) => ({ id: p.id, name: p.playerName, years: p.spanLabel, minutes: 0 }));
   return { slots, dnp };
-}
-
-export function RosterGrid({ team }: { team: Team }) {
-  const { slots, dnp } = rosterBySlot(team);
-  return (
-    <div className="rr-roster">
-      <div className="rr-roster-cols">
-        {slots.map(({ slot, main, spot }) => (
-          <div className="rr-roster-col" key={slot}>
-            <span className="rr-roster-pos">{slot}</span>
-            <div className="rr-roster-entries">
-              {main.map((e, i) => (
-                <div className={`rr-cell${i > 0 ? ' is-backup' : ''}`} key={e.id} title={`${maskName(e.name)} (${maskYears(e.name, e.years)})`}>
-                  <Face name={e.name} size="sm" />
-                  <span className="rr-cell-text">
-                    <FitName as="b" name={e.name} faceNextToIt />
-                    <span>
-                      {maskYears(e.name, e.years)} · <b className="rr-min">{e.minutes}m</b>
-                    </span>
-                  </span>
-                </div>
-              ))}
-              {spot.length > 0 && (
-                <span className="rr-spot">
-                  {spot.map((e) => (
-                    <span key={e.id}>
-                      + {maskName(e.name)} <b className="rr-min">{e.minutes}m</b>
-                    </span>
-                  ))}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      {dnp.length > 0 && (
-        <p className="rr-dnp">
-          <span className="rr-roster-label">Did not play</span>
-          {dnp.map((e, i) => (
-            <span key={e.id}>
-              {i > 0 && ' · '}
-              <b>{maskName(e.name)}</b> {maskYears(e.name, e.years)}
-            </span>
-          ))}
-        </p>
-      )}
-    </div>
-  );
 }
 
 /** A team score's letter: against the rest of this draft's field (S = best in the field; a tie
@@ -206,7 +118,6 @@ export function ProfileBars({ rows }: { rows: ProfileRow[] }) {
   );
 }
 
-
 export function PlaysLike({ comp }: { comp: HistoricalCompMatch }) {
   const badge = compBadge(comp.comp);
   return (
@@ -229,93 +140,8 @@ export interface ReportExtra {
   content: () => ReactNode;
 }
 
-export function TeamReport({
-  profile,
-  comp,
-  voices,
-  extras,
-}: {
-  profile: ProfileRow[];
-  comp: HistoricalCompMatch | null;
-  voices: DeskLine[];
-  extras: ReportExtra[];
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-  return (
-    <div className="rr-report">
-      <div className={`rr-cols${voices.length > 0 ? '' : ' rr-cols--single'}`}>
-        <section className="rr-panel">
-          <ProfileBars rows={profile} />
-          {comp && <PlaysLike comp={comp} />}
-        </section>
-        {voices.length > 0 && (
-          <section className="rr-panel">
-            <DeskVoices voices={voices} />
-          </section>
-        )}
-      </div>
-      {/* 2026-10-08, the user (the old accordion read better): each extra opens right under its own
-          row, not below the whole report where a phone never shows it. */}
-      {extras.length > 0 && (
-        <div className="rr-extras">
-          {extras.map((e) => (
-            <div key={e.id} className={`rr-extra-row${open === e.id ? ' is-open' : ''}`}>
-              <button
-                type="button"
-                className="rr-extra-btn"
-                aria-expanded={open === e.id}
-                onClick={(ev) => {
-                  setOpen((cur) => (cur === e.id ? null : e.id));
-                  // A tap or click leaves no focus ring behind; a keyboard press keeps it.
-                  if (ev.detail > 0) ev.currentTarget.blur();
-                }}
-              >
-                <span>{e.label}</span>
-                <span className="rr-extra-chev" aria-hidden>
-                  ▾
-                </span>
-              </button>
-              {open === e.id && <div className="rr-extra">{e.content()}</div>}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export interface ClashRow {
   label: string;
   /** Points you gain minus points they gain in this clash (positive = your edge). */
   net: number;
-}
-
-export function VsYou({ seriesPct, margin, explanation, clashes }: { seriesPct: number; margin: number; explanation: string | null; clashes: ClashRow[] }) {
-  const tone = seriesPct >= 60 ? 'good' : seriesPct <= 40 ? 'bad' : 'even';
-  return (
-    <section className="rr-vs">
-      <span className="rr-label">Vs you</span>
-      <div className="rr-vs-top">
-        <b className={`rr-vs-pct rr-vs-pct--${tone}`}>{seriesPct}%</b>
-        <span>
-          your chance to beat them in a best-of-7 · projected margin {margin >= 0 ? '+' : ''}
-          {margin.toFixed(1)} a game
-        </span>
-      </div>
-      {explanation && <p className="rr-vs-why">{explanation}</p>}
-      {clashes.map((c) => {
-        const w = Math.min(1, Math.abs(c.net) / 2) * 50;
-        const side = Math.abs(c.net) < 0.15 ? 'even' : c.net > 0 ? 'us' : 'them';
-        return (
-          <div className="rr-clash" key={c.label}>
-            <span>{c.label}</span>
-            <span className="rr-tug" aria-hidden>
-              <i className={`rr-tug--${side}`} style={side === 'us' ? { left: '50%', width: `${w}%` } : side === 'them' ? { left: `${50 - w}%`, width: `${w}%` } : { left: '49%', width: '2%' }} />
-            </span>
-            <span className={`rr-clash-who rr-clash-who--${side}`}>{side === 'us' ? 'You' : side === 'them' ? 'Them' : 'Even'}</span>
-          </div>
-        );
-      })}
-    </section>
-  );
 }

@@ -1,7 +1,5 @@
-import type { PlayerSpan } from '../data/schema';
-import { normalizePlayerName } from '../data/schema';
+
 import { resolveSourceName } from '../data/sourceNameResolver';
-import { spanEndYears } from './era';
 // .pool.json is matchupDefense.json trimmed to only players who ever appear in draftPool.json,
 // same pattern as darkoLookup.ts/raptorLookup.ts/pipmLookup.ts's own trims.
 import matchupDefenseData from '../data/awards/matchupDefense.pool.json';
@@ -46,16 +44,4 @@ export function buildMatchupDefenseYearMap(): Map<string, Map<number, number>> {
     yearMap.set(endYear, r.matchupDefense);
   }
   return byNameYear;
-}
-
-/** Averages whichever of a span's covered years the map actually has data for. Returns null
- * if there's no overlap at all. */
-export function avgMatchupDefenseForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): number | null {
-  const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
-  if (!yearMap) return null;
-  const values = spanEndYears(span.spanLabel)
-    .map((y) => yearMap.get(y))
-    .filter((v): v is number => v !== undefined);
-  if (values.length === 0) return null;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
 }

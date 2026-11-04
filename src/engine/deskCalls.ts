@@ -291,7 +291,6 @@ const rosterNames = (roster: PlayerSpan[]) => {
 
 const voice = (who: ExpertId, kind: DeskLine['kind'], text: string, reply = false): DeskLine => (who === 'host' ? { who, kind: 'host', text } : { who, kind, text, reply });
 
-
 interface CallVoiceCtx {
   /** The roster's best players ("LeBron and McAdoo"), empty before the first pick. */
   team: string;
@@ -537,11 +536,6 @@ export function placeCall(id: CallId, state: DraftState, seed: number): CallResu
     );
   }
   return { id, picks, lines };
-}
-
-/** Whether a call can be placed right now (the UI also checks it's the human's pick). */
-export function canCall(id: CallId, state: DraftState, seed: number, log: CallLog): boolean {
-  return callOptions(state, seed, log).some((o) => o.id === id && !o.unavailable);
 }
 
 /** The log after a call. */

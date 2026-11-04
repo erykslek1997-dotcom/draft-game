@@ -64,8 +64,3 @@ export function avgBpm2DefenseForSpan(span: PlayerSpan, byNameYear: Map<string, 
   if (values.length === 0) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
-
-/** Same span-average operation for a map built with `buildBpm2YearMap('bpm')`. */
-export function avgBpm2TotalForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): number | null {
-  return avgBpm2DefenseForSpan(span, byNameYear);
-}

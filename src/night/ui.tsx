@@ -16,7 +16,6 @@ export * from './frame';
  * the same classes, so `night/*.css` styles them exactly as the mockups do.
  */
 
-
 /** "1999–01" style label shortened like the mockups' card names: "R. Wallace". */
 /** An open slot's hint: "tap" on a touch screen, a plain word with a mouse (playtest 2026-10-22). */
 export const TAP_TO_SHOW = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches ? 'tap to show' : 'show list';
@@ -65,7 +64,6 @@ export function NFace({ name, className, span }: { name: string; className?: str
   );
 }
 
-
 /** A span's first team, its band colour and the readable ink on it. */
 export function spanBand(span: Pick<PlayerSpan, 'playerName' | 'spanLabel'>): { code: string; color: string; ink: string } {
   const first = teamsForSpan(span)[0];
@@ -84,32 +82,6 @@ export function TeamMark({ code, bg, fg, lg }: { code: string; bg: string; fg: s
   return (
     <span className={cx('tm', lg && 'lg')} style={{ background: bg, color: bandInk(bg, fg) }}>
       {code}
-    </span>
-  );
-}
-
-
-/* ---------------- cards ---------------- */
-
-/** The printed player card (`.card`): cream paper, the team band with the cost, face, name,
- * position · years, style, a three-cell stat table. */
-/**
- * A results card for one starter (2026-10-22, playtest: "mini wygląda tak samo jak all-time, po
- * prostu jest krótszy"): band with team and slot, face, name, years and caps; the line under it is
- * the mode's (All-Time: who comes in for him; Mini: what he does).
- */
-/** A bench player's line on a results card: surname, his window (short), minutes (2026-10-29, the
- * user: "nie widzę lat w rotacji"). */
-export function BenchRow({ span, minutes }: { span: PlayerSpan; minutes: number }) {
-  return (
-    <span className="bn-row">
-      <span className="bn-f">
-        <NFace name={span.playerName} />
-      </span>
-      <i>
-        {lastName(maskText(span.playerName))} <em className="bn-y">{shortYears(maskYears(span.playerName, span.spanLabel))}</em>
-      </i>
-      <b>{Math.round(minutes)}m</b>
     </span>
   );
 }

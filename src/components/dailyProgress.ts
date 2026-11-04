@@ -152,13 +152,6 @@ export const STREAK_TIERS: { days: number; reward: string }[] = [
   { days: 100, reward: 'Hall of Fame plaque' },
 ];
 
-/** The streak-reward classes earned so far (`bf-streak-7` …), for the slot machine's cosmetics. */
-export function streakRewardClasses(best: number): string {
-  return STREAK_TIERS.filter((t) => best >= t.days)
-    .map((t) => `bf-streak-${t.days}`)
-    .join(' ');
-}
-
 /**
  * 2026-09-28, the user: "na czas testów odblokuj mi możliwość wielokrotnego daily". While this is
  * true the daily result offers "Play today again", which forgets today's result and undoes the day it

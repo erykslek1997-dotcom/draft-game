@@ -152,8 +152,6 @@ function teamPace(roster: GameRoster): number {
     }
   return w > 0 ? pace / w : TEMPO.base;
 }
-/** A team's pace, as the live game reads it (measurement scripts). */
-export const teamPaceFor = (team: Team) => teamPace(rosterFromTeam(team));
 function possessionsFor(rosters: [GameRoster, GameRoster], gameSeconds: number): number {
   const pace = Math.max(TEMPO.range[0], Math.min(TEMPO.range[1], (teamPace(rosters[0]) + teamPace(rosters[1])) / 2));
   return 2 * Math.round((pace * gameSeconds) / GAME_SECONDS);

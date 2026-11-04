@@ -16,33 +16,6 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { runtimeZoneTotalsForSpan } from './runtimeSpanLookups';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 
-const OFFENSIVE_ROLES: OffensiveArchetype[] = [
-  'Primary Ball Handler',
-  'Secondary Ball Handler',
-  'Shot Creator',
-  'Slasher',
-  'Athletic Finisher',
-  'Off Screen Shooter',
-  'Movement Shooter',
-  'Stationary Shooter',
-  'Versatile Big',
-  'Post Scorer',
-  'Stretch Big',
-  'Roll & Cut Big',
-];
-
-const DEFENSIVE_ROLES: DefensiveRole[] = [
-  'Point of Attack',
-  'Chaser',
-  'Helper',
-  'Wing Stopper',
-  'Mobile Big',
-  'Switch Big',
-  'Anchor Big',
-  'Post Defender',
-  'Low Activity',
-];
-
 type FeatureName =
   | 'fga'
   | 'ppg'
@@ -504,5 +477,3 @@ export function computeShadowRoleProfile(
     warnings: [...(options.warnings ?? []), ...(!stocksAvailable ? ['Defensive additions withheld: STL/BLK unavailable.'] : [])],
   };
 }
-
-export const SHADOW_ROLE_TAXONOMY = { offense: OFFENSIVE_ROLES, defense: DEFENSIVE_ROLES } as const;

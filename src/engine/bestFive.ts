@@ -5,7 +5,7 @@ import { effectiveTalent } from './grades';
 import { allStarCount } from './allStarLookup';
 import { talentScore, offenseScore, defenseScore, spacingScore } from './scoring';
 import { fitScore } from './fit';
-import { STARTER_SLOTS, positionFitMultiplier } from './positions';
+import { STARTER_SLOTS } from './positions';
 import { mulberry32, hashSeed } from './rng';
 import { DAILY_HAND_SIZE, JOKERS_MAX, JOKERS_MIN } from './dailyMeta';
 import { computeOffensiveTalent } from './talent';
@@ -331,10 +331,6 @@ export function computedShotsCap(pool: DailyPool, daily = false): number {
   return Math.max(cap, Math.ceil(cheapest + CAP_FLOOR_MARGIN));
 }
 
-export function dailyShotsCap(key: string = dayKey()): number {
-  return computedShotsCap(dailyPool(key));
-}
-
 export function lineupShots(lineup: Partial<Record<Position, PlayerSpan>>): number {
   return STARTER_SLOTS.reduce((sum, sl) => sum + (lineup[sl]?.fga ?? 0), 0);
 }
@@ -435,16 +431,6 @@ export function scoreLineup(lineup: Lineup): LineupScore {
     notes: fr.notes,
     complete,
   };
-}
-
-/** True only when every slot holds a player whose primary or explicit secondary position is
- * that slot (`positionFitMultiplier >= 0.9`). The picker UI enforces this, so it should always
- * hold on a real submit — kept as a guard. */
-export function lineupEligible(lineup: Lineup): boolean {
-  return STARTER_SLOTS.every((sl) => {
-    const s = lineup[sl];
-    return Boolean(s) && positionFitMultiplier(s as PlayerSpan, sl) >= 0.9;
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -579,15 +565,6 @@ export interface DailyTargets {
   optimalFive: Record<Position, PlayerSpan>;
 }
 
-export function dailyTargets(pool: DailyPool, cap?: number): DailyTargets {
-  const solved = solveDailyOptimal(pool, cap);
-  return {
-    par: scoreLineup(talMaxLineup(pool, cap)).composite,
-    optimal: solved.score.composite,
-    optimalFive: solved.five,
-  };
-}
-
 export type GolfGrade = 'eagle' | 'birdie' | 'par' | 'bogey' | 'double-bogey';
 
 /** Graded against `par` (the lazy TAL-max pick) and `optimal` (the engine's best). Eagle needs
@@ -700,14 +677,6 @@ export const WEIGHTED_AXES: { key: WeightedAxis; label: string; pct: number }[] 
   { key: 'offense', label: 'Offense', pct: Math.round((W.offense / WSUM) * 100) },
   { key: 'defense', label: 'Defense', pct: Math.round((W.defense / WSUM) * 100) },
   { key: 'fit', label: 'Fit', pct: Math.round((W.fit / WSUM) * 100) },
-];
-
-export const AXIS_GLOSSARY: { label: string; text: string }[] = [
-  { label: 'Talent', text: 'Raw individual quality of the five — the mean of their TAL ratings.' },
-  { label: 'Offense', text: 'How much the unit scores: shot-making, shot creation, efficiency.' },
-  { label: 'Defense', text: 'How much the unit stops: rim protection, on-ball defense, activity.' },
-  { label: 'Spacing', text: 'Floor spacing from three-point shooting and gravity. Diagnostic — it feeds Offense and Fit, not the score directly.' },
-  { label: 'Fit', text: 'How the pieces complement each other: position balance, shot-creation overlap, defensive coverage, spacing gaps. Five stars who all need the ball fit badly.' },
 ];
 
 /** 2026-09-11: exported (was module-private) so `QuickFive.tsx`'s own results "why" section can
@@ -830,38 +799,6 @@ export interface SlotReels {
   reels: PlayerSpan[][];
   /** Recognisable names that spun past this slot, for the "flew past" line. */
   nearMisses: string[];
-}
-
-const REEL_BUCKET = 60;
-const NEAR_MISS_AS = 6;
-
-export function slotReels(pool: DailyPool, slot: Position, count = DEAL_SIZE, baseLength = 16, stepLength = 5): SlotReels {
-  const rng = mulberry32(seedFromKey(`${pool.key}:reel:${slot}`));
-  const dealtNames = new Set(pool.bySlot[slot].map((s) => s.playerName));
-  const ranked = [...bestSpanByPlayer().values()]
-    .filter((s) => s.primaryPosition === slot && !dealtNames.has(s.playerName))
-    .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
-    .slice(0, REEL_BUCKET);
-  const stars = ranked.filter((s) => allStarCount(s.playerName) >= NEAR_MISS_AS);
-  const pickFrom = (list: PlayerSpan[]) => list[Math.floor(rng() * list.length)];
-  const nearMisses = new Set<string>();
-  const reels = Array.from({ length: count }, (_, i) => {
-    const length = baseLength + i * stepLength;
-    const strip: PlayerSpan[] = [];
-    for (let k = 0; k < length; k++) {
-      let next = pickFrom(ranked);
-      while (strip.length > 0 && next.playerName === strip[strip.length - 1].playerName && ranked.length > 1) next = pickFrom(ranked);
-      strip.push(next);
-    }
-    // The near miss: a star one notch above the stop on about half the reels.
-    if (stars.length > 0 && rng() < 0.5) {
-      const star = pickFrom(stars);
-      strip[strip.length - 1] = star;
-      nearMisses.add(star.playerName);
-    }
-    return strip;
-  });
-  return { reels, nearMisses: [...nearMisses] };
 }
 
 // ---------------------------------------------------------------------------

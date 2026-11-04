@@ -33,8 +33,3 @@ export function playmakingScoreForPlayer(span: PlayerSpan): number | null {
   const row = byName.get(normalizePlayerName(span.playerName));
   return row ? row.score : null;
 }
-
-export function playmakingTierForPlayer(span: PlayerSpan): string | null {
-  const row = byName.get(normalizePlayerName(span.playerName));
-  return row ? row.tier : null;
-}
