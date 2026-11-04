@@ -15,7 +15,8 @@ import {
   type DraftState,
 } from '../engine/draft';
 import { autoAssignRotation } from '../engine/rotation';
-import { optimizeSpans, spanOptionsFor } from '../engine/spanOptimizer';
+import { spanOptionsFor } from '../engine/spanOptimizer';
+import { finalizeAiRoster } from '../engine/finalizeAiRoster';
 import { setAiDraftDebug } from '../engine/aiDrafter';
 import { CAP_LIMIT, ROSTER_SIZE, BENCH_SLOT_COUNT } from '../engine/positions';
 import { normalizePlayerName } from '../data/schema';
@@ -352,7 +353,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
         ...s,
         teams: s.teams.map((t) => {
           if (t.isHuman) return t;
-          const roster = optimizeSpans(t.roster, draftCapLimit(s));
+          const roster = finalizeAiRoster(t, draftCapLimit(s));
           return { ...t, roster, rotation: autoAssignRotation(roster) };
         }),
       }));
@@ -416,7 +417,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       // missing a rotation here too — `optimizeSpans` + `autoAssignRotation` are deterministic and
       // stable on an already-finalized roster, so this is a no-op once the effect has run.
       if (t.rotation) return t;
-      const optimized = optimizeSpans(t.roster, draftCapLimit(draftState));
+      const optimized = finalizeAiRoster(t, draftCapLimit(draftState));
       return { ...t, roster: optimized, rotation: autoAssignRotation(optimized) };
     });
     setFinalTeams(teams);
