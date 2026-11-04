@@ -100,6 +100,8 @@ const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
   'dennis rodman': { C: 0.95 },
   // The user: a centre who can play the four, with the partial-position penalty.
   'bam adebayo': { PF: 0.6 },
+  // 2026-11-04, the user (Jokić 2023-25 on the board as a four): a centre, the four only part-time.
+  'nikola jokic': { PF: 0.6 },
 };
 
 /**
