@@ -1422,10 +1422,36 @@ export function formatTal(value: number): string {
 }
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  const value = displayTalentUncompressed(ctx);
+  if (!ctx.playerName || value < STAR_WINDOWS.peakFrom - STAR_WINDOWS.within) return value;
+  const peak = starPeak(ctx.playerName);
+  const gap = peak - value;
+  if (peak < STAR_WINDOWS.peakFrom || gap <= 0 || gap >= STAR_WINDOWS.within) return value;
+  return Math.round(peak - gap * (STAR_WINDOWS.keep + ((1 - STAR_WINDOWS.keep) * gap) / STAR_WINDOWS.within));
+}
+
+function displayTalentUncompressed(ctx: TierGateContext): number {
   const base = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
   const value = base + roleContextShift(ctx, base);
   const hold = rimBonusHold(ctx);
   return hold ? Math.min(value, tierCeiling(hold)) : value;
+}
+
+/**
+ * 2026-11-04, the user ("KD z GSW underrated ... można zbliżyć spany top graczy i wtedy te tańsze
+ * będą częściej wybierane przez AI"): a star's windows near his peak sit closer to it. A gap `g`
+ * under the peak becomes `g * (keep + (1 - keep) * g / within)` — half near the peak, the full gap
+ * again at `within`, so a decline window stays a decline. Only players whose peak is `peakFrom`+.
+ */
+export const STAR_WINDOWS = { peakFrom: 88, within: 12, keep: 0.5 };
+const starPeakCache = new Map<string, number>();
+function starPeak(playerName: string): number {
+  const key = normalizePlayerName(playerName);
+  const hit = starPeakCache.get(key);
+  if (hit !== undefined) return hit;
+  const peak = Math.max(...draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => displayTalentUncompressed(tierContextFor(s))));
+  starPeakCache.set(key, peak);
+  return peak;
 }
 
 /**

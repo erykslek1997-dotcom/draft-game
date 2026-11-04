@@ -1647,7 +1647,18 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
   [normalizePlayerName('Nikola Jokic'), '2021-23'],
 ]);
 
-function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number }>(ranked: T[]): T[] {
+/**
+ * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?" ... "około 3 fga
+ * różnicy, a to jest między słabym a dobrym rolesem"): which of a player's windows to take. The
+ * pick's `fgaCost` is softened for stars (`eliteTalentFgaPenaltyDampening`) so a star isn't passed
+ * over for a cheaper lesser player, but between two windows of the SAME star that softening only
+ * hid the price: 1.4 FGA cost Shaq 2000-02 0.3 points. Here a shot is worth `WINDOW_FGA_RATE` TAL
+ * — in this pool one FGA buys ~2.5-3 TAL of role player (top 30 at 4/6/8 FGA: 56/67/71), weighed
+ * by his ~20 minutes against a star's ~36.
+ */
+export const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
+
+function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number }>(ranked: T[]): T[] {
   const grouped = new Map<string, T[]>();
   for (const entry of ranked) {
     const key = normalizePlayerName(entry.player.playerName);
@@ -1660,13 +1671,17 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
   // replace that representative span; a prior broad TAL/O-TAL tie-break changed unrelated center
   // spans and destabilized the whole first round. Harden 2014-16 and 2018-20 both read TAL 96 /
   // O-TAL 100, while the user-validated 2018-20 peak also carries the stronger real D-TAL.
+  // 2026-11-04: the pins break TAL ties only — they date from when Shaq's windows read 97 alike;
+  // now that a cheaper window can win on price (`WINDOW_FGA_RATE`), a pin overriding it would keep
+  // every Shaq at 1999-01.
   return [...grouped.values()].map((entries) => {
     const bestDraftEntry = entries[0];
+    const window = entries.reduce((best, entry) => (entry.windowValue > best.windowValue ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
-    if (!preferredSpan) return bestDraftEntry;
-    const preferredEntry = entries.find((entry) => entry.player.spanLabel === preferredSpan);
-    return preferredEntry ? { ...bestDraftEntry, player: preferredEntry.player, talent: preferredEntry.talent } : bestDraftEntry;
+    const preferredEntry = preferredSpan ? entries.find((entry) => entry.player.spanLabel === preferredSpan && entry.talent >= window.talent) : undefined;
+    const chosen = preferredEntry ?? window;
+    return { ...bestDraftEntry, player: chosen.player, talent: chosen.talent };
   });
 }
 
@@ -2468,7 +2483,10 @@ export function pickForAi(
     const debug = aiDraftDebug
       ? { talent, rampedNeed, talentTerm, fga: p.fga, effectiveFgaPenalty, fgaCost, ...adjustments }
       : undefined;
-    return { player: p, value, talent, debug };
+    // Same player, another window: the shots one saves are worth what they buy on the rest of the
+    // roster (`WINDOW_FGA_RATE`), not the star-dampened `fgaCost`.
+    const windowValue = value + fgaCost - p.fga * WINDOW_FGA_RATE;
+    return { player: p, value, talent, windowValue, debug };
   });
 
   // A player may have several legal spans. The context-optimal representative used for draft
