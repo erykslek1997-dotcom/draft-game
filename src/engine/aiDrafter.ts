@@ -469,15 +469,6 @@ function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
   return blocked ? TWIN_CENTRE.share * (talent - TWIN_CENTRE.floor) : 0;
 }
 
-/** 2026-11-04, the user (Mobile: SGA 2024-26 and Kobe 2008-10, both 20+ shots — "później brakuje i
- * to widać"): a second 20+ FGA player eats the caps the rest of the nine needs; he costs
- * `SECOND_VOLUME.perFga` value points a shot past `SECOND_VOLUME.from`, up to `SECOND_VOLUME.max`. */
-const SECOND_VOLUME = { fga: 20, from: 19, perFga: 2.5, max: 10 };
-function secondVolumePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
-  if (p.fga < SECOND_VOLUME.fga || !roster.some((r) => r.fga >= SECOND_VOLUME.fga)) return 0;
-  return Math.min(SECOND_VOLUME.max, (p.fga - SECOND_VOLUME.from) * SECOND_VOLUME.perFga);
-}
-
 interface NeedContext {
   emptySlots: Position[];
   /** 2026-10-01: `emptySlots` plus every slot whose starter misses the user's starter standard
@@ -2413,7 +2404,6 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       twinCentrePenalty: -twinCentrePenalty(roster, p),
-      secondVolumePenalty: -secondVolumePenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
       boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p),

@@ -1,6 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
-import { computeDefensiveTalent, computeUncappedOffensiveTalent } from './talent';
+import { computeDefensiveTalent, computeOffensiveTalent, computeUncappedOffensiveTalent } from './talent';
 import { effectiveTalent, type Grade } from './grades';
 import { realSpan } from './realAdvancedLookup';
 
@@ -95,13 +95,28 @@ function ratingAt(percentile: number, anchors: readonly [number, number][]): num
   return 100;
 }
 
+/**
+ * 2026-11-04, the user (Al Horford 2014-16, TAL 80, read 65 / 63: "dla gracza z zewnątrz to nie
+ * będzie dobrze oceniać"; "już takie 73/71 dla Horforda ma więcej sensu"): the card's two numbers
+ * add up to the player. Half of each is the position scale above, half a scale around his TAL —
+ * the two sides average to TAL and their gap is the gap between his O-TAL and D-TAL, halved and held
+ * to `CARD_BLEND.maxGap` — so an All-NBA two-way four reads about 72 / 72, not 65 / 63, and a TAL
+ * lift from playoffs or awards shows on the card (Brunson 2024-26).
+ */
+const CARD_BLEND = { positional: 0.5, maxGap: 20, top: 99 };
+function aroundTal(span: PlayerSpan, side: Side): number {
+  const gap = Math.max(-CARD_BLEND.maxGap, Math.min(CARD_BLEND.maxGap, (computeOffensiveTalent(span) - computeDefensiveTalent(span)) / 2));
+  return Math.min(CARD_BLEND.top, effectiveTalent(span) + (side === 'offense' ? gap : -gap));
+}
+
 const cache = new Map<string, number>();
 function rating(span: PlayerSpan, side: Side): number {
   const key = `${span.id}|${side}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
   const pool = poolFor(span.primaryPosition, side);
-  const result = Math.round(ratingAt(percentileOf(pool.values, sideValue(span, side)), pool.anchors));
+  const positional = ratingAt(percentileOf(pool.values, sideValue(span, side)), pool.anchors);
+  const result = Math.round(CARD_BLEND.positional * positional + (1 - CARD_BLEND.positional) * aroundTal(span, side));
   cache.set(key, result);
   return result;
 }

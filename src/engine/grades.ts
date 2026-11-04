@@ -1414,9 +1414,20 @@ export function formatTal(value: number): string {
 }
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
-  const value = displayTalentUnheld(ctx);
+  const value = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
   const hold = rimBonusHold(ctx);
   return hold ? Math.min(value, tierCeiling(hold)) : value;
+}
+
+/**
+ * 2026-11-04, the user (Batum 2020-22 at TAL 68 on offense 52 / defense 54: "Batum baza, ale 62
+ * bliżej realnej wartości"; the list of 26 windows accepted, George Hill 2010-12 68 -> 61 included):
+ * a role player on few shots (under `LOW_VOLUME.fga` a game) is worth at most his better side plus
+ * `LOW_VOLUME.margin` — efficiency and fit on six shots don't make a starter of a role player.
+ */
+const LOW_VOLUME = { fga: 9, margin: 8 };
+function lowVolumeCeiling(ctx: TierGateContext): number {
+  return ctx.fga < LOW_VOLUME.fga ? Math.max(ctx.otal, ctx.dtal) + LOW_VOLUME.margin : Infinity;
 }
 
 function displayTalentUnheld(ctx: TierGateContext): number {
