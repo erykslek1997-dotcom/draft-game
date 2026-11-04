@@ -40,6 +40,7 @@ Liczy to, co Eryk wyłapuje w składach: nadmiarowi PG przy rozgrywającym w sk�
 
 ### Poziom 4 — TAL
 15. Spójność TAL i karty (Brunson 2024-26: TAL 83, a atak 81, niżej niż 2023-25 z 86): gdy TAL okna jest podniesiony ponad to, co dają atak i obrona (nagrody, play-offy, ręczny tier), różnica rozkłada się na wyświetlany atak/obronę — głównie stronę, za którą przyszła nagroda. Wypisać wszystkie okna, gdzie TAL rośnie, a atak lub obrona na karcie spada względem sąsiedniego okna; Brunson porównać z PG o podobnym OBPM (Lillard, Kyrie, Paul).
+    KIERUNEK (Eryk, 2026-11-04): karta ma się „sumować” z TAL, ale nie do pełnego TAL — Horford 2014-16 (TAL 80, dziś 65/63) ok. 73/71. Propozycja: wyświetlany atak/obrona = połowa obecnej skali (percentyl strony na pozycji) + połowa skali wokół TAL (średnia = TAL, różnica = profil gracza, przycięta). Przed wdrożeniem pokazać Erykowi listę (top 100 + przykłady) do akceptacji; dotyczy tylko wyświetlania.
 14. Batum 2020-22 TAL 68 → ok. 62. Ogólnie: przy małym FGA TAL nie wychodzi dużo ponad atak i obronę (Batum O 52 / D 54). Lista graczy przed/po do akceptacji Eryka + sędziowie.
 
 ## Jedna duża poprawka — przegląd draftu 3009740454 (spisane 2026-11-04, czeka na start)
