@@ -2645,6 +2645,17 @@ export function pickForAi(
         const playableGapFit = playable.filter((entry) => gapPositions.some((slot) => isRealPositionFit(entry.player, slot)));
         if (playableGapFit.length > 0) lotteryCandidates = playableGapFit;
       }
+      // 2026-11-04, the user ("AI uznaje pierwsze 5 picków za starting 5 i później dobiera ławkę.
+      // Kolejność w zasadzie jest dowolna, może wybrać startera nawet w 9 rundzie"; Pittsburgh: Kyle
+      // Korver, 69, started at the two while Lillard came at pick 89 as a 19.7-FGA backup — the shots
+      // for Anthony Edwards): a candidate who would take a starter's place stays in the lottery
+      // whatever the bench filters above want; the team score decides between him and the bench.
+      const upgrades = scan.filter((entry) => {
+        if (lotteryCandidates.includes(entry)) return false;
+        const rotation = autoAssignRotation([...roster, entry.player]);
+        return STARTER_SLOTS.some((slot) => rotation.slots[slot][0]?.playerId === entry.player.id);
+      });
+      if (upgrades.length > 0) lotteryCandidates = [...lotteryCandidates, ...upgrades].sort((a, b) => b.value - a.value);
     }
   }
 
