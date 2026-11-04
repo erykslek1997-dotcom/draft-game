@@ -1701,7 +1701,7 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
     const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
-    const preferredEntry = preferredSpan ? entries.find((entry) => entry.player.spanLabel === preferredSpan && entry.talent >= window.talent) : undefined;
+    const preferredEntry = preferredSpan ? entries.find((entry) => entry.player.spanLabel === preferredSpan && entry.talent === window.talent) : undefined;
     const chosen = preferredEntry ?? window;
     return { ...bestDraftEntry, player: chosen.player, talent: chosen.talent };
   });
