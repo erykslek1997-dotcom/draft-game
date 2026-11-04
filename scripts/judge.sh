@@ -5,6 +5,7 @@
 #
 #   bash scripts/judge.sh <name> [--full] [--compare=<earlier name>]
 #
+# Plus the lineup judge (measureLineups: real five-man units, 250+ min quick / 150+ full).
 # Quick: auditTeams every third team-season, measureScoreVsSim 3 leagues, measureRosterSense 4
 # drafts (~3x faster). --full is the number of record before a merge. Output: reports/judge/<name>/.
 set -u
@@ -23,7 +24,7 @@ OUT=reports/judge/$NAME
 mkdir -p "$OUT"
 export JUDGE_QUICK=$QUICK
 start=$(date +%s)
-printf '%s\n' auditTeams measureScoreVsSim auditDTal measureRosterSense |
+printf '%s\n' auditTeams measureScoreVsSim auditDTal measureRosterSense measureLineups |
   xargs -P 3 -I{} sh -c 'npx tsx scripts/{}.ts > "'"$OUT"'/{}.txt" 2>&1 || echo "FAILED {}" >> "'"$OUT"'/{}.txt"'
 
 summary() {
@@ -32,6 +33,7 @@ summary() {
   echo "SRS r (season)   $(grep -m1 -oE 'Season-centred.*r [0-9.]+' "$d/auditTeams.txt" | awk '{print $NF}')"
   echo "sim R2           $(grep -m1 -oE 'R² [0-9.]+' "$d/measureScoreVsSim.txt" | awk '{print $NF}')"
   echo "D-TAL r          $(grep -m1 -oE 'D-TAL  r [0-9.]+' "$d/auditDTal.txt" | awk '{print $NF}')"
+  echo "lineups r        $(grep -m1 -oE 'Overall -> unit net   r [0-9.]+' "$d/measureLineups.txt" | awk '{print $NF}')"
   echo "AI rosters       $(grep -m1 -oE 'Overall [0-9.].*' "$d/measureRosterSense.txt")"
   grep -h FAILED "$d"/*.txt 2>/dev/null
 }
