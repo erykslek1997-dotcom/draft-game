@@ -4,6 +4,7 @@ import competenceData from '../data/positionCompetence.json';
 import { per36 } from './minutesPerGame';
 import { isNamedPgEligible } from './pgEligibility';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
+import { playmakingScoreForPlayer } from './playmakingLookup';
 
 /**
  * 2026-09-25, user's multi-position ask ("wielopozycyjność ... na marginalnych spadkach"): how
@@ -72,7 +73,22 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
   const name = normalizePlayerName(span.playerName);
-  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+}
+
+/**
+ * 2026-11-04, the user's review (Andre Roberson, a two, 14 minutes at the four; Toni Kukoč, a 6'11"
+ * four, at the two; Majerle at the four): a guard never plays the four or the five, and a big never
+ * plays a guard spot unless he really runs an offense (playmaking `CROSS_COURT.bigGuardPlaymaking`+:
+ * LeBron). Applies off the player's own position only.
+ */
+const CROSS_COURT = { bigGuardPlaymaking: 90 };
+function crossCourtCap(span: PlayerSpan, slot: Position): number {
+  const guard = (p: Position) => p === 'PG' || p === 'SG';
+  const big = (p: Position) => p === 'PF' || p === 'C';
+  if (guard(span.primaryPosition) && big(slot)) return 0;
+  if (big(span.primaryPosition) && guard(slot) && (playmakingScoreForPlayer(span) ?? 0) < CROSS_COURT.bigGuardPlaymaking) return 0;
+  return 1;
 }
 
 /** 2026-10-29, the user (Porziņģis starting at PF beside Embiid: "a 7'4\" PF makes no real sense"):

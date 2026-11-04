@@ -1822,7 +1822,7 @@ export function ballLoadAdjustment(team: Team): number {
  * -0.3, two -3.4. The cost starts past `from` of the minutes and grows `perShare` an Overall point
  * per 1.0 of the minutes beyond it, up to `max`.
  */
-export const DATA_CERTAINTY = { firstFullYear: 1973, from: 0.12, perShare: 16, max: 6 };
+export const DATA_CERTAINTY = { firstFullYear: 1973, from: 0.12, perShare: 16, max: 6, minPlayers: 2, playerMinutes: 10 };
 export const isPreBoxEra = (span: PlayerSpan): boolean => Number(span.spanLabel.slice(0, 4)) < DATA_CERTAINTY.firstFullYear;
 export function preBoxEraShare(team: Team): number {
   if (!team.rotation) return 0;
@@ -1835,7 +1835,15 @@ export function preBoxEraShare(team: Team): number {
   }
   return total > 0 ? old / total : 0;
 }
+/** 2026-11-04, the user ("procent od minimum dwóch graczy"): one old window is no risk (measured
+ * -0.3), so the cost needs `minPlayers` of them at `playerMinutes`+ minutes. */
+function preBoxEraPlayers(team: Team): number {
+  const rotation = team.rotation;
+  if (!rotation) return 0;
+  return team.roster.filter((p) => isPreBoxEra(p) && totalMinutesForPlayer(rotation, p.id) >= DATA_CERTAINTY.playerMinutes).length;
+}
 export function dataCertaintyAdjustment(team: Team): number {
+  if (preBoxEraPlayers(team) < DATA_CERTAINTY.minPlayers) return 0;
   return -Math.min(DATA_CERTAINTY.max, Math.max(0, preBoxEraShare(team) - DATA_CERTAINTY.from) * DATA_CERTAINTY.perShare);
 }
 

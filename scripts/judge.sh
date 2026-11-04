@@ -24,7 +24,7 @@ OUT=reports/judge/$NAME
 mkdir -p "$OUT"
 export JUDGE_QUICK=$QUICK
 start=$(date +%s)
-printf '%s\n' auditTeams measureScoreVsSim auditDTal measureRosterSense measureLineups |
+printf '%s\n' auditTeams measureScoreVsSim auditDTal measureRosterSense measureLineups measureReviewFlags |
   xargs -P 3 -I{} sh -c 'npx tsx scripts/{}.ts > "'"$OUT"'/{}.txt" 2>&1 || echo "FAILED {}" >> "'"$OUT"'/{}.txt"'
 
 summary() {
@@ -35,6 +35,7 @@ summary() {
   echo "D-TAL r          $(grep -m1 -oE 'D-TAL  r [0-9.]+' "$d/auditDTal.txt" | awk '{print $NF}')"
   echo "lineups r        $(grep -m1 -oE 'Overall -> unit net   r [0-9.]+' "$d/measureLineups.txt" | awk '{print $NF}')"
   echo "AI rosters       $(grep -m1 -oE 'Overall [0-9.].*' "$d/measureRosterSense.txt")"
+  [ -f "$d/measureReviewFlags.txt" ] && grep -E "^  [a-z23].*%" "$d/measureReviewFlags.txt" | sed -E 's/   e\.g\..*//'
   grep -h FAILED "$d"/*.txt 2>/dev/null
 }
 echo "== $NAME ($([ "$QUICK" = 1 ] && echo quick || echo full), $(( $(date +%s) - start )) s)"

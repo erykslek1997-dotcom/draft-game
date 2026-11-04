@@ -15,6 +15,7 @@ import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import { teamSpacingValue } from './midrangeGravity';
+import { playmakingScoreForPlayer } from './playmakingLookup';
 import type { Rotation, SlotAssignment, Team } from './types';
 
 export const GAME_MINUTES = 48;
@@ -476,7 +477,7 @@ function spacingAwareStarterSwaps(
  * holds the ball at most `maxPointShare` of his floor time and `minGap` less than the star
  * (`ballShare`, ballHandling.ts). A label and matchup change: the five's value barely moves.
  */
-const COMBO_GUARD_SWAP = { starAtSg: 0.9, pointAtPg: 0.47, minStarInches: 76, maxPointShare: 0.2, minGap: 0.05 };
+const COMBO_GUARD_SWAP = { starAtSg: 0.9, pointAtPg: 0.47, minStarInches: 76, maxPointShare: 0.2, minGap: 0.05, organiserPlaymaking: 90, organiserFga: 17 };
 function comboGuardAtTwo(
   searched: { assignment: Partial<Record<Position, PlayerSpan>>; score: number },
   valueFor: (player: PlayerSpan, slot: Position) => number,
@@ -484,11 +485,32 @@ function comboGuardAtTwo(
   const star = searched.assignment.PG;
   const point = searched.assignment.SG;
   if (!star || !point) return searched;
+  // 2026-11-04, the user (Norfolk: Haliburton at the two while Charlie Ward ran the point): two
+  // point guards — the five's real organiser runs the point and the other one plays the two.
+  const organises = (p: PlayerSpan) => (playmakingScoreForPlayer(p) ?? 0) >= COMBO_GUARD_SWAP.organiserPlaymaking && p.fga < COMBO_GUARD_SWAP.organiserFga;
+  if (
+    point.primaryPosition === 'PG' &&
+    organises(point) &&
+    !organises(star) &&
+    (playmakingScoreForPlayer(point) ?? 0) > (playmakingScoreForPlayer(star) ?? 0) &&
+    positionCompetenceScore(star, 'SG') >= COMBO_GUARD_SWAP.pointAtPg
+  ) {
+    const assignment = { ...searched.assignment, PG: point, SG: star };
+    return { assignment, score: STARTER_SLOTS.reduce((sum, slot) => sum + (assignment[slot] ? valueFor(assignment[slot]!, slot) : 0), 0) };
+  }
   if (positionCompetenceScore(star, 'SG') < COMBO_GUARD_SWAP.starAtSg || positionCompetenceScore(point, 'PG') < COMBO_GUARD_SWAP.pointAtPg) return searched;
   const starHeight = getHeightInches(star.playerName);
   const pointHeight = getHeightInches(point.playerName);
   if (starHeight === undefined || starHeight < COMBO_GUARD_SWAP.minStarInches || (pointHeight !== undefined && pointHeight > starHeight)) return searched;
-  if (ballShare(point) > COMBO_GUARD_SWAP.maxPointShare || ballShare(star) - ballShare(point) < COMBO_GUARD_SWAP.minGap) return searched;
+  // 2026-11-04, the user (Luka 2024-26 at the point, Terry Porter at the two; Haliburton at the two
+  // beside Charlie Ward): beside another point guard, the one who holds the ball more and plays the
+  // two better goes there — unless he is the five's real organiser (playmaking
+  // `COMBO_GUARD_SWAP.organiserPlaymaking`+ on under `COMBO_GUARD_SWAP.organiserFga` shots).
+  const organiser = (playmakingScoreForPlayer(star) ?? 0) >= COMBO_GUARD_SWAP.organiserPlaymaking && star.fga < COMBO_GUARD_SWAP.organiserFga;
+  if (organiser) return searched;
+  const clearGap = ballShare(point) <= COMBO_GUARD_SWAP.maxPointShare && ballShare(star) - ballShare(point) >= COMBO_GUARD_SWAP.minGap;
+  const betterTwo = ballShare(star) >= ballShare(point) && positionCompetenceScore(star, 'SG') > positionCompetenceScore(point, 'SG');
+  if (!clearGap && !betterTwo) return searched;
   const assignment = { ...searched.assignment, PG: point, SG: star };
   const score = STARTER_SLOTS.reduce((sum, slot) => sum + (assignment[slot] ? valueFor(assignment[slot]!, slot) : 0), 0);
   return { assignment, score };
@@ -534,6 +556,42 @@ function forceStarsIntoLineup(
     const cost = (slot: Position) => (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0) - valueFor(star, slot);
     const slot = [...choices].sort((a, b) => cost(a) - cost(b))[0];
     lineup[slot] = star;
+  }
+  // 2026-11-04, the user (Boise: Embiid forced to the four took Erving's place, and Erving sat while
+  // Majerle started at the three): with the forced stars fixed, the other slots are searched again
+  // from the whole roster, so the player he displaced can move to another slot.
+  const fixed = new Map(STARTER_SLOTS.filter((slot) => lineup[slot] && mustStart(lineup[slot]!)).map((slot) => [slot, lineup[slot]!]));
+  const free = STARTER_SLOTS.filter((slot) => !fixed.has(slot));
+  const pool = roster.filter((p) => ![...fixed.values()].some((f) => f.id === p.id));
+  let bestFree: Partial<Record<Position, PlayerSpan>> = Object.fromEntries(free.map((slot) => [slot, lineup[slot]]).filter(([, p]) => p));
+  let bestFreeScore = free.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
+  const used = new Set<string>();
+  const current: Partial<Record<Position, PlayerSpan>> = {};
+  const search = (i: number, acc: number) => {
+    if (i === free.length) {
+      if (acc > bestFreeScore + 1e-6) {
+        bestFreeScore = acc;
+        bestFree = { ...current };
+      }
+      return;
+    }
+    const slot = free[i];
+    search(i + 1, acc);
+    for (const p of pool) {
+      if (used.has(p.id)) continue;
+      const v = valueFor(p, slot);
+      if (v <= 0) continue;
+      used.add(p.id);
+      current[slot] = p;
+      search(i + 1, acc + v);
+      delete current[slot];
+      used.delete(p.id);
+    }
+  };
+  search(0, 0);
+  for (const slot of free) {
+    if (bestFree[slot]) lineup[slot] = bestFree[slot];
+    else delete lineup[slot];
   }
   const score = STARTER_SLOTS.reduce((sum, slot) => sum + (lineup[slot] ? valueFor(lineup[slot]!, slot) : 0), 0);
   return { assignment: lineup, score };
