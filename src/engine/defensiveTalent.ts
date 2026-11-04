@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { eraBlocksPerGame } from './era';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
@@ -805,7 +806,7 @@ const RIM_PROTECTOR_FLOOR_MIN = 66;
 const RIM_PROTECTOR_FLOOR_MAX = 82;
 function rimProtectorFloor(span: PlayerSpan): number {
   if (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF') return 0;
-  if (span.box.bpg < RIM_PROTECTOR_MIN_BLOCKS) return 0;
+  if (eraBlocksPerGame(span) < RIM_PROTECTOR_MIN_BLOCKS) return 0;
   const detail = realDefenseExcessDetail(span);
   if (!detail) return 0;
   const tracking = [detail.onOffDdpm, detail.raptorDefense, detail.bpm2Defense].filter((v): v is number => v !== null && v !== undefined);

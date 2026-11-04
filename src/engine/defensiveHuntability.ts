@@ -1,4 +1,5 @@
 import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
+import { eraBlocksPerGame } from './era';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, hasEraOverrideDefenseFloor } from './defensiveTalent';
 import { effectiveTalent } from './grades';
@@ -349,7 +350,7 @@ const REAL_SHOT_BLOCKER_BPG = 1.5;
 function isRealShotBlocker(player: PlayerSpan): boolean {
   return (
     RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
-    player.box.bpg >= REAL_SHOT_BLOCKER_BPG
+    eraBlocksPerGame(player) >= REAL_SHOT_BLOCKER_BPG
   );
 }
 
