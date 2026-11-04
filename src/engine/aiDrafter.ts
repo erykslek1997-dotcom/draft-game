@@ -2705,7 +2705,16 @@ export function pickForAi(
   // — cheaper within `WINDOW_EQUAL`), not at his peak: taken by `effectiveTalent` below, every
   // fallen Shaq was 1999-01.
   const windowByName = new Map(scored.map((entry) => [normalizePlayerName(entry.player.playerName), entry.player]));
-  const fallenWindows = [...new Map(fallen.map((p) => [normalizePlayerName(p.playerName), windowByName.get(normalizePlayerName(p.playerName)) ?? p])).values()];
+  // 2026-11-04, the user's round-4 review (Dwight Howard behind Bill Walton, Walton 14.7 FGA for 12
+  // minutes: "Backup centra na 10-14 minut można znaleźć za 5-6 [FGA]. po co przepłacać?"): a fallen
+  // star is worth his price only in the five; one who would come off the bench is not taken.
+  const startsWith = (p: PlayerSpan) => {
+    const rotation = autoAssignRotation([...roster, p]);
+    return STARTER_SLOTS.some((slot) => rotation.slots[slot][0]?.playerId === p.id);
+  };
+  const fallenWindows = [...new Map(fallen.map((p) => [normalizePlayerName(p.playerName), windowByName.get(normalizePlayerName(p.playerName)) ?? p])).values()].filter(
+    (p) => roster.length < STARTER_SLOTS.length || startsWith(p),
+  );
   if (fallenWindows.length === 0 || fallenWindows.some((p) => p.playerName === normal.playerName)) return normal;
   // A fallen star comes in only if he fits (2026-10-29, the user: "ma brać gwiazdy które pasują,
   // nic na siłę"): his team, completed with the best affordable players left, scores within
