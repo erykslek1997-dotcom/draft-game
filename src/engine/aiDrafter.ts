@@ -469,6 +469,36 @@ function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
   return blocked ? TWIN_CENTRE.share * (talent - TWIN_CENTRE.floor) : 0;
 }
 
+/** Real usage, or before 1977-78 a read from shots on today's pace (same scale). */
+const usageOf = (x: PlayerSpan): number =>
+  usageForSpan(x)?.usgPct ?? 0.1 + 0.009 * x.fga * (LEAGUE_PACE_BASELINE / eraBaseline(x.spanLabel).pace);
+/**
+ * 2026-11-04, the user's review of 10 AI drafts ("albo Wade albo Harden, po co obu"; Kobe + Harden,
+ * SGA + Kobe, Payton, Frazier, Arenas beside McMillan — the most frequent note): from the first pick,
+ * a perimeter scorer who needs the ball beside a perimeter star who already has it costs value —
+ * `SECOND_BALL.points` at full overlap, read from both players' usage.
+ */
+const SECOND_BALL = { star: 0.28, from: 0.25, full: 0.32, points: 14 };
+function secondBallStarPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  const perimeter = (x: PlayerSpan) => x.primaryPosition !== 'PF' && x.primaryPosition !== 'C';
+  if (!perimeter(p)) return 0;
+  const star = roster.filter(perimeter).reduce((m, x) => Math.max(m, usageOf(x)), 0);
+  if (star < SECOND_BALL.star) return 0;
+  return SECOND_BALL.points * Math.max(0, Math.min(1, (usageOf(p) - SECOND_BALL.from) / (SECOND_BALL.full - SECOND_BALL.from)));
+}
+/**
+ * 2026-11-04, the same review (Don Buse 28 minutes, Don Reid, Tony Allen beside Sefolosha off the
+ * bench, Crowder 38 minutes: "PG z tak niskim TAL w ataku nie powinni być brani pod uwagę"): a
+ * player who brings no offense (O-TAL under `NO_OFFENSE.otal`) costs value for every such player
+ * already on the roster — one defensive specialist is a role, a bench of them is a hole.
+ */
+const NO_OFFENSE = { otal: 45, perPlayer: 6, max: 14 };
+function noOffenseStackPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (computeOffensiveTalent(p) >= NO_OFFENSE.otal) return 0;
+  const already = roster.filter((x) => computeOffensiveTalent(x) < NO_OFFENSE.otal).length;
+  return Math.min(NO_OFFENSE.max, already * NO_OFFENSE.perPlayer);
+}
+
 interface NeedContext {
   emptySlots: Position[];
   /** 2026-10-01: `emptySlots` plus every slot whose starter misses the user's starter standard
@@ -1329,7 +1359,8 @@ const DEFENSIVE_DEPTH_BONUS_SCALE = 0.5;
  * (scripts/measureRosterSense.ts): teams under 55 spacing 16% → 7%, Overall 80.87 → 81.33, the worst
  * tenth 75.3 → 75.6. A 105 cap instead did not help spacing (16% → 15%). Mutable only so the
  * measurement can tune it. */
-export const AI_SPACING_RULES = { threshold: 78, scale: 4 };
+// 2026-11-04: scale 4 -> 6 (the user's review: spacing was the second most frequent note).
+export const AI_SPACING_RULES = { threshold: 78, scale: 6 };
 
 /**
  * 2026-08-07, offensiveProfile.ts synergy signals — see `NeedContext.hasRimGravityStarter`/
@@ -1903,7 +1934,7 @@ function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: Pl
   let ballFit = 0;
   // Usage exists from 1977-78; before it (Oscar, Wilt, West) the share is read from shots on today's
   // pace, the same scale (2026-11-04, the user: Oscar 1961-63 beside LeBron).
-  const usage = (x: PlayerSpan) => usageForSpan(x)?.usgPct ?? 0.1 + 0.009 * x.fga * (LEAGUE_PACE_BASELINE / eraBaseline(x.spanLabel).pace);
+  const usage = usageOf;
   const starUsage = Math.max(0, ...five.filter((x) => effectiveTalent(x) >= AI_ROLE_RULES.starTal).map((x) => usage(x) ?? 0));
   if (starUsage >= AI_ROLE_RULES.ballStarUsage && !isBig(p) && starterIds.has(p.id)) {
     const u = usage(p);
@@ -2404,6 +2435,8 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       twinCentrePenalty: -twinCentrePenalty(roster, p),
+      secondBallStarPenalty: -secondBallStarPenalty(roster, p),
+      noOffenseStackPenalty: -noOffenseStackPenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
       boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p),

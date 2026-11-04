@@ -116,8 +116,6 @@ const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
   'dennis rodman': { C: 0.95 },
   // The user: a centre who can play the four, with the partial-position penalty.
   'bam adebayo': { PF: 0.6 },
-  // 2026-11-04, the user (Jokić 2023-25 on the board as a four): a centre, the four only part-time.
-  'nikola jokic': { PF: 0.6 },
 };
 
 /**
@@ -128,7 +126,7 @@ const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
  * rebounding (5.5 a 36) nor his weight (225 lb): at most `emergency` — small-ball fours such as
  * Melo, Butler 2020-22 and Anunoby keep it.
  */
-const SIZE_CAP = { sfMinInches: 77, pfMinInches: 80, pfRebounds36: 5.5, pfMinLbs: 225, partial: 0.6, emergency: 0.4 };
+const SIZE_CAP = { sfMinInches: 78, pfMinInches: 80, pfRebounds36: 5.5, pfMinLbs: 225, partial: 0.6, emergency: 0.4 };
 function sizeCap(span: PlayerSpan, slot: Position): number {
   const from = POSITION_ORDER.indexOf(span.primaryPosition);
   const to = POSITION_ORDER.indexOf(slot);
