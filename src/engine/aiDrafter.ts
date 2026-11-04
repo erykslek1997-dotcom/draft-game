@@ -1918,6 +1918,54 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
   return out;
 }
 
+/**
+ * 2026-11-04, the user ("AI uznaje pierwsze 5 picków za starting 5 i później dobiera ławkę.
+ * Kolejność w zasadzie jest dowolna"; "AI wcześniej robi drużyny żeby wyszło jak najmocniejsze"):
+ * stage 1 of planned drafting. Before a pick the AI builds the whole rest of its roster — the board's
+ * best affordable fill (`completeRosterGreedy`), then `passes` rounds of swapping each planned player
+ * for one of `alternatives` others while the team score (`teamScorer`) rises — and takes the planned
+ * player the board values most, the one least likely to last. Candidates come in the board's own
+ * order (taste and noise included), so GMs still differ.
+ */
+export const AI_PLAN = {
+  on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
+  fromRoster: 2,
+  alternatives: 14,
+  cheapFga: 7,
+  cheapAlternatives: 6,
+  passes: 2,
+};
+function planPick(roster: PlayerSpan[], board: PlayerSpan[], capLeft: number, slots: number): PlayerSpan | null {
+  if (!teamScorer || slots <= 0 || board.length === 0) return null;
+  const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
+  const plan = completeRosterGreedy(roster, board, capLeft, slots).slice(roster.length);
+  if (plan.length === 0) return null;
+  let best = teamScorer([...roster, ...plan]);
+  for (let pass = 0; pass < AI_PLAN.passes; pass++) {
+    let improved = false;
+    for (let i = 0; i < plan.length; i++) {
+      const others = plan.filter((_, j) => j !== i);
+      const taken = new Set([...roster, ...others].map(key));
+      const reserve = (slots - plan.length) * LOOKAHEAD_MIN_FILL_FGA;
+      const room = capLeft - others.reduce((sum, p) => sum + p.fga, 0) - reserve;
+      const open = board.filter((p) => !taken.has(key(p)) && p.fga <= room && p.id !== plan[i].id);
+      // The board's best, plus its best cheap ones: a 10-14-minute backup costs 5-6 shots (the user).
+      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives)])];
+      for (const candidate of pool) {
+        const score = teamScorer([...roster, ...others, candidate]);
+        if (score > best + 1e-6) {
+          best = score;
+          plan[i] = candidate;
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+  const rank = new Map(board.map((p, index) => [p.id, index]));
+  return [...plan].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity))[0] ?? null;
+}
+
 interface FiveGaps {
   spacing: number;
   defense: number;
@@ -2686,6 +2734,10 @@ export function pickForAi(
     lotteryCandidates = rescored.sort((a, b) => b.value - a.value);
   }
 
+  if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
+    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length);
+    if (planned) return planned;
+  }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
   const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));
   const weights = lotteryWeights(top.length);
