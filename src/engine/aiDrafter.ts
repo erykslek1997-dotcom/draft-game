@@ -36,6 +36,8 @@ import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import { meetsStarterStandard } from './starterStandard';
 import { ballHandlerCost } from './ballHandling';
 import { teamSpacingValue } from './midrangeGravity';
+import { usageForSpan } from './usageLookup';
+import { playmakingScoreForPlayer } from './playmakingLookup';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -1748,6 +1750,19 @@ export interface AiDraftRuleset {
  */
 const BOARD_NOISE_POINTS = 8;
 const BOARD_NOISE_TEAM_POINTS = 0.7;
+/**
+ * 2026-11-04, the user (Payton 1995-97, TAL 84, taken at #32 before Chris Paul 2013-15, TAL 92 and
+ * cheaper — the boards read +14.7 and -9.8): the opinion shrinks toward the stars, from
+ * `BOARD_NOISE_POINTS` at TAL `BOARD_NOISE_STAR_FROM` to `BOARD_NOISE_STAR_POINTS` at
+ * `BOARD_NOISE_STAR_FULL`, so it reshuffles role players and never jumps eight points of TAL.
+ */
+const BOARD_NOISE_STAR_FROM = 72;
+const BOARD_NOISE_STAR_FULL = 86;
+const BOARD_NOISE_STAR_POINTS = 3;
+function boardNoisePoints(talent: number): number {
+  const t = clamp01((talent - BOARD_NOISE_STAR_FROM) / (BOARD_NOISE_STAR_FULL - BOARD_NOISE_STAR_FROM));
+  return BOARD_NOISE_POINTS + (BOARD_NOISE_STAR_POINTS - BOARD_NOISE_POINTS) * t;
+}
 const boardNoiseCache = new Map<string, number>();
 function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
   if (boardSeed === undefined) return 0;
@@ -1835,6 +1850,70 @@ function startingFiveGaps(roster: PlayerSpan[]): FiveGaps {
     size: bigs >= 2 ? 0 : 1,
   };
 }
+/**
+ * 2026-11-04, the user's review of draft 3009740454 — three things the team score alone let through
+ * in the lookahead, each in team-overall points:
+ *  - `benchCost` (Bill Walton 1976-78, 14.7 caps for 15 minutes behind Howard; Bill Russell 12.3
+ *    caps for 14): a player pays for the caps he takes beyond what his minutes are worth — the cap
+ *    spread over 240 minutes, with `capSlack` room — so a cheap backup (Mutombo 1998-00, 6.9 caps
+ *    for 13 minutes) costs nothing and a dear one on the bench does.
+ *  - `starGap` (Jokić without a defensive four): a star in the five who defends poorly leaves a
+ *    job — a defensive big beside a big star, a perimeter stopper beside a guard star — and a
+ *    candidate who does it gains.
+ *  - `ballFit` (Penny next to Kobe; Erving next to LeBron): beside a high-usage star a second
+ *    high-usage scorer at a guard or wing costs, a pass-first guard gains — "a classic point guard".
+ */
+export const AI_ROLE_RULES = {
+  on: true,
+  capSlack: 1.3,
+  benchCostPerCap: 0.12,
+  starTal: 85,
+  starWeakD: 62,
+  starGapPoints: 0.6,
+  ballStarUsage: 0.3,
+  ballSecondUsage: 0.25,
+  ballCostPoints: 0.8,
+  passFirstPoints: 0.4,
+  /** 2026-11-04, the user (Tucson: Alvin Robertson, spacing 12, beside Nash, McHale and Duncan):
+   * two starting bigs who don't shoot need a perimeter that does. */
+  nonShootingBig: 36,
+  perimeterSpacingPoints: 1.2,
+};
+function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: PlayerSpan, capLimit: number) {
+  const rotation = autoAssignRotation(completed);
+  const minutes = totalMinutesForPlayer(rotation, p.id);
+  const fairCaps = minutes * (capLimit / (STARTER_SLOTS.length * GAME_MINUTES)) * AI_ROLE_RULES.capSlack;
+  const benchCost = Math.max(0, p.fga - fairCaps) * AI_ROLE_RULES.benchCostPerCap;
+  const starterIds = new Set(STARTER_SLOTS.map((slot) => rotation.slots[slot][0]?.playerId));
+  const five = completed.filter((x) => starterIds.has(x.id) && x.id !== p.id && roster.some((r) => r.id === x.id));
+  const isBig = (x: PlayerSpan) => x.primaryPosition === 'PF' || x.primaryPosition === 'C';
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+  let starGap = 0;
+  for (const star of five) {
+    if (effectiveTalent(star) < AI_ROLE_RULES.starTal || computeDefensiveTalent(star) >= AI_ROLE_RULES.starWeakD) continue;
+    if (isBig(star) !== isBig(p)) continue;
+    const covered = five.some((x) => x.id !== star.id && isBig(x) === isBig(star) && computeDefensiveTalent(x) >= 80);
+    if (covered) continue;
+    starGap = Math.max(starGap, AI_ROLE_RULES.starGapPoints * clamp01((computeDefensiveTalent(p) - 70) / 20));
+  }
+  let ballFit = 0;
+  const usage = (x: PlayerSpan) => usageForSpan(x)?.usgPct ?? null;
+  const starUsage = Math.max(0, ...five.filter((x) => effectiveTalent(x) >= AI_ROLE_RULES.starTal).map((x) => usage(x) ?? 0));
+  if (starUsage >= AI_ROLE_RULES.ballStarUsage && !isBig(p) && starterIds.has(p.id)) {
+    const u = usage(p);
+    if (u !== null && u > AI_ROLE_RULES.ballSecondUsage) ballFit -= AI_ROLE_RULES.ballCostPoints * clamp01((u - AI_ROLE_RULES.ballSecondUsage) / 0.06);
+    if (p.primaryPosition === 'PG' && u !== null && u <= AI_ROLE_RULES.ballSecondUsage - 0.03) {
+      ballFit += AI_ROLE_RULES.passFirstPoints * clamp01(((playmakingScoreForPlayer(p) ?? 0) - 80) / 15);
+    }
+  }
+  let perimeterSpacing = 0;
+  const nonShootingBigs = five.filter((x) => isBig(x) && teamSpacingValue(x) < AI_ROLE_RULES.nonShootingBig).length;
+  if (nonShootingBigs >= 2 && !isBig(p) && starterIds.has(p.id)) {
+    perimeterSpacing = AI_ROLE_RULES.perimeterSpacingPoints * Math.max(-0.5, Math.min(1, (teamSpacingValue(p) - 40) / 40));
+  }
+  return { benchCost, starGap, ballFit: ballFit + perimeterSpacing };
+}
+
 /** How well a candidate fills the five's biggest gap, 0..1. */
 function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
   const isBig = p.primaryPosition === 'PF' || p.primaryPosition === 'C';
@@ -2321,7 +2400,7 @@ export function pickForAi(
       twinCentrePenalty: -twinCentrePenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
-      boardNoise: BOARD_NOISE_POINTS * boardNoise(ruleset?.boardSeed, p),
+      boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
@@ -2496,11 +2575,12 @@ export function pickForAi(
       );
       const overall = teamScorer!(completed);
       const complement = complementScore(gaps, entry.player) * NEAR_TIE_COMPLEMENT_POINTS;
-      const teamValue = overall + complement + LOOKAHEAD_TASTE_POINTS_PER_VALUE * taste(entry.player) + BOARD_NOISE_TEAM_POINTS * boardNoise(ruleset?.boardSeed, entry.player);
+      const roleTerms = AI_ROLE_RULES.on ? lookaheadRoleTerms(roster, completed, entry.player, capLimit) : { benchCost: 0, starGap: 0, ballFit: 0 };
+      const teamValue = overall + complement - roleTerms.benchCost + roleTerms.starGap + roleTerms.ballFit + LOOKAHEAD_TASTE_POINTS_PER_VALUE * taste(entry.player) + BOARD_NOISE_TEAM_POINTS * (boardNoisePoints(effectiveTalent(entry.player)) / BOARD_NOISE_POINTS) * boardNoise(ruleset?.boardSeed, entry.player);
       return {
         ...entry,
         value: teamValue,
-        debug: entry.debug ? { ...entry.debug, teamOverall: overall, complement, teamValue } : entry.debug,
+        debug: entry.debug ? { ...entry.debug, teamOverall: overall, complement, ...roleTerms, teamValue } : entry.debug,
       };
     });
     lotteryCandidates = rescored.sort((a, b) => b.value - a.value);

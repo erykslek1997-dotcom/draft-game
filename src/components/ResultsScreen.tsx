@@ -343,7 +343,6 @@ const NEXT_DRAFT_TIP: Record<string, string> = {
   Talent: 'Top-end talent was the main gap. Spend early picks on the best player available and fill needs later.',
   'Bench Depth': 'The bench gave back ground. Save some caps for the late rounds so your 6th–9th men can hold their own.',
   Offense: 'The offense trailed the field. A second shot creator and more shooting around the stars would help.',
-  Defense: "Defense was the main gap. Opponents target stars who can't defend — a mid-round rim protector or wing stopper would help.",
   Spacing: 'The floor got crowded. Two or three reliable outside shooters around your stars would open it up.',
   Fit: 'Some pieces overlapped — several players who want the ball or do the same job. Balance creators, shooters and defenders.',
   Rotation: 'The rotation cost some points. Start players at their natural positions and keep minutes within what each can handle.',
@@ -408,8 +407,25 @@ function offenseTip(team: Team): string {
   return `The offense trailed the field, and ${drag.row.player.playerName} gave it the least: offense ${offenseRating(drag.row.player)} in ${Math.round(drag.row.total)} minutes at ${drag.slot}, where a typical rotation player reads ${RATING_MEDIAN}. ${OFFENSE_PART_TIP[weakestPart]}`;
 }
 
+/**
+ * 2026-11-04, the user (Mourning and Butler on the roster, told "a mid-round rim protector or wing
+ * stopper would help"): the Defense tip names the weakest link who played real minutes instead of
+ * one generic line, and only suggests the defensive job the roster actually lacks.
+ */
+function defenseTip(team: Team): string {
+  const [weakest] = weakDefendersFor(team);
+  const fit = fitScore(team);
+  const hasRim = Boolean(fit.inputs.rimProtectionConfirmed);
+  const hasWing = Boolean(fit.inputs.wingCoverageConfirmed);
+  const missing = !hasRim && !hasWing ? 'a rim protector or a wing stopper' : !hasRim ? 'a rim protector' : !hasWing ? 'a wing stopper' : null;
+  const lack = missing ? ` The roster also lacked ${missing}.` : '';
+  if (!weakest) return `Defense was the main gap.${lack || ' The defenders didn’t add up to a unit — pair a paint anchor with perimeter stoppers.'}`;
+  return `Defense was the main gap, and ${weakest.name} gave it the least: defense ${weakest.rating} in ${weakest.minutes} minutes at ${weakest.slot}. Opponents hunt him — a better defender at ${weakest.slot}, or fewer minutes for him, would help.${lack}`;
+}
+
 export function nextDraftTip(label: string, team: Team): string | undefined {
   if (label === 'Offense') return offenseTip(team);
+  if (label === 'Defense') return defenseTip(team);
   if (label !== 'Fit') return NEXT_DRAFT_TIP[label];
   const components = fitScore(team).components;
   const [weakest] = (Object.entries(components) as [keyof typeof components, number][]).sort((a, b) => a[1] - b[1])[0] ?? [];

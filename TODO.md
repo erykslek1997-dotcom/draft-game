@@ -12,6 +12,43 @@ Trudność: **S** = kilka godzin, **M** = jedna runda zmian, **L** = kilka rund.
 
 ---
 
+## Jedna duża poprawka — przegląd draftu 3009740454 (spisane 2026-11-04, czeka na start)
+
+**WYKONANE 2026-11-04 (gałąź, nie main).** Sędziowie przed → po: SRS r 0,806 → 0,804 (sezonowo 0,826 → 0,824), symulacja R² 0,63 → 0,66, D-TAL r 0,772 → 0,772; składy AI (10 draftów): słaby gracz (<60) 10+ min 49% → 39%, spacing<55 7% → 4%, najgorszy spadek gwiazdy 69 → 39 miejsc, Overall 81,11 → 81,16. Bez zmian zostały: 7 (Hill/Davis — OBPM +0,8 / 0,0, dolna trzecia PG rotacji, ocena zgodna z danymi), 10 (Draymond — wchodzi przez nowe człony AI), 17 (wybór okna), 12 (McMillan na SF — skład Pittsburgha nie ma lepszego zmiennika). Kara za starych graczy: od 12% minut, 16 pkt za 1,0 udziału, maks. 6 (pomiar `_old.ts`: dwóch starych z 10+ min −3,4 Overall w symulacji). Półdystans wysokich 0,85 (0,7 dawało SRS 0,803). Konflikt Harden + post-center: kara 8 w creationStructure, na prawdziwych drużynach SRS bez zmian (nikt jej nie wyzwala).
+
+Robimy wszystko naraz, na sygnał Eryka, w kolejności od najłatwiejszego. Każdą zmianę silnika mierzymy sędziami (auditTeams/SRS, measureScoreVsSim, auditDTal, measureRosterSense). Razem z tym wchodzi niezmergowany commit afc2ce6 (podpowiedź obrony).
+
+### Poziom 1 — dane, minuty pracy
+1. Pozycje: Bobby Jones tylko PF (usunąć decyzje SF 81-82, 84-85, 85-86; zablokować SG/SF/C); P.J. Brown tylko C (usunąć decyzje PF; zablokować SF/PF); Bryon Russell SF; Boris Diaw PF; Trevor Ariza SF.
+
+### Poziom 2 — jedna stała albo jedna reguła
+2. Kara „dwóch shot-first” w dół do ok. 2-3 albo usunąć (pomiar: SRS 0,806 przy 8, 4 i 0 — zero efektu). Dotyczy Madison (−6) i Pittsburgha (−7).
+3. Rozbijanie gracza na 3 pozycje (Cooper 8 + 13 + 6 min): minimalny kawałek 8-10 min; 3. pozycja tylko gdy nikt inny nie pokryje minut.
+4. Półdystans wysokich (PF/C) liczony za ok. 70% trójki (Detroit 71; KG 03-05 73). Jedna waga + pomiar.
+5. Bramka ataku startera (O<50): kara tylko przy spacingu na karcie poniżej B. Wolumen prób wliczony w spacing na karcie (bez ukrytej bramki, karta i kara się zgadzają) + powód w UI składu („atak X, spacing Y → kara startera”). Pomiar przy B-: 70 z 200 zwolnionych (przechodzili Caruso 49, Sefolosha 47, Mbah a Moute 47, Bowen 72 przy 2,7 3PA). Po zmianie zmierzyć, kto przechodzi.
+
+### Poziom 3 — diagnoza + poprawka w jednym miejscu
+6. Jordan tylko 35 min przy limicie 40 — znaleźć, co ścina minuty.
+7. George Hill 10-12 i Baron Davis 99-01 za nisko (atak 40/37) — sprawdzić O-TAL po kotwicy OBPM.
+8. Kolejność AI: Payton 95-97 (TAL 84, 16,9 caps) z #32 przed CP3 13-15 (TAL 92, 14,2 caps) z #42 — gust (±25) i szum (±20) nie mogą przeskakiwać 8 pkt TAL przy niższej cenie.
+9. Kara shot-first łagodzona dla gracza grającego bez piłki (P. George) — jeśli kara zostaje po punkcie 2.
+10. Draymond jako rozgrywający: kreacja przy wysokim PM nie wymaga klasycznego PG.
+
+### Poziom 4 — reguły rotacji (wybór piątki i minut)
+11. Słabi rezerwowi z minutami (Danny Ferry 01-03, T.R. Dunn 83-85, Chuck Hayes 05-07; Bryon Russell startujący SG).
+12. Pittsburgh: nie wstawiać PG na SF (McMillan); lepszy zmiennik PF przy limicie AD 35 min (Carroll 24 min).
+13. Wybór piątki według TAL + roli, nie tylko pozycji: duble ról (Manu na SF obok Reggiego, Iguodala na ławce), strzelec przy niskim spacingu (Alvin Robertson), słabe okno (Horry 97-99 33 min, Marion 15 min).
+
+### Poziom 5 — AI w drafcie (wartość wyboru)
+14. Ławka po koszcie: caps na minutę, nie TAL (Mutombo 98-00 za Shaqiem OK; źle — Bill Russell 12,3 caps na 14 min, Walton za Howardem). AI liczy, czy gracz wejdzie do piątki i ile zagra.
+15. Koszt udziału piłki w ocenie wyboru: klasyczny PG obok dominującego strzelca (Penny obok Kobego), dublowanie stylu gwiazd (LeBron + Erving).
+16. Uzupełnianie luk: gwiazda o słabej stronie → kolejne picki pod tę lukę (Jokić → obronny PF, Nash → obrońca obwodu); rezerwowy pokrywa słabość startera (za McAdoo obronny PF, nie Batum 24 min); przy przeciętnym C szukać lepszego C (Boise).
+17. Wybór okna z kosztem słabszego okna (Horry, Conley).
+
+### Poziom 6 — nowe mechaniki
+18. Konflikt systemów w dopasowaniu: Harden (izolacja, pusty środek) + Kareem (post-up); Odom/Amen na SF bez rzutu.
+19. Pewność danych dla graczy sprzed 1973-74 (brak BPM, bloków, przechwytów). DECYZJA Eryka: kara, gdy w składzie jest więcej takich graczy (rośnie z ich udziałem). Rozrzut w symulacji zamiast kary tylko wtedy, gdy pomiar pokaże, że realnie zmienia wyniki na koniec draftu. Uwaga: rozrzut zmienia pojedynczy wynik losowo w obie strony, a średnio daje to samo — sam nie obniża takich drużyn. Zmierzyć przy wdrożeniu (Syracuse: Frazier, Wilt, Bird).
+
 ## Etap 1. Kalibracja silnika — ZAKOŃCZONY (2026-10-02)
 
 Jak pracujemy: grasz pełny draft (All-Time) przyciskiem testowym **AUTO-FINISH**, oceniasz każdą

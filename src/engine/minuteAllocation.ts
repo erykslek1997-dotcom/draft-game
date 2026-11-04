@@ -58,6 +58,8 @@ const FORCED_HOME_SLOT_SHARE = 0.75; // = rotation.ts FORCED_STAR_SLOT_FIT
 const STARTER_CORE_MINUTES = 24;
 const STARTER_CORE_BONUS = 60;
 const OWN_SLOT_BONUS = 12;
+const STAR_FRESH_CEILING = 40;
+const STAR_FRESH_EXTRA = 2;
 
 /**
  * 2026-10-02: past the stretch the share now drops 0.6 / 0.35 / 0.2 (the user: "twardszy limit").
@@ -228,6 +230,8 @@ const MAX_CONSOLIDATION_PASSES = 10;
  * limits — the soft cap's "barely felt" band (rotationRoleMinutes.ts). */
 const TINY_STINT_OVERRUN_ALLOWANCE = 4;
 
+const slotCount = (grants: MinuteGrant[], id: string) => grants.filter((g) => g.playerId === id && g.minutes > 0).length;
+
 function consolidateRotation(
   roster: PlayerSpan[],
   starterBySlot: Partial<Record<Position, PlayerSpan>>,
@@ -284,7 +288,9 @@ function consolidateRotation(
       forbidden.delete(key);
       // A stint under `MIN_STINT_MINUTES` goes whenever the slots still fill without anyone pushed
       // further past his limit — the user prefers a logical rotation to a few points of value.
-      const tiny = fragment.minutes < MIN_STINT_MINUTES;
+      // 2026-11-04, the user (Michael Cooper 8 PG + 13 SG + 6 SF: "po co Cooper rozbity na 3
+      // pozycje"): a third position goes the same way, kept only when nobody else covers it.
+      const tiny = fragment.minutes < MIN_STINT_MINUTES || (fragment.overSlots && slotCount(best.grants, fragment.playerId) > MAX_SLOTS_PER_PLAYER);
       const acceptable =
         trial.filled === best.filled &&
         (tiny || trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT) &&
@@ -346,7 +352,7 @@ function consolidateRotation(
  * a position he can really play, competence 0.6+); one backup per slot where possible (a slot's
  * second backup under `SECOND_BACKUP_MIN_MINUTES` is a fragment).
  */
-const THIRD_SLOT_MIN_MINUTES = 8;
+const THIRD_SLOT_MIN_MINUTES = 10;
 const THIRD_SLOT_MIN_SCORE = 0.6;
 const SECOND_BACKUP_MIN_MINUTES = 10;
 
@@ -458,14 +464,17 @@ function solveMinutes(
     ];
     // Past `FRESH_MINUTES` every unit also pays the fatigue it puts on all his minutes
     // (`fatigue.ts`) — the curve that replaced the old heavy-load band (38 minutes, 90% of his value).
+    // 2026-11-04, the user (Jordan 1988-90 at 35 of 40: "powinien grać więcej"): a star whose real
+    // playoff load reaches the 40-minute ceiling tires later, by `STAR_FRESH_EXTRA` minutes.
+    const freshShift = homeSlot && profile.minimal !== null && profile.ceiling >= STAR_FRESH_CEILING ? STAR_FRESH_EXTRA : 0;
     let reached = 0;
     for (const [upTo, cost] of pieces) {
       if (upTo <= reached) continue;
       const from = Math.floor(reached / UNIT);
       const to = Math.floor(upTo / UNIT);
-      const fresh = Math.max(from, Math.min(to, Math.floor(FRESH_MINUTES / UNIT)));
+      const fresh = Math.max(from, Math.min(to, Math.floor((FRESH_MINUTES + freshShift) / UNIT)));
       if (fresh > from) flow.add(source, playerNode(i), fresh - from, cost * UNIT);
-      for (let u = fresh; u < to; u++) flow.add(source, playerNode(i), 1, (cost + talent * marginalFatigueCost((u + 0.5) * UNIT)) * UNIT);
+      for (let u = fresh; u < to; u++) flow.add(source, playerNode(i), 1, (cost + talent * marginalFatigueCost((u + 0.5) * UNIT - freshShift)) * UNIT);
       reached = upTo;
     }
     STARTER_SLOTS.forEach((slot, j) => {
