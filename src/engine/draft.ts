@@ -21,7 +21,7 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { pickForAi, setAiClassicTeamScorer, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
 import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
@@ -117,6 +117,17 @@ setAiTeamScorer((roster) => {
     : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
   if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
   teamScoreMemo.set(key, value);
+  return value;
+});
+// Drafts that are not the nine-man shape (Mini Draft's five) score with the classic rotation.
+const classicScoreMemo = new Map<string, number>();
+setAiClassicTeamScorer((roster) => {
+  const key = roster.map((p) => p.id).sort().join(',');
+  const hit = classicScoreMemo.get(key);
+  if (hit !== undefined) return hit;
+  const value = scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
+  if (classicScoreMemo.size >= TEAM_SCORE_MEMO_MAX) classicScoreMemo.clear();
+  classicScoreMemo.set(key, value);
   return value;
 });
 import type { DraftHistoryEntry, Team } from './types';
