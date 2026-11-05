@@ -19,7 +19,7 @@ import { pairsFor, readStructure, STRUCTURE } from './structuredRoster';
  *     and the draft goes on with the plans as they are (the failed gates are reported). Pick legality
  *     is untouched, so the draft can always finish.
  */
-export const JOINT_PLAN = { shotCost: 0.8, backupWeight: 0.55, glueShotCost: 3, maxFixes: 400, budgetMs: 1500, minFillFga: 3 };
+export const JOINT_PLAN = { backupMaxFga: 10, shotCost: 0.8, backupWeight: 0.55, glueShotCost: 3, maxFixes: 400, budgetMs: 1500, minFillFga: 3 };
 
 export interface JointPlanTeam {
   id: string;
@@ -75,7 +75,9 @@ function rolesFor(build: Build, p: PlayerSpan): Role[] {
   const roles: Role[] = [];
   if (!build.starters.has(p.primaryPosition)) roles.push({ kind: 'starter', slot: p.primaryPosition });
   const pairs = pairsOf(p);
-  if (pairs.length && build.backups.length < 3) {
+  // A backup is a 10-14-minute man: never a star on his shots (Hakeem as Fresno's PF/C "backup"
+  // beside Jokić — the reading starts the best natural, so Jokić was left the glue).
+  if (pairs.length && build.backups.length < 3 && p.fga <= JOINT_PLAN.backupMaxFga) {
     const next = [...build.backups, pairs];
     // The remaining backups (two positions each, at most) must still be able to cover what is left.
     if (coverageLeft(next) <= 2 * (3 - next.length)) roles.push({ kind: 'backup', pairs });
