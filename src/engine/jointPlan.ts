@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { effectiveTalent } from './grades';
 import { STARTER_SLOTS, ROSTER_SIZE } from './positions';
-import { pairsFor, readStructure, STRUCTURE } from './structuredRoster';
+import { backupOptions, readStructure, STRUCTURE } from './structuredRoster';
 
 /**
  * 2026-11-05, the user ("każde AI przed draftem planuje składy żeby sobie nie przeszkadzać, więc
@@ -65,7 +65,7 @@ const pairsMemo = new Map<string, [Position, Position][]>();
 function pairsOf(p: PlayerSpan): [Position, Position][] {
   let hit = pairsMemo.get(p.id);
   if (!hit) {
-    hit = pairsFor(p);
+    hit = backupOptions(p);
     pairsMemo.set(p.id, hit);
   }
   return hit;

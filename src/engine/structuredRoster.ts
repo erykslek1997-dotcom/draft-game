@@ -10,7 +10,8 @@ import type { Rotation } from './types';
  * grać PG/SG / SG/SF / SF/PF [, PF/C]. 8 man rotation + salary glue"): a strict roster shape.
  *  - five starters, each at his own (primary) position;
  *  - three rotation backups, each playing one adjacent pair (his primary plus a second position he
- *    really plays, competence `STRUCTURE.comboScore`+), together covering all five positions;
+ *    really plays, competence `STRUCTURE.comboScore`+) or his own position alone, together covering
+ *    all five positions;
  *  - one salary glue: `STRUCTURE.glueFga` shots at most, no minutes.
  * The rotation follows: starters `STRUCTURE.starterMinutes`, backups only in their pair.
  */
@@ -39,6 +40,14 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
 }
 
 /**
+ * What a backup can cover: any pair he plays, or his own position alone (2026-11-05, the user: "drużyna
+ * może wybrać PG/SG ; SF/PF ; C" or "PG ; SG/SF ; PF/C" — the three together still cover all five).
+ */
+export function backupOptions(p: PlayerSpan): [Position, Position][] {
+  return [...pairsFor(p), [p.primaryPosition, p.primaryPosition]];
+}
+
+/**
  * The structured reading of a roster, and what breaks it. The starter at each slot is always the
  * best player (TAL) whose own position it is — never a lesser one picked so the bench fits (the
  * first reading started Michael Cooper over Michael Jordan to keep Cooper off the glue spot); the
@@ -60,7 +69,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   // Up to three backups with a pair each, covering every position; the rest are glue.
   type Bench = { backups: { player: PlayerSpan; pair: [Position, Position] }[]; uncovered: Position[]; tal: number; key: number[] };
   const holder: { best: Bench | null } = { best: null };
-  const options = rest.map((p) => ({ p, pairs: pairsFor(p) }));
+  const options = rest.map((p) => ({ p, pairs: backupOptions(p) }));
   const search = (i: number, chosen: { player: PlayerSpan; pair: [Position, Position] }[]) => {
     if (chosen.length === 3 || i === options.length) {
       const covered = new Set(chosen.flatMap((b) => b.pair));
