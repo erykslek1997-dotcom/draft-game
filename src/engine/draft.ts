@@ -22,7 +22,7 @@ import {
   type CheapestLookup,
 } from './positions';
 import { pickForAi, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
-import { scoreTeam } from './scoring';
+import { scoreTeam, spacingScore } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import { dailyRuleBlocks } from './dailyDraft';
@@ -47,7 +47,7 @@ if (STRUCTURED_AI) setAiStructureHoles((roster) => readStructure(roster).problem
 function structureCost(roster: PlayerSpan[]): number {
   const s = readStructure(roster);
   const holes = s.problems.filter((p) => !p.startsWith('glue')).length;
-  const bench = benchPriorityCost(s.backups);
+  const bench = benchPriorityCost(s.backups) + starterFloorCost(s.starters);
   if (STRUCTURE_GLUE_COST_PER_FGA <= 0) return STRUCTURE_PROBLEM_COST * s.problems.length + bench;
   const over = s.glue.reduce((sum, p) => sum + Math.max(0, p.fga - STRUCTURE.glueFga), 0);
   return STRUCTURE_PROBLEM_COST * holes + STRUCTURE_GLUE_COST_PER_FGA * over + bench;
@@ -74,6 +74,29 @@ function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Posit
   }
   return cost;
 }
+/**
+ * 2026-11-05, the user ("minimum TAL u startera próbujemy 75, minimum spacing drużyny 60?"), on trial:
+ * soft floors for the CPU's full rosters — `FLOORS.starterTal` costs `FLOORS.perTal` points per TAL a
+ * starter falls short, `FLOORS.spacing` `FLOORS.perSpacing` per point the team's spacing falls short.
+ * 0 is off.
+ */
+const envOf = (name: string) => (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[name];
+export const FLOORS = {
+  starterTal: Number(envOf('FLOOR_TAL') ?? 0),
+  perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
+  spacing: Number(envOf('FLOOR_SPACING') ?? 0),
+  perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.2),
+};
+function starterFloorCost(starters: Partial<Record<Position, PlayerSpan>>): number {
+  if (FLOORS.starterTal <= 0) return 0;
+  return Object.values(starters).reduce((sum, p) => sum + FLOORS.perTal * Math.max(0, FLOORS.starterTal - effectiveTalent(p!)), 0);
+}
+function structuredTeamValue(roster: PlayerSpan[]): number {
+  const team = { id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) };
+  if (roster.length < ROSTER_SIZE) return scoreTeam(team).overallExact;
+  const spacingShort = FLOORS.spacing > 0 ? Math.max(0, FLOORS.spacing - spacingScore(team)) : 0;
+  return scoreTeam(team).overallExact - structureCost(roster) - FLOORS.perSpacing * spacingShort;
+}
 const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
 const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
 const teamScoreMemo = new Map<string, number>();
@@ -82,8 +105,7 @@ setAiTeamScorer((roster) => {
   const hit = teamScoreMemo.get(key);
   if (hit !== undefined) return hit;
   const value = STRUCTURED_TEST
-    ? scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) }).overallExact -
-      (roster.length === ROSTER_SIZE ? structureCost(roster) : 0)
+    ? structuredTeamValue(roster)
     : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
   if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
   teamScoreMemo.set(key, value);
