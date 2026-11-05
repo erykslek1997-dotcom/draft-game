@@ -1948,6 +1948,8 @@ export const AI_PLAN = {
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
   reserveGlueFga: 2.5,
+  nearTal: 3,
+  nearFga: 1,
   scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
@@ -2882,6 +2884,27 @@ export function pickForAi(
     if (glue && planned && structureHoles && structureHoles([...roster, glue, ...planned.plan]) > 0) {
       const open = full();
       if (open && open.score > planned.score) planned = open;
+    }
+    // 2026-11-05, the user ("Gracze zbliżeni do siebie TAL mogliby rozwiązać problem?"): among players
+    // within `AI_PLAN.nearTal` TAL of the planned pick and at most `AI_PLAN.nearFga` shots dearer, the
+    // one who leaves the roster more ways to cover the five goes — Brent Barry (SG only) over a SG/SF
+    // of his level was the commonest start of an open spot.
+    if (planned && structureHoles) {
+      const base = planned.pick;
+      const reading = readStructure(roster);
+      const covered = new Set(reading.backups.flatMap((b) => b.pair));
+      const flexibility = (p: PlayerSpan) => {
+        const starts = !reading.starters[p.primaryPosition];
+        if (starts) return 10;
+        const opts = pairsFor(p);
+        const fills = STARTER_SLOTS.filter((slot) => !covered.has(slot) && (opts.some((pair) => pair.includes(slot)) || p.primaryPosition === slot)).length;
+        return fills * 2 + (opts.length > 0 ? 1 : 0);
+      };
+      const near = board.filter(
+        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize),
+      );
+      const better = near.filter((p) => flexibility(p) > flexibility(base)).sort((a, b) => flexibility(b) - flexibility(a) || effectiveTalent(b) - effectiveTalent(a))[0];
+      if (better) planned = { ...planned, pick: better };
     }
     // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
     // the board who does, before any pick that breaks it.
