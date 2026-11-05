@@ -37,29 +37,20 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
   });
 }
 
-/** Best structured reading of a roster (exhaustive: nine players are few), and what breaks it. */
+/**
+ * The structured reading of a roster, and what breaks it. The starter at each slot is always the
+ * best player (TAL) whose own position it is — never a lesser one picked so the bench fits (the
+ * first reading started Michael Cooper over Michael Jordan to keep Cooper off the glue spot); the
+ * rest is split into backups and glue as well as it can be.
+ */
 export function readStructure(roster: PlayerSpan[]): StructuredRoster {
-  const top: { best: { s: StructuredRoster; score: number } | null } = { best: null };
-  const tal = (p: PlayerSpan) => effectiveTalent(p);
-  // Starters: every choice of one natural per slot (or none).
-  const choices = STARTER_SLOTS.map((slot) => [undefined, ...roster.filter((p) => p.primaryPosition === slot)]);
-  const pick = (i: number, used: Set<string>, starters: Partial<Record<Position, PlayerSpan>>) => {
-    if (i === STARTER_SLOTS.length) {
-      const rest = roster.filter((p) => !used.has(p.id));
-      const s = bestBench(starters, rest);
-      const score = -s.problems.length * 1000 + Object.values(starters).reduce((sum, p) => sum + tal(p!), 0) + s.backups.reduce((sum, b) => sum + tal(b.player) * 0.3, 0);
-      if (!top.best || score > top.best.score) top.best = { s, score };
-      return;
-    }
-    for (const p of choices[i]) {
-      if (p && used.has(p.id)) continue;
-      const nextUsed = new Set(used);
-      if (p) nextUsed.add(p.id);
-      pick(i + 1, nextUsed, p ? { ...starters, [STARTER_SLOTS[i]]: p } : starters);
-    }
-  };
-  pick(0, new Set(), {});
-  return top.best!.s;
+  const starters: Partial<Record<Position, PlayerSpan>> = {};
+  for (const slot of STARTER_SLOTS) {
+    const best = roster.filter((p) => p.primaryPosition === slot).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+    if (best) starters[slot] = best;
+  }
+  const used = new Set(Object.values(starters).map((p) => p!.id));
+  return bestBench(starters, roster.filter((p) => !used.has(p.id)));
 }
 
 function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[]): StructuredRoster {
