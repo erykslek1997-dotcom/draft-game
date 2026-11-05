@@ -38,7 +38,7 @@ const TEAM_SCORE_MEMO_MAX = 50_000;
  * team score uses the structured 8-man rotation and charges `STRUCTURE_PROBLEM_COST` team points per
  * break in the structure of a full roster. */
 const STRUCTURED_TEST = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
-const STRUCTURE_PROBLEM_COST = 6;
+const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
   const key = roster.map((p) => p.id).sort().join(',');
