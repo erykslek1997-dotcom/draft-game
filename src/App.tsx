@@ -22,6 +22,7 @@ import { LIVE_TEST_BENCH_FOR_TESTING } from './components/testingFlags';
 import { DAILY_REPLAY_FOR_TESTING, localDayKey } from './components/dailyProgress';
 import type { DailyDraftDay, DailyDraftMode } from './dailyDraftDay';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
+import { aiWorkerClient } from './components/aiWorkerClient';
 
 /**
  * 2026-09-11, `player-skeleton` branch: the real Tester Mode / Player Mode split (mode picker,
@@ -235,7 +236,9 @@ function App() {
   // 2026-09-24: start downloading the player data as soon as the menu is up — by the time the
   // player has read the modes and picked a team name, most or all of it is already here.
   useEffect(() => {
-    const t = setTimeout(() => void prefetchGameData(), 300);
+    // 2026-11-05, the UI audit (the first CPU pick took 4-8 s while the AI worker loaded): once the
+    // game data is down, the worker starts too, so its engine is warm before the draft.
+    const t = setTimeout(() => void prefetchGameData().then(() => aiWorkerClient()), 300);
     return () => clearTimeout(t);
   }, []);
   useEffect(() => {

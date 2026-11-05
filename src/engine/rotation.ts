@@ -781,8 +781,29 @@ export function suggestBasicRotation(roster: PlayerSpan[]): Rotation {
       give(slot, p, Math.min(need, hardRoom(p)));
     }
   }
+  // 2026-11-05, the UI audit (Robertson 47 + Westbrook 1 at PG; the user on a 1-minute stint: "1
+  // minuta cmon"): no stint under `BASIC_MIN_STINT` — it goes to another player already in that
+  // slot (the starter first), within his card tier's minutes.
+  for (const slot of STARTER_SLOTS) {
+    const starterId = starterBySlot.get(slot)?.id;
+    for (const sliver of [...slots[slot]]) {
+      if (sliver.minutes <= 0 || sliver.minutes >= BASIC_MIN_STINT || sliver.playerId === starterId) continue;
+      const others = slots[slot].filter((a) => a !== sliver).sort((a, b) => (a.playerId === starterId ? -1 : b.playerId === starterId ? 1 : b.minutes - a.minutes));
+      // Only where the receiver stays within his card tier's minutes: a starter at 48 is no better.
+      const capOf = (id: string) => Math.min(BASIC_FOLD_MAX, cardTierMinutesCap(roster.find((q) => q.id === id)!));
+      const to = others.find((a) => (minutesUsed.get(a.playerId) ?? 0) + sliver.minutes <= capOf(a.playerId));
+      if (!to) continue;
+      to.minutes += sliver.minutes;
+      minutesUsed.set(to.playerId, (minutesUsed.get(to.playerId) ?? 0) + sliver.minutes);
+      minutesUsed.set(sliver.playerId, (minutesUsed.get(sliver.playerId) ?? 0) - sliver.minutes);
+      slots[slot] = slots[slot].filter((a) => a !== sliver);
+    }
+  }
   return { slots };
 }
+const BASIC_MIN_STINT = 4;
+// Folding never takes anyone past this, Legends included (Duncan 46 + 2 is not mended into 48).
+const BASIC_FOLD_MAX = 44;
 
 export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   const cacheKey = roster.map((p) => p.id).join('|');
