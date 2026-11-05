@@ -5,6 +5,8 @@ import { positionCompetenceScore } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS } from './positions';
 import { computeSpacing } from './spacing';
+import { midrangeGravitySpacing, PRE_ZONE_MIDRANGE_SHARE } from './midrangeGravity';
+import { preZoneShootingSkill } from './preZoneShooting';
 import type { Rotation } from './types';
 
 /**
@@ -138,6 +140,24 @@ export function playsGuard(p: PlayerSpan): boolean {
   return v >= GUARD_SHOOTING.minSpacing;
 }
 
+/**
+ * A big who is some threat away from the rim: a three (`computeSpacing` `BIG_THREAT.spacing`+) or a
+ * midrange jumper (`midrangeGravitySpacing` from the shot zones, 1996-97 on, or the hand-set pre-zone
+ * skill at `PRE_ZONE_MIDRANGE_SHARE`) of `BIG_THREAT.midrange`+. Duncan 2001-03 reads 20, Mourning
+ * 26, Hakeem 38; Shaq, Ben Wallace, Gobert, Howard, Rodman 0.
+ */
+export const BIG_THREAT = { spacing: 25, midrange: 20 };
+const bigThreatMemo = new Map<string, boolean>();
+export function bigThreat(p: PlayerSpan): boolean {
+  let hit = bigThreatMemo.get(p.id);
+  if (hit === undefined) {
+    const mid = Math.max(midrangeGravitySpacing(p), (preZoneShootingSkill(p) ?? 0) * PRE_ZONE_MIDRANGE_SHARE);
+    hit = computeSpacing(p) >= BIG_THREAT.spacing || mid >= BIG_THREAT.midrange;
+    bigThreatMemo.set(p.id, hit);
+  }
+  return hit;
+}
+
 /** A star never comes off the bench (the user: "KD czy Nash z ławki nieakceptowalne"). */
 export const STRUCTURE_STAR_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAR_TAL ?? 82);
 
@@ -165,6 +185,11 @@ export function readStructure(roster: PlayerSpan[]): StructuredRoster {
     const withSlider = bestBench(starters, rest, [slider.covers]);
     if (withSlider.problems.length < best.problems.length) best = { ...withSlider, slider };
   }
+  // 2026-11-05, the user ("Jeśli gra dwóch bigs bez rzutu, chociaż jeden z nich powinien być
+  // jakimkolwiek zagrożeniem z mid-range"): the starting four and five are not both non-threats.
+  const four = starters.PF;
+  const five = starters.C;
+  if (four && five && !bigThreat(four) && !bigThreat(five)) shooterIssues.push(`non-shooting bigs ${four.playerName} + ${five.playerName}: neither a midrange threat`);
   const benchStars = [...best.backups.map((b) => b.player), ...best.glue].filter((p) => effectiveTalent(p) >= STRUCTURE_STAR_TAL);
   return { ...best, problems: [...shooterIssues, ...benchStars.map((p) => `star ${p.playerName} off the bench`), ...best.problems] };
 }
