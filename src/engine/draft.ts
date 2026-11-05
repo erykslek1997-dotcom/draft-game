@@ -44,6 +44,17 @@ if (STRUCTURED_TEST_FLAG()) setAiStructureHoles((roster) => readStructure(roster
 function STRUCTURED_TEST_FLAG(): boolean {
   return ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
 }
+/**
+ * The structured test's team score. A full roster is scored without its glue: a player with no role
+ * plays no minutes, and the score's talent and depth parts would otherwise pay for him anyway — Fresno
+ * took Hakeem Olajuwon at 23 beside Nikola Jokić (10) and left Jokić a 9.5-FGA glue.
+ */
+function structuredScore(roster: PlayerSpan[]): number {
+  if (roster.length !== ROSTER_SIZE) return scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) }).overallExact;
+  const glue = new Set(readStructure(roster).glue.map((p) => p.id));
+  const playing = roster.filter((p) => !glue.has(p.id));
+  return scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster: playing, rotation: structuredRotation(roster) }).overallExact - structureCost(roster);
+}
 /** Holes cost `STRUCTURE_PROBLEM_COST` each; a glue over the limit costs `STRUCTURE_GLUE_COST_PER_FGA`
  * per shot over it (Brent Barry at 8 FGA ~10 points, Fred Hoiberg at 3.6 about one), or `STRUCT_GLUE`
  * unset, the flat hole cost. */
@@ -62,8 +73,7 @@ setAiTeamScorer((roster) => {
   const hit = teamScoreMemo.get(key);
   if (hit !== undefined) return hit;
   const value = STRUCTURED_TEST
-    ? scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) }).overallExact -
-      (roster.length === ROSTER_SIZE ? structureCost(roster) : 0)
+    ? structuredScore(roster)
     : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
   if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
   teamScoreMemo.set(key, value);
