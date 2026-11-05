@@ -126,7 +126,10 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // keeps it.
   pick('Chris Paul', '2010-12'),
   pick('Klay Thompson', '2014-16'),
-  pick('Shane Battier', '2005-07'),
+  // 2026-11-05: was 2005-07. The 3-and-D premium lifts that window to 76; the classic rotation then
+  // starts him at SF 38 and splits Klay 17 SG / 8 PG / 10 SF around Iguodala, and the fixture's
+  // coverage slips under the elite bar (0.886). 2009-11 keeps the fixture's shape (Klay 33 at SG).
+  pick('Shane Battier', '2009-11'),
   pick('Al Horford', '2017-19'),
   pick('Hakeem Olajuwon', '1991-93'),
   // 2026-09-05: was Kyle Korver 2013-15 (D-TAL 44). The huntable bar dropped from the cohort
