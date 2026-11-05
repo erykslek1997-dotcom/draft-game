@@ -413,7 +413,7 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  */
 const ERA_VOLUME_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_ERA ?? 1);
 const ACCURATE_LOW_VOLUME = {
-  lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 1),
+  lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 2),
   fromAccuracy: 6,
   fadeAt: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_FADE ?? 8),
 };
@@ -485,7 +485,7 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
  * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
-const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_SMOOTH ?? '0.6,0.15,0.05,0.05').split(',').map(Number);
+const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_SMOOTH ?? '0.34,0.2,0.1,0.03').split(',').map(Number);
 const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
 let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;
