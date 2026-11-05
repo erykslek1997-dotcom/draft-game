@@ -228,7 +228,17 @@ export function canStillComplete(roster: PlayerSpan[], rosterSize: number): bool
   const glueOpen = s.glue.length === 0 ? 1 : 0;
   if (s.glue.length > 1) return false;
   if (missingStarters + openBackups + glueOpen > left) return false;
-  return uncovered <= 2 * openBackups;
+  // Exact: the backups still to come must cover what is left with real shapes — an adjacent pair or
+  // one spot each. Two open spots far apart (PG and C) need two backups, not one (Portland had one).
+  const open = STARTER_SLOTS.filter((slot) => !covered.has(slot));
+  return uncovered === 0 || coverable(open, openBackups);
+}
+
+const SHAPES: Position[][] = [...BACKUP_PAIRS.map((p) => [...p]), ...STARTER_SLOTS.map((slot) => [slot])];
+function coverable(open: Position[], backups: number): boolean {
+  if (open.length === 0) return true;
+  if (backups === 0) return false;
+  return SHAPES.some((shape) => shape.includes(open[0]) && coverable(open.filter((slot) => !shape.includes(slot)), backups - 1));
 }
 
 /**
