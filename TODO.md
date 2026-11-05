@@ -323,6 +323,20 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
+## Sesja nocna (Eryk 2026-11-05: „zrób to w nocy, powiem ci kiedy”)
+
+1. **Teammate lift — usunąć z overall, jeśli nic „za” nie wyjdzie** (decyzja Eryka). Porównać trzy
+   warianty: obecny / bez odejmowania „prawdziwych kolegów” / bez liftu w overall — zgodność z
+   realnym SRS (`scripts/auditMetrics.ts`) i z mechaniką meczu. Zostaje tylko, jeśli coś realnie
+   poprawia; w symulacji meczu ewentualnie mała wersja. Przykład problemu: LeBron 2012-14
+   realMates +2,4 TS → skład Eryka −2,7 overall, Orlando +1,5.
+2. **Podwójne liczenie obrony w overall**: obrona ~43% fitu (pokrycie ról 0,331 + switchability
+   0,099) i osobno Defense 0,21 vs Offense 0,13 w połowie fit.
+3. **Fit z ławką** według minut na parkiecie (~75% piątka, ~25% zestawienia ze zmiennikami; dla
+   zmienników tylko spacing, warstwy obrony, rozgrywający).
+4. **Atak z ławką** — dziś liczy tylko piątkę.
+Każdy punkt: przed/po na SRS i na meczach, wynik do akceptacji Eryka przed merge.
+
 ## Plan do launchu: 12 tygodni (decyzja 2026-10-22, zmiana 2026-11-05) — obowiązuje
 
 **2026-11-05, Eryk: launch po Nowym Roku.** Tygodniowa rozpiska zostaje, ale tygodnie 8/9–12 to
