@@ -1938,9 +1938,13 @@ export const AI_PLAN = {
   cheapFga: 7,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
+  warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
   crowdCost: 1.5,
   share: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SHARE ?? '0') === '1',
 };
+/** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
+const planMemory = new Map<string, string[]>();
+const PLAN_MEMORY_MAX = 4_000;
 function planPick(
   roster: PlayerSpan[],
   fullBoard: PlayerSpan[],
@@ -1948,6 +1952,7 @@ function planPick(
   slots: number,
   team?: string,
   claims?: Map<string, string>,
+  planSeed?: number,
 ): PlayerSpan | null {
   if (!teamScorer || slots <= 0 || fullBoard.length === 0) return null;
   const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
@@ -1955,7 +1960,29 @@ function planPick(
   const shared = AI_PLAN.share && team !== undefined && claims !== undefined;
   const board = shared ? fullBoard.filter((p) => (claims!.get(key(p)) ?? team) === team) : fullBoard;
   if (board.length === 0) return null;
-  const plan = completeRosterGreedy(roster, board, capLeft, slots).slice(roster.length);
+  // Warm start (2026-11-05, speed in the browser): this team's plan from its last turn, less the
+  // players gone since, is the starting point; only the gaps are filled fresh, and one swap pass
+  // (`AI_PLAN.warmPasses`) instead of `AI_PLAN.passes` tidies it.
+  const memoryKey = team !== undefined ? `${planSeed ?? ''}|${team}` : undefined;
+  const remembered = memoryKey ? planMemory.get(memoryKey) : undefined;
+  const byName = new Map(board.map((p) => [key(p), p]));
+  const kept: PlayerSpan[] = [];
+  if (remembered) {
+    let spend = 0;
+    for (const name of remembered) {
+      const p = byName.get(name);
+      if (!p || kept.length >= slots) continue;
+      const reserveAfter = (slots - kept.length - 1) * LOOKAHEAD_MIN_FILL_FGA;
+      if (spend + p.fga > capLeft - reserveAfter) continue;
+      kept.push(p);
+      spend += p.fga;
+    }
+  }
+  const warm = kept.length > 0;
+  const plan = [
+    ...kept,
+    ...completeRosterGreedy([...roster, ...kept], board, capLeft - kept.reduce((sum, p) => sum + p.fga, 0), slots - kept.length).slice(roster.length + kept.length),
+  ];
   if (plan.length === 0) return null;
   // A third player at one position (three point guards: 15% of AI teams, 24% with plans, the cheap
   // backups being guards) costs `crowdCost` team points each.
@@ -1967,7 +1994,7 @@ function planPick(
     return teamScorer!(team) - AI_PLAN.crowdCost * crowd;
   };
   let best = score([...roster, ...plan]);
-  for (let pass = 0; pass < AI_PLAN.passes; pass++) {
+  for (let pass = 0; pass < (warm ? AI_PLAN.warmPasses : AI_PLAN.passes); pass++) {
     let improved = false;
     for (let i = 0; i < plan.length; i++) {
       const others = plan.filter((_, j) => j !== i);
@@ -1991,6 +2018,10 @@ function planPick(
   // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
   // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
   const pick = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  if (memoryKey) {
+    if (planMemory.size >= PLAN_MEMORY_MAX) planMemory.clear();
+    planMemory.set(memoryKey, plan.filter((p) => p !== pick).map(key));
+  }
   if (shared) {
     for (const [name, owner] of claims!) if (owner === team) claims!.delete(name);
     for (const p of plan) if (p !== pick) claims!.set(key(p), team!);
@@ -2767,7 +2798,7 @@ export function pickForAi(
   }
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
-    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length, ruleset?.planTeam, ruleset?.planClaims);
+    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
     if (planned) return planned;
   }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;

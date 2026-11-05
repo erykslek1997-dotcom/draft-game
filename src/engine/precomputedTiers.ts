@@ -37,6 +37,9 @@ export type PrecomputedTierRow = [
   isSixthMan: 0 | 1,
   effectiveTalent: number,
   rawTal: number,
+  // 2026-11-05: the role context TAL reads (grades.ts `roleContextShift`) — absent ones as null.
+  minutes: number | null,
+  teamSrs: number | null,
 ];
 
 export function toPrecomputedRow(span: PlayerSpan, ctx: TierGateContext, effective: number): PrecomputedTierRow {
@@ -57,6 +60,8 @@ export function toPrecomputedRow(span: PlayerSpan, ctx: TierGateContext, effecti
     ctx.isSixthMan ? 1 : 0,
     effective,
     ctx.rawTal ?? ctx.tal,
+    ctx.minutes ?? null,
+    ctx.teamSrs ?? null,
   ];
 }
 
@@ -113,6 +118,8 @@ export function contextFromRow(span: PlayerSpan, row: PrecomputedTierRow): TierG
     playerName: span.playerName,
     spanLabel: span.spanLabel,
     rawTal: row[15],
+    ...(row[16] !== null && row[16] !== undefined ? { minutes: row[16] } : {}),
+    ...(row[17] !== null && row[17] !== undefined ? { teamSrs: row[17] } : {}),
     playoffCollapse: row[6],
     spacing: row[7],
     apg: row[8],

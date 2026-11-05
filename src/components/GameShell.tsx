@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createDraft,
   currentTeamIndex,
@@ -12,8 +12,10 @@ import {
   makeBombPick,
   TEAM_COUNT,
   ROUNDS,
+  activeDraftPool,
   type DraftState,
 } from '../engine/draft';
+import { aiWorkerClient } from './aiWorkerClient';
 import { autoAssignRotation } from '../engine/rotation';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import { finalizeAiRoster } from '../engine/finalizeAiRoster';
@@ -104,6 +106,8 @@ interface Props {
 
 /** Picks resolved per `setTimeout(0)` frame (audit AI-4: one synchronous call froze the page). */
 const AUTO_FINISH_CHUNK = 6;
+/** How long past its usual pace a CPU pick waits on the AI worker before the page makes it itself. */
+const WORKER_GRACE_MS = 2500;
 const TOTAL_PICKS = TEAM_COUNT * ROUNDS;
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
@@ -306,16 +310,39 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   const [autoFinishing, setAutoFinishing] = useState(false);
   // "Study the board" off the lottery: the CPU teams wait until the player starts the clock.
   const [studying, setStudying] = useState(studyFirst);
+  // 2026-11-05: the CPU picks are worked out in a Web Worker (aiWorkerClient.ts, engine/aiWorker.ts),
+  // ahead of time — from the lottery on, and right after each human pick for every CPU pick up to the
+  // human's next turn — with planned drafting on there. The page only lays each pick down at its
+  // usual pace, timed from when the pick came on the clock, so the work hides behind that pace. If
+  // the worker isn't available, the page drafts on its own thread as before.
+  const ai = aiWorkerClient();
+  const [, setAiTick] = useState(0);
+  useEffect(() => ai.subscribe(() => setAiTick((n) => n + 1)), [ai]);
+  const turnStartedAt = useRef({ index: -1, at: 0 });
+  if (turnStartedAt.current.index !== draftState.history.length) turnStartedAt.current = { index: draftState.history.length, at: Date.now() };
+  useEffect(() => {
+    if ((phase !== 'draft' && phase !== 'lottery') || draftState.complete || draftState.commissionerMode || autoFinishing) return;
+    if (draftState.teams[currentTeamIndex(draftState)].isHuman || draftState.pool !== activeDraftPool) return;
+    ai.request(draftState);
+  }, [ai, draftState, phase, autoFinishing]);
   useEffect(() => {
     if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing || studying) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
+    const viaWorker = ai.available && draftState.pool === activeDraftPool;
+    const planned = viaWorker ? ai.pickFor(draftState) : undefined;
+    let delay = cpuPickDelay(draftState.history.length, draftState.teams.length);
+    const waited = Date.now() - turnStartedAt.current.at;
+    // Still working (or still loading, on a slow phone): its pick re-renders this; past
+    // `WORKER_GRACE_MS` over the pace the page makes the pick itself, the old way.
+    if (viaWorker && !planned && ai.pending(draftState)) delay += WORKER_GRACE_MS;
     const timer = setTimeout(() => {
-      const next = resolveAiPickIfNeeded(draftState);
+      const viaPlan = planned ? makePick(draftState, planned) : draftState;
+      const next = viaPlan !== draftState ? viaPlan : resolveAiPickIfNeeded(draftState);
       if (next) setDraftState(next);
-    }, cpuPickDelay(draftState.history.length, draftState.teams.length));
+    }, Math.max(0, delay - waited));
     return () => clearTimeout(timer);
-  }, [draftState, phase, autoFinishing, studying]);
+  }, [ai, draftState, phase, autoFinishing, studying]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
@@ -348,17 +375,32 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // each firing produces a NEW `draftState` object, which would just re-trigger itself forever.
   const [aiTeamsFinalized, setAiTeamsFinalized] = useState(false);
   useEffect(() => {
-    if (draftState.complete && !aiTeamsFinalized) {
-      setDraftState((s) => ({
-        ...s,
-        teams: s.teams.map((t) => {
-          if (t.isHuman) return t;
-          const roster = finalizeAiRoster(t, draftCapLimit(s));
-          return { ...t, roster, rotation: autoAssignRotation(roster) };
-        }),
-      }));
+    if (!draftState.complete || aiTeamsFinalized) return;
+    let cancelled = false;
+    const finish = (rosterIds: string[][] | null) => {
+      if (cancelled) return;
+      setDraftState((s) => {
+        const cpu = s.teams.filter((t) => !t.isHuman);
+        return {
+          ...s,
+          teams: s.teams.map((t) => {
+            if (t.isHuman) return t;
+            const ids = rosterIds?.[cpu.indexOf(t)];
+            const fromWorker = ids?.map((id, i) => spanOptionsFor(t.roster[i].playerName).find((o) => o.id === id));
+            const roster = fromWorker && fromWorker.every(Boolean) ? (fromWorker as PlayerSpan[]) : finalizeAiRoster(t, draftCapLimit(s));
+            return { ...t, roster, rotation: autoAssignRotation(roster) };
+          }),
+        };
+      });
       setAiTeamsFinalized(true);
-    }
+    };
+    // 2026-11-05: the window search (~2 s for fifteen teams) runs in the worker when it can.
+    if (ai.available) void ai.finalize(draftState.teams.filter((t) => !t.isHuman), draftCapLimit(draftState)).then(finish);
+    else finish(null);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftState.complete, aiTeamsFinalized]);
 
   // 2026-09-24: each phase starts at the top of the page — Submit sits at the very bottom of the
