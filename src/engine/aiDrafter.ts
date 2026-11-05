@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { STRUCTURED_AI } from './structuredMode';
-import { BACKUP_PAIRS, backupOptions, bigThreat, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
+import { BACKUP_PAIRS, backupOptions, bigThreat, startedIrl, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2886,6 +2886,9 @@ export function pickForAi(
       const bigSpot = p.primaryPosition === 'PF' ? 'C' : p.primaryPosition === 'C' ? 'PF' : null;
       const partner = bigSpot ? lockedStarters[bigSpot] : undefined;
       if (structureHoles && !starter && partner && !bigThreat(partner) && !bigThreat(p) && p.fga > STRUCTURE.glueFga) return false;
+      // A real-life bench player (Michael Cooper 1985-87: 7% of games started) would start at an
+      // empty spot: off the board until a starter holds it.
+      if (structureHoles && !starter && !startedIrl(p) && p.fga > STRUCTURE.glueFga) return false;
       // A star at a filled spot would come off the bench: off the board too.
       return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
     });

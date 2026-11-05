@@ -167,11 +167,16 @@ export function bigThreat(p: PlayerSpan): boolean {
  * Williams 2017-19 13%; Manu 2006-08 40% and Crawford 2008-10 45% pass.
  */
 export const IRL_ROLE = { benchBelow: 0.3 };
-const IRL_SHARE = starterShareData as Record<string, number>;
+const IRL = starterShareData as unknown as Record<string, [number, number]>;
 export function starterShareIrl(p: PlayerSpan): number | undefined {
-  return IRL_SHARE[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`];
+  const share = IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[0];
+  return share === undefined || share < 0 ? undefined : share;
 }
-function startedIrl(p: PlayerSpan): boolean {
+/** Minutes a game in real life, when under 36 (from 1973-74); undefined for full-time starters. */
+export function minutesIrl(p: PlayerSpan): number | undefined {
+  return IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[1];
+}
+export function startedIrl(p: PlayerSpan): boolean {
   const share = starterShareIrl(p);
   return share === undefined || share >= IRL_ROLE.benchBelow || effectiveTalent(p) >= STRUCTURE_STAR_TAL;
 }
@@ -263,6 +268,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
+export const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30 };
 export const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
@@ -359,6 +365,26 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     if (move <= 0) continue;
     row.minutes -= move;
     mine.minutes += move;
+  }
+  // 2026-11-05, the user (Caruso's real minutes: "można pomyśleć w tym kierunku"): a starter plays no
+  // more than he did in real life plus `IRL_MINUTES.margin` (never under `IRL_MINUTES.starterFloor`);
+  // the rest goes to that spot's backup while he stays within his own real minutes (or 30).
+  const totalOf = (id: string) => STARTER_SLOTS.reduce((sum, x) => sum + slots[x].filter((r) => r.playerId === id).reduce((a, r) => a + r.minutes, 0), 0);
+  for (const slot of STARTER_SLOTS) {
+    const starter = s.starters[slot];
+    const real = starter ? minutesIrl(starter) : undefined;
+    if (!starter || real === undefined) continue;
+    const row = slots[slot].find((r) => r.playerId === starter.id);
+    const backupRow = slots[slot].find((r) => r.playerId !== starter.id);
+    if (!row || !backupRow) continue;
+    const cap = Math.max(IRL_MINUTES.starterFloor, Math.round(real + IRL_MINUTES.margin));
+    const backup = roster.find((p) => p.id === backupRow.playerId)!;
+    const backupReal = minutesIrl(backup);
+    const backupCap = backupReal === undefined ? IRL_MINUTES.backupDefault : Math.max(IRL_MINUTES.backupDefault, Math.round(backupReal + IRL_MINUTES.margin));
+    const move = Math.min(row.minutes - cap, backupCap - totalOf(backup.id));
+    if (move <= 0) continue;
+    row.minutes -= move;
+    backupRow.minutes += move;
   }
   // A slot no backup covers: its starter plays it all (the structure's own error says so).
   for (const slot of STARTER_SLOTS) {
