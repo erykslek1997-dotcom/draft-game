@@ -379,22 +379,6 @@ export function AtGrade({ grade, label, ungraded }: { grade: Grade; label?: Grad
 /** How long the taken cards take to fold away when the player's own turn comes. */
 const GHOST_SWEEP_MS = 1300;
 
-/** The awards by a player's name on a phone (2026-11-05, the playtest: "jeśli za długie to tylko
- * najważniejsze"): all of them, short, when they fit on the line; the most important one when not. */
-const AWARD_RANK = [/^(\d+× )?MVP$/, /Finals MVP/, /DPOY/, /All-NBA/, /All-Def/];
-function phoneAwards(playerName: string, spanLabel: string, tier: string): string {
-  const list = spanAwards(playerName, spanLabel);
-  if (!list.length) return '';
-  const short = (a: string) => a.replace('Finals MVP', 'FMVP').replace('All-NBA', 'NBA').replace('All-Def', 'DEF');
-  const all = list.map(short).join(' · ');
-  if (playerName.length + tier.length + all.length <= 30) return all;
-  const rank = (a: string) => {
-    const i = AWARD_RANK.findIndex((r) => r.test(a));
-    return i < 0 ? AWARD_RANK.length : i;
-  };
-  return short([...list].sort((a, b) => rank(a) - rank(b))[0]);
-}
-
 export default function DraftBoard({
   state,
   onPick,
@@ -1409,9 +1393,6 @@ export default function DraftBoard({
                           {masked ? BOMB_NAME : pl.playerName}
                           {/* 2026-10-29 (the user: the tier "obok imienia i nazwiska"): on a phone the tier sits by the name */}
                           {!masked && <span className="rs-tier">{displayedOverallTier(eff)}</span>}
-                          {!masked && phoneAwards(eff.playerName, eff.spanLabel, displayedOverallTier(eff)) && (
-                            <span className="rs-awn">{phoneAwards(eff.playerName, eff.spanLabel, displayedOverallTier(eff))}</span>
-                          )}
                         </div>
                         <div className="mt">
                           {masked ? (

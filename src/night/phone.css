@@ -639,12 +639,10 @@
 .poster .po-b3 b + em { margin-top: 3px; }
 
 /* 2026-11-05, the playtest ("ten widok nie jest zły, ale za dużo", mockup makieta-sklad): two lines a
-   player on a phone — name, tier and awards (short; the most important one when they don't fit), then
-   the years and the four grades on one line. */
-.nt .roster .rs-awn { display: none; }
+   player on a phone — name and tier, then the years and the four grades on one line (the awards
+   were tried by the tier and dropped, the user: "ukryjmy tego accolades"; they're in the profile). */
 @media (max-width: 600px) {
   .nt .roster .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .nt .roster .nm .rs-awn { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--ink4); border-radius: 9px; font: 600 10px/16px var(--num); color: var(--ink2); vertical-align: 2px; }
   .nt .roster .mt { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; }
   .nt .roster .mt .yrs-btn, .nt .roster .mt .yrs-plain { font-size: 13px; }
   .nt .roster .mt .rs-g { display: inline-flex; margin-top: 0; gap: 6px; font-size: 11px; letter-spacing: 0.02em; }
