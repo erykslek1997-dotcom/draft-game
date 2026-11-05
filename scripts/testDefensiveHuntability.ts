@@ -267,7 +267,10 @@ check(eliteCoreProjection.defense <= 93, 'elite defensive core projects into an 
 // 2026-11-04: band 58-66 -> 52-60 once a backup plays at most his real minutes + 1 and starters
 // stay home more (minuteAllocation.ts): Barros covers fewer PG minutes. Same two targets; Pierce
 // and DeAndre Jordan still out. Re-measured directly (56), not guessed.
-check(threeLayerHunt.targetableMinutes >= 52 && threeLayerHunt.targetableMinutes <= 60, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
+// 2026-11-05: band 52-60 -> 44-52 after the defensive-big TAL premium (grades.ts DEFENSIVE_BIG):
+// DeAndre Jordan reads higher and the classic rotation gives him more of the frontcourt, so the
+// two guards' share shrinks. Same two targets; re-measured directly (48), not guessed.
+check(threeLayerHunt.targetableMinutes >= 44 && threeLayerHunt.targetableMinutes <= 52, 'Brunson and Barros retain their real weak-link minutes; Pierce and DeAndre Jordan no longer misread as targets');
 // 2026-08-19: threshold lowered 0.6->0.25 after talent.ts's spacing-conditional TAL correction.
 // Root cause, checked directly: Paul Pierce (real plus-shooter, SPC 81) gained TAL from the same
 // correction that dropped Andre Roberson (real near-zero shooter, SPC 5) — `autoAssignRotation`
