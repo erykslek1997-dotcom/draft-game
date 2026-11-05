@@ -62,8 +62,8 @@ function structureCost(roster: PlayerSpan[]): number {
  * shape with PG or SG) nothing.
  */
 export const BENCH_PRIORITY = {
-  forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0),
-  centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0),
+  forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0.3),
+  centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0.6),
 };
 function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Position] }[]): number {
   let cost = 0;
