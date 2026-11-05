@@ -2,6 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { effectiveTalent } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
 import { positionCompetenceScore, FULL_SCORE } from './positionCompetence';
+import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS } from './positions';
 import type { Rotation } from './types';
 
@@ -28,6 +29,49 @@ export interface StructuredRoster {
   backups: { player: PlayerSpan; pair: [Position, Position] }[];
   glue: PlayerSpan[];
   problems: string[];
+  /** A listed starter who also covers the next spot (`SLIDING_STARTERS`), if the roster uses one. */
+  slider?: { player: PlayerSpan; covers: Position };
+}
+
+/**
+ * 2026-11-05, the user ("Jeśli w składzie jest np KD, to KD może być tym SF/PF ... BARDZO
+ * DELIKATNIE"; the list approved by the user): starters who also cover the spot next to theirs, in
+ * windows where they really play it (competence `SLIDE.minScore`+). One a team at most. He plays
+ * `SLIDE.ownMinutes` at home and `SLIDE.slideMinutes` there, that spot's starter
+ * `SLIDE.coveredStarterMinutes`; the spot counts as covered, his own still needs a backup.
+ */
+export const SLIDING_STARTERS: Record<string, Position> = Object.fromEntries(
+  (
+    [
+      ['LeBron James', 'SF'],
+      ['Kevin Durant', 'SF'],
+      ['Tracy McGrady', 'SF'],
+      ['Larry Bird', 'PF'],
+      ['Tim Duncan', 'PF'],
+      ['Victor Wembanyama', 'PF'],
+      ['James Harden', 'SG'],
+      ['Shai Gilgeous-Alexander', 'SG'],
+      ['Luka Doncic', 'SG'],
+      ['Jerry West', 'SG'],
+      ['Jimmy Butler', 'SG'],
+      ['Anfernee Hardaway', 'SG'],
+      ['Anthony Davis', 'C'],
+    ] as [string, Position][]
+  ).map(([name, slot]) => [normalizePlayerName(name), slot]),
+);
+export const SLIDE = { minScore: 0.9, ownMinutes: 32, slideMinutes: 8, coveredStarterMinutes: 40 };
+
+function slidersFor(starters: Partial<Record<Position, PlayerSpan>>): { player: PlayerSpan; covers: Position }[] {
+  const out: { player: PlayerSpan; covers: Position }[] = [];
+  for (const slot of STARTER_SLOTS) {
+    const p = starters[slot];
+    if (!p) continue;
+    const covers = SLIDING_STARTERS[normalizePlayerName(p.playerName)];
+    if (!covers || covers === slot || !starters[covers]) continue;
+    if (positionCompetenceScore(p, covers) < SLIDE.minScore) continue;
+    out.push({ player: p, covers });
+  }
+  return out;
 }
 
 /** The pairs a player can back up: his primary in the pair, the other one played for real. */
@@ -60,10 +104,18 @@ export function readStructure(roster: PlayerSpan[]): StructuredRoster {
     if (best) starters[slot] = best;
   }
   const used = new Set(Object.values(starters).map((p) => p!.id));
-  return bestBench(starters, roster.filter((p) => !used.has(p.id)));
+  const rest = roster.filter((p) => !used.has(p.id));
+  // With a listed sliding starter, the reading tries him covering his second spot, and keeps it only
+  // when it mends something.
+  let best = bestBench(starters, rest, []);
+  for (const slider of slidersFor(starters)) {
+    const withSlider = bestBench(starters, rest, [slider.covers]);
+    if (withSlider.problems.length < best.problems.length) best = { ...withSlider, slider };
+  }
+  return best;
 }
 
-function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[]): StructuredRoster {
+function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[], preCovered: Position[]): StructuredRoster {
   const problems: string[] = [];
   for (const slot of STARTER_SLOTS) if (!starters[slot]) problems.push(`no natural ${slot} to start`);
   // Up to three backups with a pair each, covering every position; the rest are glue.
@@ -72,7 +124,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   const options = rest.map((p) => ({ p, pairs: backupOptions(p) }));
   const search = (i: number, chosen: { player: PlayerSpan; pair: [Position, Position] }[]) => {
     if (chosen.length === 3 || i === options.length) {
-      const covered = new Set(chosen.flatMap((b) => b.pair));
+      const covered = new Set([...preCovered, ...chosen.flatMap((b) => b.pair)]);
       const uncovered = STARTER_SLOTS.filter((slot) => !covered.has(slot));
       const t = chosen.reduce((sum, b) => sum + effectiveTalent(b.player), 0);
       const ids = new Set(chosen.map((b) => b.player.id));
@@ -109,6 +161,16 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     if (!p) continue;
     slots[slot].push({ playerId: p.id, minutes: STRUCTURE.starterMinutes });
     left.set(slot, 48 - STRUCTURE.starterMinutes);
+  }
+  if (s.slider) {
+    // The slider: fewer minutes at home, a stretch at the spot he covers beside that spot's starter.
+    const home = s.slider.player.primaryPosition;
+    const there = s.slider.covers;
+    slots[home][0] = { ...slots[home][0], minutes: SLIDE.ownMinutes };
+    left.set(home, 48 - SLIDE.ownMinutes);
+    slots[there][0] = { ...slots[there][0], minutes: SLIDE.coveredStarterMinutes };
+    slots[there].push({ playerId: s.slider.player.id, minutes: SLIDE.slideMinutes });
+    left.set(there, 48 - SLIDE.coveredStarterMinutes - SLIDE.slideMinutes);
   }
   // Slots one backup covers alone take him first; shared ones split evenly between their backups.
   const minutesOf = new Map<string, number>();
@@ -161,7 +223,7 @@ export function canStillComplete(roster: PlayerSpan[], rosterSize: number): bool
   const left = rosterSize - roster.length;
   const missingStarters = STARTER_SLOTS.filter((slot) => !s.starters[slot]).length;
   const openBackups = 3 - s.backups.length;
-  const covered = new Set(s.backups.flatMap((b) => b.pair));
+  const covered = new Set([...s.backups.flatMap((b) => b.pair), ...(s.slider ? [s.slider.covers] : [])]);
   const uncovered = STARTER_SLOTS.filter((slot) => !covered.has(slot)).length;
   const glueOpen = s.glue.length === 0 ? 1 : 0;
   if (s.glue.length > 1) return false;

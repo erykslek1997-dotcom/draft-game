@@ -1948,7 +1948,7 @@ export const AI_PLAN = {
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
   reserveGlueFga: 2.5,
-  nearTal: 3,
+  nearTal: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_NEAR ?? 3),
   nearFga: 1,
   scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
@@ -2889,7 +2889,7 @@ export function pickForAi(
     // within `AI_PLAN.nearTal` TAL of the planned pick and at most `AI_PLAN.nearFga` shots dearer, the
     // one who leaves the roster more ways to cover the five goes — Brent Barry (SG only) over a SG/SF
     // of his level was the commonest start of an open spot.
-    if (planned && structureHoles) {
+    if (planned && structureHoles && AI_PLAN.nearTal > 0) {
       const base = planned.pick;
       const reading = readStructure(roster);
       const covered = new Set(reading.backups.flatMap((b) => b.pair));
