@@ -111,6 +111,8 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
  * może wybrać PG/SG ; SF/PF ; C" or "PG ; SG/SF ; PF/C" — the three together still cover all five).
  */
 export function backupOptions(p: PlayerSpan): [Position, Position][] {
+  // Under the rotation floor he is glue at best (Caldwell Jones 1988-90, 27, as a C backup).
+  if (effectiveTalent(p) < STRUCTURE.minRotationTal) return [];
   // A single can be any spot of a pair he plays (LaFrentz at C only, Hayes at C only: the user's
   // "Royce SF/PF / LaFrentz C").
   const pairs = pairsFor(p);
