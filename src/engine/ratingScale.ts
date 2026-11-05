@@ -3,6 +3,7 @@ import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, computeOffensiveTalent, computeUncappedOffensiveTalent } from './talent';
 import { effectiveTalent, type Grade } from './grades';
 import { realSpan } from './realAdvancedLookup';
+import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 
 /**
  * 2026-11-04, the user ("lepszy niż 89% i tylko 73, no to dziwnie wygląda"; "jedna skala atak +
@@ -121,7 +122,36 @@ function rating(span: PlayerSpan, side: Side): number {
   return result;
 }
 
-export const offenseRating = (span: PlayerSpan): number => rating(span, 'offense');
+/**
+ * 2026-11-04, the user (Dillon Brooks 2024-26 read offense 38 on 16.7 points: "35 sugeruje kogoś,
+ * kto w ataku nic nie robi"): the card's offense is also what a player can do with the ball, not
+ * only what it did for the score. A scorer reads at least his scoring role — his points on today's
+ * pace placed among the rotation players at his position, on the same anchors — less
+ * `SCORING_ROLE.margin`; a player who never scored (Ben Wallace) gets nothing from it.
+ */
+const SCORING_ROLE = { margin: 10 };
+let scoringPools: Map<string, number[]> | null = null;
+const pacedPoints = (span: PlayerSpan) => span.box.ppg * (LEAGUE_PACE_BASELINE / eraBaseline(span.spanLabel).pace);
+function scoringRole(span: PlayerSpan): number {
+  if (!scoringPools) {
+    scoringPools = new Map();
+    for (const p of draftPool) {
+      if (effectiveTalent(p) < ROTATION_TAL) continue;
+      scoringPools.set(p.primaryPosition, [...(scoringPools.get(p.primaryPosition) ?? []), pacedPoints(p)]);
+    }
+    for (const list of scoringPools.values()) list.sort((a, b) => a - b);
+  }
+  const pool = poolFor(span.primaryPosition, 'offense');
+  return ratingAt(percentileOf(scoringPools.get(span.primaryPosition) ?? [], pacedPoints(span)), pool.anchors);
+}
+const offenseCache = new Map<string, number>();
+export const offenseRating = (span: PlayerSpan): number => {
+  const hit = offenseCache.get(span.id);
+  if (hit !== undefined) return hit;
+  const value = Math.max(rating(span, 'offense'), Math.round(scoringRole(span) - SCORING_ROLE.margin));
+  offenseCache.set(span.id, value);
+  return value;
+};
 export const defenseRating = (span: PlayerSpan): number => rating(span, 'defense');
 
 export function ratingGrade(value: number): Grade {

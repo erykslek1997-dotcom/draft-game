@@ -1,6 +1,8 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { positionCompetence, positionCompetenceScore, realSecondaryPositions, PARTIAL_SCORE } from './positionCompetence';
+import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
+import { STRUCTURED_AI } from './structuredMode';
+import { BACKUP_PAIRS, backupOptions, bigThreat, startedIrl, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -321,9 +323,18 @@ for (const [key, tier] of Object.entries(GREATEST_PEAK_DRAFT_TIERS)) {
 function greatestPeakTierBonus(p: PlayerSpan): number {
   if (!DRAFT_EXPERIMENT.greatestPeakBonus) return 0;
   const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
-  if (!entry || effectiveTalent(p) < entry.tal) return 0;
-  return GREATEST_PEAK_TIER_BONUS[entry.tier];
+  if (!entry) return 0;
+  const below = entry.tal - effectiveTalent(p);
+  const share = Math.max(0, Math.min(1, 1 - (below - GREATEST_PEAK_WINDOW.full) / (GREATEST_PEAK_WINDOW.none - GREATEST_PEAK_WINDOW.full)));
+  return GREATEST_PEAK_TIER_BONUS[entry.tier] * share;
 }
+/**
+ * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?"): the legend
+ * bonus went to the peak window only, so Shaq 2000-02 (TAL 96, 1.4 FGA cheaper) gave up 35 points
+ * to 1999-01 (97) and lost every time. Full within `full` TAL of the peak (`WINDOW_EQUAL.within`),
+ * gone `none` under it.
+ */
+const GREATEST_PEAK_WINDOW = { full: 5, none: 8 };
 
 /**
  * 2026-10-29, the user after a live draft (Porter, Butler and Porziņģis in round 2, Kawhi to 23,
@@ -459,14 +470,46 @@ function samePositionRedundancyDiscount(roster: PlayerSpan[], p: PlayerSpan): nu
  * Embiid beside Robinson): every position, not only centre — a star who plays one position only
  * beside a star who plays only the same one. 0.8 -> 1.2 a TAL point past the floor. */
 const TWIN_CENTRE = { floor: 80, share: 1.2 };
+// A part-time second position (a centre's 0.6 at the four: Embiid, Wembanyama, Bam) is not a real
+// one for this cost — two such centres still collide (2026-11-04, round-2 review).
 const onlyPosition = (p: PlayerSpan): boolean =>
-  (['PG', 'SG', 'SF', 'PF', 'C'] as const).every((slot) => slot === p.primaryPosition || positionCompetenceScore(p, slot) < PARTIAL_SCORE);
+  (['PG', 'SG', 'SF', 'PF', 'C'] as const).every((slot) => slot === p.primaryPosition || positionCompetenceScore(p, slot) < FULL_SCORE);
 function twinCentrePenalty(roster: PlayerSpan[], p: PlayerSpan): number {
   if (!onlyPosition(p)) return 0;
   const talent = effectiveTalent(p);
   if (talent < TWIN_CENTRE.floor) return 0;
   const blocked = roster.some((r) => r.primaryPosition === p.primaryPosition && onlyPosition(r) && effectiveTalent(r) >= TWIN_CENTRE.floor);
   return blocked ? TWIN_CENTRE.share * (talent - TWIN_CENTRE.floor) : 0;
+}
+
+/** Real usage, or before 1977-78 a read from shots on today's pace (same scale). */
+const usageOf = (x: PlayerSpan): number =>
+  usageForSpan(x)?.usgPct ?? 0.1 + 0.009 * x.fga * (LEAGUE_PACE_BASELINE / eraBaseline(x.spanLabel).pace);
+/**
+ * 2026-11-04, the user's review of 10 AI drafts ("albo Wade albo Harden, po co obu"; Kobe + Harden,
+ * SGA + Kobe, Payton, Frazier, Arenas beside McMillan — the most frequent note): from the first pick,
+ * a perimeter scorer who needs the ball beside a perimeter star who already has it costs value —
+ * `SECOND_BALL.points` at full overlap, read from both players' usage.
+ */
+const SECOND_BALL = { star: 0.28, from: 0.25, full: 0.32, points: 14 };
+function secondBallStarPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  const perimeter = (x: PlayerSpan) => x.primaryPosition !== 'PF' && x.primaryPosition !== 'C';
+  if (!perimeter(p)) return 0;
+  const star = roster.filter(perimeter).reduce((m, x) => Math.max(m, usageOf(x)), 0);
+  if (star < SECOND_BALL.star) return 0;
+  return SECOND_BALL.points * Math.max(0, Math.min(1, (usageOf(p) - SECOND_BALL.from) / (SECOND_BALL.full - SECOND_BALL.from)));
+}
+/**
+ * 2026-11-04, the same review (Don Buse 28 minutes, Don Reid, Tony Allen beside Sefolosha off the
+ * bench, Crowder 38 minutes: "PG z tak niskim TAL w ataku nie powinni być brani pod uwagę"): a
+ * player who brings no offense (O-TAL under `NO_OFFENSE.otal`) costs value for every such player
+ * already on the roster — one defensive specialist is a role, a bench of them is a hole.
+ */
+const NO_OFFENSE = { otal: 45, perPlayer: 6, max: 14 };
+function noOffenseStackPenalty(roster: PlayerSpan[], p: PlayerSpan): number {
+  if (computeOffensiveTalent(p) >= NO_OFFENSE.otal) return 0;
+  const already = roster.filter((x) => computeOffensiveTalent(x) < NO_OFFENSE.otal).length;
+  return Math.min(NO_OFFENSE.max, already * NO_OFFENSE.perPlayer);
 }
 
 interface NeedContext {
@@ -664,7 +707,10 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     if (player && top.minutes >= MIN_STARTER_MINUTES_AT_SLOT && isRealPositionFit(player, slot)) {
       starterPlayers.push(player);
       starterTalentBySlot[slot] = effectiveTalent(player);
-      if (!meetsStarterStandard(player)) substandardSlots.push(slot);
+      // 2026-11-04, the user's round-2 review ("pojedyncze pozycje w starting5 cały czas są dziwne":
+      // Ariza at the four, Marion and Cooper at the two, Royce O'Neale at the four, Mikal Bridges at
+      // the two): a slot held by someone off his own position is a hole too, until a real one comes.
+      if (!meetsStarterStandard(player) || positionCompetenceScore(player, slot) < NATURAL_SLOT_SCORE) substandardSlots.push(slot);
     } else {
       emptySlots.push(slot);
     }
@@ -1329,7 +1375,8 @@ const DEFENSIVE_DEPTH_BONUS_SCALE = 0.5;
  * (scripts/measureRosterSense.ts): teams under 55 spacing 16% → 7%, Overall 80.87 → 81.33, the worst
  * tenth 75.3 → 75.6. A 105 cap instead did not help spacing (16% → 15%). Mutable only so the
  * measurement can tune it. */
-export const AI_SPACING_RULES = { threshold: 78, scale: 4 };
+// 2026-11-04: scale 4 -> 6 (the user's review: spacing was the second most frequent note).
+export const AI_SPACING_RULES = { threshold: 78, scale: 6 };
 
 /**
  * 2026-08-07, offensiveProfile.ts synergy signals — see `NeedContext.hasRimGravityStarter`/
@@ -1559,6 +1606,8 @@ const MAX_FGA_WASTE_ON_BENCH_PENALTY = 10;
 const NEED_RAMP_ROSTER_SIZE = 4;
 /** See `holesOpen` in `pickForAi`. */
 const HOLE_URGENCY_NEED_BONUS = 1.0;
+/** A slot's starter counts as its own man from this competence (natural 1, another natural 0.95). */
+const NATURAL_SLOT_SCORE = 0.95;
 const HOLE_GM_TASTE_SHARE = 0.5;
 /**
  * 2026-10-01, bench-quality pass (user-approved): traced pick by pick, a team's bench coverage is
@@ -1609,7 +1658,28 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
   [normalizePlayerName('Nikola Jokic'), '2021-23'],
 ]);
 
-function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number }>(ranked: T[]): T[] {
+/**
+ * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?" ... "około 3 fga
+ * różnicy, a to jest między słabym a dobrym rolesem"): which of a player's windows to take. The
+ * pick's `fgaCost` is softened for stars (`eliteTalentFgaPenaltyDampening`) so a star isn't passed
+ * over for a cheaper lesser player, but between two windows of the SAME star that softening only
+ * hid the price: 1.4 FGA cost Shaq 2000-02 0.3 points. Here a shot is worth `WINDOW_FGA_RATE` TAL
+ * — in this pool one FGA buys ~2.5-3 TAL of role player (top 30 at 4/6/8 FGA: 56/67/71), weighed
+ * by his ~20 minutes against a star's ~36.
+ */
+export const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
+
+/**
+ * 2026-11-04, the user ("jakby uznać wszystkie spany do 5 TAL różnicy za równe temu w peaku?
+ * Ewentualnie delikatne bonusy jeśli zespół stać na to"): a player's windows within `within` TAL of
+ * his best one (`withinBelowStar` when that best is under `starPeak`: five points is a tier for a role
+ * player) count as equal but for the price; the better one keeps `keepComfortable` of its TAL
+ * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
+ * spends what cap is left on the better windows.
+ */
+const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
+
+function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
   const grouped = new Map<string, T[]>();
   for (const entry of ranked) {
     const key = normalizePlayerName(entry.player.playerName);
@@ -1622,13 +1692,20 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
   // replace that representative span; a prior broad TAL/O-TAL tie-break changed unrelated center
   // spans and destabilized the whole first round. Harden 2014-16 and 2018-20 both read TAL 96 /
   // O-TAL 100, while the user-validated 2018-20 peak also carries the stronger real D-TAL.
+  // 2026-11-04: the pins break TAL ties only — they date from when Shaq's windows read 97 alike;
+  // now that a cheaper window can win on price (`WINDOW_FGA_RATE`), a pin overriding it would keep
+  // every Shaq at 1999-01.
   return [...grouped.values()].map((entries) => {
     const bestDraftEntry = entries[0];
+    const peak = Math.max(...entries.map((entry) => entry.talent));
+    const within = peak >= WINDOW_EQUAL.starPeak ? WINDOW_EQUAL.within : WINDOW_EQUAL.withinBelowStar;
+    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
-    if (!preferredSpan) return bestDraftEntry;
-    const preferredEntry = entries.find((entry) => entry.player.spanLabel === preferredSpan);
-    return preferredEntry ? { ...bestDraftEntry, player: preferredEntry.player, talent: preferredEntry.talent } : bestDraftEntry;
+    const preferredEntry = preferredSpan ? entries.find((entry) => entry.player.spanLabel === preferredSpan && entry.talent === window.talent) : undefined;
+    const chosen = preferredEntry ?? window;
+    return { ...bestDraftEntry, player: chosen.player, talent: chosen.talent };
   });
 }
 
@@ -1742,6 +1819,10 @@ export interface AiDraftRuleset {
   profileStrength?: number;
   /** Seed of this GM's own board (`boardNoise`); omitted means the shared board. */
   boardSeed?: number;
+  /** Planned drafting (`AI_PLAN`): this team's key and the draft's shared player claims
+   * (normalized name -> team key), so AI plans don't chase the same players. */
+  planTeam?: string;
+  planClaims?: Map<string, string>;
 }
 
 /**
@@ -1760,6 +1841,17 @@ const BOARD_NOISE_TEAM_POINTS = 0.7;
  * `BOARD_NOISE_POINTS` at TAL `BOARD_NOISE_STAR_FROM` to `BOARD_NOISE_STAR_POINTS` at
  * `BOARD_NOISE_STAR_FULL`, so it reshuffles role players and never jumps eight points of TAL.
  */
+/**
+ * 2026-11-04, the user ("AI zawsze te same spany graczy wybiera" — 51 of the 161 players taken 10+
+ * times in 30 drafts always came as the same window, Shaq 1999-01 30 of 30): each GM also holds a
+ * small opinion of each WINDOW (sd `WINDOW_NOISE_POINTS`), so among a player's windows close in
+ * value a different one comes some drafts; a clearly weaker window still never wins.
+ */
+const WINDOW_NOISE_POINTS = 4;
+function windowNoise(boardSeed: number | undefined, p: PlayerSpan): number {
+  if (boardSeed === undefined) return 0;
+  return boardNoise(boardSeed + 7919, { ...p, playerName: `${p.playerName}|${p.spanLabel}` } as PlayerSpan);
+}
 const BOARD_NOISE_STAR_FROM = 72;
 const BOARD_NOISE_STAR_FULL = 86;
 const BOARD_NOISE_STAR_POINTS = 3;
@@ -1792,6 +1884,11 @@ function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
  * lot. Registered by draft.ts (scoring.ts imports this file, so it can't be imported here).
  */
 let teamScorer: ((roster: PlayerSpan[]) => number) | null = null;
+/** The structured test's count of holes in a full roster other than the glue's price (draft.ts). */
+let structureHoles: ((roster: PlayerSpan[]) => number) | null = null;
+export function setAiStructureHoles(fn: ((roster: PlayerSpan[]) => number) | null): void {
+  structureHoles = fn;
+}
 export function setAiTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
   teamScorer = scorer;
 }
@@ -1830,6 +1927,158 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
     cap -= pick.fga;
   }
   return out;
+}
+
+/**
+ * 2026-11-04, the user ("AI uznaje pierwsze 5 picków za starting 5 i później dobiera ławkę.
+ * Kolejność w zasadzie jest dowolna"; "AI wcześniej robi drużyny żeby wyszło jak najmocniejsze"):
+ * stage 1 of planned drafting. Before a pick the AI builds the whole rest of its roster — the board's
+ * best affordable fill (`completeRosterGreedy`), then `passes` rounds of swapping each planned player
+ * for one of `alternatives` others while the team score (`teamScorer`) rises — and takes the planned
+ * player the board values most, the one least likely to last. Candidates come in the board's own
+ * order (taste and noise included), so GMs still differ.
+ */
+export const AI_PLAN = {
+  on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
+  // The structured test plans from the first pick (the user: two centres in the first two rounds,
+  // Embiid left as a 19.9-FGA glue).
+  fromRoster: STRUCTURED_AI ? 0 : 2,
+  alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? 14),
+  cheapFga: 7,
+  /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
+  glueFga: 4,
+  reserveGlue: STRUCTURED_AI,
+  reserveGlueFga: 2.5,
+  nearTal: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_NEAR ?? 3),
+  nearFga: 1,
+  scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
+  glueAlternatives: STRUCTURED_AI ? 4 : 0,
+  cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
+  passes: 2,
+  warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
+  crowdCost: 1.5,
+  share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[k] ?? '0') === '1'),
+};
+/** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
+const planMemory = new Map<string, string[]>();
+/** Seeds a team's plan memory — the joint pre-draft plan (jointPlan.ts) is where it starts. */
+export function seedPlanMemory(planSeed: number, team: string, names: string[]): void {
+  planMemory.set(`${planSeed}|${team}`, names);
+}
+const PLAN_MEMORY_MAX = 4_000;
+function planPick(
+  roster: PlayerSpan[],
+  fullBoard: PlayerSpan[],
+  capLeft: number,
+  slots: number,
+  team?: string,
+  claims?: Map<string, string>,
+  planSeed?: number,
+  /** The roster the pick check reads (`canStillComplete`) — without a stand-in glue, which the
+   * reading would otherwise count as the backup covering his spot. */
+  realRoster?: PlayerSpan[],
+): { pick: PlayerSpan; score: number; plan: PlayerSpan[] } | null {
+  if (!teamScorer || slots <= 0 || fullBoard.length === 0) return null;
+  const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
+  // Stage 2 (`AI_PLAN.share`): players another AI team has planned for are off this team's board.
+  const shared = AI_PLAN.share && team !== undefined && claims !== undefined;
+  const board = shared ? fullBoard.filter((p) => (claims!.get(key(p)) ?? team) === team) : fullBoard;
+  if (board.length === 0) return null;
+  // Warm start (2026-11-05, speed in the browser): this team's plan from its last turn, less the
+  // players gone since, is the starting point; only the gaps are filled fresh, and one swap pass
+  // (`AI_PLAN.warmPasses`) instead of `AI_PLAN.passes` tidies it.
+  const memoryKey = team !== undefined ? `${planSeed ?? ''}|${team}` : undefined;
+  const remembered = memoryKey ? planMemory.get(memoryKey) : undefined;
+  const byName = new Map(board.map((p) => [key(p), p]));
+  const kept: PlayerSpan[] = [];
+  if (remembered) {
+    let spend = 0;
+    for (const name of remembered) {
+      const p = byName.get(name);
+      if (!p || kept.length >= slots) continue;
+      const reserveAfter = (slots - kept.length - 1) * LOOKAHEAD_MIN_FILL_FGA;
+      if (spend + p.fga > capLeft - reserveAfter) continue;
+      kept.push(p);
+      spend += p.fga;
+    }
+  }
+  const warm = kept.length > 0;
+  const plan = [
+    ...kept,
+    ...completeRosterGreedy([...roster, ...kept], board, capLeft - kept.reduce((sum, p) => sum + p.fga, 0), slots - kept.length).slice(roster.length + kept.length),
+  ];
+  if (plan.length === 0) return null;
+  // A third player at one position (three point guards: 15% of AI teams, 24% with plans, the cheap
+  // backups being guards) costs `crowdCost` team points each.
+  const score = (team: PlayerSpan[]) => {
+    const counts = new Map<Position, number>();
+    for (const p of team) counts.set(p.primaryPosition, (counts.get(p.primaryPosition) ?? 0) + 1);
+    let crowd = 0;
+    for (const n of counts.values()) crowd += Math.max(0, n - 2);
+    return teamScorer!(team) - AI_PLAN.crowdCost * crowd;
+  };
+  let best = score([...roster, ...plan]);
+  for (let pass = 0; pass < (warm ? AI_PLAN.warmPasses : AI_PLAN.passes); pass++) {
+    let improved = false;
+    for (let i = 0; i < plan.length; i++) {
+      const others = plan.filter((_, j) => j !== i);
+      const taken = new Set([...roster, ...others].map(key));
+      const reserve = (slots - plan.length) * LOOKAHEAD_MIN_FILL_FGA;
+      const room = capLeft - others.reduce((sum, p) => sum + p.fga, 0) - reserve;
+      const open = board.filter((p) => !taken.has(key(p)) && p.fga <= room && p.id !== plan[i].id);
+      // The board's best, plus its best cheap ones: a 10-14-minute backup costs 5-6 shots (the user).
+      const glue = AI_PLAN.glueAlternatives > 0 ? [...open].filter((p) => p.fga <= AI_PLAN.glueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, AI_PLAN.glueAlternatives) : [];
+      // The structured test also tries the best few for every backup pair and every starting slot,
+      // so a PF/C or a PG/SG the board ranks low still comes up.
+      const structural = structureHoles
+        ? [
+            ...BACKUP_PAIRS.flatMap((pair) => open.filter((p) => pairsFor(p).some((x) => x[0] === pair[0] && x[1] === pair[1])).slice(0, 3)),
+            ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, 2)),
+          ]
+        : [];
+      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
+      for (const candidate of pool) {
+        const value = score([...roster, ...others, candidate]);
+        if (value > best + 1e-6) {
+          best = value;
+          plan[i] = candidate;
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+  // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
+  // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
+  const byTalent = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  // The structured test: the best planned player whose pick still lets the roster reach the full
+  // shape (`canStillComplete`); the best one only if none does.
+  const checked = realRoster ?? roster;
+  const size = roster.length + slots;
+  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...checked, p], size) && keepsRoles(checked, p)) : undefined) ?? byTalent[0] ?? null;
+  // The structured test: a planned backup whose pair has few others left on the board goes first —
+  // Honolulu planned a PG/SG, took its stars first and found none left (`AI_PLAN.scarceRole`).
+  if (structureHoles) {
+    const planned = new Set(plan.map((p) => p.id));
+    const others = board.filter((p) => !planned.has(p.id) && p.fga <= capLeft);
+    let scarcest: { p: PlayerSpan; left: number } | null = null;
+    for (const p of plan) {
+      const pairs = pairsFor(p);
+      if (pairs.length === 0) continue;
+      const left = Math.min(...pairs.map((pair) => others.filter((o) => pairsFor(o).some((x) => x[0] === pair[0] && x[1] === pair[1])).length));
+      if (left <= AI_PLAN.scarceRole && (!scarcest || left < scarcest.left)) scarcest = { p, left };
+    }
+    if (scarcest) pick = scarcest.p;
+  }
+  if (memoryKey) {
+    if (planMemory.size >= PLAN_MEMORY_MAX) planMemory.clear();
+    planMemory.set(memoryKey, plan.filter((p) => p !== pick).map(key));
+  }
+  if (shared) {
+    for (const [name, owner] of claims!) if (owner === team) claims!.delete(name);
+    for (const p of plan) if (p !== pick) claims!.set(key(p), team!);
+  }
+  return pick ? { pick, score: best, plan } : null;
 }
 
 interface FiveGaps {
@@ -1903,7 +2152,7 @@ function lookaheadRoleTerms(roster: PlayerSpan[], completed: PlayerSpan[], p: Pl
   let ballFit = 0;
   // Usage exists from 1977-78; before it (Oscar, Wilt, West) the share is read from shots on today's
   // pace, the same scale (2026-11-04, the user: Oscar 1961-63 beside LeBron).
-  const usage = (x: PlayerSpan) => usageForSpan(x)?.usgPct ?? 0.1 + 0.009 * x.fga * (LEAGUE_PACE_BASELINE / eraBaseline(x.spanLabel).pace);
+  const usage = usageOf;
   const starUsage = Math.max(0, ...five.filter((x) => effectiveTalent(x) >= AI_ROLE_RULES.starTal).map((x) => usage(x) ?? 0));
   if (starUsage >= AI_ROLE_RULES.ballStarUsage && !isBig(p) && starterIds.has(p.id)) {
     const u = usage(p);
@@ -1984,7 +2233,9 @@ export function pickForAi(
   const fillsHole = (p: PlayerSpan) =>
     holesOpen &&
     meetsStarterStandard(p) &&
-    needs.holeSlots.some((slot) => slot === p.primaryPosition || realSecondaryPositions(p).includes(slot));
+    // 2026-11-04: a hole is filled by a player who really plays the slot, not one more stretch (Royce
+    // O'Neale "filling" the four he was already covering off position).
+    needs.holeSlots.some((slot) => slot === p.primaryPosition || (realSecondaryPositions(p).includes(slot) && positionCompetenceScore(p, slot) >= NATURAL_SLOT_SCORE));
 
   // A DNP-tier span (maxSustainableMinutes <= 0 — the player physically couldn't stay on the
   // floor across that real stretch, e.g. Joel Embiid's 2023-25 games-missed span) isn't a real
@@ -2047,7 +2298,9 @@ export function pickForAi(
   // filter: with only one qualifying legend on the board (the overwhelmingly common case), he's
   // still taken regardless of fit — the whole point of a "steal" is that a real GM takes him
   // anyway, same philosophy as `ELITE_TALENT_REDUNDANCY_EXEMPTION` elsewhere in this file.
-  if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD) {
+  // The structured test skips the steal: a legend taken regardless of fit was the second star centre
+  // (Embiid at 23 beside Kareem) that sits on the bench. Its own pick checks see legends there anyway.
+  if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD && !(structureHoles && AI_PLAN.on)) {
     const steals = planningCandidates.filter((p) => {
       const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
       return entry !== undefined && effectiveTalent(p) >= entry.tal;
@@ -2404,9 +2657,11 @@ export function pickForAi(
       playoffBpmDraftBonus: playoffBpmDraftBonus(p),
       teamDefensiveBalanceBonus: teamDefensiveBalanceBonus(roster, p),
       twinCentrePenalty: -twinCentrePenalty(roster, p),
+      secondBallStarPenalty: -secondBallStarPenalty(roster, p),
+      noOffenseStackPenalty: -noOffenseStackPenalty(roster, p),
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
-      boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p),
+      boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p) + WINDOW_NOISE_POINTS * windowNoise(ruleset?.boardSeed, p),
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
@@ -2415,7 +2670,11 @@ export function pickForAi(
     const debug = aiDraftDebug
       ? { talent, rampedNeed, talentTerm, fga: p.fga, effectiveFgaPenalty, fgaCost, ...adjustments }
       : undefined;
-    return { player: p, value, talent, debug };
+    // Same player, another window: the shots one saves are worth what they buy on the rest of the
+    // roster (`WINDOW_FGA_RATE`), not the star-dampened `fgaCost`.
+    const windowValue = value + fgaCost - p.fga * WINDOW_FGA_RATE;
+    const windowTalentCredit = rampedNeed * (1 - (WINDOW_EQUAL.keepComfortable + (WINDOW_EQUAL.keepTight - WINDOW_EQUAL.keepComfortable) * pressure));
+    return { player: p, value, talent, windowValue, windowTalentCredit, debug };
   });
 
   // A player may have several legal spans. The context-optimal representative used for draft
@@ -2592,6 +2851,115 @@ export function pickForAi(
     lotteryCandidates = rescored.sort((a, b) => b.value - a.value);
   }
 
+  if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
+    const slots = rosterSize - roster.length;
+    // 2026-11-05, the user ("KD czy Nash z ławki nieakceptowalne"): in the structured test a player's
+    // window goes where his roster has room — a window whose own position is still open, within
+    // `WINDOW_EQUAL.within` TAL of his best legal one, beats one at a filled spot (Durant's SF years
+    // when the four is taken).
+    const openSlots = structureHoles ? new Set(STARTER_SLOTS.filter((slot) => !readStructure(roster).starters[slot])) : new Set<Position>();
+    const spansByName = new Map<string, (typeof scoredBySpan)[number][]>();
+    if (structureHoles) for (const entry of scoredBySpan) {
+      const k = normalizePlayerName(entry.player.playerName);
+      spansByName.set(k, [...(spansByName.get(k) ?? []), entry]);
+    }
+    const fullBoard = scored.map((entry) => {
+      if (!structureHoles || openSlots.has(entry.player.primaryPosition)) return entry.player;
+      const alts = spansByName.get(normalizePlayerName(entry.player.playerName)) ?? [];
+      const top = Math.max(...alts.map((a) => a.talent));
+      const fit = alts.filter((a) => openSlots.has(a.player.primaryPosition) && a.talent >= top - WINDOW_EQUAL.within).sort((a, b) => b.talent - a.talent)[0];
+      return fit ? fit.player : entry.player;
+    });
+    // 2026-11-05, the user ("błędy struktury najbardziej psują immersję"): in the structured test a
+    // drafted starter keeps his job — a better player at his position is off this team's board, since
+    // the reading would start him and push the starter to a one-position backup spot (Mario Chalmers,
+    // then Walt Frazier at the point; Jon Barry at the two). Off only if nobody else is left.
+    const lockedStarters = structureHoles ? readStructure(roster).starters : {};
+    const unlocked = fullBoard.filter((p) => {
+      // A guard who can't shoot has no place at the point or the two; with no other shape to play he
+      // is glue at best (Tony Allen, Penny 1998-00 drafted to start, left there or as dear glue).
+      const guard = p.primaryPosition === 'PG' || p.primaryPosition === 'SG';
+      if (structureHoles && guard && !playsGuard(p) && backupOptions(p).length === 0 && p.fga > STRUCTURE.glueFga) return false;
+      const starter = lockedStarters[p.primaryPosition];
+      // A big who can't shoot would start beside a non-shooting big at the other spot: off the
+      // board (the user: one of the two is some threat from the midrange; Shaq beside Bobby Jones).
+      const bigSpot = p.primaryPosition === 'PF' ? 'C' : p.primaryPosition === 'C' ? 'PF' : null;
+      const partner = bigSpot ? lockedStarters[bigSpot] : undefined;
+      if (structureHoles && !starter && partner && !bigThreat(partner) && !bigThreat(p) && p.fga > STRUCTURE.glueFga) return false;
+      // 2026-11-05, the user ("pojedynczy Prigioni i tego typu śmiecie, jeszcze do eliminacji"): a
+      // rotation player is `STRUCTURE.minRotationTal`+; under it only as glue (no minutes).
+      if (structureHoles && effectiveTalent(p) < STRUCTURE.minRotationTal && p.fga > STRUCTURE.glueFga) return false;
+      // A real-life bench player (Michael Cooper 1985-87: 7% of games started) would start at an
+      // empty spot: off the board until a starter holds it.
+      if (structureHoles && !starter && !startedIrl(p) && p.fga > STRUCTURE.glueFga) return false;
+      // A star at a filled spot would come off the bench: off the board too.
+      return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
+    });
+    const board = unlocked.length > 0 ? unlocked : fullBoard;
+    // 2026-11-05, the user ("Czy AI nie mogą sobie z góry zaplanować salary glue? Jest więcej niż 16
+    // tanich zapychaczy" — 126 players have a 3-shot window): in the structured test the glue is
+    // planned from the start — the board's best cheap player stands in for it while the other
+    // slots are planned on the cap less his shots, and he is only taken with the last pick.
+    const glue =
+      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
+        ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
+        : undefined;
+    // The structured test's last pick: with the shape already whole but for the glue, the glue is a
+    // 3-shot player, not a fourth backup (Satoranský 4.1, Crowder 4.3, Boucher 5.9 came that way).
+    // The last pick: the player who leaves the fewest breaks in the shape, the best of those
+    // (Detroit left C uncovered with Chris Andersen on the board; the cheap 3-shot glue rule before
+    // only fired when the glue alone closed every hole).
+    if (structureHoles && slots === 1) {
+      // Among equal breaks, a player the filters above allow comes first (Prigioni as the last backup).
+      const allowed = new Set(unlocked.map((p) => p.id));
+      let best: { p: PlayerSpan; breaks: number; off: number; tal: number } | null = null;
+      for (const p of fullBoard) {
+        const breaks = readStructure([...roster, p]).problems.length;
+        const off = allowed.has(p.id) ? 0 : 1;
+        const tal = effectiveTalent(p);
+        if (!best || breaks < best.breaks || (breaks === best.breaks && (off < best.off || (off === best.off && tal > best.tal)))) best = { p, breaks, off, tal };
+      }
+      if (best) return best.p;
+    }
+    const full = () => planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
+    let planned = glue
+      ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed, roster)
+      : full();
+    // The user ("Jeśli drużyna z góry wie że ma brak, niech zaplanuje drużynę bez kleja"): a plan that
+    // still leaves a hole with the glue set aside is weighed against one that uses all nine slots.
+    if (glue && planned && structureHoles && structureHoles([...roster, glue, ...planned.plan]) > 0) {
+      const open = full();
+      if (open && open.score > planned.score) planned = open;
+    }
+    // 2026-11-05, the user ("Gracze zbliżeni do siebie TAL mogliby rozwiązać problem?"): among players
+    // within `AI_PLAN.nearTal` TAL of the planned pick and at most `AI_PLAN.nearFga` shots dearer, the
+    // one who leaves the roster more ways to cover the five goes — Brent Barry (SG only) over a SG/SF
+    // of his level was the commonest start of an open spot.
+    if (planned && structureHoles && AI_PLAN.nearTal > 0) {
+      const base = planned.pick;
+      const reading = readStructure(roster);
+      const covered = new Set(reading.backups.flatMap((b) => b.pair));
+      const flexibility = (p: PlayerSpan) => {
+        const starts = !reading.starters[p.primaryPosition];
+        if (starts) return 10;
+        const opts = pairsFor(p);
+        const fills = STARTER_SLOTS.filter((slot) => !covered.has(slot) && (opts.some((pair) => pair.includes(slot)) || p.primaryPosition === slot)).length;
+        return fills * 2 + (opts.length > 0 ? 1 : 0);
+      };
+      const near = board.filter(
+        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p),
+      );
+      const better = near.filter((p) => flexibility(p) > flexibility(base)).sort((a, b) => flexibility(b) - flexibility(a) || effectiveTalent(b) - effectiveTalent(a))[0];
+      if (better) planned = { ...planned, pick: better };
+    }
+    // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
+    // the board who does, before any pick that breaks it.
+    if (planned && structureHoles && !(canStillComplete([...roster, planned.pick], rosterSize, capLimit - spent - planned.pick.fga) && keepsRoles(roster, planned.pick))) {
+      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p));
+      if (keeps) return keeps;
+    }
+    if (planned) return planned.pick;
+  }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
   const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));
   const weights = lotteryWeights(top.length);
@@ -2607,14 +2975,19 @@ export function pickForAi(
     logDraftDebug(roster, pickNumber, top, weights, rolledFrom, totalWeight, chosenIndex);
   }
   const normal = top[chosenIndex].player;
-  if (fallen.length === 0 || fallen.some((p) => p.id === normal.id)) return normal;
+  // 2026-11-04: a fallen star comes in at the window the board chose for him (`uniqueRankedPlayers`
+  // — cheaper within `WINDOW_EQUAL`), not at his peak: taken by `effectiveTalent` below, every
+  // fallen Shaq was 1999-01.
+  const windowByName = new Map(scored.map((entry) => [normalizePlayerName(entry.player.playerName), entry.player]));
+  const fallenWindows = [...new Map(fallen.map((p) => [normalizePlayerName(p.playerName), windowByName.get(normalizePlayerName(p.playerName)) ?? p])).values()];
+  if (fallenWindows.length === 0 || fallenWindows.some((p) => p.playerName === normal.playerName)) return normal;
   // A fallen star comes in only if he fits (2026-10-29, the user: "ma brać gwiazdy które pasują,
   // nic na siłę"): his team, completed with the best affordable players left, scores within
   // `fallFitMargin` of the normal pick's; of several, the one whose team scores best.
   if (!teamScorer) return normal;
   const byTalent = available.filter((p) => isDraftableDurability(p)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
   const teamWith = (p: PlayerSpan) => teamScorer!(completeRosterGreedy([...roster, p], byTalent, capLimit - spent - p.fga, rosterSize - roster.length - 1));
-  const best = [...fallen]
+  const best = fallenWindows
     .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
     .slice(0, FALL_NET_CHECKED)
     .map((p) => ({ p, score: teamWith(p) }))

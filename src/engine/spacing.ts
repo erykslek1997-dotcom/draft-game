@@ -411,9 +411,18 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * ladders here (a copy would drift). Omitting it is the production path and behaves exactly as
  * before — nothing in `src/` passes it.
  */
+const ERA_VOLUME_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_ERA ?? 1);
+const ACCURATE_LOW_VOLUME = {
+  lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 2),
+  fromAccuracy: 6,
+  fadeAt: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_FADE ?? 8),
+};
 function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   const position = span.primaryPosition;
-  const scaledThreePA = eraScaledThreePA(span.spanLabel, span.box.threePA);
+  // 2026-11-05, the user ("Bowen zbyt mocny ten spacing": 2.7 threes a game in 2002-04 read as 6.3
+  // today): the era scale counts at `ERA_VOLUME_SHARE` of its full lift.
+  const fullScale = span.box.threePA > 0 ? eraScaledThreePA(span.spanLabel, span.box.threePA) / span.box.threePA : 1;
+  const scaledThreePA = span.box.threePA * (fullScale >= 1 ? 1 + ERA_VOLUME_SHARE * (fullScale - 1) : fullScale);
   const selfCreation = selfCreationOverride ?? selfCreationRate(span);
 
   const accuracyBar =
@@ -423,7 +432,11 @@ function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): S
   const volumeKicker =
     span.box.threePA >= SELF_CREATION_RAW_VOLUME_GATE ? 1 + SELF_CREATION_VOLUME_KICKER * selfCreation : 1;
   const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], scaledThreePA * volumeKicker);
-  const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
+  // 2026-11-05, the user ("Mikal z 57 wydaje się mało"): an accurate shooter on few attempts (a
+  // catch-and-shoot role) is still guarded at the line. `ACCURATE_LOW_VOLUME.lift` volume points per
+  // accuracy point above `fromAccuracy`, fading out as his own volume reaches `fadeAt`.
+  const lift = ACCURATE_LOW_VOLUME.lift * Math.max(0, accuracyPoints - ACCURATE_LOW_VOLUME.fromAccuracy) * Math.max(0, 1 - rawVolumePoints / ACCURATE_LOW_VOLUME.fadeAt);
+  const volumePoints = Math.min(rawVolumePoints + lift, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
 
   const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
   // 2026-10-01 (continuous ladders): both gates fade in over one point below them.
@@ -472,7 +485,7 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
  * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
-const SMOOTH_WEIGHT_BY_DISTANCE = [0.6, 0.15, 0.05, 0.05] as const;
+const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_SMOOTH ?? '0.34,0.2,0.1,0.03').split(',').map(Number);
 const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
 let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;

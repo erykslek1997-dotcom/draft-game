@@ -125,8 +125,10 @@ threeSpacersTwoBigs.rotation = {
     C: [{ playerId: byName('Alonzo Mourning'), minutes: 35 }, { playerId: byName('Tyson Chandler'), minutes: 13 }],
   },
 };
+// 2026-11-04: band 63-75 -> 55-68 once the single-gravity floor fell 70 -> 60 and a big's midrange
+// counts at 0.6 (the user, Bismarck: one shooter doesn't space a five that doesn't shoot). Measured 61.
 check(
-  scoreTeam(threeSpacersTwoBigs).spacingScore >= 63 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 75,
+  scoreTeam(threeSpacersTwoBigs).spacingScore >= 55 && scoreTeam(threeSpacersTwoBigs).spacingScore <= 68,
   'one genuine walking-gravity spacer carries a two-non-shooting-big lineup to a strong, not maxed, read',
 );
 

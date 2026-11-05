@@ -19,7 +19,7 @@ import type { Rotation, Team } from '../engine/types';
 import {
   spacingGrade,
   durabilityGrade,
-  overallTierForSpan,
+  displayTierForSpan,
   tierRank,
   type OverallTier,
   type Grade,
@@ -159,7 +159,7 @@ const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
  * underlying tier stays unchanged for talent/minutes rules; this is the explicit roster-role
  * label the AI and UI can share without pretending cheapness is basketball quality. */
 function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
-  return span.fga < 2 ? 'Salary Glue' : overallTierForSpan(tierContextFor(span));
+  return span.fga < 2 ? 'Salary Glue' : displayTierForSpan(tierContextFor(span));
 }
 
 /** 2026-09-12, user's explicit choice ("wariant A") from a 3-option mockup: the Draft tab's
@@ -873,7 +873,7 @@ export default function DraftBoard({
         // the `careerAveragesFor` box line were dropped: the condensed header no longer shows
         // them, the expanded per-span table computes its own per-span values, and running six
         // `Math.max(...spans.map(computeX))` for all ~730 players in this memo was pure waste.
-        bestTier: overallTierForSpan(tierContextFor(bestTalentSpan)),
+        bestTier: displayTierForSpan(tierContextFor(bestTalentSpan)),
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

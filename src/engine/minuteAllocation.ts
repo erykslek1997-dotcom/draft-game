@@ -278,9 +278,11 @@ function consolidateRotation(
     // away slots, and the best re-solve wins.
     // 2026-10-02, the user (Bryon Russell 12 minutes, Ryan Bowen 16): a crowded slot tries dropping
     // each of its backups, not just the smallest stint, so the weakest one goes.
+    // A backup keeps his own position (Kukoč, a four, stays at the four); his other stints go.
+    const ownSlotOf = (id: string) => homeById.get(id) ?? byId.get(id)?.primaryPosition;
     const options = fragment.overSlots
       ? best.grants
-          .filter((g) => g.playerId === fragment.playerId && homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
+          .filter((g) => g.playerId === fragment.playerId && ownSlotOf(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
           .map((g) => `${g.playerId}|${g.slot}`)
       : fragment.crowded
         ? best.grants
@@ -296,7 +298,10 @@ function consolidateRotation(
       // further past his limit — the user prefers a logical rotation to a few points of value.
       // 2026-11-04, the user (Michael Cooper 8 PG + 13 SG + 6 SF: "po co Cooper rozbity na 3
       // pozycje"): a third position goes the same way, kept only when nobody else covers it.
-      const tiny = fragment.minutes < MIN_STINT_MINUTES || (fragment.overSlots && slotCount(best.grants, fragment.playerId) > MAX_SLOTS_PER_PLAYER);
+      const slots = slotCount(best.grants, fragment.playerId);
+      const tiny =
+        fragment.minutes < MIN_STINT_MINUTES ||
+        (fragment.overSlots && (slots > MAX_SLOTS_PER_PLAYER || (!homeById.has(fragment.playerId) && slots >= 2)));
       const acceptable =
         trial.filled === best.filled &&
         (tiny || trial.cost - best.cost <= FRAGMENT_VALUE_TOLERANCE * UNIT) &&
@@ -372,6 +377,11 @@ function smallestFragment(
   for (const g of grants) byPlayer.set(g.playerId, [...(byPlayer.get(g.playerId) ?? []), g]);
   const tooManySlots = (id: string) => {
     const own = byPlayer.get(id) ?? [];
+    // 2026-11-04, the user's round-3 review (Bam 12 at the four + 13 at centre, Derrick White PG +
+    // SF, DiVincenzo, Splitter, Otto Porter, Barry and Caruso both SG + SF: "rozbici na dwie
+    // pozycje — po co?"): a backup plays one position; a second goes the same way a third does
+    // for a starter, kept only when nobody else covers it.
+    if (!homeById.has(id) && own.length >= 2) return true;
     if (own.length <= MAX_SLOTS_PER_PLAYER) return false;
     if (own.length > MAX_SLOTS_PER_PLAYER + 1) return true;
     const player = byId.get(id);
@@ -401,7 +411,9 @@ function smallestFragment(
     .filter((g) => homeById.get(g.playerId) !== g.slot && !kept.has(`${g.playerId}|${g.slot}`))
     .map((g) => {
       const original = grants.find((x) => x.playerId === g.playerId && x.slot === g.slot)!;
-      return { ...g, overSlots: tooManySlots(g.playerId) || farJump(original), crowded: secondBackup.has(original) };
+      // A backup's stint at his own position is never the fragment of the one-position rule.
+      const ownBackupSlot = !homeById.has(g.playerId) && byId.get(g.playerId)?.primaryPosition === g.slot;
+      return { ...g, overSlots: (tooManySlots(g.playerId) && !ownBackupSlot) || farJump(original), crowded: secondBackup.has(original) };
     })
     .filter((g) => g.minutes < MIN_STINT_MINUTES || g.overSlots || g.crowded);
   return candidates.sort((a, b) => a.minutes - b.minutes)[0];

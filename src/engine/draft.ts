@@ -1,4 +1,4 @@
-import type { PlayerSpan } from '../data/schema';
+import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { franchiseByName } from '../data/franchises';
 import { draftPool } from '../data/draftPool';
@@ -21,8 +21,8 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, setAiTeamScorer, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
-import { scoreTeam } from './scoring';
+import { pickForAi, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { scoreTeam, spacingScore } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import { dailyRuleBlocks } from './dailyDraft';
@@ -31,11 +31,96 @@ import type { DailyBomb, DailyRule } from '../dailyDraftDay';
 import { dailyBombSpan } from './dailyBomb';
 
 // The AI's bench picks read the real team score (aiDrafter.ts `setAiTeamScorer`).
-setAiTeamScorer(
-  (roster) =>
-    scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact,
-);
+// Memoised by the roster's span ids: planned drafting (`AI_PLAN`) scores the same rosters again and
+// again across its swap passes and from pick to pick. Cleared when it grows past `TEAM_SCORE_MEMO_MAX`.
+const TEAM_SCORE_MEMO_MAX = 50_000;
+/** 2026-11-05, the user's structured test draft (structuredRoster.ts), on with STRUCT=1: the AI's
+ * team score uses the structured 8-man rotation and charges `STRUCTURE_PROBLEM_COST` team points per
+ * break in the structure of a full roster: 100, so the shape comes first and the score decides among
+ * shapes that hold (the user: "zrób tak żeby te 3 błędy się nie powtarzały"; at 6 a better centre
+ * later made Embiid a 16.7-FGA glue). */
+const STRUCTURED_TEST = STRUCTURED_AI;
+if (STRUCTURED_AI) setAiStructureHoles((roster) => readStructure(roster).problems.filter((p) => !p.startsWith('glue')).length);
+/** Holes cost `STRUCTURE_PROBLEM_COST` each; a glue over the limit costs `STRUCTURE_GLUE_COST_PER_FGA`
+ * per shot over it (Brent Barry at 8 FGA ~10 points, Fred Hoiberg at 3.6 about one), or `STRUCT_GLUE`
+ * unset, the flat hole cost. */
+function structureCost(roster: PlayerSpan[]): number {
+  const s = readStructure(roster);
+  const holes = s.problems.filter((p) => !p.startsWith('glue')).length;
+  const bench = benchPriorityCost(s.backups) + starterFloorCost(s.starters);
+  if (STRUCTURE_GLUE_COST_PER_FGA <= 0) return STRUCTURE_PROBLEM_COST * s.problems.length + bench;
+  const over = s.glue.reduce((sum, p) => sum + Math.max(0, p.fga - STRUCTURE.glueFga), 0);
+  return STRUCTURE_PROBLEM_COST * holes + STRUCTURE_GLUE_COST_PER_FGA * over + bench;
+}
+/**
+ * 2026-11-05, the user ("z ławki najważniejszy Guard, później SF/PF i na końcu C"): the AI's shots on
+ * the bench go to the guard backup first. A forward backup (SF/PF) costs `BENCH_PRIORITY.forward`
+ * points per FGA, a centre backup (any shape with C) `BENCH_PRIORITY.centre`; a guard backup (any
+ * shape with PG or SG) nothing.
+ */
+export const BENCH_PRIORITY = {
+  forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0.3),
+  centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0.6),
+  guard: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_G ?? 0),
+};
+function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Position] }[]): number {
+  let cost = 0;
+  for (const b of backups) {
+    if (b.pair.includes('PG') || b.pair.includes('SG')) {
+      cost += BENCH_PRIORITY.guard * b.player.fga;
+      continue;
+    }
+    cost += (b.pair.includes('C') ? BENCH_PRIORITY.centre : BENCH_PRIORITY.forward) * b.player.fga;
+  }
+  return cost;
+}
+/**
+ * 2026-11-05, the user ("minimum TAL u startera próbujemy 75, minimum spacing drużyny 60?"), on trial:
+ * soft floors for the CPU's full rosters — `FLOORS.starterTal` costs `FLOORS.perTal` points per TAL a
+ * starter falls short, `FLOORS.spacing` `FLOORS.perSpacing` per point the team's spacing falls short.
+ * 0 is off.
+ */
+const envOf = (name: string) => (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[name];
+export const FLOORS = {
+  starterTal: Number(envOf('FLOOR_TAL') ?? 0),
+  perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
+  spacing: Number(envOf('FLOOR_SPACING') ?? 60),
+  perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.6),
+  /** The starting spots the TAL floor covers (the user: SF, SG and PF are the weak ones; PG and C
+   * carry the stars). */
+  positions: (envOf('FLOOR_POS') ?? 'PG,SG,SF,PF,C').split(',') as Position[],
+};
+function starterFloorCost(starters: Partial<Record<Position, PlayerSpan>>): number {
+  if (FLOORS.starterTal <= 0) return 0;
+  return FLOORS.positions.reduce((sum, slot) => {
+    const p = starters[slot];
+    return p ? sum + FLOORS.perTal * Math.max(0, FLOORS.starterTal - effectiveTalent(p)) : sum;
+  }, 0);
+}
+function structuredTeamValue(roster: PlayerSpan[]): number {
+  const team = { id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) };
+  if (roster.length < ROSTER_SIZE) return scoreTeam(team).overallExact;
+  const spacingShort = FLOORS.spacing > 0 ? Math.max(0, FLOORS.spacing - spacingScore(team)) : 0;
+  return scoreTeam(team).overallExact - structureCost(roster) - FLOORS.perSpacing * spacingShort;
+}
+const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
+const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
+const teamScoreMemo = new Map<string, number>();
+setAiTeamScorer((roster) => {
+  const key = roster.map((p) => p.id).sort().join(',');
+  const hit = teamScoreMemo.get(key);
+  if (hit !== undefined) return hit;
+  const value = STRUCTURED_TEST
+    ? structuredTeamValue(roster)
+    : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
+  if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
+  teamScoreMemo.set(key, value);
+  return value;
+});
 import type { DraftHistoryEntry, Team } from './types';
+import { readStructure, structuredRotation, STRUCTURE } from './structuredRoster';
+import { STRUCTURED_AI } from './structuredMode';
+import { buildJointPlan } from './jointPlan';
 
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
@@ -153,6 +238,7 @@ export function createDraft(
   /** A daily's cap (every team) and rule (the human only) — 2026-10-16. */
   daily?: { day: string; cap: number; rule: DailyRule; bomb?: DailyBomb },
 ): DraftState {
+  planClaimsBySeed.delete(seed);
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
   if (import.meta.env?.DEV) {
@@ -616,6 +702,8 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     profile: aiProfileForTeam(state.seed, team),
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
     boardSeed: mixSeed(state.seed, 0x7b00 + team.draftSlot),
+    planTeam: team.id,
+    planClaims: jointClaims(state),
   };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
@@ -634,6 +722,45 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
   }
   return null;
 }
+
+/** The AI teams' shared plan claims for one draft (`AiDraftRuleset.planClaims`), by seed; the last
+ * few drafts only. Rebuilt as teams replan, so a reloaded draft just starts them afresh. */
+const planClaimsBySeed = new Map<number, Map<string, string>>();
+function planClaimsFor(seed: number): Map<string, string> {
+  let claims = planClaimsBySeed.get(seed);
+  if (!claims) {
+    if (planClaimsBySeed.size >= 4) planClaimsBySeed.delete(planClaimsBySeed.keys().next().value!);
+    claims = new Map();
+    planClaimsBySeed.set(seed, claims);
+  }
+  return claims;
+}
+
+/**
+ * The draft's plan claims; with the joint pre-draft plan on (JOINT=1, jointPlan.ts) they are built
+ * once, at the first CPU pick, from a simulated draft: every CPU team's planned players, its plan
+ * memory seeded from them.
+ */
+const JOINT_ON = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.JOINT ?? '0') === '1';
+function jointClaims(state: DraftState): Map<string, string> {
+  const claims = planClaimsFor(state.seed);
+  if (!JOINT_ON || claims.has(JOINT_BUILT)) return claims;
+  const order: number[] = [];
+  for (let k = state.history.length; k < ROUNDS * TEAM_COUNT; k++) order.push(snakeOrderIndex(Math.floor(k / TEAM_COUNT), k % TEAM_COUNT));
+  const joint = buildJointPlan(state.teams, order, availablePlayers(state), draftCapLimit(state));
+  for (const team of state.teams) {
+    const names = joint.plans.get(team.id);
+    if (!names) continue;
+    for (const name of names) claims.set(name, team.id);
+    seedPlanMemory(mixSeed(state.seed, 0x7b00 + team.draftSlot), team.id, names);
+  }
+  claims.set(JOINT_BUILT, `${joint.ms}ms, ${joint.failures.size} plans failing a gate`);
+  lastJointPlan = joint;
+  return claims;
+}
+const JOINT_BUILT = '__joint_plan_built__';
+/** The last joint plan built (for the test scripts' report). */
+export let lastJointPlan: ReturnType<typeof buildJointPlan> | null = null;
 
 /** Resolves the current pick if it belongs to an AI team. Returns null if it's the human's turn or the draft is already complete. */
 export function resolveAiPickIfNeeded(state: DraftState): DraftState | null {

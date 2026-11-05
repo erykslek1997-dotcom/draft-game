@@ -4,6 +4,7 @@ import { teamSpacingValue } from '../src/engine/midrangeGravity';
 import { STARTER_SLOTS } from '../src/engine/positions';
 import { autoAssignRotation, isForcedStarSlot } from '../src/engine/rotation';
 import { realMinutesPerGame } from '../src/engine/usageLookup';
+import { positionCompetenceScore } from '../src/engine/positionCompetence';
 import type { PlayerSpan, Position } from '../src/data/schema';
 
 /**
@@ -28,6 +29,7 @@ const FLAGS = [
   'two non-shooting bigs together 10+ min',
   'player two positions from his own',
   'forced star 30+ min off position',
+  'starter off his own position',
 ] as const;
 const hits = new Map<string, number>(FLAGS.map((f) => [f, 0]));
 const examples = new Map<string, string[]>(FLAGS.map((f) => [f, []]));
@@ -72,6 +74,8 @@ for (let d = 0; d < N; d++) {
     if (together >= 10) flag('two non-shooting bigs together 10+ min', `${together} min`);
     const far = t.roster.flatMap((p) => STARTER_SLOTS.filter((slot) => (at.get(`${p.id}|${slot}`) ?? 0) >= 4 && Math.abs(ORDER.indexOf(slot) - ORDER.indexOf(p.primaryPosition)) >= 2).map((slot) => `${p.playerName} (${p.primaryPosition}) at ${slot}`));
     if (far.length) flag('player two positions from his own', far.join(', '));
+    const offStart = starters.filter(({ p, slot }) => positionCompetenceScore(p, slot) < 0.95);
+    if (offStart.length) flag('starter off his own position', offStart.map(({ p, slot }) => `${p.playerName} (${p.primaryPosition}) at ${slot}`).join(', '));
     const forcedLong = forced.filter(({ p, slot }) => (at.get(`${p.id}|${slot}`) ?? 0) >= 30);
     if (forcedLong.length) flag('forced star 30+ min off position', forcedLong.map(({ p, slot }) => `${p.playerName} ${at.get(`${p.id}|${slot}`)} at ${slot}`).join(', '));
   }

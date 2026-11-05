@@ -285,6 +285,8 @@ export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   'Mike Conley': 6,
   'Paul George': NUDGE,
   'Shai Gilgeous-Alexander': NUDGE,
+  // 2026-11-05, the user (new label scale, MVP 90-94): "Nasha podciągnij do MVP".
+  'Steve Nash': 2,
   'Yao Ming': NUDGE,
   // 2026-10-30, the user: "Oscar bliżej Westa", "Gobert all-nba ok, ale 87 też za dużo".
   'Oscar Robertson': -4,

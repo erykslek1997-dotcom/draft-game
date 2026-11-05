@@ -1122,7 +1122,9 @@ function curryNonSpacerCeiling(hardNonSpacers: number): number {
 // A non-Curry walking-gravity shooter raises the offense's geometry substantially, but cannot
 // supply Curry's off-ball/on-ball floor by himself. This sits at a strong, not elite, raw team
 // spacing level; it is blended only across the shooter's actual starter minutes below.
-const SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 70;
+// 2026-11-04: 70 -> 60 (the user, Bismarck at 71 with Kidd, Miller, Pippen, Garnett and Walton:
+// "spacing tragedia" — one shooter doesn't space a five that otherwise doesn't shoot).
+const SINGLE_WALKING_GRAVITY_TEAM_SPACING_FLOOR = 60;
 /**
  * 2026-09-17, user-reported: the two-threat branch below used to apply no floor of its own —
  * just `base + 10`, capped at `MULTI_GRAVITY_TEAM_SPACING_CAP` — while the one-threat branch

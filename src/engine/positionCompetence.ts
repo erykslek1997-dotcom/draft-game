@@ -73,7 +73,21 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
   const name = normalizePlayerName(span.playerName);
-  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, shootingPointAtTwo(span, slot), Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+}
+
+/**
+ * 2026-11-04, the user's round-4 review (Chauncey Billups 2004-06, TAL 81, off the bench behind Kyle
+ * Lowry while Wesley Person, 70, started at the two: "I po Billups na ławkę?"): a point guard with a
+ * two's size who shoots from three plays the two well enough (`SHOOTING_POINT.score`). Five players:
+ * Billups, Kidd, Nash, Gilgeous-Alexander 2019-21, Damon Jones; a real organiser still runs the point
+ * (`comboGuardAtTwo`, rotation.ts).
+ */
+const SHOOTING_POINT = { minInches: 75, threePA: 3.5, threePct: 0.36, score: 0.9 };
+function shootingPointAtTwo(span: PlayerSpan, slot: Position): number {
+  if (slot !== 'SG' || span.primaryPosition !== 'PG') return 0;
+  if ((getHeightInches(span.playerName) ?? 0) < SHOOTING_POINT.minInches) return 0;
+  return span.box.threePA >= SHOOTING_POINT.threePA && span.box.threePct >= SHOOTING_POINT.threePct ? SHOOTING_POINT.score : 0;
 }
 
 /**
@@ -95,9 +109,16 @@ function crossCourtCap(span: PlayerSpan, slot: Position): number {
  * named players who play a slot at most at the given score, whatever their career says. */
 const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
   'kristaps porzingis': { PF: 0.6 },
+  // 2026-11-04, the user's round-5 review ("Sam Perkins SF", Horry at SF, "Mike Dunleavy na SG
+  // dziwny": "zaostrz próg"): a stretch there off the bench, not a start. Their own-position windows
+  // (Horry 1993-95 at SF) are untouched — a cap applies off the primary only.
+  'robert horry': { SF: 0.6 },
+  'sam perkins': { SF: 0.6 },
+  'mike dunleavy': { SG: 0.6 },
   // The user (export 1497221832, "Rodman na SG i SF??"; 2026-10-30: "PF/C zamiast PF/SF"): a four
   // who backs up the five, never a wing.
-  'dennis rodman': { SG: 0, SF: 0 },
+  // 2026-11-04, the user (Raleigh round 2: "zróbmy Rodmanowi pozycję tylko PF"): a four only.
+  'dennis rodman': { SG: 0, SF: 0, C: 0 },
   // The user (Jason Collins, TAL 58, the four's 13 minutes beside Giannis while Ben Wallace sat:
   // "zablokuj Collinsa na PF"): a centre only.
   'jason collins': { PF: 0 },
@@ -113,11 +134,8 @@ const NAMED_SLOT_CAPS: Record<string, Partial<Record<Position, number>>> = {
 /** 2026-10-30, the user ("Rodman ręcznie przypisany PF/C zamiast PF/SF"): named players who play a
  * slot at least at the given score, whatever their career data says. */
 const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
-  'dennis rodman': { C: 0.95 },
   // The user: a centre who can play the four, with the partial-position penalty.
   'bam adebayo': { PF: 0.6 },
-  // 2026-11-04, the user (Jokić 2023-25 on the board as a four): a centre, the four only part-time.
-  'nikola jokic': { PF: 0.6 },
 };
 
 /**
@@ -128,7 +146,7 @@ const NAMED_SLOT_FLOORS: Record<string, Partial<Record<Position, number>>> = {
  * rebounding (5.5 a 36) nor his weight (225 lb): at most `emergency` — small-ball fours such as
  * Melo, Butler 2020-22 and Anunoby keep it.
  */
-const SIZE_CAP = { sfMinInches: 77, pfMinInches: 80, pfRebounds36: 5.5, pfMinLbs: 225, partial: 0.6, emergency: 0.4 };
+const SIZE_CAP = { sfMinInches: 78, pfMinInches: 80, pfRebounds36: 5.5, pfMinLbs: 225, partial: 0.6, emergency: 0.4 };
 function sizeCap(span: PlayerSpan, slot: Position): number {
   const from = POSITION_ORDER.indexOf(span.primaryPosition);
   const to = POSITION_ORDER.indexOf(slot);

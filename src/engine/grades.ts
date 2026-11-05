@@ -3,6 +3,8 @@ import { ratingSpan } from './ratingPosition';
 import { precomputedEffectiveTalent, precomputedSThreshold } from './precomputedTiers';
 import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
+import TEAM_CONTEXT from '../data/teamContext.json';
+import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
 import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
@@ -417,8 +419,10 @@ export type OverallTier =
 
 const OVERALL_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
   [0, 'Cigarette Butt'],
-  [40, 'Bench Warmer'],
-  [50, 'Role Player'],
+  // 2026-11-04, the user (30-minute starters of playoff teams read "Bench Warmer": "to przesada"):
+  // 40 -> 35 and 50 -> 45 — a rotation player at about the league average reads Role Player.
+  [35, 'Bench Warmer'],
+  [45, 'Role Player'],
   [60, 'Starter'],
   [70, 'All-star'],
   [80, 'All-NBA'],
@@ -908,6 +912,10 @@ export interface TierGateContext {
   spanLabel?: string;
   /** Raw (uncapped) TAL — places a player the user tiered inside his tier's band (tierCalibration.ts). */
   rawTal?: number;
+  /** Real (or playoff-estimated) minutes a game and the minute-weighted SRS of his teams — the role
+   * context at the bottom of the scale (`roleContextShift`). */
+  minutes?: number;
+  teamSrs?: number;
   /** Optional — the span's playoff impact in TAL points (`playoffImpact.ts`'s `playoffTalentTerm`:
    * playoff offense + defense + Finals MVP; negative = worse than expected). Already inside `tal`;
    * carried here for display (the riser/dropper badge). Synthetic contexts default to 0. */
@@ -1414,9 +1422,54 @@ export function formatTal(value: number): string {
 }
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
-  const value = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
+  const value = displayTalentUncompressed(ctx);
+  if (!ctx.playerName || value < STAR_WINDOWS.peakFrom - STAR_WINDOWS.within) return value;
+  const peak = starPeak(ctx.playerName);
+  const gap = peak - value;
+  if (peak < STAR_WINDOWS.peakFrom || gap <= 0 || gap >= STAR_WINDOWS.within) return value;
+  return Math.round(peak - gap * (STAR_WINDOWS.keep + ((1 - STAR_WINDOWS.keep) * gap) / STAR_WINDOWS.within));
+}
+
+/**
+ * 2026-11-05, the user ("kalibracja SG i SF żeby ci którzy bronią i są mocnymi strzelcami byli
+ * oceniani wyżej ... Danny Green itd"): a wing who defends and spaces the floor reads up to
+ * `THREE_AND_D.points` TAL higher — the lesser of his defense past `THREE_AND_D.defenseFrom` (full at
+ * +`defenseRange`) and his spacing past `spacingFrom` (full at +`spacingRange`). Only below
+ * `THREE_AND_D.below`: stars are read by everything else.
+ */
+export const THREE_AND_D = { points: 7, defenseFrom: 68, defenseRange: 15, spacingFrom: 50, spacingRange: 25, below: 78 };
+function threeAndDPremium(ctx: TierGateContext, base: number): number {
+  if ((ctx.position !== 'SG' && ctx.position !== 'SF') || base >= THREE_AND_D.below || ctx.spacing === undefined) return 0;
+  const d = Math.max(0, Math.min(1, (ctx.dtal - THREE_AND_D.defenseFrom) / THREE_AND_D.defenseRange));
+  const s = Math.max(0, Math.min(1, (ctx.spacing - THREE_AND_D.spacingFrom) / THREE_AND_D.spacingRange));
+  return Math.min(THREE_AND_D.points * Math.min(d, s), THREE_AND_D.below - base);
+}
+
+function displayTalentUncompressed(ctx: TierGateContext): number {
+  const base = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
+  const value = base + roleContextShift(ctx, base);
   const hold = rimBonusHold(ctx);
-  return hold ? Math.min(value, tierCeiling(hold)) : value;
+  const held = hold ? Math.min(value, tierCeiling(hold)) : value;
+  // After the holds: a Starter hold kept a wing out of All-star (the user: "Tal 69 bo przebijał do
+  // all star" — Battier), and the premium stays under the card's All-star line (`THREE_AND_D.below`).
+  return held + threeAndDPremium(ctx, held);
+}
+
+/**
+ * 2026-11-04, the user ("KD z GSW underrated ... można zbliżyć spany top graczy i wtedy te tańsze
+ * będą częściej wybierane przez AI"): a star's windows near his peak sit closer to it. A gap `g`
+ * under the peak becomes `g * (keep + (1 - keep) * g / within)` — half near the peak, the full gap
+ * again at `within`, so a decline window stays a decline. Only players whose peak is `peakFrom`+.
+ */
+export const STAR_WINDOWS = { peakFrom: 88, within: 12, keep: 0.5 };
+const starPeakCache = new Map<string, number>();
+function starPeak(playerName: string): number {
+  const key = normalizePlayerName(playerName);
+  const hit = starPeakCache.get(key);
+  if (hit !== undefined) return hit;
+  const peak = Math.max(...draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => displayTalentUncompressed(tierContextFor(s))));
+  starPeakCache.set(key, peak);
+  return peak;
 }
 
 /**
@@ -1426,6 +1479,26 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * `LOW_VOLUME.margin` — efficiency and fit on six shots don't make a starter of a role player.
  */
 const LOW_VOLUME = { fga: 9, margin: 8 };
+
+/**
+ * 2026-11-04, the user (Jabari Smith Jr. 2023-25 TAL 40 "Bench Warmer" and Rui Hachimura 39 as
+ * 30-minute starters of playoff teams: "bench warmer to przesada ... i to działa w dwie strony"):
+ * how a coach used a role player, and how good his team was, nudge his TAL — minutes past what his
+ * TAL would earn (`ROLE_CONTEXT.perMinute` a minute, against `expectedMinutes`) plus his teams'
+ * SRS (`ROLE_CONTEXT.perSrs` a point, teamContext.json), up to `ROLE_CONTEXT.cap` either way (4 -> 6, the user). Only
+ * at the bottom of the scale: full below TAL `ROLE_CONTEXT.fullBelow`, gone at `ROLE_CONTEXT.noneAt`,
+ * so a star's number is his own. Big minutes on a bad team (Elton Brand 1999-01) cancel out.
+ */
+export const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 6, fullBelow: 65, noneAt: 70 };
+/** Minutes a game a window of this TAL usually plays (pool fit, 8,459 windows). */
+const expectedMinutes = (tal: number) => 26.6 + 0.29 * (tal - 48.9);
+function roleContextShift(ctx: TierGateContext, tal: number): number {
+  if (ctx.minutes === undefined || ctx.teamSrs === undefined) return 0;
+  const fade = Math.max(0, Math.min(1, (ROLE_CONTEXT.noneAt - tal) / (ROLE_CONTEXT.noneAt - ROLE_CONTEXT.fullBelow)));
+  if (fade === 0) return 0;
+  const raw = ROLE_CONTEXT.perMinute * (ctx.minutes - expectedMinutes(tal)) + ROLE_CONTEXT.perSrs * ctx.teamSrs;
+  return fade * Math.max(-ROLE_CONTEXT.cap, Math.min(ROLE_CONTEXT.cap, raw));
+}
 function lowVolumeCeiling(ctx: TierGateContext): number {
   return ctx.fga < LOW_VOLUME.fga ? Math.max(ctx.otal, ctx.dtal) + LOW_VOLUME.margin : Infinity;
 }
@@ -1507,6 +1580,32 @@ function tierBand(tier: OverallTier): [number, number] {
  * sits inside that tier's band; when smoothing moved the number out of it, the badge follows the
  * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
  */
+/**
+ * 2026-11-05, the user's label scale ("Legend 99-96, MVP 94-90, 89-84 All NBA, 83-78 all-star, 77-65
+ * starter, 64-50 role player"; Role Player kept from 45 — the 2026-11-04 call against 30-minute
+ * starters reading Bench Warmer): the tier the player cards show. Labels only — the engine's own
+ * tiers (`overallTierForSpan`: minute profiles, tier caps, the AI) keep `OVERALL_TIER_FLOORS`, so
+ * relabelling moves no number and no minute. GOAT and Sixth Man keep their own labels.
+ */
+const DISPLAY_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
+  [0, 'Cigarette Butt'],
+  [35, 'Bench Warmer'],
+  [45, 'Role Player'],
+  [65, 'Starter'],
+  [78, 'All-star'],
+  [84, 'All-NBA'],
+  [90, 'MVP'],
+  [96, 'Legend'],
+];
+export function displayTierForSpan(ctx: TierGateContext): OverallTier {
+  const tier = overallTierForSpan(ctx);
+  if (tier === 'GOAT' || tier === 'Sixth Man') return tier;
+  const number = displayTalentForSpan(ctx);
+  let shown: OverallTier = 'Cigarette Butt';
+  for (const [floor, named] of DISPLAY_TIER_FLOORS) if (number >= floor) shown = named;
+  return shown;
+}
+
 export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const tier = overallTierUnheld(ctx);
   const hold = rimBonusHold(ctx);
@@ -1596,6 +1695,8 @@ export function tierContextFor(rawSpan: PlayerSpan): TierGateContext {
     playerName: span.playerName,
     spanLabel: span.spanLabel,
     rawTal: rawUncappedTalent(span),
+    minutes: estimatedMinutesPerGame(span) ?? undefined,
+    teamSrs: (TEAM_CONTEXT as Record<string, number>)[span.id],
     playoffCollapse: playoffTalentTerm(span),
     spacing: computeSpacing(span),
     apg: span.box.apg,

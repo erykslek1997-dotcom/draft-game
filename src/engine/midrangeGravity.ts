@@ -57,11 +57,14 @@ function preZoneMidrangeSpacing(span: PlayerSpan): number {
 /**
  * 2026-11-04, the user (Detroit at spacing 71 beside Bill Russell; Garnett 2003-05 at 73 from the
  * midrange alone): a big's eighteen-footer pulls his man out of the paint but does not stretch the
- * floor the way a three does, so a four's or five's midrange credit counts at `BIG_MIDRANGE_SHARE` (0.7 measured SRS r 0.803, 0.85 0.804, 1 0.805: the judge barely moves, so the milder cut).
+ * floor the way a three does, so a four's or five's midrange credit counts at `BIG_MIDRANGE_SHARE` (0.85 at first; 0.6 after the user's Bismarck review — Garnett 2003-05 68 -> 48 — with the judges flat: SRS r 0.795 -> 0.792, sim R² 0.72 -> 0.73).
  */
-export const BIG_MIDRANGE_SHARE = 0.85;
+export const BIG_MIDRANGE_SHARE = 0.6;
+/** 2026-11-04, the user (Pippen 1990-92 read 49 team spacing on 0.9 threes a game): the pre-zone
+ * midrange estimate counts at this share. */
+export const PRE_ZONE_MIDRANGE_SHARE = 0.7;
 export function teamSpacingValue(span: PlayerSpan): number {
   const big = span.primaryPosition === 'PF' || span.primaryPosition === 'C';
-  const midrange = Math.max(midrangeGravitySpacing(span), preZoneMidrangeSpacing(span)) * (big ? BIG_MIDRANGE_SHARE : 1);
+  const midrange = Math.max(midrangeGravitySpacing(span), preZoneMidrangeSpacing(span) * PRE_ZONE_MIDRANGE_SHARE) * (big ? BIG_MIDRANGE_SHARE : 1);
   return Math.max(computeSpacing(span), midrange) * closeoutFactor(span);
 }

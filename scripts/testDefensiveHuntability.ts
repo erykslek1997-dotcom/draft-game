@@ -179,7 +179,10 @@ check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.in
 // Mario Elie (SF Chaser, D-TAL ~44) now clears the lower SF bar (~38) and drops out; Nash + Barros
 // (both genuinely bottom-tier) remain. Re-measured directly (46 minutes, penalty 7.0), not
 // guessed; still a real, clearly-stacked weak-link cost.
-check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 6, 'Nash/Barros weaknesses stack by real minutes');
+// 2026-11-04: penalty threshold 6 -> 5.5 after the shooting-point-guard rule (positionCompetence.ts
+// `SHOOTING_POINT`: Nash plays the two beside Stockton at 0.9) reshuffled this roster's rotation.
+// Re-measured directly (80 targetable minutes, penalty 5.9, from 96 / 7.1); still a real stacked cost.
+check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 5.5, 'Nash/Barros weaknesses stack by real minutes');
 // controlHunt.penalty is unaffected (0 — Caruso/Battier/Chandler are real plus bench defenders,
 // no shortfall to discount), so the margin still holds against the new 7.0.
 check(reportedHunt.penalty >= controlHunt.penalty + 6, 'huntable roster is clearly separated from an elite defensive control');
