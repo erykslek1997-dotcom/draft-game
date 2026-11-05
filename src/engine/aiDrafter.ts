@@ -2883,6 +2883,12 @@ export function pickForAi(
       const open = full();
       if (open && open.score > planned.score) planned = open;
     }
+    // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
+    // the board who does, before any pick that breaks it.
+    if (planned && structureHoles && !canStillComplete([...roster, planned.pick], rosterSize)) {
+      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize));
+      if (keeps) return keeps;
+    }
     if (planned) return planned.pick;
   }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
