@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { effectiveTalent } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
-import { positionCompetenceScore, FULL_SCORE } from './positionCompetence';
+import { positionCompetenceScore } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS } from './positions';
 import { computeSpacing } from './spacing';
@@ -17,7 +17,9 @@ import type { Rotation } from './types';
  *  - one salary glue: `STRUCTURE.glueFga` shots at most, no minutes.
  * The rotation follows: starters `STRUCTURE.starterMinutes`, backups only in their pair.
  */
-export const STRUCTURE = { comboScore: FULL_SCORE, glueFga: 2.5, starterMinutes: 36 };
+// comboScore FULL_SCORE → 0.7 (2026-11-05, the user's round-3 notes: "Beverley PG / SG", "Chalmers
+// na SG 6'", "Kevin na SG" — a backup point guard covers the two, competence 0.74 there).
+export const STRUCTURE = { comboScore: 0.7, glueFga: 2.5, starterMinutes: 36 };
 export const BACKUP_PAIRS: [Position, Position][] = [
   ['PG', 'SG'],
   ['SG', 'SF'],
@@ -75,11 +77,28 @@ function slidersFor(starters: Partial<Record<Position, PlayerSpan>>): { player: 
   return out;
 }
 
+/**
+ * Bench positions the user corrected on review, used by the bench reading only (2026-11-05: "Boucher
+ * zła pozycja, powinien być PF/C"; "Hart zamiast SG/SF może być SF/PF"). Kept out of the pool data:
+ * there they reshuffle the classic drafts and trip `testRotationInvariants` on an unrelated case.
+ */
+const BENCH_POSITIONS: Record<string, { primary?: Position; competence?: Partial<Record<Position, number>> }> = {
+  'chris boucher': { primary: 'PF', competence: { C: 0.95, SF: 0 } },
+  'josh hart': { competence: { PF: 0.75 } },
+};
+function benchPrimary(p: PlayerSpan): Position {
+  return BENCH_POSITIONS[normalizePlayerName(p.playerName)]?.primary ?? p.primaryPosition;
+}
+function benchCompetence(p: PlayerSpan, slot: Position): number {
+  return BENCH_POSITIONS[normalizePlayerName(p.playerName)]?.competence?.[slot] ?? positionCompetenceScore(p, slot);
+}
+
 /** The pairs a player can back up: his primary in the pair, the other one played for real. */
 export function pairsFor(p: PlayerSpan): [Position, Position][] {
+  const primary = benchPrimary(p);
   return BACKUP_PAIRS.filter(([a, b]) => {
-    if (p.primaryPosition === a) return positionCompetenceScore(p, b) >= STRUCTURE.comboScore;
-    if (p.primaryPosition === b) return positionCompetenceScore(p, a) >= STRUCTURE.comboScore;
+    if (primary === a) return benchCompetence(p, b) >= STRUCTURE.comboScore;
+    if (primary === b) return benchCompetence(p, a) >= STRUCTURE.comboScore;
     return false;
   });
 }
@@ -89,7 +108,11 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
  * może wybrać PG/SG ; SF/PF ; C" or "PG ; SG/SF ; PF/C" — the three together still cover all five).
  */
 export function backupOptions(p: PlayerSpan): [Position, Position][] {
-  const all: [Position, Position][] = [...pairsFor(p), [p.primaryPosition, p.primaryPosition]];
+  // A single can be any spot of a pair he plays (LaFrentz at C only, Hayes at C only: the user's
+  // "Royce SF/PF / LaFrentz C").
+  const pairs = pairsFor(p);
+  const singles = [...new Set([benchPrimary(p), ...pairs.flat()])].map((slot): [Position, Position] => [slot, slot]);
+  const all: [Position, Position][] = [...pairs, ...singles];
   return playsGuard(p) ? all : all.filter((pair) => !pair.some(isGuardSpot));
 }
 
@@ -146,6 +169,8 @@ export function readStructure(roster: PlayerSpan[]): StructuredRoster {
   return { ...best, problems: [...shooterIssues, ...benchStars.map((p) => `star ${p.playerName} off the bench`), ...best.problems] };
 }
 
+export const BENCH_READING = { centreAtFour: 0.8 };
+
 function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[], preCovered: Position[]): StructuredRoster {
   const problems: string[] = [];
   for (const slot of STARTER_SLOTS) if (!starters[slot]) problems.push(`no natural ${slot} to start`);
@@ -162,8 +187,18 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
       // A cheap glue beats a dear one at equal coverage: the reading never leaves Brent Barry
       // (8 FGA) as glue while a 3-shot player plays his backup minutes.
       const dearGlue = rest.filter((p) => !ids.has(p.id) && p.fga > STRUCTURE.glueFga).length;
+      // 2026-11-05, the user's notes on round 3 ("Prince przejmuje minuty Collisiona na PF", "Dort
+      // full SG bez McMillana", "Tucker full PF bez Jaylina"): every spot has one backup, never two
+      // splitting it 6/6; among such splits the better backups take the bigger share (TAL per spot).
+      const shared = STARTER_SLOTS.reduce((sum, slot) => sum + Math.max(0, chosen.filter((c) => c.pair.includes(slot)).length - 1), 0);
+      // A centre's minutes at the four count `BENCH_READING.centreAtFour` (the user: "z ławki
+      // najważniejszy Guard, później SF/PF i na końcu C"; "Hart ... SF/PF" over Splitter at PF).
+      const weighted = chosen.reduce(
+        (sum, c) => sum + effectiveTalent(c.player) * [...new Set(c.pair)].reduce((w, slot) => w + (slot === 'PF' && benchPrimary(c.player) === 'C' ? BENCH_READING.centreAtFour : 1), 0),
+        0,
+      );
       const b = holder.best;
-      const key = [uncovered.length, -chosen.length, dearGlue, -t];
+      const key = [uncovered.length, -chosen.length, dearGlue, shared, -weighted, -t];
       const first = b ? key.findIndex((v, i) => v !== b.key[i]) : -1;
       const better = !b || (first >= 0 && key[first] < b.key[first]);
       if (better) holder.best = { backups: [...chosen], uncovered, tal: t, key };
