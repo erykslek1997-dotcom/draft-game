@@ -280,8 +280,8 @@
       "khris middleton",
       "og anunoby"
     ],
-    "expectedPickId": "bell",
-    "expectedPickLabel": "Raja Bell | 2006-08"
+    "expectedPickId": "wallara01-2007-2008",
+    "expectedPickLabel": "Rasheed Wallace | 2006-08"
   },
   {
     "seed": 7,
@@ -347,7 +347,7 @@
       "bruce bowen",
       "khris middleton",
       "og anunoby",
-      "derrick white",
+      "rasheed wallace",
       "bob mcadoo",
       "kristaps porzingis",
       "mikal bridges",
@@ -714,8 +714,8 @@
       "karl-anthony towns",
       "ron artest",
       "jrue holiday",
-      "marc gasol",
-      "kyle korver",
+      "chet holmgren",
+      "rasheed wallace",
       "mike conley"
     ],
     "expectedPickId": "lillada01-2019-2020",
@@ -944,7 +944,7 @@
     "rosterIds": [
       "olajuha01-cw-1993-1994",
       "doncilu01-cw-2025-2026",
-      "horfoal01-2023-2024"
+      "horfoal01-2022-2023"
     ],
     "draftedNames": [
       "lebron james",
@@ -992,18 +992,18 @@
       "kyle lowry",
       "og anunoby",
       "bob mcadoo",
+      "jaren jackson jr.",
       "paul pierce",
-      "manu ginobili",
       "reggie miller",
       "mark price",
-      "jalen williams",
-      "chet holmgren",
+      "manu ginobili",
+      "shane battier",
       "kyle korver",
       "jason kidd",
       "raja bell"
     ],
-    "expectedPickId": "mariosh01-2003-2004",
-    "expectedPickLabel": "Shawn Marion | 2002-04"
+    "expectedPickId": "willija06-2024-2025",
+    "expectedPickLabel": "Jalen Williams | 2023-25"
   },
   {
     "seed": 123456,
@@ -1060,23 +1060,23 @@
       "kyle lowry",
       "og anunoby",
       "bob mcadoo",
+      "jaren jackson jr.",
       "paul pierce",
-      "manu ginobili",
       "reggie miller",
       "mark price",
-      "jalen williams",
-      "chet holmgren",
+      "manu ginobili",
+      "shane battier",
       "kyle korver",
       "jason kidd",
       "raja bell",
-      "shane battier",
-      "mike conley",
+      "jalen williams",
+      "robert horry",
       "anthony edwards",
       "karl malone",
       "danny granger",
-      "bruce bowen",
+      "chet holmgren",
       "kristaps porzingis",
-      "alex caruso",
+      "chris mullin",
       "dan majerle"
     ],
     "expectedPickId": "artesro01-cw-2008-2009",

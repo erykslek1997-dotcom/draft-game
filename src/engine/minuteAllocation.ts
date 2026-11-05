@@ -4,7 +4,7 @@ import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { positionCompetenceScore } from './positionCompetence';
 import { effectiveTalent } from './grades';
 import { maxSustainableMinutes } from './durability';
-import { minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
+import { cardTierMinutesCap, minuteProfileForSpan, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
 import { FRESH_MINUTES, marginalFatigueCost } from './fatigue';
 
 /**
@@ -253,7 +253,7 @@ function consolidateRotation(
   const kept = new Set<string>();
   // Consolidation never pushes anyone further past his tier ceiling or durability.
   const limitById = new Map(
-    roster.map((p) => [p.id, Math.min(minuteProfileForSpan(p).ceiling + MINUTES_CAP_TOLERANCE, maxSustainableMinutes(p, maxMinutesPerPlayer), maxMinutesPerPlayer)]),
+    roster.map((p) => [p.id, Math.min(minuteProfileForSpan(p).ceiling + MINUTES_CAP_TOLERANCE, maxSustainableMinutes(p, maxMinutesPerPlayer), maxMinutesPerPlayer, cardTierMinutesCap(p))]),
   );
   const overLimit = (grants: MinuteGrant[]) => {
     const total = new Map<string, number>();
@@ -452,7 +452,9 @@ function solveMinutes(
     const benchCap = starterSlotById.has(player.id) ? Infinity : player.id === sixthManId ? SIXTH_MAN_MINUTES_CAP : BENCH_MINUTES_CAP;
     // The bench cap is firm: past it plus the near-free tolerance a minute costs like one past
     // durability.
-    const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer, benchCap + MINUTES_CAP_TOLERANCE);
+    // The card tier's minutes (rotationRoleMinutes.ts `cardTierMinutesCap`) are firm too: past them a
+    // minute costs like one past durability (2026-11-05, the user: no 40 minutes under Legend).
+    const durability = Math.min(maxSustainableMinutes(player, maxMinutesPerPlayer), maxMinutesPerPlayer, benchCap + MINUTES_CAP_TOLERANCE, cardTierMinutesCap(player));
     // An odd limit fills to the next 2-minute unit (`MINUTES_CAP_TOLERANCE`, one minute over).
     // 2026-11-04, the user (Jon Barry 23 minutes behind Jrue Holiday: "IRL grał 21, a dostaje tyle w
     // all-time drafcie"): a backup plays at most his own real minutes plus `BACKUP_REAL_MINUTES_MARGIN`.

@@ -98,7 +98,10 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // the named targets' minutes). Re-measured directly (59).
 // 2026-11-04 (later): 59 -> 56 with the backup real-minute cap and the 18 own-slot bonus: Barros plays
 // fewer PG minutes and Larry Smith's PF stint makes him a named target again. Re-measured (56).
-check(weakLinkInsight?.message.includes('56 targetable minutes'), 'weak-link description reports the real 56-minute cost');
+// 2026-11-05: 56 -> 60 with the card-tier minute caps (MVP/All-NBA 38, the rest 36): the starters'
+// minutes past their caps go to the bench, Brunson, Larry Smith and Barros among them. Same named
+// targets. Re-measured directly (60).
+check(weakLinkInsight?.message.includes('60 targetable minutes'), 'weak-link description reports the real 60-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
@@ -126,7 +129,10 @@ const movementCoverageTeam = team('team-model-movement-coverage', [
   // keeps it.
   pick('Chris Paul', '2010-12'),
   pick('Klay Thompson', '2014-16'),
-  pick('Shane Battier', '2005-07'),
+  // 2026-11-05: was 2005-07. The 3-and-D premium lifts that window to 76; the classic rotation then
+  // starts him at SF 38 and splits Klay 17 SG / 8 PG / 10 SF around Iguodala, and the fixture's
+  // coverage slips under the elite bar (0.886). 2009-11 keeps the fixture's shape (Klay 33 at SG).
+  pick('Shane Battier', '2009-11'),
   pick('Al Horford', '2017-19'),
   pick('Hakeem Olajuwon', '1991-93'),
   // 2026-09-05: was Kyle Korver 2013-15 (D-TAL 44). The huntable bar dropped from the cohort

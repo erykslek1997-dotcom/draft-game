@@ -1,5 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
-import { overallTierForSpan, type OverallTier } from './grades';
+import { displayTierForSpan, overallTierForSpan, type OverallTier } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { realMinutesCapForSpan } from './usageLookup';
 import { playoffMinutesPerGame } from './playoffBpm2Lookup';
@@ -37,7 +37,28 @@ const MAX_REAL_MINUTES_CEILING = 40;
  * rotations of bench minutes.
  */
 const STAR_MINUTE_TIERS = new Set<OverallTier>(['GOAT', 'Legend', 'MVP', 'All-NBA', 'All-star']);
+/**
+ * 2026-11-05, the user ("Gracze poniżej goat i legend nie powinni grać 40 minut, poniżej all NBA 38
+ * i później all star 36"): the card's tier caps a player's minutes in every rotation — GOAT and
+ * Legend as before, MVP and All-NBA 38, everyone else 36.
+ */
+const CARD_TIER_MINUTES = { high: 38, rest: 36 };
+export function cardTierMinutesCap(span: PlayerSpan): number {
+  const tier = displayTierForSpan(tierContextWithSixthMan(span));
+  if (tier === 'GOAT' || tier === 'Legend') return Infinity;
+  return tier === 'MVP' || tier === 'All-NBA' ? CARD_TIER_MINUTES.high : CARD_TIER_MINUTES.rest;
+}
 export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
+  const profile = minuteProfileUncapped(span);
+  const cap = cardTierMinutesCap(span);
+  if (profile.ceiling <= cap) return profile;
+  return {
+    optimal: Math.min(profile.optimal, cap),
+    minimal: profile.minimal === null ? null : Math.min(profile.minimal, cap),
+    ceiling: cap,
+  };
+}
+function minuteProfileUncapped(span: PlayerSpan): TierMinuteProfile {
   if (span.fga < 2) return { optimal: 0, minimal: null, ceiling: 0 };
   const tier = overallTierForSpan(tierContextWithSixthMan(span));
   const tierProfile = TIER_MINUTE_PROFILE[tier];

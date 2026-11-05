@@ -6,7 +6,7 @@ import { draftPool } from '../data/draftPool';
 import TEAM_CONTEXT from '../data/teamContext.json';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
+import { calibratedDisplayTalent, hasUserWindowOrder, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1424,6 +1424,8 @@ export function formatTal(value: number): string {
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const value = displayTalentUncompressed(ctx);
   if (!ctx.playerName || value < STAR_WINDOWS.peakFrom - STAR_WINDOWS.within) return value;
+  // The user's own window order (LeBron 2012-14 > 2011-13 > 2016-18 ...) is not compressed into ties.
+  if (hasUserWindowOrder(ctx.playerName)) return value;
   const peak = starPeak(ctx.playerName);
   const gap = peak - value;
   if (peak < STAR_WINDOWS.peakFrom || gap <= 0 || gap >= STAR_WINDOWS.within) return value;
@@ -1438,7 +1440,20 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * `THREE_AND_D.below`: stars are read by everything else.
  */
 export const THREE_AND_D = { points: 7, defenseFrom: 68, defenseRange: 15, spacingFrom: 50, spacingRange: 25, below: 78 };
+/**
+ * 2026-11-05, the user ("Prawdopodobnie wysocy potrzebują korekty jak specjaliści 3D"): a four or
+ * five who defends reads up to `DEFENSIVE_BIG.points` TAL higher, by his defense past
+ * `defenseFrom` (full at +`defenseRange`); no shooting asked of a big. Under the All-star line too.
+ * Tyson Chandler 2011-13 69 -> 75, Camby 2006-08 67 -> 74, Ibaka 2012-14 64 -> 71.
+ */
+export const DEFENSIVE_BIG = { points: 7, defenseFrom: 70, defenseRange: 15 };
+function defensiveBigPremium(ctx: TierGateContext, base: number): number {
+  if ((ctx.position !== 'PF' && ctx.position !== 'C') || base >= THREE_AND_D.below) return 0;
+  const d = Math.max(0, Math.min(1, (ctx.dtal - DEFENSIVE_BIG.defenseFrom) / DEFENSIVE_BIG.defenseRange));
+  return Math.min(DEFENSIVE_BIG.points * d, THREE_AND_D.below - base);
+}
 function threeAndDPremium(ctx: TierGateContext, base: number): number {
+  if (ctx.position === 'PF' || ctx.position === 'C') return defensiveBigPremium(ctx, base);
   if ((ctx.position !== 'SG' && ctx.position !== 'SF') || base >= THREE_AND_D.below || ctx.spacing === undefined) return 0;
   const d = Math.max(0, Math.min(1, (ctx.dtal - THREE_AND_D.defenseFrom) / THREE_AND_D.defenseRange));
   const s = Math.max(0, Math.min(1, (ctx.spacing - THREE_AND_D.spacingFrom) / THREE_AND_D.spacingRange));
