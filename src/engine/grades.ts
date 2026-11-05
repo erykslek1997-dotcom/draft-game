@@ -1430,11 +1430,29 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   return Math.round(peak - gap * (STAR_WINDOWS.keep + ((1 - STAR_WINDOWS.keep) * gap) / STAR_WINDOWS.within));
 }
 
+/**
+ * 2026-11-05, the user ("kalibracja SG i SF żeby ci którzy bronią i są mocnymi strzelcami byli
+ * oceniani wyżej ... Danny Green itd"): a wing who defends and spaces the floor reads up to
+ * `THREE_AND_D.points` TAL higher — the lesser of his defense past `THREE_AND_D.defenseFrom` (full at
+ * +`defenseRange`) and his spacing past `spacingFrom` (full at +`spacingRange`). Only below
+ * `THREE_AND_D.below`: stars are read by everything else.
+ */
+export const THREE_AND_D = { points: 7, defenseFrom: 68, defenseRange: 15, spacingFrom: 50, spacingRange: 25, below: 78 };
+function threeAndDPremium(ctx: TierGateContext, base: number): number {
+  if ((ctx.position !== 'SG' && ctx.position !== 'SF') || base >= THREE_AND_D.below || ctx.spacing === undefined) return 0;
+  const d = Math.max(0, Math.min(1, (ctx.dtal - THREE_AND_D.defenseFrom) / THREE_AND_D.defenseRange));
+  const s = Math.max(0, Math.min(1, (ctx.spacing - THREE_AND_D.spacingFrom) / THREE_AND_D.spacingRange));
+  return Math.min(THREE_AND_D.points * Math.min(d, s), THREE_AND_D.below - base);
+}
+
 function displayTalentUncompressed(ctx: TierGateContext): number {
   const base = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
   const value = base + roleContextShift(ctx, base);
   const hold = rimBonusHold(ctx);
-  return hold ? Math.min(value, tierCeiling(hold)) : value;
+  const held = hold ? Math.min(value, tierCeiling(hold)) : value;
+  // After the holds: a Starter hold kept a wing out of All-star (the user: "Tal 69 bo przebijał do
+  // all star" — Battier), and the premium stays under the card's All-star line (`THREE_AND_D.below`).
+  return held + threeAndDPremium(ctx, held);
 }
 
 /**

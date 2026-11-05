@@ -411,6 +411,11 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * ladders here (a copy would drift). Omitting it is the production path and behaves exactly as
  * before — nothing in `src/` passes it.
  */
+const ACCURATE_LOW_VOLUME = {
+  lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 1),
+  fromAccuracy: 6,
+  fadeAt: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_FADE ?? 8),
+};
 function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   const position = span.primaryPosition;
   const scaledThreePA = eraScaledThreePA(span.spanLabel, span.box.threePA);
@@ -423,7 +428,11 @@ function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): S
   const volumeKicker =
     span.box.threePA >= SELF_CREATION_RAW_VOLUME_GATE ? 1 + SELF_CREATION_VOLUME_KICKER * selfCreation : 1;
   const rawVolumePoints = ladderScore(VOLUME_LADDERS[position], scaledThreePA * volumeKicker);
-  const volumePoints = Math.min(rawVolumePoints, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
+  // 2026-11-05, the user ("Mikal z 57 wydaje się mało"): an accurate shooter on few attempts (a
+  // catch-and-shoot role) is still guarded at the line. `ACCURATE_LOW_VOLUME.lift` volume points per
+  // accuracy point above `fromAccuracy`, fading out as his own volume reaches `fadeAt`.
+  const lift = ACCURATE_LOW_VOLUME.lift * Math.max(0, accuracyPoints - ACCURATE_LOW_VOLUME.fromAccuracy) * Math.max(0, 1 - rawVolumePoints / ACCURATE_LOW_VOLUME.fadeAt);
+  const volumePoints = Math.min(rawVolumePoints + lift, accuracyPoints + VOLUME_ACCURACY_HEADROOM);
 
   const ladderPoints = accuracyPoints + volumePoints + accuracyOverflowPoints(position, span.box.threePct - shortenedLineAccuracyDiscount(span.spanLabel), volumePoints);
   // 2026-10-01 (continuous ladders): both gates fade in over one point below them.
