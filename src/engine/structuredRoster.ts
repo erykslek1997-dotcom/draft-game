@@ -139,7 +139,7 @@ export function playsGuard(p: PlayerSpan): boolean {
 }
 
 /** A star never comes off the bench (the user: "KD czy Nash z ławki nieakceptowalne"). */
-export const STRUCTURE_STAR_TAL = 85;
+export const STRUCTURE_STAR_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAR_TAL ?? 85);
 
 /**
  * The structured reading of a roster, and what breaks it. The starter at each slot is always the
