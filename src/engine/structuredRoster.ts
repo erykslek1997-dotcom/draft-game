@@ -100,10 +100,13 @@ export function backupOptions(p: PlayerSpan): [Position, Position][] {
  * star (`GUARD_SHOOTING.starTal`+: Jordan 1987-89, Isiah, Westbrook).
  */
 export const GUARD_SHOOTING = { minSpacing: 25, starTal: 85 };
+/** Guards the user accepts at the 1-2 whatever their spacing ("Penny jest ok"). */
+export const GUARD_SHOOTING_OK = new Set(['Anfernee Hardaway'].map(normalizePlayerName));
 const isGuardSpot = (slot: Position) => slot === 'PG' || slot === 'SG';
 const spacingMemo = new Map<string, number>();
 export function playsGuard(p: PlayerSpan): boolean {
   if (effectiveTalent(p) >= GUARD_SHOOTING.starTal) return true;
+  if (GUARD_SHOOTING_OK.has(normalizePlayerName(p.playerName))) return true;
   let v = spacingMemo.get(p.id);
   if (v === undefined) {
     v = computeSpacing(p);
