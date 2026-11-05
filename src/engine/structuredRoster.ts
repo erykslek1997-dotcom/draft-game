@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { effectiveTalent } from './grades';
+import { displayTierForSpan, effectiveTalent, tierContextFor } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
 import { positionCompetenceScore } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
@@ -22,7 +22,7 @@ import type { Rotation } from './types';
  */
 // comboScore FULL_SCORE → 0.7 (2026-11-05, the user's round-3 notes: "Beverley PG / SG", "Chalmers
 // na SG 6'", "Kevin na SG" — a backup point guard covers the two, competence 0.74 there).
-export const STRUCTURE = { comboScore: 0.7, glueFga: 2.5, starterMinutes: 36 };
+export const STRUCTURE = { comboScore: 0.7, glueFga: 2.5, starterMinutes: 36, minRotationTal: 55 };
 export const BACKUP_PAIRS: [Position, Position][] = [
   ['PG', 'SG'],
   ['SG', 'SF'],
@@ -268,6 +268,17 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
+export const TIER_MINUTES = { star: 48, high: 38, rest: 36 };
+const tierCapMemo = new Map<string, number>();
+function tierMinutesCap(p: PlayerSpan): number {
+  let cap = tierCapMemo.get(p.id);
+  if (cap === undefined) {
+    const tier = displayTierForSpan(tierContextFor(p));
+    cap = tier === 'GOAT' || tier === 'Legend' ? TIER_MINUTES.star : tier === 'MVP' || tier === 'All-NBA' ? TIER_MINUTES.high : TIER_MINUTES.rest;
+    tierCapMemo.set(p.id, cap);
+  }
+  return cap;
+}
 export const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30 };
 export const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
@@ -286,11 +297,17 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     // The slider: fewer minutes at home, a stretch at the spot he covers beside that spot's starter.
     const home = s.slider.player.primaryPosition;
     const there = s.slider.covers;
-    slots[home][0] = { ...slots[home][0], minutes: SLIDE.ownMinutes };
-    left.set(home, 48 - SLIDE.ownMinutes);
-    slots[there][0] = { ...slots[there][0], minutes: SLIDE.coveredStarterMinutes };
-    slots[there].push({ playerId: s.slider.player.id, minutes: SLIDE.slideMinutes });
-    left.set(there, 48 - SLIDE.coveredStarterMinutes - SLIDE.slideMinutes);
+    // The covered starter within his tier's minutes (Jokić, an MVP, 38 not 40); the slider takes
+    // the rest of that spot, and plays that much less at home (within his own tier's minutes too).
+    const coveredStarter = slots[there][0] ? roster.find((p) => p.id === slots[there][0].playerId) : undefined;
+    const covered = coveredStarter ? Math.min(SLIDE.coveredStarterMinutes, tierMinutesCap(coveredStarter)) : SLIDE.coveredStarterMinutes;
+    const slide = 48 - covered;
+    const own = Math.min(SLIDE.ownMinutes, tierMinutesCap(s.slider.player) - slide);
+    slots[home][0] = { ...slots[home][0], minutes: own };
+    left.set(home, 48 - own);
+    slots[there][0] = { ...slots[there][0], minutes: covered };
+    slots[there].push({ playerId: s.slider.player.id, minutes: slide });
+    left.set(there, 0);
   }
   // Slots one backup covers alone take him first; shared ones split evenly between their backups.
   const minutesOf = new Map<string, number>();
@@ -385,6 +402,26 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     if (move <= 0) continue;
     row.minutes -= move;
     backupRow.minutes += move;
+  }
+  // 2026-11-05, the user ("Gracze poniżej goat i legend nie powinni grać 40 minut, poniżej all NBA 38
+  // i później all star 36"): a player over his tier's cap (`TIER_MINUTES`, the card's tier) hands
+  // the rest to a teammate in the same spot who still has room under his own cap.
+  for (const p of roster) {
+    let excess = totalOf(p.id) - tierMinutesCap(p);
+    for (const slot of STARTER_SLOTS) {
+      if (excess <= 0) break;
+      const mine = slots[slot].find((r) => r.playerId === p.id);
+      if (!mine) continue;
+      for (const other of slots[slot]) {
+        if (excess <= 0 || other.playerId === p.id) continue;
+        const room = tierMinutesCap(roster.find((q) => q.id === other.playerId)!) - totalOf(other.playerId);
+        const move = Math.min(excess, room, mine.minutes);
+        if (move <= 0) continue;
+        mine.minutes -= move;
+        other.minutes += move;
+        excess -= move;
+      }
+    }
   }
   // A slot no backup covers: its starter plays it all (the structure's own error says so).
   for (const slot of STARTER_SLOTS) {

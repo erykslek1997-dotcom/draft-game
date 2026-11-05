@@ -2886,6 +2886,9 @@ export function pickForAi(
       const bigSpot = p.primaryPosition === 'PF' ? 'C' : p.primaryPosition === 'C' ? 'PF' : null;
       const partner = bigSpot ? lockedStarters[bigSpot] : undefined;
       if (structureHoles && !starter && partner && !bigThreat(partner) && !bigThreat(p) && p.fga > STRUCTURE.glueFga) return false;
+      // 2026-11-05, the user ("pojedynczy Prigioni i tego typu śmiecie, jeszcze do eliminacji"): a
+      // rotation player is `STRUCTURE.minRotationTal`+; under it only as glue (no minutes).
+      if (structureHoles && effectiveTalent(p) < STRUCTURE.minRotationTal && p.fga > STRUCTURE.glueFga) return false;
       // A real-life bench player (Michael Cooper 1985-87: 7% of games started) would start at an
       // empty spot: off the board until a starter holds it.
       if (structureHoles && !starter && !startedIrl(p) && p.fga > STRUCTURE.glueFga) return false;
