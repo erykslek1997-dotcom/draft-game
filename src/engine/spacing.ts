@@ -411,6 +411,7 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * ladders here (a copy would drift). Omitting it is the production path and behaves exactly as
  * before — nothing in `src/` passes it.
  */
+const ERA_VOLUME_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_ERA ?? 1);
 const ACCURATE_LOW_VOLUME = {
   lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 1),
   fromAccuracy: 6,
@@ -418,7 +419,10 @@ const ACCURATE_LOW_VOLUME = {
 };
 function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   const position = span.primaryPosition;
-  const scaledThreePA = eraScaledThreePA(span.spanLabel, span.box.threePA);
+  // 2026-11-05, the user ("Bowen zbyt mocny ten spacing": 2.7 threes a game in 2002-04 read as 6.3
+  // today): the era scale counts at `ERA_VOLUME_SHARE` of its full lift.
+  const fullScale = span.box.threePA > 0 ? eraScaledThreePA(span.spanLabel, span.box.threePA) / span.box.threePA : 1;
+  const scaledThreePA = span.box.threePA * (fullScale >= 1 ? 1 + ERA_VOLUME_SHARE * (fullScale - 1) : fullScale);
   const selfCreation = selfCreationOverride ?? selfCreationRate(span);
 
   const accuracyBar =
@@ -481,7 +485,7 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
  * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
-const SMOOTH_WEIGHT_BY_DISTANCE = [0.6, 0.15, 0.05, 0.05] as const;
+const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_SMOOTH ?? '0.6,0.15,0.05,0.05').split(',').map(Number);
 const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
 let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;
