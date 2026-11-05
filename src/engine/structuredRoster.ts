@@ -255,6 +255,10 @@ export function canStillComplete(roster: PlayerSpan[], rosterSize: number): bool
   const uncovered = STARTER_SLOTS.filter((slot) => !covered.has(slot)).length;
   const glueOpen = s.glue.length === 0 ? 1 : 0;
   if (s.glue.length > 1) return false;
+  // A player with no role is the glue: one whose cheapest window at his position still costs more
+  // than `STRUCTURE.glueFga` breaks the shape for good (Doc Rivers 1991-93, spacing 22, can't play
+  // the point; even his 1994-96 costs 4.2).
+  if (s.glue.some((g) => cheapestAt(g) > STRUCTURE.glueFga)) return false;
   if (missingStarters + openBackups + glueOpen > left) return false;
   // Exact: the backups still to come must cover what is left with real shapes — an adjacent pair or
   // one spot each. Two open spots far apart (PG and C) need two backups, not one (Portland had one).
@@ -278,4 +282,15 @@ export function keepsRoles(roster: PlayerSpan[], p: PlayerSpan): boolean {
   const before = new Set(readStructure(roster).glue.map((x) => x.id));
   const after = readStructure([...roster, p]).glue;
   return after.every((x) => x.id === p.id || before.has(x.id) || x.fga <= STRUCTURE.glueFga);
+}
+
+const cheapestMemo = new Map<string, number>();
+function cheapestAt(p: PlayerSpan): number {
+  const k = `${normalizePlayerName(p.playerName)}|${p.primaryPosition}`;
+  let v = cheapestMemo.get(k);
+  if (v === undefined) {
+    v = Math.min(p.fga, ...spanOptionsFor(p.playerName).filter((o) => o.primaryPosition === p.primaryPosition).map((o) => o.fga));
+    cheapestMemo.set(k, v);
+  }
+  return v;
 }
