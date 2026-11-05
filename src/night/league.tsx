@@ -127,7 +127,6 @@ export function NightLottery({
     return () => window.clearTimeout(id);
   }, [done, onRevealed]);
   const picks = useMemo(() => snakePicks(slot, teamCount, rounds), [slot, teamCount, rounds]);
-  const gaps = picks.slice(1).map((p, i) => p - picks[i] - 1);
   const order = [...teams].sort((a, b) => a.draftSlot - b.draftSlot);
   const half = Math.ceil(order.length / 2);
   // Two columns read down: 1–8 on the left, 9–16 on the right.
@@ -197,16 +196,15 @@ export function NightLottery({
                 <span>your pick</span>
               </div>
             </div>
-            {gaps.length > 0 && (
+            {picks.length > 0 && (
               <p className="lot-note">
-                Between your picks:{' '}
-                {gaps.map((g, i) => (
+                Your picks:{' '}
+                {picks.map((p, i) => (
                   <span key={i}>
-                    {i > 0 && (i === gaps.length - 1 ? ' and ' : ', ')}
-                    <b>{g}</b>
+                    {i > 0 && ' · '}
+                    <b>{p}</b>
                   </span>
-                ))}{' '}
-                picks by the CPU teams.
+                ))}
               </p>
             )}
           </div>
