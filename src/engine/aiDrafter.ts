@@ -1944,7 +1944,7 @@ export const AI_PLAN = {
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
   // Embiid left as a 19.9-FGA glue).
   fromRoster: STRUCTURED_AI ? 0 : 2,
-  alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? 14),
+  alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? (STRUCTURED_AI ? 8 : 14)),
   cheapFga: 7,
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
@@ -1954,9 +1954,9 @@ export const AI_PLAN = {
   nearFga: 1,
   scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: STRUCTURED_AI ? 4 : 0,
-  structuralPerPair: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SPAIR ?? 3),
-  structuralPerSlot: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SSLOT ?? 2),
-  cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
+  structuralPerPair: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SPAIR ?? 2),
+  structuralPerSlot: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SSLOT ?? 1),
+  cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? (STRUCTURED_AI ? 4 : 6)),
   passes: 2,
   warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
   crowdCost: 1.5,

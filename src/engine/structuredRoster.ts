@@ -457,10 +457,31 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       }
     }
   }
-  // A slot no backup covers: its starter plays it all (the structure's own error says so).
+  // A slot no backup covers (the structure's own error says so): its starter up to his tier's
+  // minutes, then whoever plays that spot best with minutes to spare (2026-11-05, the user's
+  // screenshot: OG Anunoby 48 minutes at SF), the starter only as a last resort.
   for (const slot of STARTER_SLOTS) {
-    const rest = left.get(slot)!;
-    if (rest > 0 && slots[slot][0]) slots[slot][0] = { ...slots[slot][0], minutes: slots[slot][0].minutes + rest };
+    let rest = left.get(slot)!;
+    if (rest <= 0 || !slots[slot][0]) continue;
+    const starterRow = slots[slot][0];
+    const starter = roster.find((p) => p.id === starterRow.playerId)!;
+    const own = Math.max(0, Math.min(rest, tierMinutesCap(starter) - totalOf(starter.id)));
+    starterRow.minutes += own;
+    rest -= own;
+    const helpers = roster
+      .filter((p) => p.id !== starter.id && positionCompetenceScore(p, slot) > 0)
+      .sort((a, b) => positionCompetenceScore(b, slot) - positionCompetenceScore(a, slot));
+    for (const p of helpers) {
+      if (rest <= 0) break;
+      const room = Math.min(tierMinutesCap(p), IRL_MINUTES.backupDefault) - totalOf(p.id);
+      const take = Math.min(rest, room);
+      if (take <= 0) continue;
+      const row = slots[slot].find((r) => r.playerId === p.id);
+      if (row) row.minutes += take;
+      else slots[slot].push({ playerId: p.id, minutes: take });
+      rest -= take;
+    }
+    if (rest > 0) starterRow.minutes += rest;
   }
   return { slots };
 }
