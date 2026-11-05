@@ -217,6 +217,8 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   return { starters, backups: picked.backups, glue, problems };
 }
 
+export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
+
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
 export function structuredRotation(roster: PlayerSpan[]): Rotation {
   const s = readStructure(roster);
@@ -254,6 +256,31 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       minutesOf.set(b.player.id, (minutesOf.get(b.player.id) ?? 0) + m);
     });
     left.set(slot, 0);
+  }
+  // 2026-11-05, the user's round-3/4 notes (Detroit: "Green 30 / Porter 18"; Tucson: Porter beside
+  // Luka, Cooper 30): a backup clearly better than a starter (`QUALITY_SHIFT.margin` TAL+) takes
+  // `QUALITY_SHIFT.minutes` of that starter's minutes, the starter keeping `QUALITY_SHIFT.starterFloor`
+  // and the backup at most `QUALITY_SHIFT.backupMax` in all. Stars (STRUCTURE_STAR_TAL+) keep theirs.
+  const sliderId = s.slider?.player.id;
+  const shifts = s.backups
+    .flatMap((b) =>
+      [...new Set(b.pair)].map((slot) => {
+        const starter = s.starters[slot];
+        const gap = starter ? effectiveTalent(b.player) - effectiveTalent(starter) : 0;
+        return { b, slot, starter, gap };
+      }),
+    )
+    .filter((x) => x.starter && x.starter.id !== sliderId && x.gap >= QUALITY_SHIFT.margin && effectiveTalent(x.starter) < STRUCTURE_STAR_TAL)
+    .sort((a, b) => b.gap - a.gap);
+  for (const { b, slot, starter } of shifts) {
+    const row = slots[slot].find((r) => r.playerId === starter!.id);
+    const mine = slots[slot].find((r) => r.playerId === b.player.id);
+    if (!row || !mine) continue;
+    const total = STARTER_SLOTS.reduce((sum, x) => sum + (slots[x].find((r) => r.playerId === b.player.id)?.minutes ?? 0), 0);
+    const move = Math.min(QUALITY_SHIFT.minutes, row.minutes - QUALITY_SHIFT.starterFloor, QUALITY_SHIFT.backupMax - total);
+    if (move <= 0) continue;
+    row.minutes -= move;
+    mine.minutes += move;
   }
   // A slot no backup covers: its starter plays it all (the structure's own error says so).
   for (const slot of STARTER_SLOTS) {

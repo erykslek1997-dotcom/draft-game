@@ -64,11 +64,15 @@ function structureCost(roster: PlayerSpan[]): number {
 export const BENCH_PRIORITY = {
   forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0.3),
   centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0.6),
+  guard: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_G ?? 0),
 };
 function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Position] }[]): number {
   let cost = 0;
   for (const b of backups) {
-    if (b.pair.includes('PG') || b.pair.includes('SG')) continue;
+    if (b.pair.includes('PG') || b.pair.includes('SG')) {
+      cost += BENCH_PRIORITY.guard * b.player.fga;
+      continue;
+    }
     cost += (b.pair.includes('C') ? BENCH_PRIORITY.centre : BENCH_PRIORITY.forward) * b.player.fga;
   }
   return cost;
