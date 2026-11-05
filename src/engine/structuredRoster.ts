@@ -101,10 +101,12 @@ export function backupOptions(p: PlayerSpan): [Position, Position][] {
  */
 // starTal 85 → 75 (the user, on Penny 1998-00 at TAL 78: "2 do 75 tal").
 export const GUARD_SHOOTING = { minSpacing: 25, starTal: 75 };
+/** Guards who never get the TAL pass (the user: "Alvin wyłącz ręcznie"). */
+export const GUARD_SHOOTING_NO_PASS = new Set(['Alvin Robertson'].map(normalizePlayerName));
 const isGuardSpot = (slot: Position) => slot === 'PG' || slot === 'SG';
 const spacingMemo = new Map<string, number>();
 export function playsGuard(p: PlayerSpan): boolean {
-  if (effectiveTalent(p) >= GUARD_SHOOTING.starTal) return true;
+  if (effectiveTalent(p) >= GUARD_SHOOTING.starTal && !GUARD_SHOOTING_NO_PASS.has(normalizePlayerName(p.playerName))) return true;
   let v = spacingMemo.get(p.id);
   if (v === undefined) {
     v = computeSpacing(p);
