@@ -455,7 +455,12 @@ export function cheapestGlueWindows(roster: PlayerSpan[]): PlayerSpan[] {
  * uncovered, and at most one player has no role (the glue). The structured test's pick check: two
  * one-position backups (Mario Chalmers, Jon Barry) left the third to cover three spots.
  */
-export function canStillComplete(roster: PlayerSpan[], rosterSize: number): boolean {
+/**
+ * Shots a role still to fill needs at least (2026-11-05: with the 55-TAL rotation floor the cheapest
+ * real backup costs 4-5 FGA; a team left with 2.5 could only add glue and left C or PG uncovered).
+ */
+export const ROLE_MIN_FGA = { starter: 6, backup: 4.5, glue: 1 };
+export function canStillComplete(roster: PlayerSpan[], rosterSize: number, capLeft = Infinity): boolean {
   const s = readStructure(roster);
   const left = rosterSize - roster.length;
   const missingStarters = STARTER_SLOTS.filter((slot) => !s.starters[slot]).length;
@@ -469,6 +474,7 @@ export function canStillComplete(roster: PlayerSpan[], rosterSize: number): bool
   // the point; even his 1994-96 costs 4.2).
   if (s.glue.some((g) => cheapestAt(g) > STRUCTURE.glueFga)) return false;
   if (missingStarters + openBackups + glueOpen > left) return false;
+  if (missingStarters * ROLE_MIN_FGA.starter + openBackups * ROLE_MIN_FGA.backup + glueOpen * ROLE_MIN_FGA.glue > capLeft + 1e-9) return false;
   // Exact: the backups still to come must cover what is left with real shapes — an adjacent pair or
   // one spot each. Two open spots far apart (PG and C) need two backups, not one (Portland had one).
   const open = STARTER_SLOTS.filter((slot) => !covered.has(slot));

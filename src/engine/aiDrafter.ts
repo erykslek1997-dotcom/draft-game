@@ -2947,15 +2947,15 @@ export function pickForAi(
         return fills * 2 + (opts.length > 0 ? 1 : 0);
       };
       const near = board.filter(
-        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize) && keepsRoles(roster, p),
+        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p),
       );
       const better = near.filter((p) => flexibility(p) > flexibility(base)).sort((a, b) => flexibility(b) - flexibility(a) || effectiveTalent(b) - effectiveTalent(a))[0];
       if (better) planned = { ...planned, pick: better };
     }
     // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
     // the board who does, before any pick that breaks it.
-    if (planned && structureHoles && !(canStillComplete([...roster, planned.pick], rosterSize) && keepsRoles(roster, planned.pick))) {
-      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize) && keepsRoles(roster, p));
+    if (planned && structureHoles && !(canStillComplete([...roster, planned.pick], rosterSize, capLimit - spent - planned.pick.fga) && keepsRoles(roster, planned.pick))) {
+      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p));
       if (keeps) return keeps;
     }
     if (planned) return planned.pick;
