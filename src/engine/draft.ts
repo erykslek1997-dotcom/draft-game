@@ -36,13 +36,15 @@ import { dailyBombSpan } from './dailyBomb';
 const TEAM_SCORE_MEMO_MAX = 50_000;
 /** 2026-11-05, the user's structured test draft (structuredRoster.ts), on with STRUCT=1: the AI's
  * team score uses the structured 8-man rotation and charges `STRUCTURE_PROBLEM_COST` team points per
- * break in the structure of a full roster. */
+ * break in the structure of a full roster: 100, so the shape comes first and the score decides among
+ * shapes that hold (the user: "zrób tak żeby te 3 błędy się nie powtarzały"; at 6 a better centre
+ * later made Embiid a 16.7-FGA glue). */
 const STRUCTURED_TEST = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
 if (STRUCTURED_TEST_FLAG()) setAiStructureHoles((roster) => readStructure(roster).problems.filter((p) => !p.startsWith('glue')).length);
 function STRUCTURED_TEST_FLAG(): boolean {
   return ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
 }
-const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
+const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 100);
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
   const key = roster.map((p) => p.id).sort().join(',');

@@ -1948,6 +1948,7 @@ export const AI_PLAN = {
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
   reserveGlueFga: 3,
+  scarceRole: 5,
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
@@ -2039,7 +2040,21 @@ function planPick(
   }
   // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
   // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
-  const pick = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  let pick = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  // The structured test: a planned backup whose pair has few others left on the board goes first —
+  // Honolulu planned a PG/SG, took its stars first and found none left (`AI_PLAN.scarceRole`).
+  if (structureHoles) {
+    const planned = new Set(plan.map((p) => p.id));
+    const others = board.filter((p) => !planned.has(p.id) && p.fga <= capLeft);
+    let scarcest: { p: PlayerSpan; left: number } | null = null;
+    for (const p of plan) {
+      const pairs = pairsFor(p);
+      if (pairs.length === 0) continue;
+      const left = Math.min(...pairs.map((pair) => others.filter((o) => pairsFor(o).some((x) => x[0] === pair[0] && x[1] === pair[1])).length));
+      if (left <= AI_PLAN.scarceRole && (!scarcest || left < scarcest.left)) scarcest = { p, left };
+    }
+    if (scarcest) pick = scarcest.p;
+  }
   if (memoryKey) {
     if (planMemory.size >= PLAN_MEMORY_MAX) planMemory.clear();
     planMemory.set(memoryKey, plan.filter((p) => p !== pick).map(key));
