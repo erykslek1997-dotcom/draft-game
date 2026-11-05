@@ -1938,6 +1938,8 @@ export const AI_PLAN = {
   cheapFga: 7,
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
+  reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
+  reserveGlueFga: 3,
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
@@ -2802,7 +2804,19 @@ export function pickForAi(
   }
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
-    const planned = planPick(roster, scored.map((entry) => entry.player), capLimit - spent, rosterSize - roster.length, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
+    const board = scored.map((entry) => entry.player);
+    const slots = rosterSize - roster.length;
+    // 2026-11-05, the user ("Czy AI nie mogą sobie z góry zaplanować salary glue? Jest więcej niż 16
+    // tanich zapychaczy" — 126 players have a 3-shot window): in the structured test the glue is
+    // planned from the start — the board's best cheap player stands in for it while the other
+    // slots are planned on the cap less his shots, and he is only taken with the last pick.
+    const glue =
+      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
+        ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
+        : undefined;
+    const planned = glue
+      ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed)
+      : planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
     if (planned) return planned;
   }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
