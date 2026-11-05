@@ -55,7 +55,8 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
+import { cx } from '../night/frame';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NFace, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
 import { effectiveTalent } from '../engine/grades';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
@@ -1362,23 +1363,38 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr className="open">
                       <td />
                       <td colSpan={6}>
-                        {/* their five first, as cards: who they are matters most (playtest 2026-10-22) */}
+                        {/* 2026-11-05, the playtest ("ten widok meh": Brogdon at PG and SG, Howard twice, no
+                            glue): their nine once each — the five in slot order, then the bench by minutes —
+                            with each one's total and the spots he plays. */}
                         {(() => {
-                          // the same list as your roster: the starter's minutes, who comes in for him (playtest: "brak minut i ławki")
                           const shown = displayTeam(team);
                           const rows = allAssignments(shown);
+                          const starters = primaryStarters(shown);
+                          const order = new Map(starters.map((x, k) => [x.player.id, k]));
+                          const nine = shown.roster
+                            .map((sp) => {
+                              const mine = rows.filter((r) => r.player.id === sp.id);
+                              const minutes = mine.reduce((a, r) => a + r.minutes, 0);
+                              const slots = STARTER_SLOTS.filter((sl) => mine.some((r) => r.slot === sl && r.minutes > 0));
+                              return { sp, minutes, slots, start: order.get(sp.id) };
+                            })
+                            .sort((x, y) => (x.start ?? 9) - (y.start ?? 9) || y.minutes - x.minutes);
                           return (
-                            <RosterList
-                              compact
-                              rows={primaryStarters(shown).map((x) => {
-                                const own = rows.find((r) => r.slot === x.slot && r.player.id === x.player.id);
-                                const others = rows.filter((r) => r.slot === x.slot && r.player.id !== x.player.id).sort((p, q) => q.minutes - p.minutes);
-                                return { slot: x.slot, starter: { span: x.player, minutes: own?.minutes ?? x.minutes }, bench: others.map((o) => ({ span: o.player, minutes: o.minutes })) };
-                              })}
-                            />
+                            <div className="rn9">
+                              {nine.map(({ sp, minutes, slots, start }) => (
+                                <div key={sp.id} className={cx('rn9-r', start === undefined && 'bn', minutes === 0 && 'dnp')}>
+                                  <NFace name={sp.playerName} span={sp} />
+                                  <span className="rn9-n">
+                                    <b>{sp.playerName}</b> <small>{sp.spanLabel.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2-$3')}</small>
+                                  </span>
+                                  <span className="rn9-p">{slots.length ? slots.join('/') : '—'}</span>
+                                  <span className="rn9-m">{minutes}m</span>
+                                </div>
+                              ))}
+                            </div>
                           );
                         })()}
-                        <RivalEdge nick={nick} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
+                        <RivalEdge nick={nick} code={codeByTeamId.get(team.id) ?? nick.slice(0, 3).toUpperCase()} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />
                       </td>
                     </tr>
                   )}
