@@ -129,6 +129,11 @@ export function buildJointPlan(teams: JointPlanTeam[], order: number[], pool: Pl
     else byName.set(k, [p]);
   }
   const taken = new Set<string>(teams.flatMap((t) => t.roster.map(key)));
+  const starterValue = new Map(pool.map((p) => [p.id, roleValue(p, { kind: 'starter', slot: p.primaryPosition })]));
+  // Glue values sit below the starter bound by construction, so the scan reaches them only late;
+  // they are checked separately below.
+  const ranked = [...pool].sort((a, b) => starterValue.get(b.id)! - starterValue.get(a.id)!);
+  const glueRanked = pool.filter((p) => p.fga <= STRUCTURE.glueFga).sort((a, b) => roleValue(b, { kind: 'glue' }) - roleValue(a, { kind: 'glue' }));
   const builds = teams.map((t) => buildFrom(t.roster));
   const free = () => [...byName.keys()].filter((k) => !taken.has(k));
 
@@ -149,8 +154,12 @@ export function buildJointPlan(teams: JointPlanTeam[], order: number[], pool: Pl
     }
     const slotsAfter = ROSTER_SIZE - build.roster.length - 1;
     let choice: { p: PlayerSpan; role: Role; v: number } | null = null;
-    for (const k of free()) {
-      for (const p of byName.get(k)!) {
+    // Windows in order of their best possible role value (the starter one): once that bound is
+    // under the best found, nothing further down can beat it.
+    for (const p of ranked) {
+      if (choice && starterValue.get(p.id)! <= choice.v) break;
+      if (taken.has(key(p))) continue;
+      {
         if (build.spent + p.fga > capLimit - slotsAfter * JOINT_PLAN.minFillFga) continue;
         for (const role of rolesFor(build, p)) {
           // Every pick fills a role; a pick that would leave more open roles than slots is out.
@@ -160,13 +169,19 @@ export function buildJointPlan(teams: JointPlanTeam[], order: number[], pool: Pl
         }
       }
     }
+    // The glue's value is far under any starter bound: it competes only when nothing else fits.
+    if (!choice && !build.glue) {
+      const g = glueRanked.find((p) => !taken.has(key(p)) && build.spent + p.fga <= capLimit - slotsAfter * JOINT_PLAN.minFillFga);
+      if (g) choice = { p: g, role: { kind: 'glue' }, v: 0 };
+    }
     if (choice) {
       taken.add(key(choice.p));
       apply(build, choice.p, choice.role);
     }
   }
 
-  // Gates and mending.
+  // Gates and mending — the budget counts from here, so a slow simulation never skips the mending.
+  const tMend = now();
   const gate = (b: Build): string[] => {
     const out: string[] = [];
     if (b.roster.length < ROSTER_SIZE) out.push(`roster ${b.roster.length}/${ROSTER_SIZE}`);
@@ -180,7 +195,7 @@ export function buildJointPlan(teams: JointPlanTeam[], order: number[], pool: Pl
     let fails = gate(builds[i]);
     const locked = new Set(teams[i].roster.map((p) => p.id));
     // A short plan first takes the best free player for an open role that still fits the cap.
-    while (builds[i].roster.length < ROSTER_SIZE && now() - t0 < JOINT_PLAN.budgetMs) {
+    while (builds[i].roster.length < ROSTER_SIZE && now() - tMend < JOINT_PLAN.budgetMs) {
       const b = builds[i];
       const room = capLimit - b.spent - (ROSTER_SIZE - b.roster.length - 1) * JOINT_PLAN.minFillFga;
       let add: { p: PlayerSpan; role: Role; v: number } | null = null;
@@ -201,7 +216,7 @@ export function buildJointPlan(teams: JointPlanTeam[], order: number[], pool: Pl
       apply(b, add.p, add.role);
     }
     fails = gate(builds[i]);
-    while (fails.length && fixes < JOINT_PLAN.maxFixes && now() - t0 < JOINT_PLAN.budgetMs) {
+    while (fails.length && fixes < JOINT_PLAN.maxFixes && now() - tMend < JOINT_PLAN.budgetMs) {
       let improved = false;
       const roster = builds[i].roster;
       for (let j = 0; j < roster.length && !improved; j++) {
