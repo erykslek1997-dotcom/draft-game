@@ -2,7 +2,7 @@ import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { STRUCTURED_AI } from './structuredMode';
-import { BACKUP_PAIRS, backupOptions, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
+import { BACKUP_PAIRS, backupOptions, bigThreat, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2881,6 +2881,11 @@ export function pickForAi(
       const guard = p.primaryPosition === 'PG' || p.primaryPosition === 'SG';
       if (structureHoles && guard && !playsGuard(p) && backupOptions(p).length === 0 && p.fga > STRUCTURE.glueFga) return false;
       const starter = lockedStarters[p.primaryPosition];
+      // A big who can't shoot would start beside a non-shooting big at the other spot: off the
+      // board (the user: one of the two is some threat from the midrange; Shaq beside Bobby Jones).
+      const bigSpot = p.primaryPosition === 'PF' ? 'C' : p.primaryPosition === 'C' ? 'PF' : null;
+      const partner = bigSpot ? lockedStarters[bigSpot] : undefined;
+      if (structureHoles && !starter && partner && !bigThreat(partner) && !bigThreat(p) && p.fga > STRUCTURE.glueFga) return false;
       // A star at a filled spot would come off the bench: off the board too.
       return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
     });
