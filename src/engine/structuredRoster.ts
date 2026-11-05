@@ -218,6 +218,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
+export const QUALITY_SLIDE = { starMinutesEach: 18 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
 export function structuredRotation(roster: PlayerSpan[]): Rotation {
@@ -256,6 +257,32 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       minutesOf.set(b.player.id, (minutesOf.get(b.player.id) ?? 0) + m);
     });
     left.set(slot, 0);
+  }
+  // 2026-11-05, the user (Tucson: "Obok Luki Porter mógłby być starting 5 — Porter 30 / Luka 18,
+  // Luka 18 / Cooper 30"): a listed sliding starter whose own backup is clearly better than the
+  // starter beside him splits his minutes between the two spots (`QUALITY_SLIDE`), and the backup
+  // takes his spot. Only when the backup plays just those two spots and nobody else backs them up.
+  if (!s.slider) {
+    for (const slot of STARTER_SLOTS) {
+      const star = s.starters[slot];
+      const there = star ? SLIDING_STARTERS[normalizePlayerName(star.playerName)] : undefined;
+      if (!star || !there || there === slot) continue;
+      const beside = s.starters[there];
+      if (!beside || effectiveTalent(beside) >= STRUCTURE_STAR_TAL || positionCompetenceScore(star, there) < SLIDE.minScore) continue;
+      const mine = s.backups.filter((b) => b.pair.includes(slot) || b.pair.includes(there));
+      if (mine.length !== 1 || !mine[0].pair.every((x) => x === slot || x === there)) continue;
+      const b = mine[0].player;
+      if (effectiveTalent(b) - effectiveTalent(beside) < QUALITY_SHIFT.margin) continue;
+      slots[slot] = [
+        { playerId: star.id, minutes: QUALITY_SLIDE.starMinutesEach },
+        { playerId: b.id, minutes: 48 - QUALITY_SLIDE.starMinutesEach },
+      ];
+      slots[there] = [
+        { playerId: beside.id, minutes: 48 - QUALITY_SLIDE.starMinutesEach },
+        { playerId: star.id, minutes: QUALITY_SLIDE.starMinutesEach },
+      ];
+      break;
+    }
   }
   // 2026-11-05, the user's round-3/4 notes (Detroit: "Green 30 / Porter 18"; Tucson: Porter beside
   // Luka, Cooper 30): a backup clearly better than a starter (`QUALITY_SHIFT.margin` TAL+) takes
