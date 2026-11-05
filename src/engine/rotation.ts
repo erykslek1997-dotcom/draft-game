@@ -838,6 +838,7 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   return { slots };
 }
 
+
 /**
  * 2026-10-01, the user ("dodaj trochę sosu, żeby było 39, 37, 35 minut"): the minute solver works in
  * 2-minute units, so every rotation read in even numbers. Each slot's first two rows (and second and
