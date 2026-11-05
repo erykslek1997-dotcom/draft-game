@@ -1,6 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
+import { BACKUP_PAIRS, pairsFor } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -1882,6 +1883,11 @@ function boardNoise(boardSeed: number | undefined, p: PlayerSpan): number {
  * lot. Registered by draft.ts (scoring.ts imports this file, so it can't be imported here).
  */
 let teamScorer: ((roster: PlayerSpan[]) => number) | null = null;
+/** The structured test's count of holes in a full roster other than the glue's price (draft.ts). */
+let structureHoles: ((roster: PlayerSpan[]) => number) | null = null;
+export function setAiStructureHoles(fn: ((roster: PlayerSpan[]) => number) | null): void {
+  structureHoles = fn;
+}
 export function setAiTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
   teamScorer = scorer;
 }
@@ -1958,7 +1964,7 @@ function planPick(
   team?: string,
   claims?: Map<string, string>,
   planSeed?: number,
-): PlayerSpan | null {
+): { pick: PlayerSpan; score: number; plan: PlayerSpan[] } | null {
   if (!teamScorer || slots <= 0 || fullBoard.length === 0) return null;
   const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
   // Stage 2 (`AI_PLAN.share`): players another AI team has planned for are off this team's board.
@@ -2009,7 +2015,15 @@ function planPick(
       const open = board.filter((p) => !taken.has(key(p)) && p.fga <= room && p.id !== plan[i].id);
       // The board's best, plus its best cheap ones: a 10-14-minute backup costs 5-6 shots (the user).
       const glue = AI_PLAN.glueAlternatives > 0 ? [...open].filter((p) => p.fga <= AI_PLAN.glueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, AI_PLAN.glueAlternatives) : [];
-      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue])];
+      // The structured test also tries the best few for every backup pair and every starting slot,
+      // so a PF/C or a PG/SG the board ranks low still comes up.
+      const structural = structureHoles
+        ? [
+            ...BACKUP_PAIRS.flatMap((pair) => open.filter((p) => pairsFor(p).some((x) => x[0] === pair[0] && x[1] === pair[1])).slice(0, 3)),
+            ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, 2)),
+          ]
+        : [];
+      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
       for (const candidate of pool) {
         const value = score([...roster, ...others, candidate]);
         if (value > best + 1e-6) {
@@ -2032,7 +2046,7 @@ function planPick(
     for (const [name, owner] of claims!) if (owner === team) claims!.delete(name);
     for (const p of plan) if (p !== pick) claims!.set(key(p), team!);
   }
-  return pick;
+  return pick ? { pick, score: best, plan } : null;
 }
 
 interface FiveGaps {
@@ -2814,10 +2828,17 @@ export function pickForAi(
       AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
         ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
         : undefined;
-    const planned = glue
+    const full = () => planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
+    let planned = glue
       ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed)
-      : planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
-    if (planned) return planned;
+      : full();
+    // The user ("Jeśli drużyna z góry wie że ma brak, niech zaplanuje drużynę bez kleja"): a plan that
+    // still leaves a hole with the glue set aside is weighed against one that uses all nine slots.
+    if (glue && planned && structureHoles && structureHoles([...roster, glue, ...planned.plan]) > 0) {
+      const open = full();
+      if (open && open.score > planned.score) planned = open;
+    }
+    if (planned) return planned.pick;
   }
   const lotteryPoolSize = roster.length === 0 ? FIRST_PICK_LOTTERY_POOL : LOTTERY_POOL;
   const top = lotteryCandidates.slice(0, Math.min(lotteryPoolSize, lotteryCandidates.length));

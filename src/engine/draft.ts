@@ -21,7 +21,7 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, setAiTeamScorer, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { pickForAi, setAiTeamScorer, setAiStructureHoles, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
 import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
@@ -38,6 +38,10 @@ const TEAM_SCORE_MEMO_MAX = 50_000;
  * team score uses the structured 8-man rotation and charges `STRUCTURE_PROBLEM_COST` team points per
  * break in the structure of a full roster. */
 const STRUCTURED_TEST = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
+if (STRUCTURED_TEST_FLAG()) setAiStructureHoles((roster) => readStructure(roster).problems.filter((p) => !p.startsWith('glue')).length);
+function STRUCTURED_TEST_FLAG(): boolean {
+  return ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
+}
 const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
