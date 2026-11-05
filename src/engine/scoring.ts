@@ -1760,12 +1760,21 @@ const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.13 / 0.52;
 const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
 
+/** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
+ * renormalising the rest of its half. Unset, nothing changes. */
+const SC_DROP = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_DROP ?? '';
+const dropW = (part: string, w: number, bucket: Record<string, number>) => {
+  if (!SC_DROP || !(SC_DROP in bucket)) return w;
+  return part === SC_DROP ? 0 : w / (1 - bucket[SC_DROP]);
+};
+const QUALITY_BUCKET = { talent: QUALITY_TALENT_WEIGHT, bench: QUALITY_BENCH_WEIGHT, rotation: QUALITY_ROTATION_WEIGHT };
+const FIT_BUCKET = { fit: FIT_COHERENCE_WEIGHT, offense: FIT_OFFENSE_WEIGHT, defense: FIT_DEFENSE_WEIGHT };
 export function teamQualityScore(talent: number, benchDepth: number, rotation: number): number {
-  return talent * QUALITY_TALENT_WEIGHT + benchDepth * QUALITY_BENCH_WEIGHT + rotation * QUALITY_ROTATION_WEIGHT;
+  return talent * dropW('talent', QUALITY_TALENT_WEIGHT, QUALITY_BUCKET) + benchDepth * dropW('bench', QUALITY_BENCH_WEIGHT, QUALITY_BUCKET) + rotation * dropW('rotation', QUALITY_ROTATION_WEIGHT, QUALITY_BUCKET);
 }
 
 export function teamFitCompositeScore(fit: number, offense: number, defense: number): number {
-  return fit * FIT_COHERENCE_WEIGHT + offense * FIT_OFFENSE_WEIGHT + defense * FIT_DEFENSE_WEIGHT;
+  return fit * dropW('fit', FIT_COHERENCE_WEIGHT, FIT_BUCKET) + offense * dropW('offense', FIT_OFFENSE_WEIGHT, FIT_BUCKET) + defense * dropW('defense', FIT_DEFENSE_WEIGHT, FIT_BUCKET);
 }
 
 /**
@@ -1849,25 +1858,48 @@ export function dataCertaintyAdjustment(team: Team): number {
   return -Math.min(DATA_CERTAINTY.max, Math.max(0, preBoxEraShare(team) - DATA_CERTAINTY.from) * DATA_CERTAINTY.perShare);
 }
 
+/** Night-session measurement (`SC_BENCH=1`): the five the bench puts on the floor — each slot's
+ * second row first — so Fit and Offense can be read for the second unit too. */
+function secondUnit(team: Team): Team | null {
+  if (!team.rotation) return null;
+  const slots = Object.fromEntries(
+    Object.entries(team.rotation.slots).map(([slot, rows]) => {
+      const backup = rows.slice(1).filter((r) => r.minutes > 0).sort((a, b) => b.minutes - a.minutes)[0];
+      return [slot, backup ? [backup, ...rows.filter((r) => r !== backup)] : rows];
+    }),
+  ) as typeof team.rotation.slots;
+  return { ...team, rotation: { ...team.rotation, slots } };
+}
+const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? '';
+function benchShare(team: Team): number {
+  if (!team.rotation) return 0;
+  let bench = 0;
+  for (const rows of Object.values(team.rotation.slots)) for (const r of rows.slice(1)) bench += r.minutes;
+  return Math.min(0.4, bench / 240);
+}
+
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
-  const offense = offenseScore(team);
+  const unit2 = SC_BENCH ? secondUnit(team) : null;
+  const share = unit2 ? benchShare(team) : 0;
+  const offense = unit2 && SC_BENCH.includes('o') ? Math.round((1 - share) * offenseScore(team) + share * offenseScore(unit2)) : offenseScore(team);
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
-  const fit = fitScore(team);
+  const fit0 = fitScore(team);
+  const fit = unit2 && SC_BENCH.includes('f') ? { ...fit0, score: Math.round((1 - share) * fit0.score + share * fitScore(unit2).score) } : fit0;
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
     teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
-    ballLoadAdjustment(team) +
+    (SC_DROP === 'ballLoad' ? 0 : ballLoadAdjustment(team)) +
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
     // game plays it, so the team's number carries it too.
     liftAdjustment(team) +
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
     // for the five on the floor; the team's number takes it for the starters.
-    ballHandlerAdjustment(team) +
-    dataCertaintyAdjustment(team);
+    (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
+    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
