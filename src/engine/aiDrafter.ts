@@ -1948,7 +1948,7 @@ export const AI_PLAN = {
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
   reserveGlueFga: 3,
-  scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? 5),
+  scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
@@ -2845,6 +2845,12 @@ export function pickForAi(
       AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
         ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
         : undefined;
+    // The structured test's last pick: with the shape already whole but for the glue, the glue is a
+    // 3-shot player, not a fourth backup (Satoranský 4.1, Crowder 4.3, Boucher 5.9 came that way).
+    if (structureHoles && slots === 1) {
+      const cheap = [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+      if (cheap && structureHoles([...roster, cheap]) === 0) return cheap;
+    }
     const full = () => planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
     let planned = glue
       ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed)
