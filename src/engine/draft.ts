@@ -84,8 +84,8 @@ const envOf = (name: string) => (globalThis as { process?: { env: Record<string,
 export const FLOORS = {
   starterTal: Number(envOf('FLOOR_TAL') ?? 0),
   perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
-  spacing: Number(envOf('FLOOR_SPACING') ?? 0),
-  perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.2),
+  spacing: Number(envOf('FLOOR_SPACING') ?? 60),
+  perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.6),
   /** The starting spots the TAL floor covers (the user: SF, SG and PF are the weak ones; PG and C
    * carry the stars). */
   positions: (envOf('FLOOR_POS') ?? 'PG,SG,SF,PF,C').split(',') as Position[],
