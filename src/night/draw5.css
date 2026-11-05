@@ -78,7 +78,7 @@
   .hero2 p { margin: 0; font-style: italic; color: var(--ink2); }
   .hero2 p b { font-style: normal; color: var(--ink); }
   .hero2 .hn { display: flex; gap: 20px; text-align: right; }
-  .hero2 .hn span { display: block; font: 700 11px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .hero2 .hn span { display: block; font: 700 12px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
   .hero2 .hn b { display: block; font: 600 30px var(--num); color: var(--ink2); }
   .hero2 .hn .you b { color: var(--ink); }
   .small-prof .profile td { padding-top: 6px; padding-bottom: 6px; }

@@ -2,7 +2,7 @@
 .nt {
 /* shared draft pieces for Mini and All-Time: team marks, board, player list, caps bar, position tabs */
 /* team mark: the franchise colours as a printed swatch */
-.tm { display: inline-grid; place-items: center; width: 30px; height: 22px; border-radius: 3px; font: 700 11px var(--sans); letter-spacing: 0.06em; flex: none; }
+.tm { display: inline-grid; place-items: center; width: 30px; height: 22px; border-radius: 3px; font: 700 12px var(--sans); letter-spacing: 0.06em; flex: none; }
 .tm.lg { width: 44px; height: 30px; font-size: 13px; }
 
 /* lottery */
@@ -34,7 +34,7 @@
 .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .facts div { padding: 4px 16px; border-left: 1px solid var(--rule); }
 .facts div:first-child { border-left: 0; padding-left: 0; }
-.facts span { display: block; font: 700 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+.facts span { display: block; font: 700 12px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
 .facts b { display: block; margin-top: 6px; font: 600 28px/1 var(--num); }
 .facts b.g { color: var(--gold); }
 .facts small { display: block; margin-top: 4px; font-size: 13px; font-style: italic; color: var(--ink3); }
@@ -72,7 +72,7 @@
 .filters .fit { font-size: 14px; color: var(--ink2); }
 .filters .fit b { color: var(--gold); font: 600 14px var(--num); }
 .plist { width: 100%; border-collapse: collapse; }
-.plist th { text-align: left; font: 700 11px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); padding: 10px 8px 6px 0; }
+.plist th { text-align: left; font: 700 12px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); padding: 10px 8px 6px 0; }
 .plist th.r, .plist td.r { text-align: right; }
 .plist td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 .plist td.f { width: 46px; }
@@ -102,7 +102,7 @@
 .dboard th:first-child { width: 190px; }
 .dboard td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dboard td.tn { display: flex; align-items: center; gap: 10px; color: var(--ink); font: 700 16px var(--cond); }
-.dboard td small { font: 700 11px var(--sans); color: var(--ink3); margin-left: 4px; }
+.dboard td small { font: 700 12px var(--sans); color: var(--ink3); margin-left: 4px; }
 .dboard td.e { color: var(--ink4); }
 .dboard tr.you td { color: var(--ink); }
 .dboard tr.you td.tn { box-shadow: inset 3px 0 0 var(--you); }
@@ -147,14 +147,14 @@
   .rule h2 { font-size: 40px; }
   .plist th:nth-child(3), .plist td.tier, .plist th:nth-child(5), .plist td.n3 { display: none; }
   .plist td.n, .plist th:nth-child(4) { display: none; }
-  .plist .mst { display: block; white-space: nowrap; font: 500 11px var(--num); color: var(--ink3); }
-  .plist .mt b { white-space: nowrap; font-size: 11px; }
+  .plist .mst { display: block; white-space: nowrap; font: 500 12px var(--num); color: var(--ink3); }
+  .plist .mt b { white-space: nowrap; font-size: 12px; }
   .plist td.f { width: 40px; }
   .plist td.f img, .plist td.f .ini { width: 32px; height: 32px; }
   .plist .nm { font-size: 18px; }
   .plist .mt i { display: none; }
   .plist td.act { width: 64px; }
-  .plist .draft { padding: 6px 8px; font-size: 12px; }
+  .plist .draft { padding: 6px 8px; font-size: 13px; }
   .filters { gap: 12px; }
   .filters .search { max-width: none; flex-basis: 100%; }
   .verdict.vmini { grid-template-columns: 1fr; gap: 14px; }
@@ -165,8 +165,8 @@
   .five-row .card img, .five-row .card .ini { width: 34px !important; height: 34px !important; font-size: 14px; }
   .five-row .card .nm { font-size: 13px !important; padding: 4px 2px 6px; }
   .five-row .card .sb, .five-row .card .roles, .five-row .card .st { display: none; }
-  .five-row .card .top { padding: 4px 6px; font-size: 11px; }
-  .five-row .card .cost { font-size: 11px; padding: 0 6px; }
+  .five-row .card .top { padding: 4px 6px; font-size: 12px; }
+  .five-row .card .cost { font-size: 12px; padding: 0 6px; }
   .stand td.who { display: none; }
 }
 
@@ -195,7 +195,7 @@
   .plist col:last-child { width: 74px !important; }
   .plist col:nth-last-child(2), .plist col:nth-last-child(4) { width: 74px !important; }
   .plist td.cap { font-size: 16px; }
-  .plist .draft { font-size: 12px; }
+  .plist .draft { font-size: 13px; }
 }
 
 /* caps range bar */
@@ -205,8 +205,8 @@
 .cb-range { position: absolute; top: 0; bottom: 0; background: var(--gold); border-radius: 3px; }
 .cb-h { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--bg); }
 .cb-max { position: absolute; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; background: var(--red); text-decoration: none; }
-.cb-max em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: italic 500 11px var(--sans); color: var(--red); }
-.cb-track s { position: absolute; top: 10px; transform: translateX(-50%); text-decoration: none; font: 500 11px var(--num); color: var(--ink3); }
+.cb-max em { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: italic 500 12px var(--sans); color: var(--red); }
+.cb-track s { position: absolute; top: 10px; transform: translateX(-50%); text-decoration: none; font: 500 12px var(--num); color: var(--ink3); }
 .cb-v { font: 600 16px var(--num); color: var(--gold); white-space: nowrap; }
 .cb-reset { font: italic 500 13px var(--sans); color: var(--ink2); }
 .filters { border-bottom: 0; }
@@ -292,7 +292,7 @@
 .plist .lt-chips { display: none; }
 @media (max-width: 600px) {
   .plist .lt-chips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: 1px; }
-  .plist .lt-chips i { font: 800 10.5px var(--num); font-style: normal; border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; color: var(--ink); }
+  .plist .lt-chips i { font: 800 11px var(--num); font-style: normal; border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; color: var(--ink); }
   .plist .lt-chips i.hi { color: var(--green); }
   .plist .lt-chips i.lo { color: var(--red); }
 }

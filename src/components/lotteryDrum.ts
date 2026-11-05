@@ -381,7 +381,8 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
     c.strokeStyle = `rgba(${ACC},.5)`; c.lineWidth = px(1); c.stroke();
 
     // draft order, as the same pills the picks list uses
-    c.fillStyle = 'rgb(127,150,179)'; c.font = `400 ${px(11)}px ${MONO}`; c.textAlign = 'center';
+    // 2026-11-05, the UI audit: the board under the drum in the game's warm palette (it was navy).
+    c.fillStyle = 'rgb(169,163,149)'; c.font = `400 ${px(12)}px ${MONO}`; c.textAlign = 'center';
     c.fillText('Draft order', px(C.x), px(BOARD_Y - TILE_H / 2 - 12));
     for (let n = 1; n <= teamCount; n++) {
       const p = cellPos(n, teamCount);
@@ -389,7 +390,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
       const isNext = (phase === 'drawing' && n === nextPick) || ((phase === 'pull' || phase === 'flight') && n === slot);
       const isMine = !!taken && taken.mine;
       c.beginPath(); c.roundRect(px(p.x - TILE_W / 2), px(p.y - TILE_H / 2), px(TILE_W), px(TILE_H), px(10));
-      c.fillStyle = isMine ? `rgba(${ACC2},.16)` : '#0d151f';
+      c.fillStyle = isMine ? `rgba(${ACC2},.16)` : '#1A1B1F';
       c.fill();
       if (isMine || isNext) {
         c.strokeStyle = isMine ? `rgb(${ACC2})` : `rgba(${phase === 'drawing' ? ACC : ACC2},${0.55 + 0.45 * Math.sin(now / 110)})`;
@@ -398,7 +399,7 @@ export function createLotteryDrum(canvas: HTMLCanvasElement, opts: LotteryDrumOp
       }
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.font = `700 ${px(12.5)}px ${MONO}`;
-      c.fillStyle = isMine ? `rgb(${ACC2})` : taken ? 'rgb(92,88,80)' : isNext ? INK : 'rgba(127,150,179,.8)';
+      c.fillStyle = isMine ? `rgb(${ACC2})` : taken ? 'rgb(110,106,96)' : isNext ? INK : 'rgba(169,163,149,.9)';
       c.fillText(`#${n}`, px(p.x), px(isMine ? p.y + 11 : taken ? p.y + 10 : p.y));
       if (taken) ballAt(c, p.x, p.y - 6, isMine ? 9 : 7.5, isMine, isMine ? 1 : 0.5);
     }
