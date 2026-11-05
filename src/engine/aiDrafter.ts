@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
-import { BACKUP_PAIRS, canStillComplete, pairsFor } from './structuredRoster';
+import { BACKUP_PAIRS, canStillComplete, pairsFor, readStructure } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2847,8 +2847,18 @@ export function pickForAi(
   }
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
-    const board = scored.map((entry) => entry.player);
+    const fullBoard = scored.map((entry) => entry.player);
     const slots = rosterSize - roster.length;
+    // 2026-11-05, the user ("błędy struktury najbardziej psują immersję"): in the structured test a
+    // drafted starter keeps his job — a better player at his position is off this team's board, since
+    // the reading would start him and push the starter to a one-position backup spot (Mario Chalmers,
+    // then Walt Frazier at the point; Jon Barry at the two). Off only if nobody else is left.
+    const lockedStarters = structureHoles ? readStructure(roster).starters : {};
+    const unlocked = fullBoard.filter((p) => {
+      const starter = lockedStarters[p.primaryPosition];
+      return !starter || effectiveTalent(p) <= effectiveTalent(starter);
+    });
+    const board = unlocked.length > 0 ? unlocked : fullBoard;
     // 2026-11-05, the user ("Czy AI nie mogą sobie z góry zaplanować salary glue? Jest więcej niż 16
     // tanich zapychaczy" — 126 players have a 3-shot window): in the structured test the glue is
     // planned from the start — the board's best cheap player stands in for it while the other
