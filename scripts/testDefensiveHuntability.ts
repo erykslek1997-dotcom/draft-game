@@ -287,7 +287,10 @@ check(threeLayerHunt.targetableMinutes >= 44 && threeLayerHunt.targetableMinutes
 // regression: Gobert (96) alone still anchors the roster, Mobley individually still reads as a
 // genuinely good, not elite, young defensive big. Re-measured directly (0.08775), not guessed.
 check(threeLayerCohesion.backlineFoundation >= 0.08, 'Mobley and Gobert register a genuine two-anchor backline foundation');
-check(threeLayerCohesion.eliteShell === 0, 'weak starter average does not falsely classify the reported roster as an elite shell');
+// 2026-11-05 (defense calibration, the user: "średnia piątki poniżej 80 działa bardzo zero-jedynkowo"):
+// the elite-shell average ramps 70-90 instead of a cliff at 80, so a weak-average five reads a small
+// partial shell (16), not 0 — still far from an elite one.
+check(threeLayerCohesion.eliteShell <= 25, 'weak starter average reads at most a small partial elite shell');
 // 2026-08-19: band lowered 65-70 -> 55-65 after talent.ts's spacing-conditional TAL correction
 // shifted this same fixture's rotation minutes (see the two checks immediately above for the
 // full root cause) — defenseScore is minutes-weighted and reads the same huntability/cohesion

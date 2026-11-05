@@ -131,6 +131,8 @@ export interface NightRow {
   grades?: { off: string; def: string; tp: string };
   /** His other stretches, for the years button (All-Time). */
   spans?: number;
+  /** Costs more than your next pick may spend — his caps show in red. */
+  over?: boolean;
 }
 
 const TOP_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
@@ -165,12 +167,12 @@ export function PlayerTable({
         <col />
         {at && <col className="c-hide" style={{ width: 96 }} />}
         <col className="c-hide" style={{ width: 118 }} />
-        <col className="c-hide" style={{ width: 58 }} />
-        <col className="c-hide" style={{ width: 58 }} />
-        <col className="c-hide" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide" style={{ width: 84 }} />}
+        {at && <col className="c-hide c-mid" style={{ width: 84 }} />}
         {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
@@ -180,13 +182,13 @@ export function PlayerTable({
           <th>Player</th>
           {at && <th className="c-hide">Years</th>}
           <th className="c-hide">Tier</th>
-          <th className="num c-hide">Pts</th>
-          <th className="num c-hide">Reb</th>
-          <th className="num c-hide">Ast</th>
+          <th className="num c-hide c-mid">Pts</th>
+          <th className="num c-hide c-mid">Reb</th>
+          <th className="num c-hide c-mid">Ast</th>
           {!at && <th className="num c-hide">3PA</th>}
           <th className="num">Caps</th>
           {at && (
-            <th className="c-hide" style={{ textAlign: 'center' }}>
+            <th className="c-hide c-mid" style={{ textAlign: 'center' }}>
               Report
             </th>
           )}
@@ -200,7 +202,14 @@ export function PlayerTable({
           const roles = cardRoles(s);
           const name = maskName(s.playerName);
           return (
-            <tr key={r.key} className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : ''].filter(Boolean).join(' ') || undefined} title={r.title}>
+            <tr
+              key={r.key}
+              className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : '', onOpen ? 'clk' : ''].filter(Boolean).join(' ') || undefined}
+              title={r.title}
+              // 2026-11-05, the playtest ("muszę wejść w zdjęcie gracza i dopiero wtedy wyskakuje profil"):
+              // a tap anywhere on the row opens his profile; the row's own buttons keep their jobs.
+              onClick={onOpen ? (e) => { if (!(e.target as HTMLElement).closest('button, a, input, select')) onOpen(s.playerName); } : undefined}
+            >
               <td className="f">
                 <NFace name={s.playerName} span={s} />
               </td>
@@ -253,13 +262,13 @@ export function PlayerTable({
                 </td>
               )}
               <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`}>{r.tier}</td>
-              <td className="num c-hide">{s.box.ppg.toFixed(1)}</td>
-              <td className="num c-hide">{s.box.rpg.toFixed(1)}</td>
-              <td className="num c-hide">{s.box.apg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.ppg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.rpg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.apg.toFixed(1)}</td>
               {!at && <td className="num c-hide">{hadThreePointLine(s) ? s.box.threePA.toFixed(1) : NOT_YET}</td>}
-              <td className="cap num">{fmtCaps(s.fga)}</td>
+              <td className={`cap num${r.over ? ' over' : ''}`} title={r.over ? 'More than your next pick can spend' : undefined}>{fmtCaps(s.fga)}</td>
               {at && (
-                <td className="c c-hide">
+                <td className="c c-hide c-mid">
                   {r.grades ? (
                     <span className="grades">
                       {r.grades.off} · {r.grades.def} · {r.grades.tp}

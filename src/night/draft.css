@@ -165,8 +165,8 @@
   .five-row .card img, .five-row .card .ini { width: 34px !important; height: 34px !important; font-size: 14px; }
   .five-row .card .nm { font-size: 13px !important; padding: 4px 2px 6px; }
   .five-row .card .sb, .five-row .card .roles, .five-row .card .st { display: none; }
-  .five-row .card .top { padding: 4px 6px; font-size: 12px; }
-  .five-row .card .cost { font-size: 12px; padding: 0 6px; }
+  .five-row .card .top { padding: 4px 6px; font-size: 11px; }
+  .five-row .card .cost { font-size: 11px; padding: 0 6px; }
   .stand td.who { display: none; }
 }
 
@@ -296,3 +296,12 @@
   .plist .lt-chips i.hi { color: var(--green); }
   .plist .lt-chips i.lo { color: var(--red); }
 }
+
+/* 2026-11-05, the playtest ("ROUND 5 PICK XX można mocniej zaznaczyć", "jakoś to zaznaczyć żeby nie
+   przesuwać do góry"): your own turn reads at a glance — the round and pick on a red tag — and a
+   player this pick can't afford shows his caps in red, still legible in a dimmed row. */
+.nt .prompt.yours .eb.now { display: inline-block; padding: 4px 9px 3px; border-radius: 3px; background: var(--red); color: #fff; font-size: 14px; letter-spacing: 0.08em; }
+.nt .plist td.cap.over { color: var(--red); }
+.nt .plist tr.no td.cap.over { opacity: 0.9; }
+.nt .plist tr.clk { cursor: pointer; }
+@media (hover: hover) { .nt .plist tr.clk:not(.no):hover td { background: var(--surf); } }

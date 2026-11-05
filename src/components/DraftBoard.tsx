@@ -1400,22 +1400,17 @@ export default function DraftBoard({
                           ) : spanOpt && spanOpt.options.length > 1 ? (
                             <button type="button" className="yrs-btn" onClick={() => setYearsFor({ name: pl.playerName, from: 'team' })}>
                               {eff.spanLabel}
-                              <small>▾ change</small>
+                              <small>
+                                ▾<span className="chg-w"> change</span>
+                              </small>
                             </button>
                           ) : (
                             <span className="yrs-plain">{eff.spanLabel}</span>
                           )}
-                        </div>
-                        {/* 2026-10-28 (mockup draft-grades-phone.html): the phone hides the grade columns, so
-                            the awards get their own line and the four grades another one; the tier sits by the name */}
-                        {!masked && (
-                          <>
-                            {spanAwards(eff.playerName, eff.spanLabel).length > 0 && (
-                              <div className="rs-ph rs-t">
-                                <span className="pk2-aw">{spanAwards(eff.playerName, eff.spanLabel).join(' · ')}</span>
-                              </div>
-                            )}
-                            <div className="rs-ph rs-g">
+                          {/* 2026-11-05, the playtest ("za dużo", mockup makieta-sklad): on a phone the
+                              four grades share the years' line, two lines a player in all */}
+                          {!masked && (
+                            <span className="rs-ph rs-g">
                               {(
                                 [
                                   ['OFF', g.off],
@@ -1428,9 +1423,9 @@ export default function DraftBoard({
                                   {k} <b className={gradeTone(v)}>{v}</b>
                                 </span>
                               ))}
-                            </div>
-                          </>
-                        )}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="tier c-hide">
                         {masked ? '?' : displayedOverallTier(eff)}
@@ -1639,6 +1634,7 @@ export default function DraftBoard({
         starred: bigBoard.includes(group.playerName),
         grades: g ? { off: g.off, def: g.def, tp: g.tp } : undefined,
         spans: group.spans.length,
+        over: !ghost && !state.complete && target.fga > humanBudget.maxThisPick,
       };
     });
     const open = STARTER_SLOTS.filter((sl) => !humanAssignment[sl]);
@@ -1659,10 +1655,12 @@ export default function DraftBoard({
             Set the years and the rotation, then play the season.
           </Prompt>
         ) : youOnClock ? (
-          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep">
+          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep yours">
             {/* 2026-10-22, the playtest ("może jednak bez tej podpowiedzi"): no advice on who to take,
                 only the hard limit — what this pick may cost and still leave enough for the rest. */}
-            Up to <b>{fmtCaps(humanBudget.maxThisPick)} caps</b> on this pick.{!open.length && ' Your five is set; this one is for the bench.'}
+            {/* 2026-11-05, the playtest ("dałbym ile mamy caps albo jakoś to zaznaczyć"): what's left, and
+                the list marks in red whoever this pick can't afford */}
+            <b>{fmtCaps(humanBudget.capLeft)} caps left</b> · up to {fmtCaps(humanBudget.maxThisPick)} on this pick, over it in red.{!open.length && ' Your five is set; this one is for the bench.'}
           </Prompt>
         ) : studying ? (
           <div className="study">

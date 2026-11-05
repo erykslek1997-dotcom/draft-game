@@ -323,7 +323,25 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
       1997 (KG, Webber, Malone 1996-98), przegląd razem z Tobą. Rozważyć też to samo dla
       rzutu za 3 przed 1979-80 (brak linii — West, Oscar, Havlicek). (M)
 
-## Plan do launchu: 7 tygodni (decyzja 2026-10-22) — obowiązuje
+## Sesja nocna (Eryk 2026-11-05: „zrób to w nocy, powiem ci kiedy”)
+
+1. **Teammate lift — usunąć z overall, jeśli nic „za” nie wyjdzie** (decyzja Eryka). Porównać trzy
+   warianty: obecny / bez odejmowania „prawdziwych kolegów” / bez liftu w overall — zgodność z
+   realnym SRS (`scripts/auditMetrics.ts`) i z mechaniką meczu. Zostaje tylko, jeśli coś realnie
+   poprawia; w symulacji meczu ewentualnie mała wersja. Przykład problemu: LeBron 2012-14
+   realMates +2,4 TS → skład Eryka −2,7 overall, Orlando +1,5.
+2. **Podwójne liczenie obrony w overall**: obrona ~43% fitu (pokrycie ról 0,331 + switchability
+   0,099) i osobno Defense 0,21 vs Offense 0,13 w połowie fit.
+3. **Fit z ławką** według minut na parkiecie (~75% piątka, ~25% zestawienia ze zmiennikami; dla
+   zmienników tylko spacing, warstwy obrony, rozgrywający).
+4. **Atak z ławką** — dziś liczy tylko piątkę.
+Każdy punkt: przed/po na SRS i na meczach, wynik do akceptacji Eryka przed merge.
+
+## Plan do launchu: 12 tygodni (decyzja 2026-10-22, zmiana 2026-11-05) — obowiązuje
+
+**2026-11-05, Eryk: launch po Nowym Roku.** Tygodniowa rozpiska zostaje, ale tygodnie 8/9–12 to
+miejsce na elastyczność i nowe opcje gry. Tydzień 1 zaczął się 2026-10-22, więc tydzień 12 to ok.
+7–13 stycznia 2027.
 
 | Tydzień | Zakres |
 |---|---|
@@ -333,7 +351,8 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 | 4 | Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
 | 5 | Brand, domena (+ przepięcie logowania), „pokonaj wynik znajomego”, wstępne testy na większej grupie |
 | 6 | Strategia SM, testy kont i tabeli przez ludzi, poprawki przed launchem, wyłączenie trybów testowych |
-| 7 | Zapas na poprawki → launch (ok. 2. tydzień grudnia) |
+| 7 | Zapas na poprawki (dawniej launch — przesunięty) |
+| 8/9–12 | Elastycznie: nowe opcje gry, poprawki z testów ludzi, dopracowanie; launch po Nowym Roku (ok. tydzień 12, połowa stycznia 2027) |
 
 ### Lista bezpieczeństwa i produkcji przed launchem (Eryk 2026-10-30: „to, na czym się nie znam”)
 Każdy punkt ma tydzień i właściciela (C = Claude, E = Eryk). Przed launchem (tydz. 6) przejść całą listę jeszcze raz.
@@ -352,7 +371,7 @@ Każdy punkt ma tydzień i właściciela (C = Claude, E = Eryk). Przed launchem 
 | 📈 | Analytics + monitoring błędów | 5 | Prosta analityka bez ciasteczek (np. Plausible / Umami lub wbudowana u hostingu) i monitoring błędów (Sentry, plan darmowy) z alertem na e-mail. | E (konta), C (podpięcie) |
 | 🔄 | Rollback | 4 | Każdy merge = wersja na hostingu, powrót jednym kliknięciem do poprzedniej; zmiany bazy tylko przez migracje z wersją wstecz; tagi wydań w gicie. | C, E (zna przycisk) |
 
-**Zakładka na limity (Eryk 2026-10-30):** tydzień 3 może zabrać do ~30% limitu tygodnia 4, jeśli kalibracja się nie zepnie; to, czego wtedy nie skończy tydzień 4 (backend), przechodzi na tydzień 5. Tydzień 5 jest lżejszy (brand, domena, testy ludzi to głównie praca Eryka), więc go wchłonie. Kolejność się nie zmienia: najpierw kończymy kalibrację, potem backend. Launch zostaje na 2. tydzień grudnia, zapasem jest tydzień 7.
+**Zakładka na limity (Eryk 2026-10-30):** tydzień 3 może zabrać do ~30% limitu tygodnia 4, jeśli kalibracja się nie zepnie; to, czego wtedy nie skończy tydzień 4 (backend), przechodzi na tydzień 5. Tydzień 5 jest lżejszy (brand, domena, testy ludzi to głównie praca Eryka), więc go wchłonie. Kolejność się nie zmienia: najpierw kończymy kalibrację, potem backend. (2026-11-05: launch przesunięty na po Nowym Roku, zapasem są tygodnie 7–12.)
 
 MP na start = wariant (b): bez serwera gry — duel na linkach (jest) + tabela dzienna. Pełne MP po launchu.
 Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po launchu”.

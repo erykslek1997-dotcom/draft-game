@@ -156,7 +156,9 @@ interface EdgeRow {
   mine: number;
 }
 
-function EdgeBars({ rows }: { rows: EdgeRow[] }) {
+/** 2026-11-05, the playtest ("ten widok meh"): the two bars were grey on cream and the numbers
+ * needed the key; their bar and number are red now, yours cream, matching the key. */
+function EdgeBars({ rows, code }: { rows: EdgeRow[]; code: string }) {
   return (
     <>
       {rows.map((r) => (
@@ -166,8 +168,8 @@ function EdgeBars({ rows }: { rows: EdgeRow[] }) {
             <i style={{ width: `${Math.max(0, Math.min(100, r.theirs))}%` }} />
             <u style={{ width: `${Math.max(0, Math.min(100, r.mine))}%` }} />
           </div>
-          <span className="mono">
-            {r.theirs} vs {r.mine}
+          <span className="mono eg-v">
+            <em title={code}>{r.theirs}</em> · <em className="y">{r.mine}</em>
           </span>
         </div>
       ))}
@@ -180,7 +182,7 @@ function EdgeBars({ rows }: { rows: EdgeRow[] }) {
  * beat them side by side, then every input under "All metrics" with the gap signed (+ yours ahead,
  * − theirs) — the colour never carries it alone.
  */
-export function RivalEdge({ nick, scores, metrics }: { nick: string; scores: EdgeRow[]; metrics: () => { theirs: TeamMetricValues; mine: TeamMetricValues } }) {
+export function RivalEdge({ nick, code = nick.slice(0, 3).toUpperCase(), scores, metrics }: { nick: string; code?: string; scores: EdgeRow[]; metrics: () => { theirs: TeamMetricValues; mine: TeamMetricValues } }) {
   const [all, setAll] = useState(false);
   const theyWin = scores.filter((r) => r.theirs > r.mine).sort((x, y) => y.theirs - y.mine - (x.theirs - x.mine));
   const youWin = scores.filter((r) => r.mine > r.theirs).sort((x, y) => y.mine - y.theirs - (x.mine - x.theirs));
@@ -212,7 +214,7 @@ export function RivalEdge({ nick, scores, metrics }: { nick: string; scores: Edg
   return (
     <div className="edge2">
       <p className="edge-key">
-        <i style={{ background: 'var(--ink3)' }} />
+        <i style={{ background: 'var(--red)' }} />
         {nick}
         <i style={{ background: 'var(--you)' }} />
         you
@@ -220,11 +222,11 @@ export function RivalEdge({ nick, scores, metrics }: { nick: string; scores: Edg
       <div className="split">
         <section className="edge">
           <b>{theyWin.length ? `Where the ${nick} beat you` : `The ${nick} beat you nowhere`}</b>
-          <EdgeBars rows={theyWin} />
+          <EdgeBars rows={theyWin} code={code} />
         </section>
         <section className="edge">
           <b>{youWin.length ? 'Where you beat them' : 'You beat them nowhere'}</b>
-          <EdgeBars rows={youWin} />
+          <EdgeBars rows={youWin} code={code} />
         </section>
       </div>
       <button type="button" className="lk-inline" onClick={() => setAll((o) => !o)}>
