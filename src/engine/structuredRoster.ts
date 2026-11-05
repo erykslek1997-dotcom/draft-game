@@ -313,7 +313,7 @@ function tierMinutesCap(p: PlayerSpan): number {
   }
   return cap;
 }
-export const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30 };
+export const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30, minStint: 4 };
 export const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
@@ -471,11 +471,14 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     const helpers = roster
       .filter((p) => p.id !== starter.id && positionCompetenceScore(p, slot) > 0)
       .sort((a, b) => positionCompetenceScore(b, slot) - positionCompetenceScore(a, slot));
-    for (const p of helpers) {
+    const roomOf = (p: PlayerSpan) => Math.min(tierMinutesCap(p), IRL_MINUTES.backupDefault) - totalOf(p.id);
+    // One helper who can take it all comes first; a split never leaves a stint under
+    // `IRL_MINUTES.minStint` (the user on Danny Green's 1 minute at SF: "1 minuta cmon").
+    const whole = helpers.find((p) => roomOf(p) >= rest);
+    for (const p of whole ? [whole] : helpers) {
       if (rest <= 0) break;
-      const room = Math.min(tierMinutesCap(p), IRL_MINUTES.backupDefault) - totalOf(p.id);
-      const take = Math.min(rest, room);
-      if (take <= 0) continue;
+      const take = Math.min(rest, roomOf(p));
+      if (take < IRL_MINUTES.minStint) continue;
       const row = slots[slot].find((r) => r.playerId === p.id);
       if (row) row.minutes += take;
       else slots[slot].push({ playerId: p.id, minutes: take });
