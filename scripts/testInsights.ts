@@ -98,7 +98,10 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // the named targets' minutes). Re-measured directly (59).
 // 2026-11-04 (later): 59 -> 56 with the backup real-minute cap and the 18 own-slot bonus: Barros plays
 // fewer PG minutes and Larry Smith's PF stint makes him a named target again. Re-measured (56).
-check(weakLinkInsight?.message.includes('56 targetable minutes'), 'weak-link description reports the real 56-minute cost');
+// 2026-11-05: 56 -> 60 with the card-tier minute caps (MVP/All-NBA 38, the rest 36): the starters'
+// minutes past their caps go to the bench, Brunson, Larry Smith and Barros among them. Same named
+// targets. Re-measured directly (60).
+check(weakLinkInsight?.message.includes('60 targetable minutes'), 'weak-link description reports the real 60-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
