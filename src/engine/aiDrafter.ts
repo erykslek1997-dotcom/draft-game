@@ -1892,6 +1892,11 @@ export function setAiStructureHoles(fn: ((roster: PlayerSpan[]) => number) | nul
 export function setAiTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
   teamScorer = scorer;
 }
+/** The classic team score (autoAssignRotation), for drafts that are not the nine-man shape. */
+let classicTeamScorer: ((roster: PlayerSpan[]) => number) | null = null;
+export function setAiClassicTeamScorer(scorer: ((roster: PlayerSpan[]) => number) | null): void {
+  classicTeamScorer = scorer;
+}
 /** How many of the best-valued candidates are re-ranked by the team score. */
 const TEAM_SCORE_SHORTLIST = 10;
 
@@ -2183,6 +2188,31 @@ function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
 }
 
 export function pickForAi(
+  roster: PlayerSpan[],
+  currentFgas: number[],
+  available: PlayerSpan[],
+  teamCount: number = TEAM_COUNT,
+  pickNumber?: number,
+  rng: () => number = Math.random,
+  ruleset?: AiDraftRuleset,
+): PlayerSpan {
+  // 2026-11-05, the audit: the structured roster (structuredRoster.ts) is a nine-man shape. A
+  // draft of another size (Mini Draft's five) picks as before, with the classic team score.
+  if ((ruleset?.rosterSize ?? ROSTER_SIZE) !== ROSTER_SIZE && (structureHoles || classicTeamScorer)) {
+    const holes = structureHoles;
+    const scorer = teamScorer;
+    structureHoles = null;
+    if (classicTeamScorer) teamScorer = classicTeamScorer;
+    try {
+      return pickForAiSized(roster, currentFgas, available, teamCount, pickNumber, rng, ruleset);
+    } finally {
+      structureHoles = holes;
+      teamScorer = scorer;
+    }
+  }
+  return pickForAiSized(roster, currentFgas, available, teamCount, pickNumber, rng, ruleset);
+}
+function pickForAiSized(
   roster: PlayerSpan[],
   currentFgas: number[],
   available: PlayerSpan[],
