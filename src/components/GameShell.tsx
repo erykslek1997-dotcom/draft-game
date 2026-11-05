@@ -319,7 +319,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // usual pace, timed from when the pick came on the clock, so the work hides behind that pace. If
   // the worker isn't available, the page drafts on its own thread as before.
   const ai = aiWorkerClient();
-  const [, setAiTick] = useState(0);
+  const [aiTick, setAiTick] = useState(0);
   useEffect(() => ai.subscribe(() => setAiTick((n) => n + 1)), [ai]);
   const turnStartedAt = useRef({ index: -1, at: 0 });
   if (turnStartedAt.current.index !== draftState.history.length) turnStartedAt.current = { index: draftState.history.length, at: Date.now() };
@@ -345,7 +345,10 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (next) setDraftState(next);
     }, Math.max(0, delay - waited));
     return () => clearTimeout(timer);
-  }, [ai, draftState, phase, autoFinishing, studying]);
+    // `aiTick`: a pick arriving from the worker re-runs this, so the page lays it down at once instead
+    // of waiting out `WORKER_GRACE_MS` and drafting unplanned (2026-11-05: every CPU pick waited the
+    // full grace and was made on the page — slow, and the structured rosters broke).
+  }, [ai, aiTick, draftState, phase, autoFinishing, studying]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
