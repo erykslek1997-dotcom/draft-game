@@ -149,3 +149,22 @@ export function cheapestGlueWindows(roster: PlayerSpan[]): PlayerSpan[] {
     return cheapest && cheapest.fga < p.fga ? cheapest : p;
   });
 }
+
+/**
+ * Can a partial roster still grow into the full structure? Its own reading, then: the slots left hold
+ * every role still open, the backups still to come (two positions each, at most) can cover what is
+ * uncovered, and at most one player has no role (the glue). The structured test's pick check: two
+ * one-position backups (Mario Chalmers, Jon Barry) left the third to cover three spots.
+ */
+export function canStillComplete(roster: PlayerSpan[], rosterSize: number): boolean {
+  const s = readStructure(roster);
+  const left = rosterSize - roster.length;
+  const missingStarters = STARTER_SLOTS.filter((slot) => !s.starters[slot]).length;
+  const openBackups = 3 - s.backups.length;
+  const covered = new Set(s.backups.flatMap((b) => b.pair));
+  const uncovered = STARTER_SLOTS.filter((slot) => !covered.has(slot)).length;
+  const glueOpen = s.glue.length === 0 ? 1 : 0;
+  if (s.glue.length > 1) return false;
+  if (missingStarters + openBackups + glueOpen > left) return false;
+  return uncovered <= 2 * openBackups;
+}

@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
-import { BACKUP_PAIRS, pairsFor } from './structuredRoster';
+import { BACKUP_PAIRS, canStillComplete, pairsFor } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2044,7 +2044,10 @@ function planPick(
   }
   // The planned player most likely to be gone by the next turn: the best one. Ordering by the board's
   // own value (need bonuses in) took Wesley Person (70) in round four ahead of Rudy Gobert (83).
-  let pick = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0] ?? null;
+  const byTalent = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+  // The structured test: the best planned player whose pick still lets the roster reach the full
+  // shape (`canStillComplete`); the best one only if none does.
+  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...roster, p], roster.length + slots)) : undefined) ?? byTalent[0] ?? null;
   // The structured test: a planned backup whose pair has few others left on the board goes first —
   // Honolulu planned a PG/SG, took its stars first and found none left (`AI_PLAN.scarceRole`).
   if (structureHoles) {
