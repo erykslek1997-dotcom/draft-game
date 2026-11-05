@@ -2910,11 +2910,14 @@ export function pickForAi(
     // (Detroit left C uncovered with Chris Andersen on the board; the cheap 3-shot glue rule before
     // only fired when the glue alone closed every hole).
     if (structureHoles && slots === 1) {
-      let best: { p: PlayerSpan; breaks: number; tal: number } | null = null;
+      // Among equal breaks, a player the filters above allow comes first (Prigioni as the last backup).
+      const allowed = new Set(unlocked.map((p) => p.id));
+      let best: { p: PlayerSpan; breaks: number; off: number; tal: number } | null = null;
       for (const p of fullBoard) {
         const breaks = readStructure([...roster, p]).problems.length;
+        const off = allowed.has(p.id) ? 0 : 1;
         const tal = effectiveTalent(p);
-        if (!best || breaks < best.breaks || (breaks === best.breaks && tal > best.tal)) best = { p, breaks, tal };
+        if (!best || breaks < best.breaks || (breaks === best.breaks && (off < best.off || (off === best.off && tal > best.tal)))) best = { p, breaks, off, tal };
       }
       if (best) return best.p;
     }
