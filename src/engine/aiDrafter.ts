@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
-import { BACKUP_PAIRS, canStillComplete, pairsFor, readStructure } from './structuredRoster';
+import { BACKUP_PAIRS, canStillComplete, keepsRoles, pairsFor, readStructure } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2054,7 +2054,7 @@ function planPick(
   // shape (`canStillComplete`); the best one only if none does.
   const checked = realRoster ?? roster;
   const size = roster.length + slots;
-  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...checked, p], size)) : undefined) ?? byTalent[0] ?? null;
+  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...checked, p], size) && keepsRoles(checked, p)) : undefined) ?? byTalent[0] ?? null;
   // The structured test: a planned backup whose pair has few others left on the board goes first —
   // Honolulu planned a PG/SG, took its stars first and found none left (`AI_PLAN.scarceRole`).
   if (structureHoles) {
@@ -2871,9 +2871,17 @@ export function pickForAi(
         : undefined;
     // The structured test's last pick: with the shape already whole but for the glue, the glue is a
     // 3-shot player, not a fourth backup (Satoranský 4.1, Crowder 4.3, Boucher 5.9 came that way).
+    // The last pick: the player who leaves the fewest breaks in the shape, the best of those
+    // (Detroit left C uncovered with Chris Andersen on the board; the cheap 3-shot glue rule before
+    // only fired when the glue alone closed every hole).
     if (structureHoles && slots === 1) {
-      const cheap = [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
-      if (cheap && structureHoles([...roster, cheap]) === 0) return cheap;
+      let best: { p: PlayerSpan; breaks: number; tal: number } | null = null;
+      for (const p of fullBoard) {
+        const breaks = readStructure([...roster, p]).problems.length;
+        const tal = effectiveTalent(p);
+        if (!best || breaks < best.breaks || (breaks === best.breaks && tal > best.tal)) best = { p, breaks, tal };
+      }
+      if (best) return best.p;
     }
     const full = () => planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
     let planned = glue
@@ -2901,15 +2909,15 @@ export function pickForAi(
         return fills * 2 + (opts.length > 0 ? 1 : 0);
       };
       const near = board.filter(
-        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize),
+        (p) => Math.abs(effectiveTalent(p) - effectiveTalent(base)) <= AI_PLAN.nearTal && p.fga <= base.fga + AI_PLAN.nearFga && canStillComplete([...roster, p], rosterSize) && keepsRoles(roster, p),
       );
       const better = near.filter((p) => flexibility(p) > flexibility(base)).sort((a, b) => flexibility(b) - flexibility(a) || effectiveTalent(b) - effectiveTalent(a))[0];
       if (better) planned = { ...planned, pick: better };
     }
     // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
     // the board who does, before any pick that breaks it.
-    if (planned && structureHoles && !canStillComplete([...roster, planned.pick], rosterSize)) {
-      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize));
+    if (planned && structureHoles && !(canStillComplete([...roster, planned.pick], rosterSize) && keepsRoles(roster, planned.pick))) {
+      const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize) && keepsRoles(roster, p));
       if (keeps) return keeps;
     }
     if (planned) return planned.pick;

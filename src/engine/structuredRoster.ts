@@ -230,3 +230,14 @@ export function canStillComplete(roster: PlayerSpan[], rosterSize: number): bool
   if (missingStarters + openBackups + glueOpen > left) return false;
   return uncovered <= 2 * openBackups;
 }
+
+/**
+ * Does adding `p` keep everyone already drafted in a playing role? A starter or backup pushed to the
+ * glue spot at more than `STRUCTURE.glueFga` shots is a wasted pick (Mikal Bridges, a backup, left a
+ * 6.8-FGA glue when a better wing came).
+ */
+export function keepsRoles(roster: PlayerSpan[], p: PlayerSpan): boolean {
+  const before = new Set(readStructure(roster).glue.map((x) => x.id));
+  const after = readStructure([...roster, p]).glue;
+  return after.every((x) => x.id === p.id || before.has(x.id) || x.fga <= STRUCTURE.glueFga);
+}
