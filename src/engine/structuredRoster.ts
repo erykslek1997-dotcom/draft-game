@@ -4,6 +4,7 @@ import { spanOptionsFor } from './spanOptimizer';
 import { positionCompetenceScore, FULL_SCORE } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS } from './positions';
+import { computeSpacing } from './spacing';
 import type { Rotation } from './types';
 
 /**
@@ -88,8 +89,31 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
  * może wybrać PG/SG ; SF/PF ; C" or "PG ; SG/SF ; PF/C" — the three together still cover all five).
  */
 export function backupOptions(p: PlayerSpan): [Position, Position][] {
-  return [...pairsFor(p), [p.primaryPosition, p.primaryPosition]];
+  const all: [Position, Position][] = [...pairsFor(p), [p.primaryPosition, p.primaryPosition]];
+  return playsGuard(p) ? all : all.filter((pair) => !pair.some(isGuardSpot));
 }
+
+/**
+ * 2026-11-05, the user ("Non shooterzy na pozycjach 1-2 psują immersję, w obecnej lidze taki guard by
+ * nie grał"; the strict, modern reading chosen — an era-fair one for pre-1990 windows is for later):
+ * minutes at the point or the two need a shooter, spacing `GUARD_SHOOTING.minSpacing`+, unless he is a
+ * star (`GUARD_SHOOTING.starTal`+: Jordan 1987-89, Isiah, Westbrook).
+ */
+export const GUARD_SHOOTING = { minSpacing: 25, starTal: 85 };
+const isGuardSpot = (slot: Position) => slot === 'PG' || slot === 'SG';
+const spacingMemo = new Map<string, number>();
+export function playsGuard(p: PlayerSpan): boolean {
+  if (effectiveTalent(p) >= GUARD_SHOOTING.starTal) return true;
+  let v = spacingMemo.get(p.id);
+  if (v === undefined) {
+    v = computeSpacing(p);
+    spacingMemo.set(p.id, v);
+  }
+  return v >= GUARD_SHOOTING.minSpacing;
+}
+
+/** A star never comes off the bench (the user: "KD czy Nash z ławki nieakceptowalne"). */
+export const STRUCTURE_STAR_TAL = 85;
 
 /**
  * The structured reading of a roster, and what breaks it. The starter at each slot is always the
@@ -99,9 +123,12 @@ export function backupOptions(p: PlayerSpan): [Position, Position][] {
  */
 export function readStructure(roster: PlayerSpan[]): StructuredRoster {
   const starters: Partial<Record<Position, PlayerSpan>> = {};
+  const shooterIssues: string[] = [];
   for (const slot of STARTER_SLOTS) {
-    const best = roster.filter((p) => p.primaryPosition === slot).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+    const naturals = roster.filter((p) => p.primaryPosition === slot).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+    const best = isGuardSpot(slot) ? naturals.find(playsGuard) ?? naturals[0] : naturals[0];
     if (best) starters[slot] = best;
+    if (best && isGuardSpot(slot) && !playsGuard(best)) shooterIssues.push(`non-shooter ${best.playerName} starts at ${slot}`);
   }
   const used = new Set(Object.values(starters).map((p) => p!.id));
   const rest = roster.filter((p) => !used.has(p.id));
@@ -112,7 +139,8 @@ export function readStructure(roster: PlayerSpan[]): StructuredRoster {
     const withSlider = bestBench(starters, rest, [slider.covers]);
     if (withSlider.problems.length < best.problems.length) best = { ...withSlider, slider };
   }
-  return best;
+  const benchStars = [...best.backups.map((b) => b.player), ...best.glue].filter((p) => effectiveTalent(p) >= STRUCTURE_STAR_TAL);
+  return { ...best, problems: [...shooterIssues, ...benchStars.map((p) => `star ${p.playerName} off the bench`), ...best.problems] };
 }
 
 function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[], preCovered: Position[]): StructuredRoster {

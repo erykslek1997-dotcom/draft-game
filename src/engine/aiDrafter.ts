@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
-import { BACKUP_PAIRS, canStillComplete, keepsRoles, pairsFor, readStructure } from './structuredRoster';
+import { BACKUP_PAIRS, canStillComplete, keepsRoles, pairsFor, readStructure, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2849,8 +2849,24 @@ export function pickForAi(
   }
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
-    const fullBoard = scored.map((entry) => entry.player);
     const slots = rosterSize - roster.length;
+    // 2026-11-05, the user ("KD czy Nash z ławki nieakceptowalne"): in the structured test a player's
+    // window goes where his roster has room — a window whose own position is still open, within
+    // `WINDOW_EQUAL.within` TAL of his best legal one, beats one at a filled spot (Durant's SF years
+    // when the four is taken).
+    const openSlots = structureHoles ? new Set(STARTER_SLOTS.filter((slot) => !readStructure(roster).starters[slot])) : new Set<Position>();
+    const spansByName = new Map<string, (typeof scoredBySpan)[number][]>();
+    if (structureHoles) for (const entry of scoredBySpan) {
+      const k = normalizePlayerName(entry.player.playerName);
+      spansByName.set(k, [...(spansByName.get(k) ?? []), entry]);
+    }
+    const fullBoard = scored.map((entry) => {
+      if (!structureHoles || openSlots.has(entry.player.primaryPosition)) return entry.player;
+      const alts = spansByName.get(normalizePlayerName(entry.player.playerName)) ?? [];
+      const top = Math.max(...alts.map((a) => a.talent));
+      const fit = alts.filter((a) => openSlots.has(a.player.primaryPosition) && a.talent >= top - WINDOW_EQUAL.within).sort((a, b) => b.talent - a.talent)[0];
+      return fit ? fit.player : entry.player;
+    });
     // 2026-11-05, the user ("błędy struktury najbardziej psują immersję"): in the structured test a
     // drafted starter keeps his job — a better player at his position is off this team's board, since
     // the reading would start him and push the starter to a one-position backup spot (Mario Chalmers,
@@ -2858,7 +2874,8 @@ export function pickForAi(
     const lockedStarters = structureHoles ? readStructure(roster).starters : {};
     const unlocked = fullBoard.filter((p) => {
       const starter = lockedStarters[p.primaryPosition];
-      return !starter || effectiveTalent(p) <= effectiveTalent(starter);
+      // A star at a filled spot would come off the bench: off the board too.
+      return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
     });
     const board = unlocked.length > 0 ? unlocked : fullBoard;
     // 2026-11-05, the user ("Czy AI nie mogą sobie z góry zaplanować salary glue? Jest więcej niż 16
