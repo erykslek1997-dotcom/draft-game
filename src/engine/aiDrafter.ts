@@ -1938,6 +1938,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * player the board values most, the one least likely to last. Candidates come in the board's own
  * order (taste and noise included), so GMs still differ.
  */
+export const STAR_GUARD = { minTal: 96, gap: 5 };
 export const AI_PLAN = {
   on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
@@ -2957,6 +2958,19 @@ export function pickForAi(
     if (planned && structureHoles && !(canStillComplete([...roster, planned.pick], rosterSize, capLimit - spent - planned.pick.fga) && keepsRoles(roster, planned.pick))) {
       const keeps = board.find((p) => canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p));
       if (keeps) return keeps;
+    }
+    // 2026-11-05, the user ("LeBron w pierwszym drafcie spadł na 10 pick XD"): the plan's cap
+    // efficiency never passes a Legend/GOAT (`STAR_GUARD.minTal`+) who is `STAR_GUARD.gap`+ TAL over
+    // the planned pick — LeBron 2012-14 (104, ~20 FGA) went behind Kawhi (98, 16.5).
+    if (planned && structureHoles) {
+      const star = board.reduce<PlayerSpan | null>((best, p) => (!best || effectiveTalent(p) > effectiveTalent(best) ? p : best), null);
+      if (
+        star &&
+        effectiveTalent(star) >= STAR_GUARD.minTal &&
+        effectiveTalent(star) - effectiveTalent(planned.pick) >= STAR_GUARD.gap &&
+        canStillComplete([...roster, star], rosterSize, capLimit - spent - star.fga)
+      )
+        return star;
     }
     if (planned) return planned.pick;
   }

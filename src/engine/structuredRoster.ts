@@ -97,7 +97,16 @@ function benchCompetence(p: PlayerSpan, slot: Position): number {
 }
 
 /** The pairs a player can back up: his primary in the pair, the other one played for real. */
+const pairsMemo = new Map<string, [Position, Position][]>();
 export function pairsFor(p: PlayerSpan): [Position, Position][] {
+  let hit = pairsMemo.get(p.id);
+  if (!hit) {
+    hit = pairsForUncached(p);
+    pairsMemo.set(p.id, hit);
+  }
+  return hit;
+}
+function pairsForUncached(p: PlayerSpan): [Position, Position][] {
   const primary = benchPrimary(p);
   return BACKUP_PAIRS.filter(([a, b]) => {
     if (primary === a) return benchCompetence(p, b) >= STRUCTURE.comboScore;
@@ -110,7 +119,16 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
  * What a backup can cover: any pair he plays, or his own position alone (2026-11-05, the user: "drużyna
  * może wybrać PG/SG ; SF/PF ; C" or "PG ; SG/SF ; PF/C" — the three together still cover all five).
  */
+const backupOptionsMemo = new Map<string, [Position, Position][]>();
 export function backupOptions(p: PlayerSpan): [Position, Position][] {
+  let hit = backupOptionsMemo.get(p.id);
+  if (!hit) {
+    hit = backupOptionsUncached(p);
+    backupOptionsMemo.set(p.id, hit);
+  }
+  return hit;
+}
+function backupOptionsUncached(p: PlayerSpan): [Position, Position][] {
   // Under `STRUCTURE.minBackupTal` he is glue at best (Caldwell Jones 1988-90, 27, as a C backup).
   // Lower than the draft board's floor (`minRotationTal`): a late 50-54 backup beats an uncovered spot.
   // Off (0) for now: with it 3 of 64 CPU teams were left with a spot uncovered late in the draft —
@@ -195,7 +213,18 @@ export const STRUCTURE_STAR_TAL = Number((globalThis as { process?: { env: Recor
  * first reading started Michael Cooper over Michael Jordan to keep Cooper off the glue spot); the
  * rest is split into backups and glue as well as it can be.
  */
+// The same rosters are read many times a pick (score, cost, feasibility, filters): memoized by ids.
+const structureMemo = new Map<string, StructuredRoster>();
 export function readStructure(roster: PlayerSpan[]): StructuredRoster {
+  const key = roster.map((p) => p.id).sort().join(',');
+  const hit = structureMemo.get(key);
+  if (hit) return hit;
+  const result = readStructureUncached(roster);
+  if (structureMemo.size >= 20000) structureMemo.clear();
+  structureMemo.set(key, result);
+  return result;
+}
+function readStructureUncached(roster: PlayerSpan[]): StructuredRoster {
   const starters: Partial<Record<Position, PlayerSpan>> = {};
   const shooterIssues: string[] = [];
   for (const slot of STARTER_SLOTS) {
