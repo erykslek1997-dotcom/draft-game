@@ -6,7 +6,7 @@ import { draftPool } from '../data/draftPool';
 import TEAM_CONTEXT from '../data/teamContext.json';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
+import { calibratedDisplayTalent, hasUserWindowOrder, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1424,6 +1424,8 @@ export function formatTal(value: number): string {
 export function displayTalentForSpan(ctx: TierGateContext): number {
   const value = displayTalentUncompressed(ctx);
   if (!ctx.playerName || value < STAR_WINDOWS.peakFrom - STAR_WINDOWS.within) return value;
+  // The user's own window order (LeBron 2012-14 > 2011-13 > 2016-18 ...) is not compressed into ties.
+  if (hasUserWindowOrder(ctx.playerName)) return value;
   const peak = starPeak(ctx.playerName);
   const gap = peak - value;
   if (peak < STAR_WINDOWS.peakFrom || gap <= 0 || gap >= STAR_WINDOWS.within) return value;

@@ -80,6 +80,11 @@ const RAW_SCALE_TOP = 100;
 
 const windowOrders = new Map<string, readonly string[]>(Object.entries(USER_WINDOW_ORDER).map(([name, order]) => [normalizePlayerName(name), order]));
 
+/** The user ordered this player's windows by hand (`USER_WINDOW_ORDER`). */
+export function hasUserWindowOrder(playerName: string): boolean {
+  return windowOrders.has(normalizePlayerName(playerName));
+}
+
 /** The table entry for a player, if the user tiered him. */
 export function tierCalibrationFor(playerName: string): CalibrationEntry | undefined {
   return entries.get(normalizePlayerName(playerName));
