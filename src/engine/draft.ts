@@ -44,7 +44,18 @@ if (STRUCTURED_TEST_FLAG()) setAiStructureHoles((roster) => readStructure(roster
 function STRUCTURED_TEST_FLAG(): boolean {
   return ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
 }
-const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 100);
+/** Holes cost `STRUCTURE_PROBLEM_COST` each; a glue over the limit costs `STRUCTURE_GLUE_COST_PER_FGA`
+ * per shot over it (Brent Barry at 8 FGA ~10 points, Fred Hoiberg at 3.6 about one), or `STRUCT_GLUE`
+ * unset, the flat hole cost. */
+function structureCost(roster: PlayerSpan[]): number {
+  const s = readStructure(roster);
+  const holes = s.problems.filter((p) => !p.startsWith('glue')).length;
+  if (STRUCTURE_GLUE_COST_PER_FGA <= 0) return STRUCTURE_PROBLEM_COST * s.problems.length;
+  const over = s.glue.reduce((sum, p) => sum + Math.max(0, p.fga - STRUCTURE.glueFga), 0);
+  return STRUCTURE_PROBLEM_COST * holes + STRUCTURE_GLUE_COST_PER_FGA * over;
+}
+const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
+const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
   const key = roster.map((p) => p.id).sort().join(',');
@@ -52,14 +63,14 @@ setAiTeamScorer((roster) => {
   if (hit !== undefined) return hit;
   const value = STRUCTURED_TEST
     ? scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) }).overallExact -
-      STRUCTURE_PROBLEM_COST * (roster.length === ROSTER_SIZE ? readStructure(roster).problems.length : 0)
+      (roster.length === ROSTER_SIZE ? structureCost(roster) : 0)
     : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
   if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
   teamScoreMemo.set(key, value);
   return value;
 });
 import type { DraftHistoryEntry, Team } from './types';
-import { readStructure, structuredRotation } from './structuredRoster';
+import { readStructure, structuredRotation, STRUCTURE } from './structuredRoster';
 
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
