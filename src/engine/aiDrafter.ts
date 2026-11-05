@@ -1948,7 +1948,7 @@ export const AI_PLAN = {
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
   reserveGlueFga: 3,
-  scarceRole: 5,
+  scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? 5),
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
