@@ -1,5 +1,6 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { effectiveTalent } from './grades';
+import { spanOptionsFor } from './spanOptimizer';
 import { positionCompetenceScore, FULL_SCORE } from './positionCompetence';
 import { STARTER_SLOTS } from './positions';
 import type { Rotation } from './types';
@@ -123,4 +124,19 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     if (rest > 0 && slots[slot][0]) slots[slot][0] = { ...slots[slot][0], minutes: slots[slot][0].minutes + rest };
   }
   return { slots };
+}
+
+/**
+ * After the draft: each glue takes his cheapest window at his drafted position (the user: "ostateczny
+ * wybór okna kleju na najtańszy" — Fred Hoiberg 3.6 and 4.3, Keith Bogans 3.8 had cheaper ones).
+ */
+export function cheapestGlueWindows(roster: PlayerSpan[]): PlayerSpan[] {
+  const glue = new Set(readStructure(roster).glue.map((p) => p.id));
+  return roster.map((p) => {
+    if (!glue.has(p.id)) return p;
+    const cheapest = spanOptionsFor(p.playerName)
+      .filter((o) => o.primaryPosition === p.primaryPosition)
+      .sort((a, b) => a.fga - b.fga)[0];
+    return cheapest && cheapest.fga < p.fga ? cheapest : p;
+  });
 }

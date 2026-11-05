@@ -1939,7 +1939,9 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 export const AI_PLAN = {
   on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
-  fromRoster: 2,
+  // The structured test plans from the first pick (the user: two centres in the first two rounds,
+  // Embiid left as a 19.9-FGA glue).
+  fromRoster: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 0 : 2,
   alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? 14),
   cheapFga: 7,
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
