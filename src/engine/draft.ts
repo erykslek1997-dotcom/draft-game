@@ -34,17 +34,26 @@ import { dailyBombSpan } from './dailyBomb';
 // Memoised by the roster's span ids: planned drafting (`AI_PLAN`) scores the same rosters again and
 // again across its swap passes and from pick to pick. Cleared when it grows past `TEAM_SCORE_MEMO_MAX`.
 const TEAM_SCORE_MEMO_MAX = 50_000;
+/** 2026-11-05, the user's structured test draft (structuredRoster.ts), on with STRUCT=1: the AI's
+ * team score uses the structured 8-man rotation and charges `STRUCTURE_PROBLEM_COST` team points per
+ * break in the structure of a full roster. */
+const STRUCTURED_TEST = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
+const STRUCTURE_PROBLEM_COST = 6;
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
   const key = roster.map((p) => p.id).sort().join(',');
   const hit = teamScoreMemo.get(key);
   if (hit !== undefined) return hit;
-  const value = scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
+  const value = STRUCTURED_TEST
+    ? scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) }).overallExact -
+      STRUCTURE_PROBLEM_COST * (roster.length === ROSTER_SIZE ? readStructure(roster).problems.length : 0)
+    : scoreTeam({ id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: autoAssignRotation(roster) }).overallExact;
   if (teamScoreMemo.size >= TEAM_SCORE_MEMO_MAX) teamScoreMemo.clear();
   teamScoreMemo.set(key, value);
   return value;
 });
 import type { DraftHistoryEntry, Team } from './types';
+import { readStructure, structuredRotation } from './structuredRoster';
 
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
