@@ -2297,7 +2297,9 @@ export function pickForAi(
   // filter: with only one qualifying legend on the board (the overwhelmingly common case), he's
   // still taken regardless of fit — the whole point of a "steal" is that a real GM takes him
   // anyway, same philosophy as `ELITE_TALENT_REDUNDANCY_EXEMPTION` elsewhere in this file.
-  if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD) {
+  // The structured test skips the steal: a legend taken regardless of fit was the second star centre
+  // (Embiid at 23 beside Kareem) that sits on the bench. Its own pick checks see legends there anyway.
+  if (pickNumber !== undefined && pickNumber > STEAL_PICK_THRESHOLD && !(structureHoles && AI_PLAN.on)) {
     const steals = planningCandidates.filter((p) => {
       const entry = GREATEST_PEAK_TIER_BY_NAME.get(normalizePlayerName(p.playerName));
       return entry !== undefined && effectiveTalent(p) >= entry.tal;
