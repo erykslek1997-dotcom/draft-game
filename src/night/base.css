@@ -478,3 +478,19 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nt .xfeed .xpost p { margin: 2px 0 0; padding: 0; border: 0; font: 400 15px/1.42 var(--sans); color: var(--ink); }
 .nt .xact { display: flex; gap: 28px; margin-top: 8px; font: 400 12px var(--sans); color: var(--ink3); }
 .nt .xact .liked { color: #F91880; }
+
+/* 2026-11-05, the playtest (a phone turned sideways: the page zoomed out, a third of the screen empty,
+   the board cramped): between a phone and a laptop the player list drops its stat and report columns,
+   the filters wrap and the side column narrows, so nothing is wider than the screen. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .nt .game { grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 16px; }
+  .nt .c-mid { display: none; }
+  .nt .pt-more { flex-wrap: wrap; margin-left: 0; }
+  .nt .ptabs { flex-wrap: wrap; }
+  .nt .ptabs .search { flex-basis: 100%; max-width: none; order: -1; margin: 0 0 6px; }
+  .nt main { min-width: 0; }
+  .nt .t b { font-size: 22px; }
+  /* the board keeps readable cells and scrolls sideways, as on a phone */
+  .nt .bgrid { overflow-x: auto; }
+  .nt .bg-row { width: 900px; }
+}

@@ -167,12 +167,12 @@ export function PlayerTable({
         <col />
         {at && <col className="c-hide" style={{ width: 96 }} />}
         <col className="c-hide" style={{ width: 118 }} />
-        <col className="c-hide" style={{ width: 58 }} />
-        <col className="c-hide" style={{ width: 58 }} />
-        <col className="c-hide" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
+        <col className="c-hide c-mid" style={{ width: 58 }} />
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide" style={{ width: 84 }} />}
+        {at && <col className="c-hide c-mid" style={{ width: 84 }} />}
         {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
@@ -182,13 +182,13 @@ export function PlayerTable({
           <th>Player</th>
           {at && <th className="c-hide">Years</th>}
           <th className="c-hide">Tier</th>
-          <th className="num c-hide">Pts</th>
-          <th className="num c-hide">Reb</th>
-          <th className="num c-hide">Ast</th>
+          <th className="num c-hide c-mid">Pts</th>
+          <th className="num c-hide c-mid">Reb</th>
+          <th className="num c-hide c-mid">Ast</th>
           {!at && <th className="num c-hide">3PA</th>}
           <th className="num">Caps</th>
           {at && (
-            <th className="c-hide" style={{ textAlign: 'center' }}>
+            <th className="c-hide c-mid" style={{ textAlign: 'center' }}>
               Report
             </th>
           )}
@@ -262,13 +262,13 @@ export function PlayerTable({
                 </td>
               )}
               <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`}>{r.tier}</td>
-              <td className="num c-hide">{s.box.ppg.toFixed(1)}</td>
-              <td className="num c-hide">{s.box.rpg.toFixed(1)}</td>
-              <td className="num c-hide">{s.box.apg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.ppg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.rpg.toFixed(1)}</td>
+              <td className="num c-hide c-mid">{s.box.apg.toFixed(1)}</td>
               {!at && <td className="num c-hide">{hadThreePointLine(s) ? s.box.threePA.toFixed(1) : NOT_YET}</td>}
               <td className={`cap num${r.over ? ' over' : ''}`} title={r.over ? 'More than your next pick can spend' : undefined}>{fmtCaps(s.fga)}</td>
               {at && (
-                <td className="c c-hide">
+                <td className="c c-hide c-mid">
                   {r.grades ? (
                     <span className="grades">
                       {r.grades.off} · {r.grades.def} · {r.grades.tp}
