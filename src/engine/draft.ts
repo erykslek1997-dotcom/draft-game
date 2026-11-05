@@ -1,4 +1,4 @@
-import type { PlayerSpan } from '../data/schema';
+import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { franchiseByName } from '../data/franchises';
 import { draftPool } from '../data/draftPool';
@@ -50,9 +50,28 @@ function STRUCTURED_TEST_FLAG(): boolean {
 function structureCost(roster: PlayerSpan[]): number {
   const s = readStructure(roster);
   const holes = s.problems.filter((p) => !p.startsWith('glue')).length;
-  if (STRUCTURE_GLUE_COST_PER_FGA <= 0) return STRUCTURE_PROBLEM_COST * s.problems.length;
+  const bench = benchPriorityCost(s.backups);
+  if (STRUCTURE_GLUE_COST_PER_FGA <= 0) return STRUCTURE_PROBLEM_COST * s.problems.length + bench;
   const over = s.glue.reduce((sum, p) => sum + Math.max(0, p.fga - STRUCTURE.glueFga), 0);
-  return STRUCTURE_PROBLEM_COST * holes + STRUCTURE_GLUE_COST_PER_FGA * over;
+  return STRUCTURE_PROBLEM_COST * holes + STRUCTURE_GLUE_COST_PER_FGA * over + bench;
+}
+/**
+ * 2026-11-05, the user ("z ławki najważniejszy Guard, później SF/PF i na końcu C"): the AI's shots on
+ * the bench go to the guard backup first. A forward backup (SF/PF) costs `BENCH_PRIORITY.forward`
+ * points per FGA, a centre backup (any shape with C) `BENCH_PRIORITY.centre`; a guard backup (any
+ * shape with PG or SG) nothing.
+ */
+export const BENCH_PRIORITY = {
+  forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0),
+  centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0),
+};
+function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Position] }[]): number {
+  let cost = 0;
+  for (const b of backups) {
+    if (b.pair.includes('PG') || b.pair.includes('SG')) continue;
+    cost += (b.pair.includes('C') ? BENCH_PRIORITY.centre : BENCH_PRIORITY.forward) * b.player.fga;
+  }
+  return cost;
 }
 const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
 const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
