@@ -1748,9 +1748,11 @@ const QUALITY_FIT_SPLIT = 0.5;
 // its weight and rotation less than nothing / 0.5x — the only two parts both judges agree on. Bench
 // .113 -> .17, rotation .078 -> .039, talent takes the rest: Overall vs real SRS r 0.752 -> 0.758,
 // vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
-const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
-const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
-const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
+// 2026-11-05, the night session: Rotation dropped from Overall (off: SRS 0.811 -> 0.816, game 0.776 ->
+// 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
+const QUALITY_TALENT_WEIGHT = 0.271 / 0.441;
+const QUALITY_BENCH_WEIGHT = 0.17 / 0.441;
+const QUALITY_ROTATION_WEIGHT = 0;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 // 2026-10-29 (audit follow-up step 2, `scripts/measureDefenseLean.ts`; the user: "Fair"): real teams
 // leaning to defense (Defense 8+ over Offense) beat their Overall by 0.63 SRS inside their decade.
@@ -1858,8 +1860,10 @@ export function dataCertaintyAdjustment(team: Team): number {
   return -Math.min(DATA_CERTAINTY.max, Math.max(0, preBoxEraShare(team) - DATA_CERTAINTY.from) * DATA_CERTAINTY.perShare);
 }
 
-/** Night-session measurement (`SC_BENCH=1`): the five the bench puts on the floor — each slot's
- * second row first — so Fit and Offense can be read for the second unit too. */
+/** 2026-11-05, the night session (the user: "czy powinno też liczyć ławkę"): the five the bench puts
+ * on the floor — each slot's busiest backup first. Fit blends it in by the bench's share of the
+ * minutes (SRS 0.816 -> 0.822, game 0.795 -> 0.805 on top of the pruned Fit); Offense was measured the
+ * same way and added nothing, so `SC_BENCH=fo` only for measurement. */
 function secondUnit(team: Team): Team | null {
   if (!team.rotation) return null;
   const slots = Object.fromEntries(
@@ -1870,7 +1874,7 @@ function secondUnit(team: Team): Team | null {
   ) as typeof team.rotation.slots;
   return { ...team, rotation: { ...team.rotation, slots } };
 }
-const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? '';
+const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
 function benchShare(team: Team): number {
   if (!team.rotation) return 0;
   let bench = 0;
