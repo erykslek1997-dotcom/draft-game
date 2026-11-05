@@ -8,12 +8,12 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 // `aiDrafter.ts` and the displayed badge already use, closing a real raw-vs-display gap (see
 // `effectiveTalent`'s own docstring for the full "why").
 import { maxSustainableMinutes } from './durability';
-import { allocateMinutes } from './minuteAllocation';
+import { allocateMinutes, BENCH_MINUTES_CAP, SIXTH_MAN_MINUTES_CAP } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent, spacesTheFloor } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
-import { cardTierMinutesCap, minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
+import { cardTierMinutesCap, minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
 import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import type { Rotation, SlotAssignment, Team } from './types';
@@ -833,11 +833,56 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
     }
   }
   mergeTinyBackupSlivers(roster, slots, primaryBySlot);
+  relieveCeilingOverruns(roster, slots);
   addMinuteTexture(roster, slots);
 
   return { slots };
 }
 
+
+/**
+ * 2026-11-05 (testRotationInvariants, the night session): the solver priced a few soft overruns —
+ * Jaren Jackson Jr. 36 of 30 while Joe Ingles and Chuck Hayes had room at his spot. A player past his
+ * minutes ceiling by more than the noticeable band hands the excess, in his own slots, to a teammate
+ * listed at that slot who is still under his ceiling, durability, tier cap and bench cap. Starters
+ * keep their row; slot totals never change.
+ */
+function relieveCeilingOverruns(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
+  const totals = new Map<string, number>();
+  for (const slot of STARTER_SLOTS) for (const a of slots[slot]) totals.set(a.playerId, (totals.get(a.playerId) ?? 0) + a.minutes);
+  const starterIds = new Set(STARTER_SLOTS.map((slot) => slots[slot][0]?.playerId));
+  const sixthId = roster.filter((p) => !starterIds.has(p.id)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]?.id;
+  const limit = (p: PlayerSpan) =>
+    Math.min(
+      minuteProfileForSpan(p).ceiling,
+      maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER),
+      cardTierMinutesCap(p),
+      starterIds.has(p.id) ? Infinity : p.id === sixthId ? SIXTH_MAN_MINUTES_CAP : BENCH_MINUTES_CAP,
+    );
+  for (const p of roster) {
+    let excess = (totals.get(p.id) ?? 0) - (minuteProfileForSpan(p).ceiling + OVERRUN_BANDS.noticeableUpTo);
+    if (excess <= 0) continue;
+    for (const slot of STARTER_SLOTS) {
+      const mine = slots[slot].find((a) => a.playerId === p.id);
+      if (!mine || mine.minutes <= 0) continue;
+      const helpers = roster
+        .filter((q) => q.id !== p.id && isRealPositionFit(q, slot) && limit(q) - (totals.get(q.id) ?? 0) > 0)
+        .sort((a, b) => limit(b) - (totals.get(b.id) ?? 0) - (limit(a) - (totals.get(a.id) ?? 0)));
+      for (const q of helpers) {
+        if (excess <= 0 || mine.minutes <= 0) break;
+        const take = Math.min(excess, mine.minutes, limit(q) - (totals.get(q.id) ?? 0));
+        const row = slots[slot].find((a) => a.playerId === q.id);
+        if (row) row.minutes += take;
+        else slots[slot].push({ playerId: q.id, minutes: take });
+        mine.minutes -= take;
+        excess -= take;
+        totals.set(q.id, (totals.get(q.id) ?? 0) + take);
+        totals.set(p.id, (totals.get(p.id) ?? 0) - take);
+      }
+    }
+  }
+  for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((a, i) => i === 0 || a.minutes > 0);
+}
 
 /**
  * 2026-10-01, the user ("dodaj trochę sosu, żeby było 39, 37, 35 minut"): the minute solver works in
