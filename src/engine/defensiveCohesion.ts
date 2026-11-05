@@ -6,6 +6,15 @@ import type { Team } from './types';
 import type { DefensiveRole, Position } from '../data/schema';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
 
+/** 2026-11-05, defense calibration (the user: "średnia piątki poniżej 80 działa bardzo zero-jedynkowo",
+ * "obręcz 77, zbyt dużo wymaga", LeBron beside Embiid): the elite-shell average ramps 70-90 (was a
+ * cliff at 80-86), the backline 72-90 (was 78-88), a cohesion layer reads full at 85 (was 90) and a
+ * starting PF's edge over the rim provider counts a quarter toward the rim layer. Measured on 96
+ * AI-drafted teams (`scripts/_defcal.ts`): Defense max 99 -> 90, over 90 2.1% -> 0%, over 80 30% ->
+ * 33%, defense-first teams in each draft's top three 4/18 -> 1/18; the user's Conley / White / OG /
+ * LeBron / Embiid five cohesion 53 -> 67. Each knob is overridable from the environment. */
+const DC_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const dcPair = (v: string | undefined, d: [number, number]): [number, number] => (v ? (v.split(',').map(Number) as [number, number]) : d);
 const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser', 'Switch Big'];
 /** Same discount shape `poa` below already applies to a non-exact-tag POA candidate — a real,
  * high-effort perimeter defender tagged Chaser rather than the more specific Wing Stopper still
@@ -44,10 +53,12 @@ const PF_SUPPORT_START = 55;
 // sit at 90-92) needs to clear a real bar here, not one calibrated assuming an extra lift that no
 // longer exists. 78/88 spans roughly p73-p92: a merely good rim defender (p75, 72) still reads 0,
 // while every named example gets real, mostly-saturated credit.
-const BACKLINE_PROVIDER_START = 78;
-const BACKLINE_PROVIDER_FULL = 88;
-const AVERAGE_START = 80;
-const AVERAGE_FULL = 86;
+const [BACKLINE_PROVIDER_START, BACKLINE_PROVIDER_FULL] = dcPair(DC_ENV?.DC_BACK, [72, 90]);
+const [AVERAGE_START, AVERAGE_FULL] = dcPair(DC_ENV?.DC_AVG, [70, 90]);
+/** Where a layer of the shown cohesion reads full. */
+const LAYER_FULL = Number(DC_ENV?.DC_LAYER ?? 85);
+/** Share of a starting PF's edge over the rim provider that the rim layer takes. */
+const PF_RIM_SHARE = Number(DC_ENV?.DC_PFRIM ?? 0.25);
 
 // 2026-09-09, user-reported ("kilka zespołów z 100 def nie ma sensu") + a top-5 human-vs-AI
 // comparison where 4/5 elite AI defenses read exactly 100: the PARTIAL credits were doing most of
@@ -229,7 +240,7 @@ function clamp01(value: number): number {
  * Defense bonus reads it too (see `defenseScoreBonus`).
  */
 function cohesionDisplayScore(weakestLayer: number, averageDtal: number, weakestStarter: number, structure: number): number {
-  const layers = clamp01((weakestLayer - 50) / 40);
+  const layers = clamp01((weakestLayer - 50) / (LAYER_FULL - 50));
   const average = clamp01((averageDtal - 55) / 30);
   const floor = clamp01((weakestStarter - 35) / 40);
   const continuous = (0.4 * layers + 0.4 * average + 0.2 * floor) * 100;
@@ -340,7 +351,13 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   const secondRim = rimProviders[1] ?? null;
   const poaStrength = poa?.effectiveStrength ?? 0;
   const wingStrength = wing?.effectiveStrength ?? 0;
-  const rimStrength = rim?.effectiveStrength ?? 0;
+  // 11b: a strong defensive PF beside the rim provider helps from the weak side (LeBron beside
+  // Embiid): the rim layer takes a share of his edge over the rim provider.
+  const startingPfForRim = primaryStarters(team).find((entry) => entry.slot === 'PF')?.player ?? null;
+  const pfRimEdge = startingPfForRim && rim && startingPfForRim.id !== rim.player.id
+    ? Math.max(0, computeDefensiveTalent(startingPfForRim) * Math.min(1, (minutesByPlayer.get(startingPfForRim.id) ?? 0) / FULL_PROVIDER_MINUTES) - rim.effectiveStrength)
+    : 0;
+  const rimStrength = (rim?.effectiveStrength ?? 0) + PF_RIM_SHARE * pfRimEdge;
   const providerReadiness = clamp01(
     (Math.min(poaStrength, wingStrength, rimStrength) - PROVIDER_START) /
       (PROVIDER_FULL - PROVIDER_START),

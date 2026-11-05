@@ -765,6 +765,9 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
   // 2026-11-04, the user ("Lowry dlaczego tylko 58 w obronie"): charges drawn and strength the box
   // and his modest DBPM (+0.3 to +0.8) don't see.
   [normalizePlayerName('Kyle Lowry'), 7],
+  // 2026-11-05, the user ("dlaczego Conley ma tylko 48"): a sound on-ball defender whose quiet box
+  // (1.2-1.3 steals, no blocks) and a fading 2013 All-Defense read him in the 40s-50s after 2014.
+  ...((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_CONLEY === '0' ? [] : [[normalizePlayerName('Mike Conley'), 8] as [string, number]]),
 ]);
 /** 2026-11-04, the user ("Dlaczego Manu ma 90 obrony"): named ceilings on the final D-TAL — a fine
  * team defender, not Pippen's level. */
@@ -789,7 +792,10 @@ const NAMED_DTAL_CAP: ReadonlyMap<string, number> = new Map([[normalizePlayerNam
  */
 const RECOGNIZED_DEFENDER_FLOOR_MIN = 60;
 const RECOGNIZED_DEFENDER_FLOOR_MAX = 88;
-const RECOGNIZED_DEFENDER_FULL_RATE = 0.75;
+const RECOGNIZED_DEFENDER_FULL_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_RFULL ?? 0.6);
+// 2026-11-05 (11c, the user: LeBron 2012-14 at 82, Kobe 2001-03 at 82 with All-Defense 1st teams):
+// the recognized-defender floor reaches its top at a 0.6 rate (two 1st-team seasons of three) instead
+// of 0.75 — LeBron 2012-14 82 -> 86, Kobe 2001-03 82 -> 87.
 /** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
  * the accolade floor counts — 1 as before, 0 off. */
 export const DTAL_RULES = { recognitionShare: 1, carry: true };
