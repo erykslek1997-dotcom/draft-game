@@ -7,6 +7,7 @@ import { STARTER_SLOTS } from './positions';
 import { computeSpacing } from './spacing';
 import { midrangeGravitySpacing, PRE_ZONE_MIDRANGE_SHARE } from './midrangeGravity';
 import { preZoneShootingSkill } from './preZoneShooting';
+import starterShareData from '../data/starterShare.json';
 import type { Rotation } from './types';
 
 /**
@@ -158,6 +159,23 @@ export function bigThreat(p: PlayerSpan): boolean {
   return hit;
 }
 
+/**
+ * 2026-11-05, the user ("czy gracz IRL był starterem czy raczej ławkowiczem ... Caruso raczej wchodził
+ * z ławki"): a window whose player started under `IRL_ROLE.benchBelow` of his games (games started
+ * on record from 1981-82; `starterShare.json`, scripts/buildStarterShare.ts) starts here only as a
+ * star (STRUCTURE_STAR_TAL+); the reading starts the next natural first. Caruso 2019-21 7%, Lou
+ * Williams 2017-19 13%; Manu 2006-08 40% and Crawford 2008-10 45% pass.
+ */
+export const IRL_ROLE = { benchBelow: 0.3 };
+const IRL_SHARE = starterShareData as Record<string, number>;
+export function starterShareIrl(p: PlayerSpan): number | undefined {
+  return IRL_SHARE[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`];
+}
+function startedIrl(p: PlayerSpan): boolean {
+  const share = starterShareIrl(p);
+  return share === undefined || share >= IRL_ROLE.benchBelow || effectiveTalent(p) >= STRUCTURE_STAR_TAL;
+}
+
 /** A star never comes off the bench (the user: "KD czy Nash z ławki nieakceptowalne"). */
 export const STRUCTURE_STAR_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAR_TAL ?? 82);
 
@@ -172,9 +190,11 @@ export function readStructure(roster: PlayerSpan[]): StructuredRoster {
   const shooterIssues: string[] = [];
   for (const slot of STARTER_SLOTS) {
     const naturals = roster.filter((p) => p.primaryPosition === slot).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
-    const best = isGuardSpot(slot) ? naturals.find(playsGuard) ?? naturals[0] : naturals[0];
+    const shoots = (p: PlayerSpan) => !isGuardSpot(slot) || playsGuard(p);
+    const best = naturals.find((p) => shoots(p) && startedIrl(p)) ?? naturals.find(shoots) ?? naturals[0];
     if (best) starters[slot] = best;
-    if (best && isGuardSpot(slot) && !playsGuard(best)) shooterIssues.push(`non-shooter ${best.playerName} starts at ${slot}`);
+    if (best && !shoots(best)) shooterIssues.push(`non-shooter ${best.playerName} starts at ${slot}`);
+    if (best && !startedIrl(best)) shooterIssues.push(`${best.playerName} came off the bench in real life (${Math.round(starterShareIrl(best)! * 100)}% starts)`);
   }
   const used = new Set(Object.values(starters).map((p) => p!.id));
   const rest = roster.filter((p) => !used.has(p.id));
