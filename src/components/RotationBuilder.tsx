@@ -235,9 +235,20 @@ function RotationBuilderComponent({
     setRows((prev) => ({ ...prev, [slot]: [...prev[slot], { playerId: '', minutes: 0 }] }));
   }
 
+  /** 2026-11-05, the playtest ("problematyczne jest usunięcie 3 gracza w rotacji"): his minutes went
+   * back to an open gap no drag could close. They go to the player before him at the position now
+   * (the one he came in for), so the spot keeps its 48. */
   function removeRow(slot: Position, rowIdx: number) {
     setIsSuggestion(false);
-    setRows((prev) => ({ ...prev, [slot]: prev[slot].filter((_, i) => i !== rowIdx) }));
+    setRows((prev) => {
+      const list = prev[slot].map((r) => ({ ...r }));
+      const gone = list[rowIdx];
+      let to = -1;
+      for (let i = rowIdx - 1; i >= 0; i--) if (list[i].playerId) { to = i; break; }
+      if (to < 0) for (let i = rowIdx + 1; i < list.length; i++) if (list[i].playerId) { to = i; break; }
+      if (gone?.playerId && gone.minutes > 0 && to >= 0) list[to].minutes += gone.minutes;
+      return { ...prev, [slot]: list.filter((_, i) => i !== rowIdx) };
+    });
   }
 
   /** The bin (playtest 2026-10-14, "brakuje czegoś jak usuń/kosz"): a backup row goes, a starter
@@ -510,7 +521,7 @@ function RotationBuilderComponent({
                       <button type="button" className="pop-r pop-out" onClick={() => { clearRow(slot, open); setPicker(null); }}>
                         <b>{open > 0 ? 'Take him out' : 'Empty the spot'}</b>
                         <small />
-                        <span className="fit">his minutes go back to the spot</span>
+                        <span className="fit">{open > 0 ? 'his minutes go to the player before him' : 'his minutes stay with the spot'}</span>
                         <span className="now" />
                       </button>
                     )}

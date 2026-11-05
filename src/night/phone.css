@@ -80,9 +80,9 @@
     /* the main action stays in reach: pinned to the bottom while the page above it scrolls
        (a disabled one isn't worth the space) */
     main > .btn.phone-only.line { background: var(--bg); }
-    main > .btn.phone-only:not(.off) { position: sticky; bottom: 10px; z-index: 4; box-shadow: 0 0 0 10px var(--bg), 0 -16px 18px var(--bg); }
+    main > .btn.phone-only:not(.off) { position: sticky; bottom: calc(10px + var(--vv-bottom, 0px)); z-index: 4; box-shadow: 0 0 0 10px var(--bg), 0 -16px 18px var(--bg); }
     main > .btn2.phone-only, main > .stackb.phone-only, main > div.phone-only:has(> .btn:not(.off)) {
-      position: sticky; bottom: 0; z-index: 4; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      position: sticky; bottom: var(--vv-bottom, 0px); z-index: 4; margin: 0 -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
       background: var(--bg); box-shadow: 0 -12px 16px var(--bg);
     }
 
@@ -214,6 +214,9 @@
      its mode lines and footnotes; a finished game's key moments only */
   .nt .prompt:not(.ph-keep) p, .nt .sub-note, .nt h3 > span, .nt .slot.empty small, .nt .slot.active small { display: none; }
   .nt .m2-note:not(.loading) { display: none; }
+  /* except the draft board's round toggle and hide link — the only way to the other rounds (playtest
+     2026-11-05, "nie można przewinąć boardu po 5 rundzie") */
+  .nt .bgrid h3 > span { display: inline; }
   .nt .dnp-note { display: none; }
   /* the app bar is the page's top rule: no second double rule under it */
   .nt .headline, .nt .hero2 { border-top: 0; padding-top: 2px; }
@@ -634,3 +637,24 @@
 /* points and minutes on two short lines, so neither is cut */
 .poster .po-b3 em { margin-top: 1px; }
 .poster .po-b3 b + em { margin-top: 3px; }
+
+/* 2026-11-05, the playtest ("ten widok nie jest zły, ale za dużo", mockup makieta-sklad): two lines a
+   player on a phone — name, tier and awards (short; the most important one when they don't fit), then
+   the years and the four grades on one line. */
+.nt .roster .rs-awn { display: none; }
+@media (max-width: 600px) {
+  .nt .roster .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nt .roster .nm .rs-awn { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--ink4); border-radius: 9px; font: 600 10px/16px var(--num); color: var(--ink2); vertical-align: 2px; }
+  .nt .roster .mt { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; }
+  .nt .roster .mt .yrs-btn, .nt .roster .mt .yrs-plain { font-size: 13px; }
+  .nt .roster .mt .rs-g { display: inline-flex; margin-top: 0; gap: 6px; font-size: 11px; letter-spacing: 0.02em; }
+  .nt .roster .mt .rs-g b { width: auto; margin-left: 2px; font-size: 12px; }
+  .nt .roster .chg-w { display: none; }
+  .nt .plist.roster td { padding-top: 7px; padding-bottom: 7px; }
+  .nt .plist.roster col:nth-child(2) { width: 30px !important; }
+  .nt .plist.roster col:nth-child(3) { width: 40px !important; }
+  .nt .plist.roster col:last-child { width: 54px !important; }
+  .nt .plist.roster td.f img, .nt .plist.roster td.f .ini { width: 32px; height: 32px; }
+  .nt .roster .mt { gap: 6px; }
+  .nt .roster .mt .rs-g { gap: 5px; font-size: 10px; letter-spacing: 0; }
+}

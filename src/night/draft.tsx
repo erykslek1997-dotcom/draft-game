@@ -131,6 +131,8 @@ export interface NightRow {
   grades?: { off: string; def: string; tp: string };
   /** His other stretches, for the years button (All-Time). */
   spans?: number;
+  /** Costs more than your next pick may spend — his caps show in red. */
+  over?: boolean;
 }
 
 const TOP_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
@@ -200,7 +202,14 @@ export function PlayerTable({
           const roles = cardRoles(s);
           const name = maskName(s.playerName);
           return (
-            <tr key={r.key} className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : ''].filter(Boolean).join(' ') || undefined} title={r.title}>
+            <tr
+              key={r.key}
+              className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : '', onOpen ? 'clk' : ''].filter(Boolean).join(' ') || undefined}
+              title={r.title}
+              // 2026-11-05, the playtest ("muszę wejść w zdjęcie gracza i dopiero wtedy wyskakuje profil"):
+              // a tap anywhere on the row opens his profile; the row's own buttons keep their jobs.
+              onClick={onOpen ? (e) => { if (!(e.target as HTMLElement).closest('button, a, input, select')) onOpen(s.playerName); } : undefined}
+            >
               <td className="f">
                 <NFace name={s.playerName} span={s} />
               </td>
@@ -257,7 +266,7 @@ export function PlayerTable({
               <td className="num c-hide">{s.box.rpg.toFixed(1)}</td>
               <td className="num c-hide">{s.box.apg.toFixed(1)}</td>
               {!at && <td className="num c-hide">{hadThreePointLine(s) ? s.box.threePA.toFixed(1) : NOT_YET}</td>}
-              <td className="cap num">{fmtCaps(s.fga)}</td>
+              <td className={`cap num${r.over ? ' over' : ''}`} title={r.over ? 'More than your next pick can spend' : undefined}>{fmtCaps(s.fga)}</td>
               {at && (
                 <td className="c c-hide">
                   {r.grades ? (
