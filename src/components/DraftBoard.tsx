@@ -1,7 +1,7 @@
 import { spanAwards } from '../engine/spanAwards';
 import { offenseRatingGrade, defenseRatingGrade } from '../engine/ratingScale';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { NO_THREE_LINE_TIP, gradeTip, spacingUngraded, type GradeKey } from './gradeHelp';
+import { spacingUngraded } from './gradeHelp';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -10,7 +10,7 @@ import { dailyRuleWords } from '../dailyDraftDay';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
-import { computeSpacing, spacingTier, type SpacingTier } from '../engine/spacing';
+import { computeSpacing } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
@@ -22,16 +22,13 @@ import {
   displayTierForSpan,
   tierRank,
   type OverallTier,
-  type Grade,
 } from '../engine/grades';
 // The sixth-man-aware version of `tierContextFor` — see `tierContextWithSixthMan`'s own docstring
 // for why this lives in `sixthMan.ts` rather than `grades.ts`. Aliased to the same name so every
 // existing call site in this file (and `DraftPoolBrowser.tsx`, which imports it from here) keeps
 // working unchanged and automatically picks up the 'Sixth Man' relabel.
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
-import { playoffPerformanceTier, type PlayoffPerformanceTier } from '../engine/playoffPerformanceLookup';
-import { computeDurability, durabilityTier, type DurabilityTier } from '../engine/durability';
-import { isSmallSampleSpan, sampleSizeGames } from '../engine/sampleSize';
+import { computeDurability } from '../engine/durability';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { upcomingPicks } from './DraftWarRoom';
@@ -112,26 +109,7 @@ export interface PlayerGroup {
   spans: PlayerSpan[];
 }
 
-/** Maps a tier to its CSS modifier class. Kept as an explicit record rather than deriving a
- * class from the label so a renamed tier fails at the type level instead of silently losing
- * its colour. STILL USED by `DraftPoolBrowser.tsx` (not part of this redesign pass) — the new
- * `.at-shell` Draft tab below has its own, separate dot-based tier→colour maps
- * (`SPACING_DOT_CLASS` etc.), so don't merge these; they serve two different visual systems on
- * purpose while the rollout is partial. */
-const SPACING_TIER_CLASS: Record<SpacingTier, string> = {
-  'Non-shooter': 'tier-non',
-  'Bad shooter': 'tier-bad',
-  'Average shooter': 'tier-avg',
-  'Good shooter': 'tier-good',
-  'Great shooter': 'tier-great',
-  'Walking gravity': 'tier-gravity',
-  'Shooting anomaly': 'tier-anomaly',
-};
 
-export function SpacingTierBadge({ span }: { span: PlayerSpan }) {
-  const tier = spacingTier(span);
-  return <span className={`tier-badge ${SPACING_TIER_CLASS[tier]}`}>{tier}</span>;
-}
 
 /** Same pill shape/pattern as `SpacingTierBadge`, one hue family per band — kept fully distinct
  * from SPACING's own palette (see .rating-* in App.css) so the two badge columns never look like
@@ -141,19 +119,6 @@ export function SpacingTierBadge({ span }: { span: PlayerSpan }) {
  * the player's identity for the Curry exception, not just the number. */
 type DisplayOverallTier = OverallTier | 'Salary Glue';
 
-const OVERALL_TIER_CLASS: Record<DisplayOverallTier, string> = {
-  'Salary Glue': 'rating-glue',
-  'Cigarette Butt': 'rating-cigarette',
-  'Bench Warmer': 'rating-bench',
-  'Role Player': 'rating-role',
-  'Sixth Man': 'rating-sixthman',
-  Starter: 'rating-starter',
-  'All-star': 'rating-allstar',
-  'All-NBA': 'rating-allnba',
-  MVP: 'rating-mvp',
-  'Legend': 'rating-peak',
-  GOAT: 'rating-goat',
-};
 
 /** Sub-2-shot players are cap-construction pieces, not ordinary replacement-level players. The
  * underlying tier stays unchanged for talent/minutes rules; this is the explicit roster-role
@@ -187,12 +152,6 @@ function displayedOverallTier(span: PlayerSpan): DisplayOverallTier {
 // above) so this file's own and DraftPoolBrowser.tsx's existing call sites are unaffected.
 export { tierContextFor };
 
-export function OverallTierBadge({ span }: { span: PlayerSpan }) {
-  // The Bomb daily: his tier would give him away until the results.
-  if (isBombMasked(span.playerName)) return <span className="tier-badge tier-badge--bomb">?</span>;
-  const tier = displayedOverallTier(span);
-  return <span className={`tier-badge ${OVERALL_TIER_CLASS[tier]}`}>{tier}</span>;
-}
 
 /** Tooltip for a Draft button — says WHY a pick is blocked instead of one generic "over the cap"
  * line, since since 2026-09-24 a pick can also be blocked for leaving too little for the rest of
@@ -212,77 +171,26 @@ export function draftButtonTitle(state: DraftState, spanId: string, canPick: boo
 /** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
  * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
  * defense itd"): how many full scouting reports a draft allows. */
-export const SCOUT_REPORTS_PER_DRAFT = 3;
+const SCOUT_REPORTS_PER_DRAFT = 3;
 
-/** Real playoff-performance tag (see `playoffPerformanceLookup.ts`) — a third, fully distinct
- * palette (red family = dropped efficiency, green family = rose above it) so it can't be
- * mistaken for either SPACING's or the overall-rating's own colour scales. Most spans don't
- * carry a tag at all, so this renders nothing rather than a "None" pill when absent — matches
- * how a below-median SPACING/rating span still always gets SOME tier, but this one is
- * deliberately rare. */
-const PLAYOFF_TIER_CLASS: Record<PlayoffPerformanceTier, string> = {
-  'Platinum Dropper': 'playoff-platinum-drop',
-  'Gold Dropper': 'playoff-gold-drop',
-  'Silver Dropper': 'playoff-silver-drop',
-  'Bronze Dropper': 'playoff-bronze-drop',
-  'Bronze Riser': 'playoff-bronze-rise',
-  'Silver Riser': 'playoff-silver-rise',
-  'Gold Riser': 'playoff-gold-rise',
-  'Platinum Riser': 'playoff-platinum-rise',
-};
 
-export function PlayoffPerformanceBadge({ span }: { span: PlayerSpan }) {
-  const tier = playoffPerformanceTier(span);
-  if (!tier) return null;
-  return <span className={`tier-badge ${PLAYOFF_TIER_CLASS[tier]}`}>{tier}</span>;
-}
 
-/** DUR tier pills (`durability.ts`) — a fourth distinct palette, cool blue-to-violet ladder so
- * it can't be mistaken for SPACING (warm cool-to-warm), the overall rating (grey-to-gold), or
- * playoff performance (red/green). DNP/Walking Glass/Street Clothes are included for
- * completeness even though no real span in the current dataset reaches them (the source data's
- * own floor is 66.7% availability) — if a future data update ever adds a genuinely fragile
- * span, the badge is already correct for it. */
-const DURABILITY_TIER_CLASS: Record<DurabilityTier, string> = {
-  DNP: 'dur-dnp',
-  'Walking Glass': 'dur-walking-glass',
-  'Street Clothes': 'dur-street-clothes',
-  'Load Management': 'dur-load-management',
-  Reliable: 'dur-reliable',
-  Unbreakable: 'dur-unbreakable',
-  Ironman: 'dur-ironman',
-};
 
-export function DurabilityTierBadge({ span }: { span: PlayerSpan }) {
-  const tier = durabilityTier(span);
-  return <span className={`tier-badge ${DURABILITY_TIER_CLASS[tier]}`}>{tier}</span>;
-}
 
-/** G_SMALL_SAMPLE — renders nothing for the ~99% of spans built on a normal real game count,
- * same "most spans carry no tag" pattern `PlayoffPerformanceBadge` already uses above. */
-export function SmallSampleBadge({ span }: { span: PlayerSpan }) {
-  if (!isSmallSampleSpan(span)) return null;
-  const games = sampleSizeGames(span);
-  return (
-    <span className="tier-badge sample-limited" title={games !== null ? `${games} real games in this span` : undefined}>
-      Limited sample
-    </span>
-  );
-}
 
 /** Spans arrive in dataset order, which for the generated players is effectively arbitrary —
  * a player's rows would jump around (2010-12, 2015-17, 2009-11...). Sorted chronologically so
  * an expanded player reads as a career from earliest to latest. `spanEndYears` is the same
  * label-parsing helper the engine uses, so an unparseable label degrades to a stable string
  * compare rather than throwing the order out. */
-export function byChronology(a: PlayerSpan, b: PlayerSpan): number {
+function byChronology(a: PlayerSpan, b: PlayerSpan): number {
   const aYears = spanEndYears(a.spanLabel);
   const bYears = spanEndYears(b.spanLabel);
   if (aYears.length > 0 && bYears.length > 0 && aYears[0] !== bYears[0]) return aYears[0] - bYears[0];
   return a.spanLabel.localeCompare(b.spanLabel);
 }
 
-export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
+function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
   const map = new Map<string, PlayerSpan[]>();
   for (const p of list) {
     const arr = map.get(p.playerName);
@@ -332,49 +240,7 @@ export function groupByPlayer(list: PlayerSpan[]): PlayerGroup[] {
 // asked for, just fewer top-level tabs.
 type AtTab = 'draft' | 'team';
 
-// 2026-09-11, user-reported live ("4) brak koloru" — the Team tab's OFF/DEF/O-POR/D-POR pills all
-// reading as the same navy regardless of grade): these used to share the app-wide `at-t1..at-t6`
-// tone ramp, which is a deliberately monochrome-BLUE "how exceptional is this" scale (also used
-// for talent tiers, results tone, lottery highlight — contexts where "worst" doesn't mean "bad",
-// just "less exceptional"). A letter grade is the one place that ramp doesn't fit: S-vs-F is a
-// genuine good/bad judgment, so it gets its own real red→green scale instead — scoped to grades
-// only, the shared tone ramp everywhere else is untouched.
-const GRADE_RANK: Record<Grade, number> = {
-  S: 13, 'A+': 12, A: 11, 'A-': 10, 'B+': 9, B: 8, 'B-': 7, 'C+': 6, C: 5, 'C-': 4, 'D+': 3, D: 2, 'D-': 1, F: 0,
-};
-export function gradeColor(grade: Grade): string {
-  const t = GRADE_RANK[grade] / 13; // 0 (F, worst) .. 1 (S, best)
-  const hue = 2 + t * 146; // 2 = red, 148 = green, same endpoints MatchupMatrix's own diverging scale uses
-  const saturation = 42 + Math.abs(t - 0.5) * 34; // most saturated at both extremes, muted mid-pack
-  const lightness = 30 + t * 9;
-  return `hsl(${hue} ${saturation}% ${lightness}%)`;
-}
 
-// Exported (2026-08-19) for RotationBuilder's own reuse — see that file's own docstring on why
-// the Team/Rotation screen now shows the same Offense/Defense letter grades this badge already
-// renders on the Draft tab, instead of building a second, slightly-different badge from scratch.
-export function AtGrade({ grade, label, ungraded }: { grade: Grade; label?: GradeKey; ungraded?: boolean }) {
-  // 2026-10-14: with a label the badge explains itself on hover/tap (gradeHelp.ts).
-  if (ungraded) {
-    return (
-      <span className="at-grade-badge at-grade-badge--none at-name-tip at-grade-tip" tabIndex={0} data-tip={NO_THREE_LINE_TIP}>
-        —
-      </span>
-    );
-  }
-  if (!label) {
-    return (
-      <span className="at-grade-badge" style={{ background: gradeColor(grade), color: '#fff' }}>
-        {grade}
-      </span>
-    );
-  }
-  return (
-    <span className="at-grade-badge at-name-tip at-grade-tip" tabIndex={0} data-tip={gradeTip(label, grade)} style={{ background: gradeColor(grade), color: '#fff' }}>
-      {grade}
-    </span>
-  );
-}
 
 /** How long the taken cards take to fold away when the player's own turn comes. */
 const GHOST_SWEEP_MS = 1300;

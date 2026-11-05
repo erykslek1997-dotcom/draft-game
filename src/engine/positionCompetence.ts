@@ -53,7 +53,7 @@ function entryFor(span: PlayerSpan): Entry | undefined {
  * 0 when closed. The build script lowers it smoothly for each missing trait instead of opening
  * discrete levels at thresholds. A span outside the built table falls back to the old rules.
  */
-export const NATURAL_SCORE = 1;
+const NATURAL_SCORE = 1;
 /** Another of the player's natural positions (Harden's SG-tagged span at PG). */
 const OTHER_NATURAL_SCORE = 0.95;
 const UNLISTED_SECONDARY_SCORE = 0.9;

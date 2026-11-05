@@ -70,7 +70,7 @@ import type { Team } from './types';
  * lowest as "weak link" regardless of this threshold (Chauncey Billups at 80, nowhere near
  * attackable, displayed as one) while this exact threshold already correctly gated the separate
  * prose note just below. Exported so the UI can gate the label the same way. */
-export const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
+const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
 
 /** Spacing bottleneck applied to the final fit score below — exported alongside `FIT_WEIGHTS` so
  * a test recomputing "the documented component blend" can reproduce this term too, rather than

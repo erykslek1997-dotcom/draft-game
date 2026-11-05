@@ -43,14 +43,14 @@ export const HUSTLE_DEFENDERS: HustleDefender[] = [
   Q('George Hill', 2009, 2022),
 ];
 
-export const HUSTLE_BONUS = { primary: 8, partial: 4 } as const;
+const HUSTLE_BONUS = { primary: 8, partial: 4 } as const;
 /** The bonus only lifts a defender the engine reads below this; at or above it he is already priced. */
-export const HUSTLE_CEILING = 85;
+const HUSTLE_CEILING = 85;
 
 const byName = new Map(HUSTLE_DEFENDERS.map((h) => [normalizePlayerName(h.playerName), h]));
 
 /** The list entry for a span in which he played that role (at least two of its three seasons). */
-export function hustleDefenderForSpan(span: Pick<PlayerSpan, 'playerName' | 'spanLabel'>): HustleDefender | null {
+function hustleDefenderForSpan(span: Pick<PlayerSpan, 'playerName' | 'spanLabel'>): HustleDefender | null {
   const h = byName.get(normalizePlayerName(span.playerName));
   if (!h) return null;
   const inRole = spanEndYears(span.spanLabel).filter((y) => y >= h.from && y <= h.to).length;

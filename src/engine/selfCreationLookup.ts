@@ -34,8 +34,8 @@ const rows = selfCreationData as SelfCreationRow[];
  * reads as 1.000 self-created. Spans below the floor are treated as uncovered and fall back to
  * the archetype proxy rather than being scored on a fabricated rate.
  */
-export const MIN_THREES_MADE_FOR_RATE = 25;
-export const MIN_FIELD_GOALS_MADE_FOR_RATE = 100;
+const MIN_THREES_MADE_FOR_RATE = 25;
+const MIN_FIELD_GOALS_MADE_FOR_RATE = 100;
 
 export type SelfCreationField = 'unassisted3Pt' | 'unassisted2Pt' | 'unassistedFg';
 

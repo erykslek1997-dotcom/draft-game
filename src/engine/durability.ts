@@ -129,7 +129,7 @@ function tierFor(points: number): DurabilityTier {
   return tier;
 }
 
-export function durabilityBreakdown(span: PlayerSpan): DurabilityBreakdown {
+function durabilityBreakdown(span: PlayerSpan): DurabilityBreakdown {
   const entry = runtimeAvailabilityForSpan(span);
   if (!entry) {
     return {
@@ -194,27 +194,3 @@ export function durabilityValueFactor(span: PlayerSpan): number {
   return Math.max(DURABILITY_VALUE_FLOOR, 1 - DURABILITY_VALUE_PER_POINT * Math.max(0, DURABILITY_VALUE_FULL_POINTS - breakdown.points));
 }
 
-/**
- * 2026-08-01, explicit user request: durability shouldn't sit next to TAL as a separate,
- * decorative stat — it needs to actually change how much a player is WORTH during the draft
- * and in team-value scoring. `durabilityScale` is the multiplier (`cap / ceiling`) a caller
- * applies to a player's talent for that purpose. Matches the user's own worked example exactly:
- * TAL 90 at a 40-minute cap (90 * 40/40 = 90) outvalues TAL 100 at a 32-minute cap
- * (100 * 32/40 = 80). `ceiling` is passed in (not imported) so a caller elsewhere in the engine
- * doesn't need to import `MAX_MINUTES_PER_PLAYER` back from `rotation.ts`, which already
- * imports FROM this file (would be circular).
- *
- * **2026-08-05: `aiDrafter.ts`'s `pickForAi` — this function's one real caller — stopped
- * multiplying by it**, per explicit user request, after it was diagnosed as the mechanism
- * dragging genuinely elite peaks (Jokić, Anthony Davis, Paul George — durabilityScale 0.85-0.95
- * vs. several classic bigs' full 1.0) several picks below their raw-talent rank in playtest
- * feedback. `pickForAi` still hard-excludes DNP-tier spans (`maxSustainableMinutes <= 0`) from
- * its candidate pool entirely — a separate, harder "is this specific span even playable" gate,
- * not a value discount, and untouched by this. `durabilityScale` currently has **no caller left
- * in the engine** (kept as the sanctioned multiplier if a future caller needs "value scaled by
- * durability" again — don't recreate an equivalent helper elsewhere). See
- * `alltime_draft_game_project.md` memory for the full diagnosis and before/after pick numbers.
- */
-export function durabilityScale(span: PlayerSpan, ceiling: number): number {
-  return maxSustainableMinutes(span, ceiling) / ceiling;
-}

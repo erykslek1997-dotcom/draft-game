@@ -12,7 +12,7 @@ export interface TierMinuteProfile {
 }
 
 /** One source of truth for both automatic minute allocation and rotation grading. */
-export const TIER_MINUTE_PROFILE: Record<OverallTier, TierMinuteProfile> = {
+const TIER_MINUTE_PROFILE: Record<OverallTier, TierMinuteProfile> = {
   // 2026-11-04, the user (Jordan 1988-90 at 35 minutes): the very best carry a heavier load.
   GOAT: { optimal: 38, minimal: 34, ceiling: 40 },
   'Legend': { optimal: 37, minimal: 32, ceiling: 40 },

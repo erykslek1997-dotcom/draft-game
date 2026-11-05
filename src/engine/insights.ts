@@ -304,14 +304,14 @@ export interface RosterInsightDetector {
   evaluate(team: TeamFeatureSnapshot): DetectorResult;
 }
 
-export const INSIGHT_SCORE_WEIGHTS = {
+const INSIGHT_SCORE_WEIGHTS = {
   severity: 0.40,
   relevance: 0.30,
   confidence: 0.20,
   uniqueness: 0.10,
 } as const;
 
-export const DEFAULT_INSIGHT_CONFIG = {
+const DEFAULT_INSIGHT_CONFIG = {
   minScore: 0.55,
   targetPerSide: 5,
   minPerSide: 3,
@@ -321,7 +321,7 @@ export const DEFAULT_INSIGHT_CONFIG = {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const teamConfidence = (t: TeamFeatureSnapshot) => clamp01(1 - (t.uncertainty ?? 0.15));
 
-export function scoreInsight(
+function scoreInsight(
   severity: number,
   relevance: number,
   confidence: number,

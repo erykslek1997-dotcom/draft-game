@@ -1,6 +1,4 @@
 import { type ReactNode } from 'react';
-import { TeamLogo } from './TeamLogo';
-import { hasTeamLogo, teamHue } from './teamLogoKit';
 import { DeskVoices } from './DeskVoices';
 
 export { DeskVoices };
@@ -11,21 +9,6 @@ export { DeskVoices };
  * row — so both read exactly the same way.
  */
 
-/** The team's crest: its franchise logo, or for names from before the pool (old saves) the old
- * code on a gradient in the team's hue. */
-export function TeamMark({ code, name, size = 'sm' }: { code: string; name: string; size?: 'sm' | 'md' }) {
-  if (hasTeamLogo(name)) return <TeamLogo name={name} size={size === 'md' ? 34 : 24} />;
-  const hue = teamHue(name);
-  return (
-    <span
-      className={`rr-mark rr-mark--${size}`}
-      aria-hidden
-      style={{ background: `linear-gradient(160deg, hsl(${hue} 55% 30%) 0 62%, hsl(${(hue + 40) % 360} 75% 55%) 62%)` }}
-    >
-      {code}
-    </span>
-  );
-}
 
 /** A team score's letter: against the rest of this draft's field (S = best in the field; a tie
  * with the best counts as the best — 2026-10-08, the user: "Rotation 100 ma C?" when most of the

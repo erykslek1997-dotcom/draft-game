@@ -30,7 +30,7 @@ const MID_POINTS_START = 4;
 const MID_POINTS_FULL = 11;
 const MID_ACCURACY_START = 0.36;
 const MID_ACCURACY_FULL = 0.44;
-export const MAX_MIDRANGE_SPACING = 80;
+const MAX_MIDRANGE_SPACING = 80;
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
@@ -59,7 +59,7 @@ function preZoneMidrangeSpacing(span: PlayerSpan): number {
  * midrange alone): a big's eighteen-footer pulls his man out of the paint but does not stretch the
  * floor the way a three does, so a four's or five's midrange credit counts at `BIG_MIDRANGE_SHARE` (0.85 at first; 0.6 after the user's Bismarck review — Garnett 2003-05 68 -> 48 — with the judges flat: SRS r 0.795 -> 0.792, sim R² 0.72 -> 0.73).
  */
-export const BIG_MIDRANGE_SHARE = 0.6;
+const BIG_MIDRANGE_SHARE = 0.6;
 /** 2026-11-04, the user (Pippen 1990-92 read 49 team spacing on 0.9 threes a game): the pre-zone
  * midrange estimate counts at this share. */
 export const PRE_ZONE_MIDRANGE_SHARE = 0.7;

@@ -206,7 +206,7 @@ function drawAvatarCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number,
  * available. Height is computed before the canvas is created (a canvas can't resize once drawn
  * to) so an older-format link missing `scores` or `starters` gets a shorter card instead of a
  * card with a blank gap where that section would have been. */
-export async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null> {
+async function buildDuelCardBlob(data: DuelCardData): Promise<Blob | null> {
   const { you, friend } = data;
   const W = 1200;
   const hasScores = Boolean(you.scores && friend.scores);

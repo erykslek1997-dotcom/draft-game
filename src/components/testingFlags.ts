@@ -28,7 +28,7 @@ function readTestingFlag(): boolean {
   }
 }
 
-export const TESTING_TOOLS = typeof window !== 'undefined' && readTestingFlag();
+const TESTING_TOOLS = typeof window !== 'undefined' && readTestingFlag();
 export const AUTO_FINISH_FOR_TESTING = TESTING_TOOLS;
 export const TEAM_EXPORT_FOR_TESTING = TESTING_TOOLS;
 export const LIVE_TEST_BENCH_FOR_TESTING = TESTING_TOOLS;

@@ -209,7 +209,7 @@ const threePtEstimator = {
 };
 
 /** Share of a span's made FIELD GOALS (all of them) estimated unassisted/self-created, 0-1. */
-export function selfCreationEstimate(span: PlayerSpan): number {
+function selfCreationEstimate(span: PlayerSpan): number {
   return fgEstimator.estimate(span);
 }
 export function selfCreationIsMeasured(span: PlayerSpan): boolean {
@@ -217,7 +217,7 @@ export function selfCreationIsMeasured(span: PlayerSpan): boolean {
 }
 
 /** Share of a span's made THREES estimated unassisted/self-created, 0-1. */
-export function selfCreation3PtEstimate(span: PlayerSpan): number {
+function selfCreation3PtEstimate(span: PlayerSpan): number {
   return threePtEstimator.estimate(span);
 }
 
@@ -228,7 +228,7 @@ export function selfCreation3PtEstimate(span: PlayerSpan): number {
  * count to begin with). 2 real 3PA/game is a light bar — Kareem/McAdoo/Moses Malone-era players
  * are nowhere near it.
  */
-export const MEANINGFUL_3PA_GATE = 2;
+const MEANINGFUL_3PA_GATE = 2;
 
 /**
  * **An either/or gate (pure 3PT for shooters, pure all-FG for everyone else) was tried first and
@@ -247,7 +247,7 @@ export const MEANINGFUL_3PA_GATE = 2;
  */
 const THREE_PT_BLEND_WEIGHT = 0.65;
 
-export function selfCreationForPortability(span: PlayerSpan): number {
+function selfCreationForPortability(span: PlayerSpan): number {
   if (span.box.threePA < MEANINGFUL_3PA_GATE) return selfCreationEstimate(span);
   return THREE_PT_BLEND_WEIGHT * selfCreation3PtEstimate(span) + (1 - THREE_PT_BLEND_WEIGHT) * selfCreationEstimate(span);
 }
@@ -295,7 +295,7 @@ function neighbourSpan(span: PlayerSpan, offset: number): PlayerSpan | undefined
   return spansByPlayerStart.get(normalizePlayerName(span.playerName))?.get(start + offset);
 }
 const smoothedCache = new Map<string, number>();
-export function smoothedSelfCreationForPortability(span: PlayerSpan): number {
+function smoothedSelfCreationForPortability(span: PlayerSpan): number {
   const key = `${normalizePlayerName(span.playerName)}|${span.spanLabel}`;
   const hit = smoothedCache.get(key);
   if (hit !== undefined) return hit;

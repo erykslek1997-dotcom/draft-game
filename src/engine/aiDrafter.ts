@@ -1667,7 +1667,7 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
  * — in this pool one FGA buys ~2.5-3 TAL of role player (top 30 at 4/6/8 FGA: 56/67/71), weighed
  * by his ~20 minutes against a star's ~36.
  */
-export const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
+const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
 
 /**
  * 2026-11-04, the user ("jakby uznać wszystkie spany do 5 TAL różnicy za równe temu w peaku?
@@ -1788,7 +1788,7 @@ export const AI_GM_PROFILES: readonly AiGmProfile[] = ['balanced', 'defense-firs
 const GM_PROFILE_DEFAULT_BONUS = 15;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-export function gmProfileBonus(profile: AiGmProfile | undefined, p: PlayerSpan, strength = GM_PROFILE_DEFAULT_BONUS): number {
+function gmProfileBonus(profile: AiGmProfile | undefined, p: PlayerSpan, strength = GM_PROFILE_DEFAULT_BONUS): number {
   const GM_PROFILE_MAX_BONUS = strength;
   switch (profile) {
     case 'defense-first':
@@ -1943,7 +1943,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * player the board values most, the one least likely to last. Candidates come in the board's own
  * order (taste and noise included), so GMs still differ.
  */
-export const STAR_GUARD = { minTal: 96, gap: 5 };
+const STAR_GUARD = { minTal: 96, gap: 5 };
 export const AI_PLAN = {
   on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
@@ -2124,7 +2124,7 @@ function startingFiveGaps(roster: PlayerSpan[]): FiveGaps {
  *  - `ballFit` (Penny next to Kobe; Erving next to LeBron): beside a high-usage star a second
  *    high-usage scorer at a guard or wing costs, a pass-first guard gains — "a classic point guard".
  */
-export const AI_ROLE_RULES = {
+const AI_ROLE_RULES = {
   on: true,
   capSlack: 1.3,
   benchCostPerCap: 0.12,

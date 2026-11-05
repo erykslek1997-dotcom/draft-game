@@ -37,7 +37,7 @@ const HIGH_USAGE_OTAL = 82;
  * option at this level — a Slasher/Off-Screen role player whose archetype implies more primacy
  * than their box output delivers (Kirilenko-as-"Slasher") should not read as a fourth offense. */
 const SYSTEM_MEMBER_OTAL = 72;
-export const PNR_LEAD_PLAYMAKING = 85;
+const PNR_LEAD_PLAYMAKING = 85;
 
 /**
  * Shared by the anti-pattern check below (#3) and `mismatchStructureScore`'s positive mirror —
@@ -199,7 +199,7 @@ export function pairwiseFitNotes(
  * `SYSTEM_MEMBER_OTAL` AND are either a real on-ball demand (>= 0.5) or a high-usage scorer
  * (`HIGH_USAGE_OTAL`). Returns the buckets, deduped.
  */
-export function offensiveSystemBuckets(starters: PlayerSpan[], demandByPlayer: number[]): StyleBucket[] {
+function offensiveSystemBuckets(starters: PlayerSpan[], demandByPlayer: number[]): StyleBucket[] {
   const systems = new Set<StyleBucket>();
   starters.forEach((p, i) => {
     const bucket = STYLE_BUCKET[p.offensiveArchetype];

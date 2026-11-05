@@ -55,7 +55,7 @@ const PRE_ZONE_MIDRANGE_SPACING: ReadonlyMap<string, number> = new Map(
  * undersells midrange bigs (Malone 1996-98 14 against 66 from zones), hence the hand list first.
  */
 const PRE_ZONE_MODEL = preZoneModel as Record<string, number>;
-export const PRE_ZONE_RULES = { model: true };
+const PRE_ZONE_RULES = { model: true };
 
 /** A pre-zone span's shooting skill on the 0-80 midrange scale: the hand list, else the model. */
 export function preZoneShootingSkill(span: PlayerSpan): number | undefined {

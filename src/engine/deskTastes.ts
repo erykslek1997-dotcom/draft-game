@@ -12,7 +12,7 @@ import { teamsForSpan } from './spanTeams';
  * `nemesis`). Full names as in the data; accents and case don't matter.
  */
 
-export const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
+const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
   onoffsky: ['Steve Nash', 'Chris Paul', 'Nikola Jokic', 'Kevin Garnett', 'LeBron James', 'Tim Duncan', 'Hakeem Olajuwon', 'Larry Bird', 'Deron Williams', 'Stephen Curry', 'Russell Westbrook'],
   shyman: ['Allen Iverson', 'Michael Jordan', 'Nikola Jokic', 'Russell Westbrook', 'Moses Malone', 'Detlef Schrempf', 'John Stockton', 'Dwyane Wade', 'Stephen Curry'],
   sosini: ['Nikola Jokic', 'Luka Doncic', 'Drazen Petrovic', 'Victor Wembanyama', 'Monta Ellis', 'Vince Carter', 'Stephen Curry', 'Damian Lillard', 'Larry Bird', 'Reggie Miller', 'Tim Duncan', 'Dirk Nowitzki'],
@@ -30,7 +30,7 @@ export const FAVOURITES: Partial<Record<ExpertId, string[]>> = {
   rightwing: ['James Harden', 'Al Horford', 'Hakeem Olajuwon', 'Yao Ming'],
 };
 
-export const NEMESES: Partial<Record<ExpertId, string[]>> = {
+const NEMESES: Partial<Record<ExpertId, string[]>> = {
   onoffsky: ['Patrick Ewing', 'Julius Erving', 'Kobe Bryant', 'Dominique Wilkins', 'Allen Iverson', 'Magic Johnson', 'Kareem Abdul-Jabbar', 'Isiah Thomas'],
   shyman: ['LeBron James', 'Elton Brand', 'Antonio McDyess', 'Marcus Morris', 'Markieff Morris'],
   sosini: ['Antonio McDyess', 'Elton Brand', 'Oscar Robertson', 'Elgin Baylor', 'Karl Malone', 'Bob McAdoo', 'George Mikan', 'Deni Avdija', 'Kendrick Perkins'],
@@ -49,13 +49,13 @@ export const NEMESES: Partial<Record<ExpertId, string[]>> = {
 };
 
 /** Whole teams an expert loves or hates (span codes from spanTeams.ts). */
-export const TEAM_LOVE: Partial<Record<ExpertId, string[]>> = {
+const TEAM_LOVE: Partial<Record<ExpertId, string[]>> = {
   rotation: ['UTA'],
   binash: ['LAL'],
   natalie: ['HOU'],
   rightwing: ['HOU'],
 };
-export const TEAM_HATE: Partial<Record<ExpertId, string[]>> = {
+const TEAM_HATE: Partial<Record<ExpertId, string[]>> = {
   rotation: ['LAL', 'MNL'],
 };
 

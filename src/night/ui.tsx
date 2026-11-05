@@ -77,14 +77,6 @@ export const bandStyle = (span: Pick<PlayerSpan, 'playerName' | 'spanLabel'>): C
   return { '--team': b.color, '--team-ink': b.ink } as CSSProperties;
 };
 
-/** A league team's printed swatch (`.tm`). */
-export function TeamMark({ code, bg, fg, lg }: { code: string; bg: string; fg: string; lg?: boolean }) {
-  return (
-    <span className={cx('tm', lg && 'lg')} style={{ background: bg, color: bandInk(bg, fg) }}>
-      {code}
-    </span>
-  );
-}
 const shortYears = (label: string) => label.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2-$3');
 
 /**

@@ -65,7 +65,7 @@ const mean = (values: number[]) => values.length > 0
   : 0;
 
 /** The nonlinear shape from the supplied Team Model spec. */
-export function nonSpacerPenalty(count: number): number {
+function nonSpacerPenalty(count: number): number {
   if (count <= 0) return 0;
   if (count === 1) return 0.10;
   if (count === 2) return 0.35;
@@ -77,7 +77,7 @@ export function nonSpacerPenalty(count: number): number {
  * evidence for movement shooting and frontcourt shooting; it does not have lineup-level passing,
  * post-gravity or offensive-rebounding tracking, so those proposed modifiers remain unfilled.
  */
-export function contextualNonSpacerPenalty(
+function contextualNonSpacerPenalty(
   count: number,
   movementShootingStrength: number,
   frontcourtSpacingStrength: number,

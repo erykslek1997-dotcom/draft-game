@@ -37,7 +37,7 @@ interface BoxRateRow {
 }
 const boxRates = boxRatesData as BoxRateRow[];
 
-export function buildBoxRatesYearMap(): Map<string, Map<number, BoxRateRow>> {
+function buildBoxRatesYearMap(): Map<string, Map<number, BoxRateRow>> {
   const byNameYear = new Map<string, Map<number, BoxRateRow>>();
   for (const r of boxRates) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;

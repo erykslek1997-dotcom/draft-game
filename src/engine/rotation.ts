@@ -222,7 +222,7 @@ const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
  * valued down `perPoint` for each point short (at most to `min`), so a five takes a real scorer
  * when the roster has one and two non-scorers start together only when nothing else is there.
  */
-export const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
+const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
 /** 2026-11-04, the user (Battier 2008-10 at offense 37 while spacing B+: "kara na atak wchodzi poniżej
  * spacingu B"): a starter whose card reads spacing B or better is exempt; the volume is already in
  * that letter (grades.ts `LOW_VOLUME_SPACING`), so the card and the penalty always agree. */
@@ -431,7 +431,7 @@ export function bestPrimaryAssignment(
  * at least `SWAP_MIN_SPACING_GAIN`. One swap per slot, the largest spacing gain first.
  */
 const SWAP_SPACING_NEED = 60;
-export const SPACING_RESEARCH = { need: 55, perPoint: 0.12, cap: 75, minGain: 5 };
+const SPACING_RESEARCH = { need: 55, perPoint: 0.12, cap: 75, minGain: 5 };
 function lineupSpacingOf(lineup: Partial<Record<Position, PlayerSpan>>): number {
   const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
   return five.length === 0 ? 0 : five.reduce((sum, p) => sum + teamSpacingValue(p), 0) / five.length;

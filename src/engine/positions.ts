@@ -131,9 +131,6 @@ export function totalFga(rosterFgas: number[]): number {
   return Math.round(rosterFgas.reduce((sum, fga) => sum + fga, 0) * 10) / 10;
 }
 
-export function capRemaining(rosterFgas: number[], capLimit: number = CAP_LIMIT): number {
-  return Math.round((capLimit - totalFga(rosterFgas)) * 10) / 10;
-}
 
 /** `capLimit`: the real 100.9 unless a daily sets the day's own cap (2026-10-16). */
 export function isPickCapLegal(currentFgas: number[], candidateFga: number, capLimit: number = CAP_LIMIT): boolean {

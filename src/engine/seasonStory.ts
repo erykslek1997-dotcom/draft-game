@@ -40,7 +40,7 @@ function teamStats(season: LiveSeasonResult) {
 }
 
 /** Every story stat for one team, with its league place (1 = best for the team). */
-export function storyStats(season: LiveSeasonResult, teamId: string): StoryStat[] {
+function storyStats(season: LiveSeasonResult, teamId: string): StoryStat[] {
   const all = teamStats(season);
   const me = all.find((t) => t.id === teamId);
   if (!me) return [];

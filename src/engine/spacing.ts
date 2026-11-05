@@ -566,7 +566,7 @@ export function spacingTier(span: PlayerSpan): SpacingTier {
  * they grade shot difficulty, not volume inflation, so they apply to a real shooter exactly the
  * same with or without scaling.
  */
-export function rawSpacingPoints(span: PlayerSpan): number {
+function rawSpacingPoints(span: PlayerSpan): number {
   const position = span.primaryPosition;
   const selfCreation = selfCreationRate(span);
   const accuracyBar =

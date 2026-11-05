@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { isBombMasked, maskName } from './bombMask';
-import { CapIcon } from './CapIcon';
 import { headshotUrl } from '../data/headshots';
 import './ShotChip.css';
 
@@ -61,25 +60,6 @@ export function Face({ name, size = 'sm' }: { name: string; size?: 'xs' | 'sm' |
   );
 }
 
-/** A candidate's shot cost is real, always-visible game data (not the engine's hidden judgment),
- * so — unlike a talent/tier signal — it's safe to color without leaking anything a "blind
- * scouting" premise needs to hide. Tiered against an even per-slot split of the relevant cap: a
- * cheap pick reads as affordable at a glance, a pricey one as a real trade-off, without ever
- * hinting whether the player is actually GOOD. */
-export function shotBudgetTier(fga: number, cap: number): 'cheap' | 'mid' | 'pricey' {
-  const perSlot = cap / 5;
-  if (fga <= perSlot * 0.75) return 'cheap';
-  if (fga <= perSlot * 1.25) return 'mid';
-  return 'pricey';
-}
 
-export function ShotChip({ fga, cap }: { fga: number; cap: number }) {
-  return (
-    <span className={`bf-shot-chip bf-shot-chip--${shotBudgetTier(fga, cap)}`} title={`Costs ${Math.round(fga)} caps`} data-caps-info>
-      <CapIcon size={11} />
-      {Math.round(fga)}
-    </span>
-  );
-}
 
-export { CapIcon, Caps, CapsInfoHost } from './CapIcon';
+

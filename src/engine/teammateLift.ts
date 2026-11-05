@@ -64,7 +64,7 @@ export function fiveLiftShifts(five: PlayerSpan[]): number[] {
  * A team's mean shooting shift over its rotation: each player by his minutes, the four beside him by
  * how much of his time each is on the floor (their minutes over everyone else's, times four).
  */
-export function teamLiftShift(team: Team): number {
+function teamLiftShift(team: Team): number {
   const minutes = new Map<string, number>();
   for (const slot of Object.values(team.rotation?.slots ?? {})) for (const a of slot) if (a.minutes > 0) minutes.set(a.playerId, (minutes.get(a.playerId) ?? 0) + a.minutes);
   const players = team.roster.filter((p) => (minutes.get(p.id) ?? 0) > 0);
@@ -84,7 +84,7 @@ export function teamLiftShift(team: Team): number {
 }
 
 /** The same in points a game. */
-export const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsPerTs;
+const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsPerTs;
 
 /**
  * Points of single-game margin one point of team overall is worth (matchup.ts: the overall weight
@@ -92,5 +92,5 @@ export const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.
  * `scoreTeam`) at this rate, so the results ranking, the AI's bench picks and the season seeds see
  * it, and one game's margin still gets exactly `teamLiftPoints`.
  */
-export const LIFT_POINTS_PER_OVERALL = 0.85;
+const LIFT_POINTS_PER_OVERALL = 0.85;
 export const liftAdjustment = (team: Team) => (LIFT_TUNING.overall * teamLiftPoints(team)) / LIFT_POINTS_PER_OVERALL;
