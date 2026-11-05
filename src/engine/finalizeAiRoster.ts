@@ -3,7 +3,14 @@ import { effectiveTalent } from './grades';
 import { autoAssignRotation } from './rotation';
 import { scoreTeam } from './scoring';
 import { optimizeSpans, spanOptionsFor } from './spanOptimizer';
-import type { Team } from './types';
+import type { Rotation, Team } from './types';
+import { cheapestGlueWindows, structuredRotation } from './structuredRoster';
+import { STRUCTURED_AI } from './structuredMode';
+
+/** A CPU team's rotation: the structured 8-man rotation (`structuredMode.ts`), or the classic one. */
+export function aiRotation(roster: PlayerSpan[]): Rotation {
+  return STRUCTURED_AI ? structuredRotation(roster) : autoAssignRotation(roster);
+}
 
 /**
  * An AI team's roster after the draft: `optimizeSpans` re-picks each player's window under the cap,
@@ -17,6 +24,8 @@ import type { Team } from './types';
 export const WINDOW_SEARCH = { passes: 2, maxDrop: 6 };
 
 export function finalizeAiRoster(team: Team, capLimit: number): PlayerSpan[] {
+  // Structured: the windows drafted are the plan's; only the glue moves to his cheapest window.
+  if (STRUCTURED_AI) return cheapestGlueWindows(team.roster);
   const score = (roster: PlayerSpan[]) => scoreTeam({ ...team, roster, rotation: autoAssignRotation(roster) }).overallExact;
   const optimized = optimizeSpans(team.roster, capLimit);
   let roster = team.roster;

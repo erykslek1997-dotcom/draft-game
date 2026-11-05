@@ -39,11 +39,8 @@ const TEAM_SCORE_MEMO_MAX = 50_000;
  * break in the structure of a full roster: 100, so the shape comes first and the score decides among
  * shapes that hold (the user: "zrób tak żeby te 3 błędy się nie powtarzały"; at 6 a better centre
  * later made Embiid a 16.7-FGA glue). */
-const STRUCTURED_TEST = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
-if (STRUCTURED_TEST_FLAG()) setAiStructureHoles((roster) => readStructure(roster).problems.filter((p) => !p.startsWith('glue')).length);
-function STRUCTURED_TEST_FLAG(): boolean {
-  return ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1';
-}
+const STRUCTURED_TEST = STRUCTURED_AI;
+if (STRUCTURED_AI) setAiStructureHoles((roster) => readStructure(roster).problems.filter((p) => !p.startsWith('glue')).length);
 /** Holes cost `STRUCTURE_PROBLEM_COST` each; a glue over the limit costs `STRUCTURE_GLUE_COST_PER_FGA`
  * per shot over it (Brent Barry at 8 FGA ~10 points, Fred Hoiberg at 3.6 about one), or `STRUCT_GLUE`
  * unset, the flat hole cost. */
@@ -94,6 +91,7 @@ setAiTeamScorer((roster) => {
 });
 import type { DraftHistoryEntry, Team } from './types';
 import { readStructure, structuredRotation, STRUCTURE } from './structuredRoster';
+import { STRUCTURED_AI } from './structuredMode';
 import { buildJointPlan } from './jointPlan';
 
 export { TEAM_COUNT };

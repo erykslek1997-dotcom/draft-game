@@ -18,7 +18,7 @@ import {
 import { aiWorkerClient } from './aiWorkerClient';
 import { autoAssignRotation } from '../engine/rotation';
 import { spanOptionsFor } from '../engine/spanOptimizer';
-import { finalizeAiRoster } from '../engine/finalizeAiRoster';
+import { aiRotation, finalizeAiRoster } from '../engine/finalizeAiRoster';
 import { setAiDraftDebug } from '../engine/aiDrafter';
 import { CAP_LIMIT, ROSTER_SIZE, BENCH_SLOT_COUNT } from '../engine/positions';
 import { normalizePlayerName } from '../data/schema';
@@ -388,7 +388,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
             const ids = rosterIds?.[cpu.indexOf(t)];
             const fromWorker = ids?.map((id, i) => spanOptionsFor(t.roster[i].playerName).find((o) => o.id === id));
             const roster = fromWorker && fromWorker.every(Boolean) ? (fromWorker as PlayerSpan[]) : finalizeAiRoster(t, draftCapLimit(s));
-            return { ...t, roster, rotation: autoAssignRotation(roster) };
+            return { ...t, roster, rotation: aiRotation(roster) };
           }),
         };
       });
@@ -460,7 +460,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       // stable on an already-finalized roster, so this is a no-op once the effect has run.
       if (t.rotation) return t;
       const optimized = finalizeAiRoster(t, draftCapLimit(draftState));
-      return { ...t, roster: optimized, rotation: autoAssignRotation(optimized) };
+      return { ...t, roster: optimized, rotation: aiRotation(optimized) };
     });
     setFinalTeams(teams);
     setPhase('results');
