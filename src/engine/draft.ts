@@ -22,7 +22,7 @@ import {
   type CheapestLookup,
 } from './positions';
 import { pickForAi, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
-import { scoreTeam, spacingScore } from './scoring';
+import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
 import { dailyRuleBlocks } from './dailyDraft';
@@ -99,9 +99,11 @@ function starterFloorCost(starters: Partial<Record<Position, PlayerSpan>>): numb
 }
 function structuredTeamValue(roster: PlayerSpan[]): number {
   const team = { id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) };
-  if (roster.length < ROSTER_SIZE) return scoreTeam(team).overallExact;
-  const spacingShort = FLOORS.spacing > 0 ? Math.max(0, FLOORS.spacing - spacingScore(team)) : 0;
-  return scoreTeam(team).overallExact - structureCost(roster) - FLOORS.perSpacing * spacingShort;
+  const scored = scoreTeam(team);
+  if (roster.length < ROSTER_SIZE) return scored.overallExact;
+  // The breakdown's own spacing (one team score a roster, not two).
+  const spacingShort = FLOORS.spacing > 0 ? Math.max(0, FLOORS.spacing - scored.spacingScore) : 0;
+  return scored.overallExact - structureCost(roster) - FLOORS.perSpacing * spacingShort;
 }
 const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
 const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);

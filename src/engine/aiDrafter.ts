@@ -1954,6 +1954,8 @@ export const AI_PLAN = {
   nearFga: 1,
   scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: STRUCTURED_AI ? 4 : 0,
+  structuralPerPair: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SPAIR ?? 3),
+  structuralPerSlot: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SSLOT ?? 2),
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
   warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
@@ -2033,8 +2035,8 @@ function planPick(
       // so a PF/C or a PG/SG the board ranks low still comes up.
       const structural = structureHoles
         ? [
-            ...BACKUP_PAIRS.flatMap((pair) => open.filter((p) => pairsFor(p).some((x) => x[0] === pair[0] && x[1] === pair[1])).slice(0, 3)),
-            ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, 2)),
+            ...BACKUP_PAIRS.flatMap((pair) => open.filter((p) => pairsFor(p).some((x) => x[0] === pair[0] && x[1] === pair[1])).slice(0, AI_PLAN.structuralPerPair)),
+            ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, AI_PLAN.structuralPerSlot)),
           ]
         : [];
       const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
