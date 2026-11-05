@@ -14,7 +14,7 @@ import type { Rotation } from './types';
  *  - one salary glue: `STRUCTURE.glueFga` shots at most, no minutes.
  * The rotation follows: starters `STRUCTURE.starterMinutes`, backups only in their pair.
  */
-export const STRUCTURE = { comboScore: FULL_SCORE, glueFga: 3, starterMinutes: 36 };
+export const STRUCTURE = { comboScore: FULL_SCORE, glueFga: 2.5, starterMinutes: 36 };
 export const BACKUP_PAIRS: [Position, Position][] = [
   ['PG', 'SG'],
   ['SG', 'SF'],

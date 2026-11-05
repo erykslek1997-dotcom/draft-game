@@ -1947,7 +1947,7 @@ export const AI_PLAN = {
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
   reserveGlue: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1',
-  reserveGlueFga: 3,
+  reserveGlueFga: 2.5,
   scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
   glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
