@@ -1954,10 +1954,14 @@ export const AI_PLAN = {
   passes: 2,
   warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
   crowdCost: 1.5,
-  share: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SHARE ?? '0') === '1',
+  share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[k] ?? '0') === '1'),
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
 const planMemory = new Map<string, string[]>();
+/** Seeds a team's plan memory — the joint pre-draft plan (jointPlan.ts) is where it starts. */
+export function seedPlanMemory(planSeed: number, team: string, names: string[]): void {
+  planMemory.set(`${planSeed}|${team}`, names);
+}
 const PLAN_MEMORY_MAX = 4_000;
 function planPick(
   roster: PlayerSpan[],

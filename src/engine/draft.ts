@@ -21,7 +21,7 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, setAiTeamScorer, setAiStructureHoles, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { pickForAi, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
 import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
@@ -71,6 +71,7 @@ setAiTeamScorer((roster) => {
 });
 import type { DraftHistoryEntry, Team } from './types';
 import { readStructure, structuredRotation, STRUCTURE } from './structuredRoster';
+import { buildJointPlan } from './jointPlan';
 
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
@@ -653,7 +654,7 @@ function resolveAutomatedPick(state: DraftState): DraftState | null {
     profileStrength: aiProfileStrengthForSlot(state.seed, team.draftSlot),
     boardSeed: mixSeed(state.seed, 0x7b00 + team.draftSlot),
     planTeam: team.id,
-    planClaims: planClaimsFor(state.seed),
+    planClaims: jointClaims(state),
   };
   const preferred = pickForAi(team.roster, currentFgas, available, TEAM_COUNT, pickNumber, rng, ruleset);
   const preferredState = makePick(state, preferred.id);
@@ -685,6 +686,32 @@ function planClaimsFor(seed: number): Map<string, string> {
   }
   return claims;
 }
+
+/**
+ * The draft's plan claims; with the joint pre-draft plan on (JOINT=1, jointPlan.ts) they are built
+ * once, at the first CPU pick, from a simulated draft: every CPU team's planned players, its plan
+ * memory seeded from them.
+ */
+const JOINT_ON = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.JOINT ?? '0') === '1';
+function jointClaims(state: DraftState): Map<string, string> {
+  const claims = planClaimsFor(state.seed);
+  if (!JOINT_ON || claims.has(JOINT_BUILT)) return claims;
+  const order: number[] = [];
+  for (let k = state.history.length; k < ROUNDS * TEAM_COUNT; k++) order.push(snakeOrderIndex(Math.floor(k / TEAM_COUNT), k % TEAM_COUNT));
+  const joint = buildJointPlan(state.teams, order, availablePlayers(state), draftCapLimit(state));
+  for (const team of state.teams) {
+    const names = joint.plans.get(team.id);
+    if (!names) continue;
+    for (const name of names) claims.set(name, team.id);
+    seedPlanMemory(mixSeed(state.seed, 0x7b00 + team.draftSlot), team.id, names);
+  }
+  claims.set(JOINT_BUILT, `${joint.ms}ms, ${joint.failures.size} plans failing a gate`);
+  lastJointPlan = joint;
+  return claims;
+}
+const JOINT_BUILT = '__joint_plan_built__';
+/** The last joint plan built (for the test scripts' report). */
+export let lastJointPlan: ReturnType<typeof buildJointPlan> | null = null;
 
 /** Resolves the current pick if it belongs to an AI team. Returns null if it's the human's turn or the draft is already complete. */
 export function resolveAiPickIfNeeded(state: DraftState): DraftState | null {
