@@ -86,10 +86,16 @@ export const FLOORS = {
   perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
   spacing: Number(envOf('FLOOR_SPACING') ?? 0),
   perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.2),
+  /** The starting spots the TAL floor covers (the user: SF, SG and PF are the weak ones; PG and C
+   * carry the stars). */
+  positions: (envOf('FLOOR_POS') ?? 'PG,SG,SF,PF,C').split(',') as Position[],
 };
 function starterFloorCost(starters: Partial<Record<Position, PlayerSpan>>): number {
   if (FLOORS.starterTal <= 0) return 0;
-  return Object.values(starters).reduce((sum, p) => sum + FLOORS.perTal * Math.max(0, FLOORS.starterTal - effectiveTalent(p!)), 0);
+  return FLOORS.positions.reduce((sum, slot) => {
+    const p = starters[slot];
+    return p ? sum + FLOORS.perTal * Math.max(0, FLOORS.starterTal - effectiveTalent(p)) : sum;
+  }, 0);
 }
 function structuredTeamValue(roster: PlayerSpan[]): number {
   const team = { id: 'ai-eval', name: '', draftSlot: 0, isHuman: false, roster, rotation: structuredRotation(roster) };
