@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
-import { BACKUP_PAIRS, canStillComplete, keepsRoles, pairsFor, readStructure, STRUCTURE_STAR_TAL } from './structuredRoster';
+import { BACKUP_PAIRS, backupOptions, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
@@ -2875,6 +2875,10 @@ export function pickForAi(
     // then Walt Frazier at the point; Jon Barry at the two). Off only if nobody else is left.
     const lockedStarters = structureHoles ? readStructure(roster).starters : {};
     const unlocked = fullBoard.filter((p) => {
+      // A guard who can't shoot has no place at the point or the two; with no other shape to play he
+      // is glue at best (Tony Allen, Penny 1998-00 drafted to start, left there or as dear glue).
+      const guard = p.primaryPosition === 'PG' || p.primaryPosition === 'SG';
+      if (structureHoles && guard && !playsGuard(p) && backupOptions(p).length === 0 && p.fga > STRUCTURE.glueFga) return false;
       const starter = lockedStarters[p.primaryPosition];
       // A star at a filled spot would come off the bench: off the board too.
       return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
