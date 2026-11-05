@@ -22,7 +22,7 @@ import type { Rotation } from './types';
  */
 // comboScore FULL_SCORE → 0.7 (2026-11-05, the user's round-3 notes: "Beverley PG / SG", "Chalmers
 // na SG 6'", "Kevin na SG" — a backup point guard covers the two, competence 0.74 there).
-export const STRUCTURE = { comboScore: 0.7, glueFga: 2.5, starterMinutes: 36, minRotationTal: 55, minBackupTal: 50 };
+export const STRUCTURE = { comboScore: 0.7, glueFga: 2.5, starterMinutes: 36, minRotationTal: 55, minBackupTal: 0 };
 export const BACKUP_PAIRS: [Position, Position][] = [
   ['PG', 'SG'],
   ['SG', 'SF'],
@@ -113,6 +113,8 @@ export function pairsFor(p: PlayerSpan): [Position, Position][] {
 export function backupOptions(p: PlayerSpan): [Position, Position][] {
   // Under `STRUCTURE.minBackupTal` he is glue at best (Caldwell Jones 1988-90, 27, as a C backup).
   // Lower than the draft board's floor (`minRotationTal`): a late 50-54 backup beats an uncovered spot.
+  // Off (0) for now: with it 3 of 64 CPU teams were left with a spot uncovered late in the draft —
+  // the feasibility check's shot budget does not reach the path those picks take. To revisit.
   if (effectiveTalent(p) < STRUCTURE.minBackupTal) return [];
   // A single can be any spot of a pair he plays (LaFrentz at C only, Hayes at C only: the user's
   // "Royce SF/PF / LaFrentz C").
