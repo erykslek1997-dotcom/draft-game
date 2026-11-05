@@ -218,7 +218,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
-export const QUALITY_SLIDE = { starMinutesEach: 18 };
+export const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
 export function structuredRotation(roster: PlayerSpan[]): Rotation {
@@ -272,14 +272,20 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       const mine = s.backups.filter((b) => b.pair.includes(slot) || b.pair.includes(there));
       if (mine.length !== 1 || !mine[0].pair.every((x) => x === slot || x === there)) continue;
       const b = mine[0].player;
-      if (effectiveTalent(b) - effectiveTalent(beside) < QUALITY_SHIFT.margin) continue;
+      const gap = effectiveTalent(b) - effectiveTalent(beside);
+      if (gap < QUALITY_SHIFT.margin) continue;
+      // A far better backup (`QUALITY_SLIDE.bigGap`+; West–Nash beside Wesley Person, the user: "Lepiej
+      // prawda" for Nash 36 / West 12, West 24 / Person 24) moves the star over for good.
+      const big = gap >= QUALITY_SLIDE.bigGap;
+      const home = big ? QUALITY_SLIDE.bigHomeMinutes : QUALITY_SLIDE.starMinutesEach;
+      const away = STRUCTURE.starterMinutes - home;
       slots[slot] = [
-        { playerId: star.id, minutes: QUALITY_SLIDE.starMinutesEach },
-        { playerId: b.id, minutes: 48 - QUALITY_SLIDE.starMinutesEach },
+        { playerId: star.id, minutes: home },
+        { playerId: b.id, minutes: 48 - home },
       ];
       slots[there] = [
-        { playerId: beside.id, minutes: 48 - QUALITY_SLIDE.starMinutesEach },
-        { playerId: star.id, minutes: QUALITY_SLIDE.starMinutesEach },
+        { playerId: beside.id, minutes: 48 - away },
+        { playerId: star.id, minutes: away },
       ];
       break;
     }
