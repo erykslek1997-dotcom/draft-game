@@ -107,7 +107,10 @@ interface Props {
 /** Picks resolved per `setTimeout(0)` frame (audit AI-4: one synchronous call froze the page). */
 const AUTO_FINISH_CHUNK = 6;
 /** How long past its usual pace a CPU pick waits on the AI worker before the page makes it itself. */
-const WORKER_GRACE_MS = 2500;
+// 2026-11-05: 2500 -> 10000. With the structured CPU rosters, a pick made on the page without the
+// worker's plan breaks the shape most of the time (28% of teams whole in a test, 100% with plans);
+// waiting a little longer for the worker is the better trade.
+const WORKER_GRACE_MS = 10000;
 const TOTAL_PICKS = TEAM_COUNT * ROUNDS;
 
 /** `?draftSeed=123` on the URL replays a specific draft — the seed `createDraft` logs to the
