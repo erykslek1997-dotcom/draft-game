@@ -1936,6 +1936,9 @@ export const AI_PLAN = {
   fromRoster: 2,
   alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? 14),
   cheapFga: 7,
+  /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
+  glueFga: 4,
+  glueAlternatives: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT ?? '0') === '1' ? 4 : 0,
   cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? 6),
   passes: 2,
   warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
@@ -2003,7 +2006,8 @@ function planPick(
       const room = capLeft - others.reduce((sum, p) => sum + p.fga, 0) - reserve;
       const open = board.filter((p) => !taken.has(key(p)) && p.fga <= room && p.id !== plan[i].id);
       // The board's best, plus its best cheap ones: a 10-14-minute backup costs 5-6 shots (the user).
-      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives)])];
+      const glue = AI_PLAN.glueAlternatives > 0 ? [...open].filter((p) => p.fga <= AI_PLAN.glueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, AI_PLAN.glueAlternatives) : [];
+      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue])];
       for (const candidate of pool) {
         const value = score([...roster, ...others, candidate]);
         if (value > best + 1e-6) {

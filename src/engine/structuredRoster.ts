@@ -66,7 +66,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   const problems: string[] = [];
   for (const slot of STARTER_SLOTS) if (!starters[slot]) problems.push(`no natural ${slot} to start`);
   // Up to three backups with a pair each, covering every position; the rest are glue.
-  type Bench = { backups: { player: PlayerSpan; pair: [Position, Position] }[]; uncovered: Position[]; tal: number };
+  type Bench = { backups: { player: PlayerSpan; pair: [Position, Position] }[]; uncovered: Position[]; tal: number; key: number[] };
   const holder: { best: Bench | null } = { best: null };
   const options = rest.map((p) => ({ p, pairs: pairsFor(p) }));
   const search = (i: number, chosen: { player: PlayerSpan; pair: [Position, Position] }[]) => {
@@ -74,16 +74,22 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
       const covered = new Set(chosen.flatMap((b) => b.pair));
       const uncovered = STARTER_SLOTS.filter((slot) => !covered.has(slot));
       const t = chosen.reduce((sum, b) => sum + effectiveTalent(b.player), 0);
+      const ids = new Set(chosen.map((b) => b.player.id));
+      // A cheap glue beats a dear one at equal coverage: the reading never leaves Brent Barry
+      // (8 FGA) as glue while a 3-shot player plays his backup minutes.
+      const dearGlue = rest.filter((p) => !ids.has(p.id) && p.fga > STRUCTURE.glueFga).length;
       const b = holder.best;
-      const better = !b || uncovered.length < b.uncovered.length || (uncovered.length === b.uncovered.length && (chosen.length > b.backups.length || (chosen.length === b.backups.length && t > b.tal)));
-      if (better) holder.best = { backups: [...chosen], uncovered, tal: t };
+      const key = [uncovered.length, -chosen.length, dearGlue, -t];
+      const first = b ? key.findIndex((v, i) => v !== b.key[i]) : -1;
+      const better = !b || (first >= 0 && key[first] < b.key[first]);
+      if (better) holder.best = { backups: [...chosen], uncovered, tal: t, key };
       if (chosen.length === 3 || i === options.length) return;
     }
     search(i + 1, chosen);
     for (const pair of options[i].pairs) search(i + 1, [...chosen, { player: options[i].p, pair }]);
   };
   search(0, []);
-  const picked: Bench = holder.best ?? { backups: [], uncovered: [...STARTER_SLOTS], tal: 0 };
+  const picked: Bench = holder.best ?? { backups: [], uncovered: [...STARTER_SLOTS], tal: 0, key: [] };
   if (picked.backups.length < 3) problems.push(`${3 - picked.backups.length} backup(s) short: no combo player for an open pair`);
   for (const slot of picked.uncovered) problems.push(`no backup covers ${slot}`);
   const backupIds = new Set(picked.backups.map((b) => b.player.id));
