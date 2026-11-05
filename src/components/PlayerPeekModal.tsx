@@ -9,7 +9,7 @@ import { CapI, NFace, fmtCaps } from '../night/ui';
 import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { teamsForSpan } from '../engine/spanTeams';
 import { draftPool as fullDraftPool } from '../data/draftPool';
-import { portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, overallTierForSpan, type Grade } from '../engine/grades';
+import { portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, displayTierForSpan, type Grade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -96,7 +96,7 @@ function Awards({ span }: { span: PlayerSpan }) {
   return list.length ? <span className="pk2-aw">{list.join(' · ')}</span> : null;
 }
 
-const tierOf = (span: PlayerSpan) => overallTierForSpan(tierContextFor(span));
+const tierOf = (span: PlayerSpan) => displayTierForSpan(tierContextFor(span));
 
 /**
  * A player's scouting window. 2026-10-07, the UI simplification (approved mockup, the user: "tam

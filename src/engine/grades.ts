@@ -1562,6 +1562,32 @@ function tierBand(tier: OverallTier): [number, number] {
  * sits inside that tier's band; when smoothing moved the number out of it, the badge follows the
  * number, so badge and number never disagree. The GOAT relabel survives on a Greatest-peak number.
  */
+/**
+ * 2026-11-05, the user's label scale ("Legend 99-96, MVP 94-90, 89-84 All NBA, 83-78 all-star, 77-65
+ * starter, 64-50 role player"; Role Player kept from 45 — the 2026-11-04 call against 30-minute
+ * starters reading Bench Warmer): the tier the player cards show. Labels only — the engine's own
+ * tiers (`overallTierForSpan`: minute profiles, tier caps, the AI) keep `OVERALL_TIER_FLOORS`, so
+ * relabelling moves no number and no minute. GOAT and Sixth Man keep their own labels.
+ */
+const DISPLAY_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
+  [0, 'Cigarette Butt'],
+  [35, 'Bench Warmer'],
+  [45, 'Role Player'],
+  [65, 'Starter'],
+  [78, 'All-star'],
+  [84, 'All-NBA'],
+  [90, 'MVP'],
+  [96, 'Legend'],
+];
+export function displayTierForSpan(ctx: TierGateContext): OverallTier {
+  const tier = overallTierForSpan(ctx);
+  if (tier === 'GOAT' || tier === 'Sixth Man') return tier;
+  const number = displayTalentForSpan(ctx);
+  let shown: OverallTier = 'Cigarette Butt';
+  for (const [floor, named] of DISPLAY_TIER_FLOORS) if (number >= floor) shown = named;
+  return shown;
+}
+
 export function overallTierForSpan(ctx: TierGateContext): OverallTier {
   const tier = overallTierUnheld(ctx);
   const hold = rimBonusHold(ctx);

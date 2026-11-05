@@ -5,7 +5,7 @@ import { rimPressureForFit } from './rimPressure';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { teamSpacingValue } from './midrangeGravity';
 import { playableMinutesCap } from './rotationRoleMinutes';
-import { overallTierForSpan } from './grades';
+import { displayTierForSpan } from './grades';
 import { MAX_MINUTES_PER_PLAYER } from './rotation';
 import { fitScore, FIT_WEIGHTS } from './fit';
 import { allAssignments } from './rotation';
@@ -71,7 +71,7 @@ export function exportLeagueText(
       for (const e of bySlot.filter((a) => a.slot === slot && a.minutes > 0)) {
         const p = e.player;
         lines.push(
-          `  ${slot.padEnd(2)} ${p.playerName} ${p.spanLabel} (${p.primaryPosition}) · ${Math.round(e.minutes)}m · TAL ${formatTal(displayTalentForSpan(tierContextFor(p)))} ${overallTierForSpan(tierContextFor(p))} · O ${offenseRating(p)} / D ${defenseRating(p)} (engine ${r(computeOffensiveTalent(p))} / ${r(computeDefensiveTalent(p))}) · SPC ${r(computeSpacing(p))}(${r(teamSpacingValue(p))}) · rim ${r(rimPressureForFit(p))} · PM ${playmakingScoreForPlayer(p) === null ? '—' : r(playmakingScoreForPlayer(p)!)} · FGA ${p.fga.toFixed(1)} · ${p.offensiveArchetype} / ${p.defensiveRole} · max ${r(playableMinutesCap(p, MAX_MINUTES_PER_PLAYER))}m`,
+          `  ${slot.padEnd(2)} ${p.playerName} ${p.spanLabel} (${p.primaryPosition}) · ${Math.round(e.minutes)}m · TAL ${formatTal(displayTalentForSpan(tierContextFor(p)))} ${displayTierForSpan(tierContextFor(p))} · O ${offenseRating(p)} / D ${defenseRating(p)} (engine ${r(computeOffensiveTalent(p))} / ${r(computeDefensiveTalent(p))}) · SPC ${r(computeSpacing(p))}(${r(teamSpacingValue(p))}) · rim ${r(rimPressureForFit(p))} · PM ${playmakingScoreForPlayer(p) === null ? '—' : r(playmakingScoreForPlayer(p)!)} · FGA ${p.fga.toFixed(1)} · ${p.offensiveArchetype} / ${p.defensiveRole} · max ${r(playableMinutesCap(p, MAX_MINUTES_PER_PLAYER))}m`,
         );
       }
     }

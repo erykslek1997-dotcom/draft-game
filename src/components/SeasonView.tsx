@@ -27,7 +27,7 @@ import { rankTeams, scoreTeam, talentOnDefenseScale } from '../engine/scoring';
 import { teamMetricValues } from '../engine/teamMetrics';
 import { RivalEdge } from './AllMetrics';
 import { teamNickname } from '../engine/teamNames';
-import { overallTierForSpan } from '../engine/grades';
+import { displayTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark, TeamContext } from '../night/league';
@@ -322,7 +322,7 @@ function SeasonPlayerCard({
         <div>
           <h2>{span.playerName}</h2>
           <small>
-            {span.primaryPosition} · {span.spanLabel} · {overallTierForSpan(tierContextWithSixthMan(span))}
+            {span.primaryPosition} · {span.spanLabel} · {displayTierForSpan(tierContextWithSixthMan(span))}
           </small>
         </div>
       </div>

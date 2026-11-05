@@ -21,7 +21,7 @@ import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
-import { overallTierForSpan, displayTalentForSpan } from '../engine/grades';
+import { displayTierForSpan, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { teamCodes, teamLabel } from '../engine/teamNames';
 import { markStepDone } from './pathProgress';
@@ -297,7 +297,7 @@ function MiniDay({ day, team, title, onStart, links }: { day: DailyDraftDay; tea
 /** Built once over the immutable peak pool: the tier lookup is expensive, the filters are cheap. */
 const allEnrichedOnce = peakDraftPool.map((span) => ({
   span,
-  tier: overallTierForSpan(tierContextFor(span)),
+  tier: displayTierForSpan(tierContextFor(span)),
   tal: displayTalentForSpan(tierContextFor(span)),
 }));
 
@@ -487,7 +487,7 @@ function QuickDraftBoard({
     // A daily's rule can rule out a player's best years: the row then shows his best years it allows.
     const alt = daily ? quickDailyAlternative(state, peak.id) : null;
     const span = alt ?? peak;
-    const tier = alt ? overallTierForSpan(tierContextFor(alt)) : peakTier;
+    const tier = alt ? displayTierForSpan(tierContextFor(alt)) : peakTier;
     // While the CPU picks the list stays open to browse and star, the Draft buttons off.
     const legal = canPick && isQuickPickLegal(state, span.id);
     const ruled = daily && !alt && isQuickRuleBlocked(state, peak.id) ? daily.ruleTag : undefined;
