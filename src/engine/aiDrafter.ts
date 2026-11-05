@@ -1971,6 +1971,9 @@ function planPick(
   team?: string,
   claims?: Map<string, string>,
   planSeed?: number,
+  /** The roster the pick check reads (`canStillComplete`) — without a stand-in glue, which the
+   * reading would otherwise count as the backup covering his spot. */
+  realRoster?: PlayerSpan[],
 ): { pick: PlayerSpan; score: number; plan: PlayerSpan[] } | null {
   if (!teamScorer || slots <= 0 || fullBoard.length === 0) return null;
   const key = (p: PlayerSpan) => normalizePlayerName(p.playerName);
@@ -2047,7 +2050,9 @@ function planPick(
   const byTalent = [...plan].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
   // The structured test: the best planned player whose pick still lets the roster reach the full
   // shape (`canStillComplete`); the best one only if none does.
-  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...roster, p], roster.length + slots)) : undefined) ?? byTalent[0] ?? null;
+  const checked = realRoster ?? roster;
+  const size = roster.length + slots;
+  let pick = (structureHoles ? byTalent.find((p) => canStillComplete([...checked, p], size)) : undefined) ?? byTalent[0] ?? null;
   // The structured test: a planned backup whose pair has few others left on the board goes first —
   // Honolulu planned a PG/SG, took its stars first and found none left (`AI_PLAN.scarceRole`).
   if (structureHoles) {
@@ -2860,7 +2865,7 @@ export function pickForAi(
     }
     const full = () => planPick(roster, board, capLimit - spent, slots, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed);
     let planned = glue
-      ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed)
+      ? planPick([...roster, glue], board.filter((p) => p.id !== glue.id), capLimit - spent - glue.fga, slots - 1, ruleset?.planTeam, ruleset?.planClaims, ruleset?.boardSeed, roster)
       : full();
     // The user ("Jeśli drużyna z góry wie że ma brak, niech zaplanuje drużynę bez kleja"): a plan that
     // still leaves a hole with the glue set aside is weighed against one that uses all nine slots.
