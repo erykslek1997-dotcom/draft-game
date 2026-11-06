@@ -538,7 +538,7 @@ function pileOn(line: DeskLine, rng: () => number): DeskLine[] {
   if ((line.kind !== 'praise' && line.kind !== 'concern') || line.who === 'host' || rng() >= PILE_ON_CHANCE) return [];
   const others = (Object.keys(DESK_CAST) as ExpertId[]).filter((w) => w !== 'host' && w !== 'moonbat' && w !== 'rightwing' && w !== line.who);
   const by = pick(rng, others);
-  const at = (w: ExpertId) => `@${DESK_CAST[w].name.split(' ').at(-1)}`;
+  const at = (w: ExpertId) => `@${DESK_CAST[w].name.split(' ').pop()}`;
   const out: DeskLine[] = [{ who: by, kind: 'reply', text: `${at(line.who)} ${pick(rng, PILE_ON[line.kind])}`, reply: true, pile: true }];
   if (rng() < PILE_ON_ANSWER_CHANCE) out.push({ who: line.who, kind: 'reply', text: `${at(by)} ${pick(rng, PILE_ON_ANSWER)}`, reply: true, pile: true });
   return out;
@@ -570,7 +570,7 @@ function escalate(a: ExpertId, b: ExpertId, rng: () => number, beef?: string, bu
   if (!pool.length) return [];
   const j = pick(rng, pool);
   const [target, side] = rng() < 0.5 ? [a, b] : [b, a];
-  const sur = (w: ExpertId) => DESK_CAST[w].name.split(' ').at(-1)!;
+  const sur = (w: ExpertId) => DESK_CAST[w].name.split(' ').pop()!;
   const year = String(2014 + Math.floor(rng() * 10));
   const fresh = (xs: string[]) => { const left = xs.filter((x) => !said.has(x)); const x = pick(rng, left.length ? left : xs); said.add(x); return x; };
   return [
@@ -717,7 +717,7 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
     // 2026-10-29 (the user picked "B + C": arguments that run over several lines): a take on a
     // finding first draws somebody who disagrees about that very point, and its author answers.
     const ex = t.insight && (t.line.kind === 'praise' || t.line.kind === 'concern') && beefRng() < EXCHANGE_CHANCE
-      ? exchangeFor(t.insight, t.line.kind, t.who, DESK_CAST[t.who].name.split(' ').at(-1)!, beefRng, busy)
+      ? exchangeFor(t.insight, t.line.kind, t.who, DESK_CAST[t.who].name.split(' ').pop()!, beefRng, busy)
       : null;
     if (ex) {
       lines.push(t.line, { who: ex.by as ExpertId, kind: 'reply', text: ex.push, reply: true, pile: true }, { who: t.who, kind: 'reply', text: ex.answer, reply: true, pile: true });

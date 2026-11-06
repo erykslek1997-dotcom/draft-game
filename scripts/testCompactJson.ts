@@ -47,7 +47,7 @@ for (const file of jsonFiles('src')) {
   const text = readFileSync(file, 'utf8');
   const original = JSON.parse(text);
   const source = serializeCompact(encodeCompact(original));
-  const decoded = decodeCompact(new Function(`return (${source});`)());
+  const decoded = decodeCompact(JSON.parse(new Function(`return ${JSON.stringify(source)};`)()));
   const diff = sameData(JSON.parse(text), decoded, file);
   before += JSON.stringify(original).length;
   after += source.length;
