@@ -325,6 +325,9 @@ function initiatorRating(player: PlayerSpan): number {
  * roll and makes the play (Draymond, Jokić, Garnett, Horford) is the third kind of screener, beside
  * the roller and the popper — his playmaking, at this share. `SR_SHARE` overrides it (measurement). */
 const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0);
+const SHORT_ROLL_RELIEF = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_RELIEF ?? '0') === '1';
+/** Team spacing a surrounding player needs to count as a real shooter beside the short roll. */
+const SHORT_ROLL_SHOOTER = 70;
 function screenerGravity(player: PlayerSpan, slot: Position): number {
   const roll = rimPressureForFit(player) * (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE);
   const popTagged = player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player);
@@ -355,7 +358,15 @@ export function mismatchStructureScore(
   });
   if (screenerIndex < 0) return 0;
   const spacing = starters.map(teamSpacingValue);
-  const surroundingValues = spacing.filter((_, index) => index !== leadIndex && index !== screenerIndex);
+  let surroundingValues = spacing.filter((_, index) => index !== leadIndex && index !== screenerIndex);
+  // 2026-11-06, the user ("short roll partner + shooter pomaga nierzucającym duetom"): a short-roll
+  // screener making the play with two real shooters around him leaves the other non-shooting big in
+  // the dunker spot — out of the play's way, so his spacing doesn't count against it.
+  const screener = starters[screenerIndex];
+  const isShortRoll = (playmakingScoreForPlayer(screener) ?? 0) * SHORT_ROLL_SHARE >= Math.max(rimPressureForFit(screener), teamSpacingValue(screener));
+  if (SHORT_ROLL_RELIEF && isShortRoll && surroundingValues.filter((v) => v >= SHORT_ROLL_SHOOTER).length >= 2) {
+    surroundingValues = [...surroundingValues].sort((a, b) => b - a).slice(0, surroundingValues.length - 1);
+  }
   const surroundingSpacing = surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length;
   const structure = bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT;
   // 2026-09-30, engine calibration session 1 (the user: Nash + Malone and Stockton + Garnett are

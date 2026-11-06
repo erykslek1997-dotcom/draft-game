@@ -165,18 +165,23 @@ const LAYER_TIE_BREAK = 0.01;
 const FIT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
 /** Spacing's weight back in Fit (`FIT_SPC`, measurement; the pruned Fit has none). */
 const FIT_SPACING_SHARE = Number(FIT_ENV?.FIT_SPC ?? 0);
+/** Share of the dropped parts' old weights brought back (`FIT_RESTORE`, measurement). */
+const FIT_RESTORE = Number(FIT_ENV?.FIT_RESTORE ?? 0);
+const RESTORED = { spacingCompatibility: 0.11, switchability: 0.099, rimPressureTeam: 0.037, championshipStructure: 0.13 };
+const RESTORED_TOTAL = FIT_RESTORE * (RESTORED.spacingCompatibility + RESTORED.switchability + RESTORED.rimPressureTeam + RESTORED.championshipStructure);
+const KEPT = (1 - FIT_SPACING_SHARE) * (1 - RESTORED_TOTAL);
 export const FIT_WEIGHTS = {
   creationStructure: 0,
-  pairingStructure: (0.293 / 0.624) * (1 - FIT_SPACING_SHARE),
-  spacingCompatibility: FIT_SPACING_SHARE,
-  defensiveRoleCoverage: (0.331 / 0.624) * (1 - FIT_SPACING_SHARE),
-  switchability: 0,
+  pairingStructure: (0.293 / 0.624) * KEPT,
+  spacingCompatibility: FIT_SPACING_SHARE * (1 - RESTORED_TOTAL) + FIT_RESTORE * RESTORED.spacingCompatibility,
+  defensiveRoleCoverage: (0.331 / 0.624) * KEPT,
+  switchability: FIT_RESTORE * RESTORED.switchability,
   huntResistance: 0,
   defensiveCohesion: 0,
-  rimPressureTeam: 0,
+  rimPressureTeam: FIT_RESTORE * RESTORED.rimPressureTeam,
   reboundingBalance: 0,
   sizeCoverage: 0,
-  championshipStructure: 0,
+  championshipStructure: FIT_RESTORE * RESTORED.championshipStructure,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;
