@@ -2,6 +2,7 @@ import { players } from '../src/data/players';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
 import { liftAdjustment } from '../src/engine/teammateLift';
+import { heliocentricAdjustment } from '../src/engine/heliocentric';
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
 // `fit.ts` now, not `scoring.ts` (which only imports it internally for `scoreTeam`).
 import { fitScore } from '../src/engine/fit';
@@ -96,7 +97,9 @@ const recomputedOverall = Math.round(
     // Plus the two small whole-team terms: the ball load and (2026-10-15) the teammate lift.
     ballLoadAdjustment(fullRoster) +
     liftAdjustment(fullRoster) +
-    ballHandlerAdjustment(fullRoster),
+    ballHandlerAdjustment(fullRoster) +
+    // 2026-11-06: two players who live on the ball (heliocentric.ts).
+    heliocentricAdjustment(fullRoster),
 );
 assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
 
