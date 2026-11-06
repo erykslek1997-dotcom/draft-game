@@ -42,10 +42,12 @@ const STAR_MINUTE_TIERS = new Set<OverallTier>(['GOAT', 'Legend', 'MVP', 'All-NB
  * i później all star 36"): the card's tier caps a player's minutes in every rotation — GOAT and
  * Legend as before, MVP and All-NBA 38, everyone else 36.
  */
-const CARD_TIER_MINUTES = { high: 38, rest: 36 };
+const CARD_TIER_MINUTES = { legend: 42, high: 38, rest: 36 };
 export function cardTierMinutesCap(span: PlayerSpan): number {
   const tier = displayTierForSpan(tierContextWithSixthMan(span));
-  if (tier === 'GOAT' || tier === 'Legend') return Infinity;
+  // 2026-11-06, the user (Kawhi 48 minutes with "no one else here" at SF): nobody plays the whole
+  // game — a GOAT or Legend tops out at `legend`, so every spot has someone coming in.
+  if (tier === 'GOAT' || tier === 'Legend') return CARD_TIER_MINUTES.legend;
   return tier === 'MVP' || tier === 'All-NBA' ? CARD_TIER_MINUTES.high : CARD_TIER_MINUTES.rest;
 }
 export function minuteProfileForSpan(span: PlayerSpan): TierMinuteProfile {
