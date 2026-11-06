@@ -580,10 +580,24 @@ export default function DraftBoard({
   // `humanTeam.roster` so every number in this read-only summary card is the same real, enforced
   // state; the Team tab remains the one place an upward swap actually previews (roster table +
   // its own cap meter both already consistently read `chosenHumanRoster`/`displayFgas` there).
-  const humanAssignment = useMemo(
-    () => bestPrimaryAssignment(humanTeam.roster).assignment,
-    [humanTeam.roster],
-  );
+  // 2026-11-06, the user ("mam McHale w S5 a podczas draftu jest ławkowiczem"): Your Nine follows the
+  // five starting in the rotation; a spot the rotation leaves open falls back to the best fit.
+  const [rotationStarters, setRotationStarters] = useState<Partial<Record<Position, string>>>({});
+  const humanAssignment = useMemo(() => {
+    const auto = bestPrimaryAssignment(humanTeam.roster).assignment;
+    const byName = new Map(humanTeam.roster.map((p) => [p.playerName, p]));
+    const chosen: Partial<Record<Position, PlayerSpan>> = {};
+    for (const slot of STARTER_SLOTS) {
+      const p = rotationStarters[slot] ? byName.get(rotationStarters[slot]!) : undefined;
+      if (p) chosen[slot] = p;
+    }
+    const used = new Set(Object.values(chosen).map((p) => p!.id));
+    for (const slot of STARTER_SLOTS) if (!chosen[slot] && auto[slot] && !used.has(auto[slot]!.id)) {
+      chosen[slot] = auto[slot];
+      used.add(auto[slot]!.id);
+    }
+    return chosen;
+  }, [humanTeam.roster, rotationStarters]);
 
   // 2026-10-14: the Draft Desk (three pundits after your third pick) and the rim-pressure note
   // left the free flow with the screen redesign; they come back as lifelines (TODO.md).
@@ -1108,6 +1122,7 @@ export default function DraftBoard({
           }
           submitRef={submitRef}
           onStatus={setRotStatus}
+          onStarters={setRotationStarters}
           showSubmit={false}
         />
       )}
