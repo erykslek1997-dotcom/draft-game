@@ -55,8 +55,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { cx } from '../night/frame';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NFace, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
 import { effectiveTalent } from '../engine/grades';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
@@ -1359,37 +1358,36 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   </tr>
                   {open && (
                     <tr className="open">
-                      <td />
-                      <td colSpan={6}>
-                        {/* 2026-11-05, the playtest ("ten widok meh": Brogdon at PG and SG, Howard twice, no
-                            glue): their nine once each — the five in slot order, then the bench by minutes —
-                            with each one's total and the spots he plays. */}
+                      {/* one cell across the table (2026-11-06: the rival's bench minutes were cut on a
+                          phone by the empty rank column); the indent is CSS's, desktop only */}
+                      <td colSpan={7} className="open-panel">
+                        {/* 2026-11-06, the user ("zrób po prostu taki widok jak u gracza"): the rival's
+                            roster as your own — each slot's starter with who comes in for him — and
+                            who did not play. */}
                         {(() => {
                           const shown = displayTeam(team);
                           const rows = allAssignments(shown);
-                          const starters = primaryStarters(shown);
-                          const order = new Map(starters.map((x, k) => [x.player.id, k]));
-                          const nine = shown.roster
-                            .map((sp) => {
-                              const mine = rows.filter((r) => r.player.id === sp.id);
-                              const minutes = mine.reduce((a, r) => a + r.minutes, 0);
-                              const slots = STARTER_SLOTS.filter((sl) => mine.some((r) => r.slot === sl && r.minutes > 0));
-                              return { sp, minutes, slots, start: order.get(sp.id) };
-                            })
-                            .sort((x, y) => (x.start ?? 9) - (y.start ?? 9) || y.minutes - x.minutes);
+                          const startKeys = new Set(primaryStarters(shown).map((x) => `${x.slot}|${x.player.id}`));
+                          const playing = new Set(rows.filter((r) => r.minutes > 0).map((r) => r.player.id));
+                          const out = shown.roster.filter((sp) => !playing.has(sp.id));
                           return (
-                            <div className="rn9">
-                              {nine.map(({ sp, minutes, slots, start }) => (
-                                <div key={sp.id} className={cx('rn9-r', start === undefined && 'bn', minutes === 0 && 'dnp')}>
-                                  <NFace name={sp.playerName} span={sp} />
-                                  <span className="rn9-n">
-                                    <b>{sp.playerName}</b> <small>{sp.spanLabel.replace(/^(\d\d)(\d\d)-(\d\d)$/, '$2-$3')}</small>
-                                  </span>
-                                  <span className="rn9-p">{slots.length ? slots.join('/') : '—'}</span>
-                                  <span className="rn9-m">{minutes}m</span>
-                                </div>
-                              ))}
-                            </div>
+                            <>
+                              <RosterList
+                                rows={STARTER_SLOTS.map((slot) => {
+                                  const here = rows.filter((r) => r.slot === slot && r.minutes > 0);
+                                  const starter = here.find((r) => startKeys.has(`${r.slot}|${r.player.id}`)) ?? here[0];
+                                  const others = here.filter((r) => r !== starter).sort((x, y) => y.minutes - x.minutes);
+                                  return {
+                                    slot,
+                                    starter: starter ? { span: starter.player, minutes: starter.minutes } : undefined,
+                                    bench: others.map((o) => ({ span: o.player, minutes: o.minutes })),
+                                  };
+                                })}
+                              />
+                              <p className="empty-note dnp-note" style={{ marginTop: 8 }}>
+                                Did not play: {out.length ? out.map((sp) => maskText(sp.playerName)).join(', ') : 'none'}.
+                              </p>
+                            </>
                           );
                         })()}
                         <RivalEdge nick={nick} code={codeByTeamId.get(team.id) ?? nick.slice(0, 3).toUpperCase()} scores={edgeRows} metrics={() => ({ theirs: teamMetricValues(team), mine: humanRanked ? teamMetricValues(humanRanked.team) : {} })} />

@@ -1377,17 +1377,9 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .sd-left { margin-top: 28px; display: flex; flex-direction: column; gap: 20px; }
 .sd-left > .split { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 
-/* 2026-11-05, the playtest: an opened rival's nine, once each */
+/* 2026-11-05, the playtest: the rival comparison's numbers in the bars' colours */
 .eg-v em { font-style: normal; color: var(--red); font-weight: 700; }
 .eg-v em.y { color: var(--ink); }
-.rn9 { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 18px; margin: 4px 0 14px; border-top: 1px solid var(--rule); }
-.rn9-r { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 40px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule); }
-.rn9-r img, .rn9-r .ini { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--surf2); display: grid; place-items: center; font: 700 11px var(--cond); color: var(--ink3); }
-.rn9-n { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rn9-n b { font: 700 16px var(--cond); color: var(--ink); }
-.rn9-n small { font: 500 12px var(--num); color: var(--ink3); }
-.rn9-p { font: 700 12px var(--cond); letter-spacing: 0.05em; color: var(--ink2); }
-.rn9-m { font: 600 13px var(--num); color: var(--ink2); text-align: right; }
-.rn9-r.bn .rn9-n b { color: var(--ink2); }
-.rn9-r.dnp { opacity: 0.6; }
 .eg-v { white-space: nowrap; }
+.st-at tr.open td.open-panel { padding-left: 48px; }
+@media (max-width: 600px) { .st-at tr.open td.open-panel { padding-left: 0; padding-right: 0; } }

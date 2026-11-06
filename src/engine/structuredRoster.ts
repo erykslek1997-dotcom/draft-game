@@ -3,7 +3,7 @@ import { displayTierForSpan, effectiveTalent, tierContextFor } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
 import { positionCompetenceScore } from './positionCompetence';
 import { normalizePlayerName } from '../data/schema';
-import { STARTER_SLOTS } from './positions';
+import { STARTER_SLOTS, isRealPositionFit } from './positions';
 import { computeSpacing } from './spacing';
 import { midrangeGravitySpacing, PRE_ZONE_MIDRANGE_SHARE } from './midrangeGravity';
 import { preZoneShootingSkill } from './preZoneShooting';
@@ -302,13 +302,15 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
-const TIER_MINUTES = { star: 48, high: 38, rest: 36 };
+// 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend
+// 40"): nobody plays 48.
+const TIER_MINUTES = { goat: 42, legend: 40, high: 38, rest: 36 };
 const tierCapMemo = new Map<string, number>();
 function tierMinutesCap(p: PlayerSpan): number {
   let cap = tierCapMemo.get(p.id);
   if (cap === undefined) {
     const tier = displayTierForSpan(tierContextFor(p));
-    cap = tier === 'GOAT' || tier === 'Legend' ? TIER_MINUTES.star : tier === 'MVP' || tier === 'All-NBA' ? TIER_MINUTES.high : TIER_MINUTES.rest;
+    cap = tier === 'GOAT' ? TIER_MINUTES.goat : tier === 'Legend' ? TIER_MINUTES.legend : tier === 'MVP' || tier === 'All-NBA' ? TIER_MINUTES.high : TIER_MINUTES.rest;
     tierCapMemo.set(p.id, cap);
   }
   return cap;
@@ -486,6 +488,54 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     }
     if (rest > 0) starterRow.minutes += rest;
   }
+  // 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'": Kawhi 48 at SF; on
+  // 96 CPU teams 23 spots had nobody else and 24 players ran past 42; "nie może być na dowolnego, bo
+  // wyjdą głupoty"): whoever is still past his tier's minutes hands the rest, in his own spots, to a
+  // teammate listed at that spot with room — or, when none has room, one listed there shifts over
+  // and a teammate listed at that player's other spot takes those minutes (Bell from SG to SF, Ward
+  // to SG). Nobody plays a spot he isn't listed at.
+  const roomOf = (q: PlayerSpan) => tierMinutesCap(q) - totalOf(q.id);
+  const addTo = (slot: Position, id: string, m: number) => {
+    const row = slots[slot].find((r) => r.playerId === id);
+    if (row) row.minutes += m;
+    else slots[slot].push({ playerId: id, minutes: m });
+  };
+  for (const p of roster) {
+    let excess = totalOf(p.id) - tierMinutesCap(p);
+    for (const slot of STARTER_SLOTS) {
+      if (excess <= 0) break;
+      const mine = slots[slot].find((r) => r.playerId === p.id);
+      if (!mine || mine.minutes <= 0) continue;
+      const listed = roster.filter((q) => q.id !== p.id && isRealPositionFit(q, slot));
+      for (const q of [...listed].sort((a, b) => roomOf(b) - roomOf(a))) {
+        if (excess <= 0 || mine.minutes <= 0) break;
+        const take = Math.min(excess, mine.minutes, roomOf(q));
+        if (take <= 0) continue;
+        addTo(slot, q.id, take);
+        mine.minutes -= take;
+        excess -= take;
+      }
+      for (const q of listed) {
+        if (excess <= 0 || mine.minutes <= 0) break;
+        for (const other of STARTER_SLOTS) {
+          if (excess <= 0 || other === slot) continue;
+          const qRow = slots[other].find((r) => r.playerId === q.id);
+          if (!qRow || qRow.minutes <= 0) continue;
+          for (const r of roster.filter((x) => x.id !== p.id && x.id !== q.id && isRealPositionFit(x, other)).sort((a, b) => roomOf(b) - roomOf(a))) {
+            const take = Math.min(excess, mine.minutes, qRow.minutes, roomOf(r));
+            if (take <= 0) continue;
+            qRow.minutes -= take;
+            addTo(other, r.id, take);
+            addTo(slot, q.id, take);
+            mine.minutes -= take;
+            excess -= take;
+            if (excess <= 0) break;
+          }
+        }
+      }
+    }
+  }
+  for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((r, i) => i === 0 || r.minutes > 0);
   return { slots };
 }
 
