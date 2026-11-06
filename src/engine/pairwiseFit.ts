@@ -323,9 +323,11 @@ function initiatorRating(player: PlayerSpan): number {
 
 /** 2026-11-06, the user (Curry + Klay + Draymond at Fit 58): the screener who catches on the short
  * roll and makes the play (Draymond, Jokić, Garnett, Horford) is the third kind of screener, beside
- * the roller and the popper — his playmaking, at this share. `SR_SHARE` overrides it (measurement). */
-const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0);
-const SHORT_ROLL_RELIEF = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_RELIEF ?? '0') === '1';
+ * the roller and the popper — his playmaking, at this share. Measured with the stagger and the relief
+ * below on 600 real team-seasons / the game: SRS 0.822 -> 0.823, game 0.805 -> 0.797; the user's
+ * Curry–Klay–Pierce–Green–Bam Fit 58 -> 77 ("fit 77 to w sumie dość wysoko, więc chyba ok"). */
+const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0.8);
+const SHORT_ROLL_RELIEF = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_RELIEF ?? '1') === '1';
 /** Team spacing a surrounding player needs to count as a real shooter beside the short roll. */
 const SHORT_ROLL_SHOOTER = 70;
 function screenerGravity(player: PlayerSpan, slot: Position): number {

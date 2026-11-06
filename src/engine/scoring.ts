@@ -1877,9 +1877,9 @@ function secondUnit(team: Team): Team | null {
 /** The share of the spacing bottleneck the second unit pays (`U2_BOTTLENECK`, measurement). */
 const U2_BOTTLENECK = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.U2_BOTTLENECK ?? 1);
 const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
-/** Measurement (`STAGGER=1`): the bench as it really comes in — each slot's backup beside the four
+/** 2026-11-06 (on by default; `STAGGER=0` for the all-backups unit): the bench as it really comes in — each slot's backup beside the four
  * starters, weighted by his minutes there — instead of all five backups at once. */
-const STAGGER = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAGGER === '1';
+const STAGGER = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAGGER !== '0';
 function staggeredFit(team: Team, starters: number): number {
   if (!team.rotation) return starters;
   let total = 0;
