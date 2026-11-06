@@ -37,6 +37,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
 import { teamGlass } from './teamGlass';
 import { liftAdjustment } from './teammateLift';
+import { chemistryAdjustment } from './chemistry';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
@@ -1925,7 +1926,9 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
     // for the five on the floor; the team's number takes it for the starters.
     (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
-    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team));
+    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team)) +
+    // 2026-11-06: starters who really played (and won) together (chemistry.ts).
+    chemistryAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
