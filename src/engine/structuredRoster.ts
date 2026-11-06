@@ -302,14 +302,15 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 }
 
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
-// 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'"): a star tops out at 42.
-const TIER_MINUTES = { star: 42, high: 38, rest: 36 };
+// 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend
+// 40"): nobody plays 48.
+const TIER_MINUTES = { goat: 42, legend: 40, high: 38, rest: 36 };
 const tierCapMemo = new Map<string, number>();
 function tierMinutesCap(p: PlayerSpan): number {
   let cap = tierCapMemo.get(p.id);
   if (cap === undefined) {
     const tier = displayTierForSpan(tierContextFor(p));
-    cap = tier === 'GOAT' || tier === 'Legend' ? TIER_MINUTES.star : tier === 'MVP' || tier === 'All-NBA' ? TIER_MINUTES.high : TIER_MINUTES.rest;
+    cap = tier === 'GOAT' ? TIER_MINUTES.goat : tier === 'Legend' ? TIER_MINUTES.legend : tier === 'MVP' || tier === 'All-NBA' ? TIER_MINUTES.high : TIER_MINUTES.rest;
     tierCapMemo.set(p.id, cap);
   }
   return cap;
