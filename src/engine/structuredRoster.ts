@@ -1,7 +1,10 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { displayTierForSpan, effectiveTalent, tierContextFor } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
-import { positionCompetenceScore } from './positionCompetence';
+import { positionCompetenceScore as rawCompetence } from './positionCompetence';
+import { positionFitMultiplier } from './positions';
+/** Competence at a spot, zero where the game's position rules forbid it (2026-11-06: no wing at PG). */
+const positionCompetenceScore = (p: PlayerSpan, slot: Position) => (positionFitMultiplier(p, slot) > 0 ? rawCompetence(p, slot) : 0);
 import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS, isRealPositionFit } from './positions';
 import { computeSpacing } from './spacing';
