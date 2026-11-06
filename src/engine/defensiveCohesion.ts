@@ -285,9 +285,14 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
     .filter(({ minutes }) => minutes > 0);
 
   const starters = primaryStarters(team).map((entry) => entry.player);
-  const averageDefensiveTalent = starters.length > 0
-    ? starters.reduce((sum, player) => sum + computeDefensiveTalent(player), 0) / starters.length
-    : 0;
+  // 2026-11-06 (on; `COH_MIN=0` for the starters only): the average over the whole rotation by minutes, so the
+  // bench's defenders count (Caruso, Dort, DeAndre Jordan behind Nash).
+  const rotationAverage = assignedPlayers.reduce((sum, p) => sum + p.defensiveTalent * p.minutes, 0) / Math.max(1, assignedPlayers.reduce((sum, p) => sum + p.minutes, 0));
+  const averageDefensiveTalent = DC_ENV?.COH_MIN !== '0' && assignedPlayers.length > 0
+    ? rotationAverage
+    : starters.length > 0
+      ? starters.reduce((sum, player) => sum + computeDefensiveTalent(player), 0) / starters.length
+      : 0;
 
   function bestProvider(
     roles: DefensiveRole[],

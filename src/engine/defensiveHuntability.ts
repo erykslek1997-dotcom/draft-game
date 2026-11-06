@@ -242,15 +242,22 @@ export const HUNT_RULES = { scale: 0.25 };
 const PERIMETER_COVER_ROLES = ['Point of Attack', 'Wing Stopper', 'Chaser'];
 const MAX_COVER_DAMPENING = 0.55;
 
-function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: readonly string[]): number {
+/** 2026-11-06, the user (Nash beside White, Durant, Caruso: "obrona underrated" → "1 i 2 ok"): the
+ * D-TAL a perimeter defender needs to start covering the weak link (`COVER_GATE`; the rim keeps 88),
+ * and whether the cover also softens the weakest-starter headroom cost (on; `HEAD_DAMP=0` off). On
+ * 600 real team-seasons / the game: SRS 0.823 = , game 0.796 -> 0.797. */
+const HUNT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const PERIMETER_COVER_GATE = Number(HUNT_ENV?.COVER_GATE ?? 78);
+const COVER_SOFTENS_HEADROOM = HUNT_ENV?.HEAD_DAMP !== '0';
+function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: readonly string[], gate = ANCHOR_DTAL_GATE): number {
   let best = 0;
   for (const player of team.roster) {
     if (!roles.includes(player.defensiveRole)) continue;
     const minutes = minutesByPlayer.get(player.id) ?? 0;
     if (minutes <= 0) continue;
     const dtal = computeDefensiveTalent(player);
-    if (dtal < ANCHOR_DTAL_GATE) continue;
-    const dtalFactor = Math.min(1, (dtal - ANCHOR_DTAL_GATE) / (ANCHOR_DTAL_FULL - ANCHOR_DTAL_GATE));
+    if (dtal < gate) continue;
+    const dtalFactor = Math.min(1, (dtal - gate) / (ANCHOR_DTAL_FULL - gate));
     const minutesFactor = Math.min(1, minutes / ANCHOR_MINUTES_FOR_FULL);
     best = Math.max(best, dtalFactor * minutesFactor);
   }
@@ -259,7 +266,7 @@ function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: re
 
 function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): number {
   const rim = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, RIM_PROTECTOR_ROLES);
-  const perimeter = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, PERIMETER_COVER_ROLES);
+  const perimeter = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, PERIMETER_COVER_ROLES, PERIMETER_COVER_GATE);
   return 1 - Math.min(MAX_COVER_DAMPENING, Math.max(rim, perimeter) + 0.5 * Math.min(rim, perimeter));
 }
 
@@ -391,7 +398,8 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     MAX_HUNTABILITY_PENALTY,
     (shortfallMinutes / (NORMALIZATION_DTAL * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
   );
-  const exposure = rawPenalty * anchorDampening(team, minutesByPlayer);
+  const dampening = anchorDampening(team, minutesByPlayer);
+  const exposure = rawPenalty * dampening;
   const penalty = exposure * HUNT_RULES.scale;
   // 2026-10-02, the user (Hunt resistance 100 for 30% of teams): the shown reading also grades how
   // close the five's weakest defender sits to his position's huntable bar, so a five with nobody
@@ -406,7 +414,8 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
   // 2026-10-02, the user ("dlaczego się nie liczą"): the same headroom reaches the Defense score,
   // centred on a typical five so the scale doesn't move — a weakest starter right at the bar costs
   // up to `HEADROOM_DEFENSE_POINTS / 2`, real headroom earns as much back.
-  const headroomPenalty = (HEADROOM_NEUTRAL - headroom) * HEADROOM_DEFENSE_POINTS;
+  const headroomRaw = (HEADROOM_NEUTRAL - headroom) * HEADROOM_DEFENSE_POINTS;
+  const headroomPenalty = COVER_SOFTENS_HEADROOM && headroomRaw > 0 ? headroomRaw * dampening : headroomRaw;
   return {
     penalty: penalty + headroomPenalty,
     exposurePenalty: exposure + headroomPenalty,

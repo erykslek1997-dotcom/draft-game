@@ -779,6 +779,9 @@ const NAMED_SPAN_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
   // Durant's length and help defense read C-/C off his box in those years; late OKC to a C+, the
   // Warriors years to a B. His early OKC and later windows are left as measured.
   ...spanBonus('Kevin Durant', ['2012-14', '2013-15', '2014-16', '2015-17', '2016-18', '2017-19', '2018-20', '2019-21'], 22),
+  // 2026-11-06, the user ("White 81 coś mało też"): Derrick White's Boston years, the All-Defense
+  // guard, to an A- on his card.
+  ...spanBonus('Derrick White', ['2021-23', '2022-24', '2023-25', '2024-26'], 7),
 ]);
 /** 2026-11-04, the user ("Dlaczego Manu ma 90 obrony"): named ceilings on the final D-TAL — a fine
  * team defender, not Pippen's level. */
