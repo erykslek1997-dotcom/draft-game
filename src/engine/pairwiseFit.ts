@@ -5,6 +5,8 @@ import { isPlusShooter } from './shooting';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { rimPressureForFit } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
+import { eraBaseline } from './era';
+import { boxRatesForSpan } from './boxRatesLookup';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -376,5 +378,21 @@ export function mismatchStructureScore(
   // pairing is only as dangerous as the man running it — scaled by the lead's own rating.
   const initiatorQuality = INITIATOR_QUALITY_FLOOR + (1 - INITIATOR_QUALITY_FLOOR) * Math.min(1, ratings[leadIndex] / INITIATOR_QUALITY_FULL);
   const leadShooting = LEAD_SHOOTING_FLOOR + (1 - LEAD_SHOOTING_FLOOR) * Math.min(1, spacing[leadIndex] / LEAD_SHOOTING_FULL);
-  return Math.round(Math.min(100, structure) * initiatorQuality * leadShooting);
+  return Math.round(Math.min(100, structure) * initiatorQuality * leadShooting * leadEfficiency(starters[leadIndex]));
+}
+
+/**
+ * 2026-11-06, the user ("powinno oceniać czy główny playmaker jest efficient"): the lead's true
+ * shooting against his era's league, and his assists to turnovers (where turnovers are recorded,
+ * 1977-78 on). One point of TS over the league or 0.5 of AST/TOV over 2.0 counts the same; ±6 such
+ * points is the full swing of `LEAD_EFFICIENCY` either way. `LEAD_EFF` overrides it (measurement).
+ */
+const LEAD_EFFICIENCY = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.LEAD_EFF ?? 0);
+function leadEfficiency(lead: PlayerSpan): number {
+  if (LEAD_EFFICIENCY === 0) return 1;
+  const relTs = (lead.box.tsPct - eraBaseline(lead.spanLabel).avgTs) * 100;
+  const tov = boxRatesForSpan(lead)?.tovPerGame ?? null;
+  const astTov = tov && tov > 0 ? (lead.box.apg / tov - 2) * 2 : 0;
+  const points = relTs + astTov;
+  return 1 + LEAD_EFFICIENCY * Math.max(-1, Math.min(1, points / 6));
 }

@@ -61,6 +61,8 @@ export interface SpanBoxRates {
   orebPerGame: number;
   drebPerGame: number;
   orebReliable: boolean;
+  /** Turnovers a game, or null when a covered season predates their record (1977-78). */
+  tovPerGame: number | null;
 }
 
 /**
@@ -98,8 +100,9 @@ export function boxRatesForSpan(
       fga: acc.fga + r.fga,
       oreb: acc.oreb + r.oreb,
       dreb: acc.dreb + r.dreb,
+      tov: acc.tov + r.tov,
     }),
-    { g: 0, fta: 0, fga: 0, oreb: 0, dreb: 0 },
+    { g: 0, fta: 0, fga: 0, oreb: 0, dreb: 0, tov: 0 },
   );
   if (sum.g === 0) return null;
   // A corrupt FGA (see `hasPlausibleFga`) would inflate FTA/FGA — fall back to the pool's own
@@ -113,6 +116,7 @@ export function boxRatesForSpan(
     orebPerGame: sum.oreb / sum.g,
     drebPerGame: sum.dreb / sum.g,
     orebReliable: rows.every((r) => r.orebOk === 1),
+    tovPerGame: rows.every((r) => r.tov > 0) ? sum.tov / sum.g : null,
   };
 }
 
