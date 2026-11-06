@@ -248,6 +248,11 @@ const MAX_COVER_DAMPENING = 0.55;
  * 600 real team-seasons / the game: SRS 0.823 = , game 0.796 -> 0.797. */
 const HUNT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
 const PERIMETER_COVER_GATE = Number(HUNT_ENV?.COVER_GATE ?? 78);
+/** 2026-11-06, the user ("78 za niski... powinien współgrać z TAL słabszego; do Nasha musi być mega
+ * mocny, a do kogoś lepszego już nie aż tak"): the perimeter gate rises with the weakest link's
+ * shortfall — `PERIMETER_COVER_GATE` plus `perShortfall` a point under his bar, at most `max` ("94 też
+ * za dużo, 86-88 ok"). Nash (−41) needs an 88 beside him; a −10 weak link an 80-81. */
+const COVER_GATE_RAMP = { perShortfall: Number(HUNT_ENV?.COVER_RAMP ?? 0.25), max: 88 };
 const COVER_SOFTENS_HEADROOM = HUNT_ENV?.HEAD_DAMP !== '0';
 function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: readonly string[], gate = ANCHOR_DTAL_GATE): number {
   let best = 0;
@@ -264,9 +269,10 @@ function coverFactor(team: Team, minutesByPlayer: Map<string, number>, roles: re
   return best;
 }
 
-function anchorDampening(team: Team, minutesByPlayer: Map<string, number>): number {
+function anchorDampening(team: Team, minutesByPlayer: Map<string, number>, worstShortfall = 0): number {
   const rim = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, RIM_PROTECTOR_ROLES);
-  const perimeter = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, PERIMETER_COVER_ROLES, PERIMETER_COVER_GATE);
+  const gate = Math.min(COVER_GATE_RAMP.max, PERIMETER_COVER_GATE + COVER_GATE_RAMP.perShortfall * worstShortfall);
+  const perimeter = MAX_ANCHOR_DAMPENING * coverFactor(team, minutesByPlayer, PERIMETER_COVER_ROLES, gate);
   return 1 - Math.min(MAX_COVER_DAMPENING, Math.max(rim, perimeter) + 0.5 * Math.min(rim, perimeter));
 }
 
@@ -398,7 +404,7 @@ export function defensiveHuntability(team: Team): DefensiveHuntabilityResult {
     MAX_HUNTABILITY_PENALTY,
     (shortfallMinutes / (NORMALIZATION_DTAL * GAME_MINUTES)) * MAX_HUNTABILITY_PENALTY,
   );
-  const dampening = anchorDampening(team, minutesByPlayer);
+  const dampening = anchorDampening(team, minutesByPlayer, offenders.reduce((m, o) => Math.max(m, o.shortfall), 0));
   const exposure = rawPenalty * dampening;
   const penalty = exposure * HUNT_RULES.scale;
   // 2026-10-02, the user (Hunt resistance 100 for 30% of teams): the shown reading also grades how
