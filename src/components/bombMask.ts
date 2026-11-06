@@ -47,6 +47,7 @@ export function maskText(text: string): string {
   const full = forms(hidden.words);
   const single = [...new Set(hidden.parts.flatMap((w) => [w, plain(w)]))].sort((a, b) => b.length - a.length).map(escape);
   // "Aaron McKie" first, then "McKie" alone — whole words only.
-  const re = new RegExp(`(?<!\\p{L})(?:${[...full, ...single].join('|')})(?!\\p{L})`, 'gu');
-  return text.replace(re, BOMB_NAME);
+  // No lookbehind (iOS Safari < 16.4 throws on it): capture the preceding non-letter instead.
+  const re = new RegExp(`(^|[^\\p{L}])(?:${[...full, ...single].join('|')})(?!\\p{L})`, 'gu');
+  return text.replace(re, (_m, before: string) => before + BOMB_NAME);
 }

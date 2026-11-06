@@ -233,7 +233,7 @@ function dailyPool(key: string = dayKey()): DailyPool {
     const perShot = (s: PlayerSpan) => effectiveTalent(s) / Math.max(4, s.fga);
     const cheap = bucket.filter((s) => s.fga <= fgaCut);
     const valueCut = cheap.map(perShot).sort((a, b) => a - b)[Math.floor(cheap.length / 3)] ?? 0;
-    const valueCards = () => weightedShuffle(cheap.filter((s) => allowed(s) && perShot(s) >= valueCut), rng, damp).at(0);
+    const valueCards = () => weightedShuffle(cheap.filter((s) => allowed(s) && perShot(s) >= valueCut), rng, damp)[0];
     take(valueCards(), 'value');
 
     // Specialist: elite on one axis, weak on another, measured against the bucket.
@@ -245,11 +245,11 @@ function dailyPool(key: string = dayKey()): DailyPool {
       const low = Math.min(...p.filter((_, i) => i !== p.indexOf(high)));
       return high >= SPECIALIST_HIGH && low <= SPECIALIST_LOW ? high - low : 0;
     };
-    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, damp).at(0), 'specialist');
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, damp)[0], 'specialist');
 
     // Surprise: a sleeper or a famous name in a lesser stretch, one or the other by coin flip.
     const sleeper = () =>
-      anySpan(weightedShuffle(ranked.slice(0, SLEEPER_MAX_RANK).filter((s) => allowed(s) && allStarCount(s.playerName) <= SLEEPER_MAX_AS), rng, damp).at(0));
+      anySpan(weightedShuffle(ranked.slice(0, SLEEPER_MAX_RANK).filter((s) => allowed(s) && allStarCount(s.playerName) <= SLEEPER_MAX_AS), rng, damp)[0]);
     const nameTrap = () => {
       const candidates: PlayerSpan[] = [];
       for (const top of ranked.slice(0, ROLE_BUCKET)) {
@@ -259,7 +259,7 @@ function dailyPool(key: string = dayKey()): DailyPool {
           if (other.primaryPosition === slot && bestTal - effectiveTalent(other) >= NAME_TRAP_MIN_DROP && other.fga >= fgaCut) candidates.push(other);
         }
       }
-      return weightedShuffle(candidates, rng, () => 1).at(0);
+      return weightedShuffle(candidates, rng, () => 1)[0];
     };
     const coin = rng() < 0.5;
     take((coin ? nameTrap() : sleeper()) ?? (coin ? sleeper() : nameTrap()), 'surprise');
@@ -267,7 +267,7 @@ function dailyPool(key: string = dayKey()): DailyPool {
     // The larger pool (2026-09-28): a second value card and a second specialist, so a deal can
     // always offer something affordable and something that covers what the five is missing.
     take(valueCards(), 'value');
-    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, damp).at(0), 'specialist');
+    take(weightedShuffle(bucket.filter((s) => allowed(s) && specialistScore(s) > 0), rng, damp)[0], 'specialist');
 
     // Fill any role that found no one (thin positions) with the old obscure-starter draw, then,
     // as a last resort, straight from the ranked list — a slot must always deal POOL_PER_SLOT.

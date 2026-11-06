@@ -43,6 +43,11 @@ export default defineConfig({
   // Honor an assigned PORT env var (e.g. from the Claude Code preview harness's autoPort) instead
   // of always binding 5173 — lets the dev tooling pick a free port when 5173 is already in use by
   // another running instance (e.g. the desktop-shortcut launcher) without touching that process.
+  // Vite 8 defaults to Safari 16.4; older iPhones (iOS 14–16.3) got a blank page. Lowered so the
+  // bundle's syntax is transpiled for them too.
+  build: {
+    target: ['es2020', 'safari14', 'chrome87', 'firefox78', 'edge88'],
+  },
   server: {
     port: Number(process.env.PORT) || 5173,
   },
