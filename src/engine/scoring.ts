@@ -37,6 +37,7 @@ import { defensiveHuntability } from './defensiveHuntability';
 import { defensiveCohesion } from './defensiveCohesion';
 import { teamGlass } from './teamGlass';
 import { liftAdjustment } from './teammateLift';
+import { chemistryAdjustment } from './chemistry';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
@@ -1874,7 +1875,27 @@ function secondUnit(team: Team): Team | null {
   ) as typeof team.rotation.slots;
   return { ...team, rotation: { ...team.rotation, slots } };
 }
+/** The share of the spacing bottleneck the second unit pays (`U2_BOTTLENECK`, measurement). */
+const U2_BOTTLENECK = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.U2_BOTTLENECK ?? 1);
 const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
+/** 2026-11-06 (on by default; `STAGGER=0` for the all-backups unit): the bench as it really comes in — each slot's backup beside the four
+ * starters, weighted by his minutes there — instead of all five backups at once. */
+const STAGGER = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAGGER !== '0';
+function staggeredFit(team: Team, starters: number): number {
+  if (!team.rotation) return starters;
+  let total = 0;
+  let sum = 0;
+  for (const [slot, rows] of Object.entries(team.rotation.slots)) {
+    for (const r of rows.slice(1)) {
+      if (r.minutes <= 0) continue;
+      const slots = { ...team.rotation.slots, [slot]: [r, ...rows.filter((x) => x !== r)] } as typeof team.rotation.slots;
+      sum += r.minutes * fitScore({ ...team, rotation: { ...team.rotation, slots } }).score;
+      total += r.minutes;
+    }
+  }
+  const benchMinutes = Math.min(total, 240);
+  return total > 0 ? ((240 - benchMinutes) * starters + benchMinutes * (sum / total)) / 240 : starters;
+}
 function benchShare(team: Team): number {
   if (!team.rotation) return 0;
   let bench = 0;
@@ -1891,7 +1912,9 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
   const fit0 = fitScore(team);
-  const fit = unit2 && SC_BENCH.includes('f') ? { ...fit0, score: Math.round((1 - share) * fit0.score + share * fitScore(unit2).score) } : fit0;
+  const fit = unit2 && SC_BENCH.includes('f')
+    ? { ...fit0, score: Math.round(STAGGER ? staggeredFit(team, fit0.score) : (1 - share) * fit0.score + share * fitScore(unit2, { bottleneckScale: U2_BOTTLENECK }).score) }
+    : fit0;
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
@@ -1903,7 +1926,9 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
     // for the five on the floor; the team's number takes it for the starters.
     (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
-    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team));
+    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team)) +
+    // 2026-11-06: starters who really played (and won) together (chemistry.ts).
+    chemistryAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

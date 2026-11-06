@@ -769,6 +769,12 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
   // (1.2-1.3 steals, no blocks) and a fading 2013 All-Defense read him in the 40s-50s after 2014.
   ...((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_CONLEY === '0' ? [] : [[normalizePlayerName('Mike Conley'), 8] as [string, number]]),
 ]);
+/** 2026-11-06, the user ("Klay niedoceniony w D", Curry–Klay–Green at Fit 58): Klay's prime windows —
+ * the Warriors' point-of-attack and wing stopper on the best perimeter scorer — read 55-74 off a quiet
+ * box; +14 in 2013-19 only, to a B on his card ("Klaya podciągnijmy do B"); his post-injury windows are left as measured. */
+const NAMED_SPAN_DTAL_BONUS: ReadonlyMap<string, number> = new Map(
+  ['2013-15', '2014-16', '2015-17', '2016-18', '2017-18', '2017-19'].map((l) => [`${normalizePlayerName('Klay Thompson')}|${l}`, 14] as [string, number]),
+);
 /** 2026-11-04, the user ("Dlaczego Manu ma 90 obrony"): named ceilings on the final D-TAL — a fine
  * team defender, not Pippen's level. */
 const NAMED_DTAL_CAP: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Manu Ginóbili'), 85]]);
@@ -887,7 +893,7 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
-  const bonus = NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0;
+  const bonus = (NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0) + (NAMED_SPAN_DTAL_BONUS.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0);
   const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
   const result = Math.max(
     0,

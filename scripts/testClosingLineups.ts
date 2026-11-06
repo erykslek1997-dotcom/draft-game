@@ -52,7 +52,10 @@ const fixtures: Record<string, Team> = {
   ]),
   twoBig: team('closing-two-big', [
     pick('Stephen Curry', '2014-16'),
-    pick('Klay Thompson', '2014-16'),
+    // 2026-11-06: Klay Thompson -> Kyle Korver. Klay's 2013-19 D-TAL bonus (+14, defensiveTalent.ts)
+    // put him in both closing fives, so the fixture's offense-vs-defense choice was gone; an
+    // offense-only shooter keeps it.
+    pick('Kyle Korver', '2013-15'),
     pick('Shane Battier', '2005-07'),
     pick('Dirk Nowitzki', '2006-08'),
     pick('Brook Lopez', '2022-24'),

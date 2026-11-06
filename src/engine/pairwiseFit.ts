@@ -5,6 +5,8 @@ import { isPlusShooter } from './shooting';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { rimPressureForFit } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
+import { eraBaseline } from './era';
+import { boxRatesForSpan } from './boxRatesLookup';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -321,11 +323,21 @@ function initiatorRating(player: PlayerSpan): number {
   return (INITIATOR_ARCHETYPE_FACTOR[player.offensiveArchetype] ?? OTHER_INITIATOR_FACTOR) * (playmakingScoreForPlayer(player) ?? 40);
 }
 
+/** 2026-11-06, the user (Curry + Klay + Draymond at Fit 58): the screener who catches on the short
+ * roll and makes the play (Draymond, Jokić, Garnett, Horford) is the third kind of screener, beside
+ * the roller and the popper — his playmaking, at this share. Measured with the stagger and the relief
+ * below on 600 real team-seasons / the game: SRS 0.822 -> 0.823, game 0.805 -> 0.797; the user's
+ * Curry–Klay–Pierce–Green–Bam Fit 58 -> 77 ("fit 77 to w sumie dość wysoko, więc chyba ok"). */
+const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0.8);
+const SHORT_ROLL_RELIEF = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_RELIEF ?? '1') === '1';
+/** Team spacing a surrounding player needs to count as a real shooter beside the short roll. */
+const SHORT_ROLL_SHOOTER = 70;
 function screenerGravity(player: PlayerSpan, slot: Position): number {
   const roll = rimPressureForFit(player) * (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE);
   const popTagged = player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player);
   const pop = teamSpacingValue(player) * (popTagged ? 1 : UNTAGGED_POP_SHARE);
-  return Math.max(roll, pop) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
+  const shortRoll = (playmakingScoreForPlayer(player) ?? 0) * SHORT_ROLL_SHARE;
+  return Math.max(roll, pop, shortRoll) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
 }
 
 export function mismatchStructureScore(
@@ -350,7 +362,15 @@ export function mismatchStructureScore(
   });
   if (screenerIndex < 0) return 0;
   const spacing = starters.map(teamSpacingValue);
-  const surroundingValues = spacing.filter((_, index) => index !== leadIndex && index !== screenerIndex);
+  let surroundingValues = spacing.filter((_, index) => index !== leadIndex && index !== screenerIndex);
+  // 2026-11-06, the user ("short roll partner + shooter pomaga nierzucającym duetom"): a short-roll
+  // screener making the play with two real shooters around him leaves the other non-shooting big in
+  // the dunker spot — out of the play's way, so his spacing doesn't count against it.
+  const screener = starters[screenerIndex];
+  const isShortRoll = (playmakingScoreForPlayer(screener) ?? 0) * SHORT_ROLL_SHARE >= Math.max(rimPressureForFit(screener), teamSpacingValue(screener));
+  if (SHORT_ROLL_RELIEF && isShortRoll && surroundingValues.filter((v) => v >= SHORT_ROLL_SHOOTER).length >= 2) {
+    surroundingValues = [...surroundingValues].sort((a, b) => b - a).slice(0, surroundingValues.length - 1);
+  }
   const surroundingSpacing = surroundingValues.reduce((sum, value) => sum + value, 0) / surroundingValues.length;
   const structure = bestGravity * (1 - SURROUNDING_SPACING_WEIGHT) + surroundingSpacing * SURROUNDING_SPACING_WEIGHT;
   // 2026-09-30, engine calibration session 1 (the user: Nash + Malone and Stockton + Garnett are
@@ -358,5 +378,21 @@ export function mismatchStructureScore(
   // pairing is only as dangerous as the man running it — scaled by the lead's own rating.
   const initiatorQuality = INITIATOR_QUALITY_FLOOR + (1 - INITIATOR_QUALITY_FLOOR) * Math.min(1, ratings[leadIndex] / INITIATOR_QUALITY_FULL);
   const leadShooting = LEAD_SHOOTING_FLOOR + (1 - LEAD_SHOOTING_FLOOR) * Math.min(1, spacing[leadIndex] / LEAD_SHOOTING_FULL);
-  return Math.round(Math.min(100, structure) * initiatorQuality * leadShooting);
+  return Math.round(Math.min(100, structure) * initiatorQuality * leadShooting * leadEfficiency(starters[leadIndex]));
+}
+
+/**
+ * 2026-11-06, the user ("powinno oceniać czy główny playmaker jest efficient"): the lead's true
+ * shooting against his era's league, and his assists to turnovers (where turnovers are recorded,
+ * 1977-78 on). One point of TS over the league or 0.5 of AST/TOV over 2.0 counts the same; ±6 such
+ * points is the full swing of `LEAD_EFFICIENCY` either way. `LEAD_EFF` overrides it (measurement).
+ */
+const LEAD_EFFICIENCY = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.LEAD_EFF ?? 0);
+function leadEfficiency(lead: PlayerSpan): number {
+  if (LEAD_EFFICIENCY === 0) return 1;
+  const relTs = (lead.box.tsPct - eraBaseline(lead.spanLabel).avgTs) * 100;
+  const tov = boxRatesForSpan(lead)?.tovPerGame ?? null;
+  const astTov = tov && tov > 0 ? (lead.box.apg / tov - 2) * 2 : 0;
+  const points = relTs + astTov;
+  return 1 + LEAD_EFFICIENCY * Math.max(-1, Math.min(1, points / 6));
 }
