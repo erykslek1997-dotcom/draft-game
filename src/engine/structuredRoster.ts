@@ -46,7 +46,7 @@ export interface StructuredRoster {
  * `SLIDE.ownMinutes` at home and `SLIDE.slideMinutes` there, that spot's starter
  * `SLIDE.coveredStarterMinutes`; the spot counts as covered, his own still needs a backup.
  */
-export const SLIDING_STARTERS: Record<string, Position> = Object.fromEntries(
+const SLIDING_STARTERS: Record<string, Position> = Object.fromEntries(
   (
     [
       ['LeBron James', 'SF'],
@@ -65,7 +65,7 @@ export const SLIDING_STARTERS: Record<string, Position> = Object.fromEntries(
     ] as [string, Position][]
   ).map(([name, slot]) => [normalizePlayerName(name), slot]),
 );
-export const SLIDE = { minScore: 0.9, ownMinutes: 32, slideMinutes: 8, coveredStarterMinutes: 40 };
+const SLIDE = { minScore: 0.9, ownMinutes: 32, slideMinutes: 8, coveredStarterMinutes: 40 };
 
 function slidersFor(starters: Partial<Record<Position, PlayerSpan>>): { player: PlayerSpan; covers: Position }[] {
   const out: { player: PlayerSpan; covers: Position }[] = [];
@@ -149,9 +149,9 @@ function backupOptionsUncached(p: PlayerSpan): [Position, Position][] {
  * star (`GUARD_SHOOTING.starTal`+: Jordan 1987-89, Isiah, Westbrook).
  */
 // starTal 85 → 75 (the user, on Penny 1998-00 at TAL 78: "2 do 75 tal").
-export const GUARD_SHOOTING = { minSpacing: 25, starTal: 75 };
+const GUARD_SHOOTING = { minSpacing: 25, starTal: 75 };
 /** Guards who never get the TAL pass (the user: "Alvin wyłącz ręcznie"). */
-export const GUARD_SHOOTING_NO_PASS = new Set(['Alvin Robertson'].map(normalizePlayerName));
+const GUARD_SHOOTING_NO_PASS = new Set(['Alvin Robertson'].map(normalizePlayerName));
 const isGuardSpot = (slot: Position) => slot === 'PG' || slot === 'SG';
 const spacingMemo = new Map<string, number>();
 export function playsGuard(p: PlayerSpan): boolean {
@@ -170,7 +170,7 @@ export function playsGuard(p: PlayerSpan): boolean {
  * skill at `PRE_ZONE_MIDRANGE_SHARE`) of `BIG_THREAT.midrange`+. Duncan 2001-03 reads 20, Mourning
  * 26, Hakeem 38; Shaq, Ben Wallace, Gobert, Howard, Rodman 0.
  */
-export const BIG_THREAT = { spacing: 25, midrange: 20 };
+const BIG_THREAT = { spacing: 25, midrange: 20 };
 const bigThreatMemo = new Map<string, boolean>();
 export function bigThreat(p: PlayerSpan): boolean {
   let hit = bigThreatMemo.get(p.id);
@@ -189,14 +189,14 @@ export function bigThreat(p: PlayerSpan): boolean {
  * star (STRUCTURE_STAR_TAL+); the reading starts the next natural first. Caruso 2019-21 7%, Lou
  * Williams 2017-19 13%; Manu 2006-08 40% and Crawford 2008-10 45% pass.
  */
-export const IRL_ROLE = { benchBelow: 0.3 };
+const IRL_ROLE = { benchBelow: 0.3 };
 const IRL = starterShareData as unknown as Record<string, [number, number]>;
-export function starterShareIrl(p: PlayerSpan): number | undefined {
+function starterShareIrl(p: PlayerSpan): number | undefined {
   const share = IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[0];
   return share === undefined || share < 0 ? undefined : share;
 }
 /** Minutes a game in real life, when under 36 (from 1973-74); undefined for full-time starters. */
-export function minutesIrl(p: PlayerSpan): number | undefined {
+function minutesIrl(p: PlayerSpan): number | undefined {
   return IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[1];
 }
 export function startedIrl(p: PlayerSpan): boolean {
@@ -253,7 +253,7 @@ function readStructureUncached(roster: PlayerSpan[]): StructuredRoster {
   return { ...best, problems: [...shooterIssues, ...benchStars.map((p) => `star ${p.playerName} off the bench`), ...best.problems] };
 }
 
-export const BENCH_READING = { centreAtFour: 0.8 };
+const BENCH_READING = { centreAtFour: 0.8 };
 
 function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: PlayerSpan[], preCovered: Position[]): StructuredRoster {
   const problems: string[] = [];
@@ -301,8 +301,8 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   return { starters, backups: picked.backups, glue, problems };
 }
 
-export const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
-export const TIER_MINUTES = { star: 48, high: 38, rest: 36 };
+const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
+const TIER_MINUTES = { star: 48, high: 38, rest: 36 };
 const tierCapMemo = new Map<string, number>();
 function tierMinutesCap(p: PlayerSpan): number {
   let cap = tierCapMemo.get(p.id);
@@ -313,8 +313,8 @@ function tierMinutesCap(p: PlayerSpan): number {
   }
   return cap;
 }
-export const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30, minStint: 4 };
-export const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
+const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30, minStint: 4 };
+const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
 export function structuredRotation(roster: PlayerSpan[]): Rotation {
@@ -514,7 +514,7 @@ export function cheapestGlueWindows(roster: PlayerSpan[]): PlayerSpan[] {
  * Shots a role still to fill needs at least (2026-11-05: with the 55-TAL rotation floor the cheapest
  * real backup costs 4-5 FGA; a team left with 2.5 could only add glue and left C or PG uncovered).
  */
-export const ROLE_MIN_FGA = { starter: 6, backup: 4.5, glue: 1 };
+const ROLE_MIN_FGA = { starter: 6, backup: 4.5, glue: 1 };
 export function canStillComplete(roster: PlayerSpan[], rosterSize: number, capLeft = Infinity): boolean {
   const s = readStructure(roster);
   const left = rosterSize - roster.length;

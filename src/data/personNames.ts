@@ -12,7 +12,7 @@
  * files each renamed player under the plain name's canonical form, so a source row that says
  * "Mike Dunleavy" in 1980 still finds the father.
  */
-export const PERSON_NAME_BY_ID_PREFIX: Readonly<Record<string, string>> = {
+const PERSON_NAME_BY_ID_PREFIX: Readonly<Record<string, string>> = {
   dunlemi01: 'Mike Dunleavy Sr.', // 1976-89 guard; the son (dunlemi02, 2002-16) keeps the name
   hendege01: 'Gerald Henderson Sr.', // 1979-91 guard; the son (hendege02, 2009-17)
   paxsoji01: 'Jim Paxson Sr.', // 1956-58, father of Jim (paxsoji02, 1979-90) and John
@@ -23,7 +23,7 @@ export const PERSON_NAME_BY_ID_PREFIX: Readonly<Record<string, string>> = {
 };
 
 /** The span id's person part: `dunlemi01-1979-1980` -> `dunlemi01`. */
-export function personIdOf(spanId: string): string {
+function personIdOf(spanId: string): string {
   return spanId.split('-')[0];
 }
 

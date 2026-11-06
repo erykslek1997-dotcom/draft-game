@@ -19,7 +19,7 @@ import { backupOptions, readStructure, STRUCTURE } from './structuredRoster';
  *     and the draft goes on with the plans as they are (the failed gates are reported). Pick legality
  *     is untouched, so the draft can always finish.
  */
-export const JOINT_PLAN = { backupMaxFga: 10, shotCost: 0.8, backupWeight: 0.55, glueShotCost: 3, maxFixes: 400, budgetMs: 1500, minFillFga: 3 };
+const JOINT_PLAN = { backupMaxFga: 10, shotCost: 0.8, backupWeight: 0.55, glueShotCost: 3, maxFixes: 400, budgetMs: 1500, minFillFga: 3 };
 
 export interface JointPlanTeam {
   id: string;

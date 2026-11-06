@@ -102,7 +102,7 @@ function delta(now: SnapLine[], before: SnapLine[] | null): SnapLine[] {
 }
 
 /** The MVP ladder at a snapshot: game score per game on a winning team, regulars only. */
-export function mvpLadder(season: LiveSeasonResult, snap: SeasonSnapshot, count = 5): SnapLine[] {
+function mvpLadder(season: LiveSeasonResult, snap: SeasonSnapshot, count = 5): SnapLine[] {
   const stand = standingsAt(season, snap.afterRound + 1);
   const pct = new Map(stand.map((r) => [r.teamId, r.wins / Math.max(1, r.wins + r.losses)]));
   const min = (snap.afterRound + 1) * 0.7;
@@ -122,7 +122,7 @@ function MoveTag({ move }: { move: number }) {
 }
 
 /** Standings with each team's move since an earlier night (mockup `standMv`). */
-export function StandMoves({ rows, before, byId, codes, youId, head, note, moves = true }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string; /** False on the first break: nothing to move from, so no column of dashes. */ moves?: boolean }) {
+function StandMoves({ rows, before, byId, codes, youId, head, note, moves = true }: { rows: StandRow[]; before: StandRow[]; byId: Map<string, Team>; codes: Map<string, string>; youId: string; head: string; note: string; /** False on the first break: nothing to move from, so no column of dashes. */ moves?: boolean }) {
   const was = new Map(before.map((r, i) => [r.teamId, i]));
   return (
     <section>
@@ -162,7 +162,7 @@ export function StandMoves({ rows, before, byId, codes, youId, head, note, moves
 }
 
 /** The MVP ladder (mockup `mvpRow`): rank, face, the line and the move since the last break. */
-export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head, note }: { season: LiveSeasonResult; snap: SeasonSnapshot; prev: SeasonSnapshot | null; spans: Map<string, PlayerSpan>; codes: Map<string, string>; youId: string; count: number; head: string; note: string }) {
+function MvpLadder({ season, snap, prev, spans, codes, youId, count, head, note }: { season: LiveSeasonResult; snap: SeasonSnapshot; prev: SeasonSnapshot | null; spans: Map<string, PlayerSpan>; codes: Map<string, string>; youId: string; count: number; head: string; note: string }) {
   const now = mvpLadder(season, snap, count);
   const was = prev ? mvpLadder(season, prev, 16).map((l) => `${l.teamId}|${l.spanId}`) : null;
   return (
@@ -193,7 +193,7 @@ export function MvpLadder({ season, snap, prev, spans, codes, youId, count, head
 }
 
 /** A big night (mockup `gos`): the face, the points, the shooting and the game. */
-export function GameLine({ span, line, ctx }: { span: PlayerSpan | undefined; line: BoxLineStats; ctx: ReactNode }) {
+function GameLine({ span, line, ctx }: { span: PlayerSpan | undefined; line: BoxLineStats; ctx: ReactNode }) {
   return (
     <div className="gos">
       <NFace name={span?.playerName ?? ''} span={span} />
@@ -232,7 +232,7 @@ export function bestNight(season: LiveSeasonResult, teamId: string | null, from 
 }
 
 /** "Tulsa 121, Kentucky 117 · game 38". */
-export function gameContext(season: LiveSeasonResult, g: LiveSeasonGame, byId: Map<string, Team>, gameNo?: number): string {
+function gameContext(season: LiveSeasonResult, g: LiveSeasonGame, byId: Map<string, Team>, gameNo?: number): string {
   const [a, b] = [byId.get(g.aId), byId.get(g.bId)];
   const winA = g.final[0] > g.final[1];
   const score = winA ? `${nick(a)} ${g.final[0]}, ${nick(b)} ${g.final[1]}` : `${nick(b)} ${g.final[1]}, ${nick(a)} ${g.final[0]}`;

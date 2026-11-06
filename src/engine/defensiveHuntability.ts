@@ -133,7 +133,13 @@ function rimProtectorBar(player: PlayerSpan): number | null {
   return anchor - athFrac * (anchor - mobile);
 }
 
+/** Night session (the user: "hunting / weak link od poziomu C-, żeby gracz nie brał kogoś średniego i
+ * był za to karany"): `HUNT_BAR_CAP` caps the huntable bar (D-TAL; C- starts at 39). Unset, no cap. */
+const HUNT_BAR_CAP = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.HUNT_BAR_CAP ?? Infinity);
 function averageDtalFor(player: PlayerSpan): number {
+  return Math.min(HUNT_BAR_CAP, averageDtalForUncapped(player));
+}
+function averageDtalForUncapped(player: PlayerSpan): number {
   if (RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) {
     const bar = rimProtectorBar(player);
     if (bar !== null) return bar;

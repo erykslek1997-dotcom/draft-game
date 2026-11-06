@@ -51,7 +51,7 @@ export function teamStyleFeatures(team: Team, breakdown: ScoreBreakdown, fit: Fi
 const QUANTILES = quantiles as Record<StyleFeature, number[]>;
 
 /** Percentile (0-100) of `value` in the baked distribution, interpolated between quantile knots. */
-export function featurePercentile(feature: StyleFeature, value: number): number {
+function featurePercentile(feature: StyleFeature, value: number): number {
   const q = QUANTILES[feature];
   if (!q || q.length < 2) return 50;
   const step = 100 / (q.length - 1);
@@ -79,7 +79,7 @@ export interface HistoricalComp {
   profile: Partial<Record<StyleFeature, number>>;
 }
 
-export const HISTORICAL_COMPS: readonly HistoricalComp[] = [
+const HISTORICAL_COMPS: readonly HistoricalComp[] = [
   { id: 'pistons-2004', team: '2004 Detroit Pistons', blurb: 'elite team defense, no superstar scorer', profile: { defense: 95, offense: 35, topStar: 15, switchability: 75, starCount: 20 } },
   { id: 'bulls-1996', team: '1996 Chicago Bulls', blurb: 'an alpha scorer on top of an elite defense', profile: { defense: 90, offense: 85, topStar: 99, primaryCreation: 95, switchability: 80 } },
   { id: 'lakers-1987', team: '1987 Showtime Lakers', blurb: 'fast-break passing and pressure at the rim', profile: { offense: 95, playmaking: 99, rimPressure: 90, creation: 95 } },
@@ -118,21 +118,10 @@ export interface HistoricalCompMatch {
   match: number;
 }
 
-const COMP_TEAM_CODES: Record<string, string> = {
-  pistons: 'DET', bulls: 'CHI', lakers: 'LAL', suns: 'PHX', spurs: 'SAS', rockets: 'HOU', warriors: 'GSW',
-  clippers: 'LAC', grizzlies: 'MEM', heat: 'MIA', celtics: 'BOS', nuggets: 'DEN', bucks: 'MIL', knicks: 'NYK',
-  blazers: 'POR', sixers: 'PHI', magic: 'ORL', jazz: 'UTA', mavericks: 'DAL', thunder: 'OKC', raptors: 'TOR',
-};
 
-/** Franchise code and season for a comp's team badge (`TeamTile`), from its id ("pistons-2004"). */
-export function compBadge(comp: HistoricalComp): { code: string; seasonEnd: number } | null {
-  const [nickname, year] = comp.id.split('-');
-  const code = COMP_TEAM_CODES[nickname];
-  return code && Number(year) ? { code, seasonEnd: Number(year) } : null;
-}
 
 /** Below this, no comp is shown — the roster doesn't look like any of them. */
-export const HISTORICAL_COMP_MIN_MATCH = 70;
+const HISTORICAL_COMP_MIN_MATCH = 70;
 
 const TOP_PERCENTILE = Object.fromEntries(
   STYLE_FEATURES.map((f) => {
@@ -144,7 +133,7 @@ const TOP_PERCENTILE = Object.fromEntries(
   }),
 ) as Record<StyleFeature, number>;
 
-export function historicalCompsFor(features: Record<StyleFeature, number>): HistoricalCompMatch[] {
+function historicalCompsFor(features: Record<StyleFeature, number>): HistoricalCompMatch[] {
   const pct = Object.fromEntries(STYLE_FEATURES.map((f) => [f, featurePercentile(f, features[f])])) as Record<StyleFeature, number>;
   return HISTORICAL_COMPS.map((comp) => {
     const entries = Object.entries(comp.profile) as [StyleFeature, number][];

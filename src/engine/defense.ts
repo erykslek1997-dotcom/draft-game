@@ -66,7 +66,7 @@ const ROLE_SCALE_MAX = 1.8;
 /** The rebounding half of `computeDefensiveImpact`, on its own — exported so
  * `defensiveTalent.ts` can apply diminishing returns to it without duplicating the
  * pace-adjustment math (and so the two can't drift apart). */
-export function reboundingTerm(span: PlayerSpan): number {
+function reboundingTerm(span: PlayerSpan): number {
   const { pace } = eraBaseline(span.spanLabel);
   return span.box.rpg * (LEAGUE_PACE_BASELINE / pace) * reboundAvailabilityFactor(span.spanLabel) * 0.9;
 }
@@ -97,7 +97,7 @@ const REBOUND_DIMINISHING_THRESHOLD: Record<Position, number> = {
   C: 10.08,
 };
 const REBOUND_DIMINISHING_RATE = 0.6;
-export function reboundTrim(span: PlayerSpan): number {
+function reboundTrim(span: PlayerSpan): number {
   const excess = reboundingTerm(span) - REBOUND_DIMINISHING_THRESHOLD[span.primaryPosition];
   return excess > 0 ? excess * (1 - REBOUND_DIMINISHING_RATE) : 0;
 }

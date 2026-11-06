@@ -124,7 +124,7 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
 const SLOT_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 const teamVar = (span: PlayerSpan) => ({ '--team': spanBand(span).color }) as CSSProperties;
 
-export function Poster({ d }: { d: PosterData }) {
+function Poster({ d }: { d: PosterData }) {
   return (
     <div className={`poster${d.champ ? ' champ-p' : ''}${d.ig ? ' ig' : ''}`}>
       <div className="po-mast">
@@ -208,7 +208,7 @@ export function Poster({ d }: { d: PosterData }) {
   );
 }
 
-export function Story({ d }: { d: PosterData }) {
+function Story({ d }: { d: PosterData }) {
   return (
     <div className={`story${d.champ ? ' champ-p' : ''}`}>
       <div className="po-mast">

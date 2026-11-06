@@ -92,7 +92,5 @@ if (examples.length) console.log(examples.slice(0, 10).join('\n'));
 check(slotShort === 0, 'every slot is filled to 48 minutes');
 check(overDurability === 0, 'no player is played past his durability');
 check(twoAway === 0, 'no player is played two positions from his own while someone who plays the slot has minutes left');
-// 2026-11-05: up to 2 in 48 — after the defense calibration the drafts moved and two wing-thin AI
-// rosters (Mullin 30/25 beside Porter Jr. at 36, Wallace 24/17) price a soft overrun over an off-slot
-// fill. The real game's CPU teams play the structured rotation (structuredRoster.ts), not this one.
-check(overCeiling <= 2, 'no more than two players in 48 teams past their tier ceiling while a teammate who plays the slot has room');
+// 2026-11-05: rotation.ts `relieveCeilingOverruns` now hands such excess to a listed teammate.
+check(overCeiling === 0, 'no player is played past his tier ceiling while a teammate who plays his slot has room');

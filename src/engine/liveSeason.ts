@@ -118,7 +118,7 @@ export interface LiveSeasonResult {
 }
 
 /** Sum of one side's box score. */
-export function sideTotals(box: Record<string, BoxLineStats>): BoxLineStats {
+function sideTotals(box: Record<string, BoxLineStats>): BoxLineStats {
   const sum = zero();
   for (const line of Object.values(box)) for (const stat of Object.keys(sum) as (keyof BoxLineStats)[]) sum[stat] += line[stat];
   return sum;
@@ -129,7 +129,7 @@ function addTo(into: BoxLineStats, add: BoxLineStats): void {
 }
 
 const EXTRA_GAME_OFFSETS = new Set([1, 2, 3, 8]);
-export function gamesForPair(i: number, j: number, count: number): number {
+function gamesForPair(i: number, j: number, count: number): number {
   if (count !== TEAM_COUNT) return 5;
   const diff = Math.abs(i - j);
   return EXTRA_GAME_OFFSETS.has(Math.min(diff, count - diff)) ? 6 : 5;
@@ -155,7 +155,7 @@ const AWARD_MIN_MINUTES = 20;
  * before), 2.8 of the ten best regular defenders left out per season (5.4). Then (the user: "za
  * dużo all-d z jednej drużyny") at most `perTeam` from one team over both teams. Knobs: `perAllowed`,
  * `fullMinutes`, `perTeam`, `layout` ('positions': 2 G / 2 F / C, 'frontcourt': 2 G / 3 F-C, 'none'). */
-export const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, perTeam: 3, wingHandicap: 4, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
+const DEFENSE_AWARDS = { perAllowed: 1, fullMinutes: 32, perTeam: 3, wingHandicap: 4, layout: 'frontcourt' as 'positions' | 'frontcourt' | 'none' };
 
 /** The engine's own view of each team, to compare with how its season went: the score breakdown,
  * the rank by overall, and the wins the season projection expects over this schedule. */
@@ -207,7 +207,7 @@ export function engineTeamViews(teams: Team[]): Map<string, EngineTeamView> {
  * every pair plays, and seven more nights the sixth games of the near neighbours (`gamesForPair`).
  * Each game keeps the seed it always had, so the season comes out the same in any order.
  */
-export function seasonRounds(count: number): [number, number][][] {
+function seasonRounds(count: number): [number, number][][] {
   const ids = Array.from({ length: count + (count % 2) }, (_, i) => i);
   const n = ids.length;
   const cycle: [number, number][][] = [];
@@ -259,7 +259,7 @@ export function seasonRounds(count: number): [number, number][][] {
 const SEASON_START = Date.UTC(2025, 9, 22);
 const DAYS_PER_ROUND = 2.08;
 const ASG_BREAK_DAYS = 6;
-export function seasonDates(rounds: number, asgAfterRound: number): string[] {
+function seasonDates(rounds: number, asgAfterRound: number): string[] {
   return Array.from({ length: rounds }, (_, r) => {
     const day = Math.round(r * DAYS_PER_ROUND) + (r > asgAfterRound ? ASG_BREAK_DAYS : 0);
     return new Date(SEASON_START + day * 864e5).toISOString().slice(0, 10);
@@ -332,7 +332,7 @@ function topLine(game: LiveGameResult, side: 0 | 1): SeasonGameTop | null {
 
 /** The All-Star sides: the two best captain, then pick in turns (A, B, B, A, …), best available
  * first. A captain and his first four picks start. */
-export function allStarDraft<T>(stars: T[]): { item: T; pick: number | null }[][] {
+function allStarDraft<T>(stars: T[]): { item: T; pick: number | null }[][] {
   if (stars.length < 2) return [];
   const sides: { item: T; pick: number | null }[][] = [[{ item: stars[0], pick: null }], [{ item: stars[1], pick: null }]];
   stars.slice(2).forEach((item, i) => sides[[0, 1, 1, 0][i % 4]].push({ item, pick: i + 1 }));

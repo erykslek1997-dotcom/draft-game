@@ -45,7 +45,7 @@ function listNames(names: string[]): string {
 
 const CORE_SIZE = 5;
 
-export function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
+function styleLines(team: TeamFeatureSnapshot): StyleLine[] {
   const rotation = team.players.filter((p) => p.minutes >= ROTATION_MINUTES).sort((a, b) => b.minutes - a.minutes);
   // 2026-10-29 (the user: "Sefolosha cuts backdoor" — the eighth man as the headline; "it should
   // praise the top"): a style line names the five who play the most, never the bench.

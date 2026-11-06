@@ -406,7 +406,7 @@ export interface OffenseComponents {
 /** Exported for diagnostics (`computeOffensivePortability` is the only real call site otherwise)
  * — seeing which of the terms actually drives a surprising O-POR number, rather than guessing
  * from the final 0-100 value alone. */
-export function offenseComponents(span: PlayerSpan): OffenseComponents {
+function offenseComponents(span: PlayerSpan): OffenseComponents {
   const shootPct = computeSpacing(span) / 100;
   const spacingValue =
     shootPct * shootPct * SPACING_VALUE_SCALE +

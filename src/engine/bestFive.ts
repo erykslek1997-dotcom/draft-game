@@ -167,7 +167,7 @@ function percentileWithin(values: number[]): (v: number) => number {
   };
 }
 
-export function dailyPool(key: string = dayKey()): DailyPool {
+function dailyPool(key: string = dayKey()): DailyPool {
   const rng = mulberry32(seedFromKey(key));
   const best = bestSpanByPlayer();
 
@@ -317,10 +317,10 @@ const STAR_BUDGET_SHARE = 0.45;
  * star's upgrade. It used to be measured from the value cards, but on the live site's precomputed
  * ratings those are often nearly as pricey as the stars, so the cap barely moved.
  */
-export const DAILY_CAP_ROOM = 15;
+const DAILY_CAP_ROOM = 15;
 /** The daily board may try a cap this close to its cheapest five, never closer. */
 const DAILY_CAP_FLOOR_MARGIN = 10;
-export function computedShotsCap(pool: DailyPool, daily = false): number {
+function computedShotsCap(pool: DailyPool, daily = false): number {
   const cardOf = (slot: Position, role: DealRole) => pool.bySlot[slot].find((s) => pool.roles[s.id] === role);
   const cheapestOf = (slot: Position) => Math.min(...pool.bySlot[slot].map((p) => p.fga));
   const cheapest = STARTER_SLOTS.reduce((sum, slot) => sum + cheapestOf(slot), 0);
@@ -522,7 +522,7 @@ function climb(
   return { five, composite: cur };
 }
 
-export function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
+function solveDailyOptimal(pool: DailyPool, cap?: number): SolvedLineup {
   const sc = cachedScorer();
 
   const rng = mulberry32(seedFromKey(`${pool.key}:solve`));
@@ -724,9 +724,9 @@ export interface ResultExplanation {
 }
 
 /** Within this many points of the best five on the board counts as matching it. */
-export const BEST_FIVE_TOLERANCE = 1;
+const BEST_FIVE_TOLERANCE = 1;
 /** Within this many points reads as close: praise plus one concrete swap. */
-export const CLOSE_TO_BEST = 4;
+const CLOSE_TO_BEST = 4;
 
 export function explainResult(lineup: Lineup, pool: DailyPool, targets: DailyTargets, cap?: number): ResultExplanation {
   const score = scoreLineup(lineup);

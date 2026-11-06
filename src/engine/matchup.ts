@@ -83,7 +83,7 @@ const STYLE_CLASH_POINTS_PER_Z = 1.0;
 const styleZ = (key: keyof StyleProfile, value: number) => (value - STYLE_NORMS[key][0]) / STYLE_NORMS[key][1];
 
 /** Points A gains from attacking where B is weak; the matchup margin takes A's edge minus B's. */
-export function styleClashEdge(a: StyleProfile, b: StyleProfile): number {
+function styleClashEdge(a: StyleProfile, b: StyleProfile): number {
   return STYLE_CLASHES.reduce((sum, [attack, defense]) => {
     const gap = styleZ(attack, a[attack]) - styleZ(defense, b[defense]) - STYLE_CLASH_THRESHOLD_Z;
     return sum + STYLE_CLASH_POINTS_PER_Z * Math.max(0, Math.min(STYLE_CLASH_MAX_Z - STYLE_CLASH_THRESHOLD_Z, gap));

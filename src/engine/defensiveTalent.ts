@@ -210,7 +210,7 @@ function displayExtraDefenseBonus(span: PlayerSpan): number {
 /** The raw defensive value D-TAL's ladder reads: the shared box-score defensive impact, with
  * rebounding's tail trimmed, corrected by real DARKO plus-minus in both directions, plus a
  * display-only release of corroborated real signal the additive cap clips (`displayExtraDefenseBonus`). */
-export function displayDefenseRaw(span: PlayerSpan): number {
+function displayDefenseRaw(span: PlayerSpan): number {
   return (
     computeDefensiveImpact(span) +
     darkoDefenseBonus(span) +
@@ -798,7 +798,7 @@ const RECOGNIZED_DEFENDER_FULL_RATE = Number((globalThis as { process?: { env: R
 // of 0.75 — LeBron 2012-14 82 -> 86, Kobe 2001-03 82 -> 87.
 /** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
  * the accolade floor counts — 1 as before, 0 off. */
-export const DTAL_RULES = { recognitionShare: 1, carry: true };
+const DTAL_RULES = { recognitionShare: 1, carry: true };
 function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
   if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
@@ -979,7 +979,7 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
  * (no line) or for spans without steals data.
  */
 const LEAGUE_THREE_SHARE_BY_END_YEAR = new Map<number, number>([[1980, 0.026], [1981, 0.020], [1982, 0.022], [1983, 0.023], [1984, 0.027], [1985, 0.035], [1986, 0.038], [1987, 0.053], [1988, 0.057], [1989, 0.074], [1990, 0.076], [1991, 0.082], [1992, 0.087], [1993, 0.104], [1994, 0.117], [1995, 0.188], [1996, 0.200], [1997, 0.212], [1998, 0.160], [1999, 0.168], [2000, 0.167], [2001, 0.170], [2002, 0.181], [2003, 0.182], [2004, 0.187], [2005, 0.196], [2006, 0.202], [2007, 0.213], [2008, 0.222], [2009, 0.224], [2010, 0.222], [2011, 0.222], [2012, 0.226], [2013, 0.243], [2014, 0.259], [2015, 0.268], [2016, 0.285], [2017, 0.316], [2018, 0.337], [2019, 0.359], [2020, 0.382], [2021, 0.393], [2022, 0.399], [2023, 0.387], [2024, 0.395], [2025, 0.421], [2026, 0.415]]);
-export const MODERN_RULES_DEFENSE = { max: 14, modernShare: 0.4 };
+const MODERN_RULES_DEFENSE = { max: 14, modernShare: 0.4 };
 function modernRulesDefenseCut(span: PlayerSpan): number {
   if (!MODERN_RULES_DEFENSE.max || (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF')) return 0;
   const shares = spanEndYears(span.spanLabel).map((y) => LEAGUE_THREE_SHARE_BY_END_YEAR.get(y)).filter((v): v is number => v !== undefined);

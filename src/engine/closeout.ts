@@ -28,4 +28,4 @@ export function closeoutFactor(span: PlayerSpan): number {
   return factor;
 }
 /** Mutable only so the measurements can switch it off. */
-export const CLOSEOUT_RULES = { on: true };
+const CLOSEOUT_RULES = { on: true };

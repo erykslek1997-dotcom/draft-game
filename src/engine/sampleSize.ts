@@ -19,7 +19,7 @@ import { runtimeAvailabilityForSpan } from './runtimeSpanLookups';
  * 13,145) reads as NOT small-sample (same "don't penalize what we don't know" default
  * `durability.ts` uses), since this is a badge, not a correction.
  */
-export const SMALL_SAMPLE_GAMES_THRESHOLD = 100;
+const SMALL_SAMPLE_GAMES_THRESHOLD = 100;
 
 export function isSmallSampleSpan(span: PlayerSpan): boolean {
   const entry = runtimeAvailabilityForSpan(span);

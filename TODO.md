@@ -337,6 +337,23 @@ lepszy na O-TAL i D-TAL). Prawdziwe kompromisy zostają bez wpisu.
 4. **Atak z ławką** — dziś liczy tylko piątkę.
 Każdy punkt: przed/po na SRS i na meczach, wynik do akceptacji Eryka przed merge.
 
+### Wyniki nocy 2026-11-05 (`scripts/auditMetrics.ts`; r = zgodność Overall z realnym SRS 600 drużyn / z mechaniką meczu 160 drużyn)
+Baza (po kalibracji obrony, lift wyłączony): **SRS 0,811 · mecz 0,776** (z liftem było 0,815 / 0,786 — lift był w meczu, więc mecz „chciał” go w ocenie).
+
+| Wariant | SRS | Mecz | Wniosek |
+|---|---|---|---|
+| Lift off (na branchu, domyślnie) | 0,811 | 0,776 | lift dawał +0,004 SRS — szum, liczony z tych samych sezonów |
+| Fit bez: struktury mistrzowskiej, spacingu, switchability, presji na obręcz | 0,811 | 0,794 | te 4 nic nie wnoszą (spacing i tak jest w ataku) |
+| + bez Rotation w Overall | 0,816 | 0,795 | rotacja nic nie wnosi |
+| + Fit liczony z ławką (2. piątka wg minut) | **0,822** | **0,805** | **najlepszy — propozycja** |
+| + atak z ławką | 0,823 | 0,796 | atak z ławką nie dokłada |
+| Obrona usunięta | 0,767 | 0,565 | obrona kluczowa — waga OK |
+| Ball load / 2. rozgrywający usunięte | 0,811 / 0,810 | 0,770 / 0,770 | prawie nic, zostawić lub uprościć |
+| Hunting próg C- (39) | 0,811 | 0,764 | mecz sam karze C/C- — próg ma sens tylko razem z przebudową huntingu w meczu |
+| Hunting próg C (46) | 0,810 | 0,772 | kompromis |
+
+Przełączniki: `ABL=<składniki fitu>` (scripts/_ablate.ts), `SC_DROP=rotation`, `SC_BENCH=f`, `HUNT_BAR_CAP=39`, `LIFT_SCALE=1`.
+
 ## Plan do launchu: 12 tygodni (decyzja 2026-10-22, zmiana 2026-11-05) — obowiązuje
 
 **2026-11-05, Eryk: launch po Nowym Roku.** Tygodniowa rozpiska zostaje, ale tygodnie 8/9–12 to

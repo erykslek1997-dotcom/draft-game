@@ -15,7 +15,7 @@ import { realSpan } from './realAdvancedLookup';
  * 0.12 (90% −3.6…+0.3). A second high-usage scorer costs nothing (+0.9). `perTen`: ORtg a 100
  * trips per 0.10 of the second handler's share past `from`.
  */
-export const BALL_HANDLER_TUNING = { from: 0.12, perTen: 1.6 };
+const BALL_HANDLER_TUNING = { from: 0.12, perTen: 1.6 };
 
 const POSITION_SHIFT: Record<string, number> = { PG: 0.04444, SG: 0.00562, SF: 0, PF: -0.0103, C: -0.0103 };
 const shareCache = new WeakMap<PlayerSpan, number>();
@@ -39,7 +39,7 @@ export function ballShare(span: PlayerSpan): number {
 }
 
 /** The second-highest ball share of a five past `from` (0 when one player has the ball). */
-export function secondHandlerExcess(five: PlayerSpan[]): number {
+function secondHandlerExcess(five: PlayerSpan[]): number {
   const shares = five.map(ballShare).sort((a, b) => b - a);
   return Math.max(0, (shares[1] ?? 0) - BALL_HANDLER_TUNING.from);
 }

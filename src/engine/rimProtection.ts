@@ -26,7 +26,7 @@ export function rimProtectionByNumbers(span: PlayerSpan): number | null {
 }
 
 /** A real rim protector by the numbers (or, without block data, by role). */
-export const REAL_RIM_PROTECTOR_SCORE = 70;
+const REAL_RIM_PROTECTOR_SCORE = 70;
 export function isRealRimProtector(span: PlayerSpan, roleSaysRim: boolean): boolean {
   const byNumbers = rimProtectionByNumbers(span);
   return byNumbers === null ? roleSaysRim : byNumbers >= REAL_RIM_PROTECTOR_SCORE;

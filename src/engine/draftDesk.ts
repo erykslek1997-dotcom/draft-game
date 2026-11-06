@@ -23,7 +23,7 @@ import { surname } from './desk';
  */
 export type DeskExpert = 'coach' | 'analyst' | 'scout';
 
-export const DESK_EXPERT_TITLE: Record<DeskExpert, string> = {
+const DESK_EXPERT_TITLE: Record<DeskExpert, string> = {
   coach: 'The Coach',
   analyst: 'The Analyst',
   scout: 'The Scout',

@@ -58,7 +58,7 @@ function structureCost(roster: PlayerSpan[]): number {
  * points per FGA, a centre backup (any shape with C) `BENCH_PRIORITY.centre`; a guard backup (any
  * shape with PG or SG) nothing.
  */
-export const BENCH_PRIORITY = {
+const BENCH_PRIORITY = {
   forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0.3),
   centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0.6),
   guard: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_G ?? 0),
@@ -81,7 +81,7 @@ function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Posit
  * 0 is off.
  */
 const envOf = (name: string) => (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[name];
-export const FLOORS = {
+const FLOORS = {
   starterTal: Number(envOf('FLOOR_TAL') ?? 0),
   perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
   spacing: Number(envOf('FLOOR_SPACING') ?? 60),

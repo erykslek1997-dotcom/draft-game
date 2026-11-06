@@ -92,7 +92,7 @@ const ENGINE_SPACING_PER_RATE = { base: 7.4, slope: 66.1 };
  * Later the same day, back to 1: that ratio pooled every era; from 1996-97 on real teams make 10
  * points of spacing worth ~1.9 O-TAL points and the game at 1 still plays only ~0.6 (step 8: raise it
  * era- and archetype-aware). */
-export const SPACING_TUNING = { strength: 1, sagFrom: 35, sag: 0.6, center: 17 };
+const SPACING_TUNING = { strength: 1, sagFrom: 35, sag: 0.6, center: 17 };
 const sagged = (value: number) => value - SPACING_TUNING.sag * Math.max(0, SPACING_TUNING.sagFrom - value);
 const spacingValueCache = new WeakMap<PlayerSpan, number>();
 function spacingValue(span: PlayerSpan): number {

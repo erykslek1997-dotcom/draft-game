@@ -29,15 +29,6 @@ export function CapIcon({ size = 14 }: { size?: number }) {
   );
 }
 
-/** An amount of caps: icon + number (whole numbers unless `decimals` asks otherwise). */
-export function Caps({ value, decimals = 0, size }: { value: number; decimals?: number; size?: number }) {
-  return (
-    <span className="caps-amount" title="caps">
-      <CapIcon size={size} />
-      {value.toFixed(decimals)}
-    </span>
-  );
-}
 
 /** 2026-09-25, user's ask ("jak ktoś kliknie na ikonę caps to pop-up który wyjaśnia co to jest"):
  * mounted once at the app root. A click on any caps icon that isn't inside a button or link (where

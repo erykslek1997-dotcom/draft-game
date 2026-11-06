@@ -38,9 +38,9 @@ import type { DraftHistoryEntry, Team, Rotation, SlotAssignment } from './types'
  * function became parameterizable instead of duplicated.
  */
 
-export const QUICK_ROSTER_SIZE = STARTER_SLOTS.length; // 5 — no bench slots at all
+const QUICK_ROSTER_SIZE = STARTER_SLOTS.length; // 5 — no bench slots at all
 export const QUICK_ROUNDS = QUICK_ROSTER_SIZE;
-export const QUICK_CAP_LIMIT = 70;
+const QUICK_CAP_LIMIT = 70;
 
 /** The AI's ruleset for this draft's cap (a daily may set its own). */
 const rulesetFor = (state: QuickDraftState): AiDraftRuleset => ({ rosterSize: QUICK_ROSTER_SIZE, capLimit: state.capLimit });

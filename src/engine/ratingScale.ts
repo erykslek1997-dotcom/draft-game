@@ -154,7 +154,7 @@ export const offenseRating = (span: PlayerSpan): number => {
 };
 export const defenseRating = (span: PlayerSpan): number => rating(span, 'defense');
 
-export function ratingGrade(value: number): Grade {
+function ratingGrade(value: number): Grade {
   if (value >= S_RATING) return 'S';
   return LETTERS.find(([t]) => value >= t)![1];
 }

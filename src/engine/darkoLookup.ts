@@ -1,7 +1,4 @@
-import type { PlayerSpan } from '../data/schema';
-import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
-import { spanEndYears } from './era';
 // .pool.json is darko.json trimmed to only players who ever appear in draftPool.json
 // (scripts/trimReferenceDataToPool.ts, 2026-07-30) — this is a pure per-span lookup at runtime
 // (no population-level statistic built from it), so a row for a player nobody can ever draft is
@@ -39,14 +36,3 @@ export function buildDarkoYearMap(field: 'dpm' | 'ddpm'): Map<string, Map<number
   return byNameYear;
 }
 
-/** Averages whichever of a span's covered years the map actually has data for. Returns null
- * if there's no overlap at all (pre-1997-98 spans, or players DARKO never tracked). */
-export function avgDarkoFieldForSpan(span: PlayerSpan, byNameYear: Map<string, Map<number, number>>): number | null {
-  const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
-  if (!yearMap) return null;
-  const values = spanEndYears(span.spanLabel)
-    .map((y) => yearMap.get(y))
-    .filter((v): v is number => v !== undefined);
-  if (values.length === 0) return null;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}

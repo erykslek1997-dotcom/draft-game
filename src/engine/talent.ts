@@ -549,7 +549,7 @@ export function lowUsageEfficiencyFactor(fga: number): number {
  */
 const EFFICIENCY_SELF_CREATION_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set(['Roll & Cut Big']);
 const EFFICIENCY_SELF_CREATION_MIN_FACTOR = 0.6;
-export function assistedEfficiencyFactor(span: PlayerSpan): number {
+function assistedEfficiencyFactor(span: PlayerSpan): number {
   if (!EFFICIENCY_SELF_CREATION_ARCHETYPES.has(span.offensiveArchetype)) return 1;
   const percentile = selfCreationPercentileForPortability(span);
   if (percentile >= SELF_CREATION_BONUS_PERCENTILE_THRESHOLD) return 1;
@@ -777,7 +777,7 @@ const SELF_CREATION_BONUS_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set(
 
 /** Exported for `scripts/checkSelfCreationTalentBonus.ts`'s blast-radius report — same pattern
  * as `extremeUsageRatioPenalty` above. */
-export function selfCreationTalentBonus(span: PlayerSpan): number {
+function selfCreationTalentBonus(span: PlayerSpan): number {
   if (!SELF_CREATION_BONUS_ARCHETYPES.has(span.offensiveArchetype)) return 0;
   const excess = selfCreationPercentileForPortability(span) - SELF_CREATION_BONUS_PERCENTILE_THRESHOLD;
   return excess > 0 ? Math.min(MAX_SELF_CREATION_BONUS, excess * SELF_CREATION_BONUS_SCALE) : 0;
@@ -898,7 +898,7 @@ const SHOOTING_ANOMALY_LOAD_START = 10;
 const SHOOTING_ANOMALY_LOAD_FULL = 18;
 const SHOOTING_ANOMALY_SCALE = 98;
 
-export function shootingAnomalyBonus(span: PlayerSpan): number {
+function shootingAnomalyBonus(span: PlayerSpan): number {
   const excess = shootingGravity(span) - SHOOTING_ANOMALY_START;
   if (excess <= 0) return 0;
   const load = Math.max(0, Math.min(1, (span.fga - SHOOTING_ANOMALY_LOAD_START) / (SHOOTING_ANOMALY_LOAD_FULL - SHOOTING_ANOMALY_LOAD_START)));
@@ -917,7 +917,7 @@ const EFFICIENCY_VOLUME_MAX = 1.6;
  * offense the player's own OBPM implies, mapped onto the same position's spread (z-score match on
  * the pool), weighted by minutes. Pre-BPM eras keep the box formula.
  */
-export const OFFENSE_ANCHOR = { share: 0.6, fullMinutes: 4000, minFitMinutes: 3000, poolWide: false };
+const OFFENSE_ANCHOR = { share: 0.6, fullMinutes: 4000, minFitMinutes: 3000, poolWide: false };
 let offenseAnchorFit: Map<Position, { meanOff: number; sdOff: number; meanObpm: number; sdObpm: number }> | null = null;
 let fittingOffenseAnchor = false;
 function realObpm(span: PlayerSpan): { obpm: number; minutes: number } | null {
@@ -1496,7 +1496,7 @@ const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 /** Exported for `scripts/checkDtalBridge*` blast-radius reports — same pattern as
  * `selfCreationTalentBonus`/`extremeUsageRatioPenalty` above. Signed: positive = TAL pulled up
  * toward D-TAL, negative = pulled down. */
-export function dtalBridgeCorrection(span: PlayerSpan): number {
+function dtalBridgeCorrection(span: PlayerSpan): number {
   const rankGap = runtimeDefenseTalentPercentile(span) - runtimeImpliedDefensePercentile(span);
   const smoothed = DTAL_BRIDGE_SMOOTH * Math.tanh((DTAL_BRIDGE_GAIN * rankGap) / DTAL_BRIDGE_SMOOTH);
   if (smoothed >= 0) return Math.min(smoothed, DTAL_BRIDGE_UP_CAP);
@@ -1603,36 +1603,6 @@ export interface TalentBreakdown {
   positionCorrection: number;
 }
 
-export function talentBreakdown(rawSpan: PlayerSpan): TalentBreakdown {
-  const span = ratingSpan(rawSpan);
-  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
-  const usageScaleApplied = usageOffenseScaleTapered(span, baseTal);
-
-  const { offense, defense } = rawComponents(span, true, usageScaleApplied);
-  const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
-  const gateDefense = synergyGateDefense(span, normalizedDefense);
-  const corroborated = darkoDefenseBonus(span) > 0 || individualDefenseRate(span) > 0;
-
-  return {
-    usageScaleApplied,
-    synergy: twoWaySynergyBonus(span, normalizedOffense, gateDefense),
-    usagePenalty: highUsageLowPlaymakingPenalty(span, gateDefense),
-    extremeUsagePenalty: extremeUsageRatioPenalty(span),
-    hiddenValue: hiddenValueBonus(span),
-    portability: portabilityBonus(span),
-    roleScalability: roleScalabilityBonus(span),
-    playoffPerformance: playoffTalentTerm(span),
-    selfCreation: selfCreationTalentBonus(span),
-    shootingAnomaly: shootingAnomalyBonus(span),
-    darkoDefenseBonus: darkoDefenseBonus(span),
-    darkoDefenseMalus: darkoDefenseMalus(span),
-    defenseCorroborated: corroborated || isDualSourceConfirmedBig(span) || hasPositiveRawDefense(span),
-    normalizedOffense,
-    normalizedDefenseRaw: normalizedDefense,
-    normalizedDefense: gateDefense,
-    positionCorrection: positionCorrectionFor(span),
-  };
-}
 
 /**
  * 2026-08-01, same day as the usage-scale addition above: with real FGA-based swings now
@@ -1756,7 +1726,7 @@ const CP3_TWO_WAY_DEFENSE_FLOOR = 80;
  * value. Exported so `grades.ts` can apply the identical check to its own display cap instead of
  * drifting out of sync with this one again.
  */
-export function isCP3TwoWayExempt(playerName: string, otal: number, dtal: number): boolean {
+function isCP3TwoWayExempt(playerName: string, otal: number, dtal: number): boolean {
   return (
     normalizePlayerName(playerName) === normalizePlayerName('Chris Paul') &&
     otal >= CP3_TWO_WAY_OFFENSE_FLOOR &&

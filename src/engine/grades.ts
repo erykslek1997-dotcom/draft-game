@@ -114,7 +114,7 @@ function computeSThresholdByPlayerPeak(valueOf: (span: PlayerSpan) => number): n
   return computeSThreshold([...peakByPlayer.values()]);
 }
 
-export function gradeForValue(value: number, sThreshold: number): Grade {
+function gradeForValue(value: number, sThreshold: number): Grade {
   return value >= sThreshold ? 'S' : letterForValue(value);
 }
 
@@ -217,7 +217,7 @@ function percentileRank(value: number, sortedAscending: number[]): number {
   return (100 * lo) / sortedAscending.length;
 }
 
-export function offensivePortabilityGrade(value: number): Grade {
+function offensivePortabilityGrade(value: number): Grade {
   if (offensivePortabilitySortedValues === null) {
     offensivePortabilitySortedValues = draftPool.map((p) => computeOffensivePortability(p)).sort((a, b) => a - b);
   }
@@ -253,7 +253,7 @@ export function portabilityGrade(span: PlayerSpan): Grade {
   return letterForValue(rank);
 }
 
-export function defensivePortabilityGrade(value: number): Grade {
+function defensivePortabilityGrade(value: number): Grade {
   if (defensivePortabilitySThreshold === null) {
     defensivePortabilitySThreshold = computeSThreshold(draftPool.map((p) => computeDefensivePortability(p)));
   }
@@ -431,7 +431,7 @@ const OVERALL_TIER_FLOORS: ReadonlyArray<readonly [number, OverallTier]> = [
   [96, 'Legend'],
 ];
 
-export function overallTier(value: number): OverallTier {
+function overallTier(value: number): OverallTier {
   let tier: OverallTier = 'Cigarette Butt';
   for (const [floor, named] of OVERALL_TIER_FLOORS) {
     if (value >= floor) tier = named;
@@ -1439,7 +1439,7 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * +`defenseRange`) and his spacing past `spacingFrom` (full at +`spacingRange`). Only below
  * `THREE_AND_D.below`: stars are read by everything else.
  */
-export const THREE_AND_D = { points: 7, defenseFrom: 68, defenseRange: 15, spacingFrom: 50, spacingRange: 25, below: 78 };
+const THREE_AND_D = { points: 7, defenseFrom: 68, defenseRange: 15, spacingFrom: 50, spacingRange: 25, below: 78 };
 /**
  * 2026-11-05, the user ("Prawdopodobnie wysocy potrzebują korekty jak specjaliści 3D"): a four or
  * five who defends reads up to `DEFENSIVE_BIG.points` TAL higher, by his defense past
@@ -1476,7 +1476,7 @@ function displayTalentUncompressed(ctx: TierGateContext): number {
  * under the peak becomes `g * (keep + (1 - keep) * g / within)` — half near the peak, the full gap
  * again at `within`, so a decline window stays a decline. Only players whose peak is `peakFrom`+.
  */
-export const STAR_WINDOWS = { peakFrom: 88, within: 12, keep: 0.5 };
+const STAR_WINDOWS = { peakFrom: 88, within: 12, keep: 0.5 };
 const starPeakCache = new Map<string, number>();
 function starPeak(playerName: string): number {
   const key = normalizePlayerName(playerName);
@@ -1504,7 +1504,7 @@ const LOW_VOLUME = { fga: 9, margin: 8 };
  * at the bottom of the scale: full below TAL `ROLE_CONTEXT.fullBelow`, gone at `ROLE_CONTEXT.noneAt`,
  * so a star's number is his own. Big minutes on a bad team (Elton Brand 1999-01) cancel out.
  */
-export const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 6, fullBelow: 65, noneAt: 70 };
+const ROLE_CONTEXT = { perMinute: 0.3, perSrs: 0.5, cap: 6, fullBelow: 65, noneAt: 70 };
 /** Minutes a game a window of this TAL usually plays (pool fit, 8,459 windows). */
 const expectedMinutes = (tal: number) => 26.6 + 0.29 * (tal - 48.9);
 function roleContextShift(ctx: TierGateContext, tal: number): number {
@@ -1680,14 +1680,6 @@ export function effectiveTalent(span: PlayerSpan): number {
   return result;
 }
 
-/**
- * The number a card shows next to TAL. Used to be the literal string "100+" for GOAT windows;
- * since the user tier calibration (2026-09-27, tierCalibration.ts) GOAT windows carry their own
- * number above 100 (Jordan 105, LeBron 104), so this is now just the display talent.
- */
-export function displayNumberForSpan(_span: PlayerSpan, ctx: TierGateContext): number | string {
-  return displayTalentForSpan(ctx);
-}
 
 /**
  * Builds a span's real `TierGateContext` — moved here from `DraftBoard.tsx` (2026-08-14, the

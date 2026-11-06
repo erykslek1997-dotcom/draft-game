@@ -48,14 +48,14 @@ export type { FitScoreResult, FitScoreComponents } from './fit';
 const RIM_PROTECTOR_IMPACT_THRESHOLD = 18;
 const PERIMETER_DEFENDER_IMPACT_THRESHOLD = 10;
 
-export function isStrongRimProtector(player: { defensiveRole: string }): boolean {
+function isStrongRimProtector(player: { defensiveRole: string }): boolean {
   return (
     RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= RIM_PROTECTOR_IMPACT_THRESHOLD
   );
 }
 
-export function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
+function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
   return (
     PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
@@ -608,7 +608,7 @@ const INTERIOR_STRENGTH_FULL = 95;
 const PAINT_SCORER_OTAL = 70;
 const PAINT_SCORER_MAX_SPACING = 30;
 /** Two frontcourt starters who carry a real scoring load but don't shoot from outside. */
-export function paintScorerOverlap(starterAssignments: ReturnType<typeof primaryStarters>): boolean {
+function paintScorerOverlap(starterAssignments: ReturnType<typeof primaryStarters>): boolean {
   return (
     starterAssignments.filter(
       ({ player, slot }) =>
@@ -631,7 +631,7 @@ export function interiorStrength(rimPressure: number, rebounding: number, size: 
  */
 const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13];
 const STAR_OTAL_BENCH_SHARE = 0.18;
-export function starWeightedOffensiveTalent(team: Team): number {
+function starWeightedOffensiveTalent(team: Team): number {
   const starters = primaryStarters(team);
   if (starters.length === 0) return 0;
   const values = starters
@@ -729,8 +729,8 @@ function offenseScoreComponents(team: Team): OffenseScoreComponents {
  * clamped 0-100 — the 6 component fields stay raw for the UI breakdown, exactly like
  * `defenseScore`'s linear part vs its final adjusted value.
  */
-export const MAX_ELITE_SCORING_CORE_BONUS = 9;
-export const MAX_SECONDARY_SCORING_BONUS = 6;
+const MAX_ELITE_SCORING_CORE_BONUS = 9;
+const MAX_SECONDARY_SCORING_BONUS = 6;
 const SECOND_SCORER_OTAL_START = 82;
 const SECOND_SCORER_OTAL_FULL = 92;
 const THIRD_SCORER_OTAL_START = 78;
@@ -797,7 +797,7 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
  * spread with less drift (mean 78.9, teams above 90: 3 -> 14 of 192). Same Billups/White/E. Jones/
  * Pippen shell: Jokic 77 -> 83, Gobert stays 72 (engine floor).
  */
-export const MAX_SUPERSTAR_ENGINE_BONUS = 6;
+const MAX_SUPERSTAR_ENGINE_BONUS = 6;
 const NO_SUPERSTAR_ENGINE_MALUS = 2;
 const SUPERSTAR_ENGINE_OTAL_START = 85;
 const SUPERSTAR_ENGINE_OTAL_FULL = 100;
@@ -1220,7 +1220,7 @@ function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primarySt
 }
 
 /** Unrounded team spacing; `spacingScore` rounds it for display and Fit. */
-export function spacingScoreExact(team: Team): number {
+function spacingScoreExact(team: Team): number {
   const assignments = allAssignments(team);
   const totalMinutes = STARTER_SLOTS.length * GAME_MINUTES;
   if (assignments.length === 0 || totalMinutes === 0) return 0;
@@ -1748,9 +1748,11 @@ const QUALITY_FIT_SPLIT = 0.5;
 // its weight and rotation less than nothing / 0.5x — the only two parts both judges agree on. Bench
 // .113 -> .17, rotation .078 -> .039, talent takes the rest: Overall vs real SRS r 0.752 -> 0.758,
 // vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
-const QUALITY_TALENT_WEIGHT = 0.271 / 0.48;
-const QUALITY_BENCH_WEIGHT = 0.17 / 0.48;
-const QUALITY_ROTATION_WEIGHT = 0.039 / 0.48;
+// 2026-11-05, the night session: Rotation dropped from Overall (off: SRS 0.811 -> 0.816, game 0.776 ->
+// 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
+const QUALITY_TALENT_WEIGHT = 0.271 / 0.441;
+const QUALITY_BENCH_WEIGHT = 0.17 / 0.441;
+const QUALITY_ROTATION_WEIGHT = 0;
 const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 // 2026-10-29 (audit follow-up step 2, `scripts/measureDefenseLean.ts`; the user: "Fair"): real teams
 // leaning to defense (Defense 8+ over Offense) beat their Overall by 0.63 SRS inside their decade.
@@ -1760,12 +1762,21 @@ const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 const FIT_OFFENSE_WEIGHT = 0.13 / 0.52;
 const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
 
-export function teamQualityScore(talent: number, benchDepth: number, rotation: number): number {
-  return talent * QUALITY_TALENT_WEIGHT + benchDepth * QUALITY_BENCH_WEIGHT + rotation * QUALITY_ROTATION_WEIGHT;
+/** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
+ * renormalising the rest of its half. Unset, nothing changes. */
+const SC_DROP = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_DROP ?? '';
+const dropW = (part: string, w: number, bucket: Record<string, number>) => {
+  if (!SC_DROP || !(SC_DROP in bucket)) return w;
+  return part === SC_DROP ? 0 : w / (1 - bucket[SC_DROP]);
+};
+const QUALITY_BUCKET = { talent: QUALITY_TALENT_WEIGHT, bench: QUALITY_BENCH_WEIGHT, rotation: QUALITY_ROTATION_WEIGHT };
+const FIT_BUCKET = { fit: FIT_COHERENCE_WEIGHT, offense: FIT_OFFENSE_WEIGHT, defense: FIT_DEFENSE_WEIGHT };
+function teamQualityScore(talent: number, benchDepth: number, rotation: number): number {
+  return talent * dropW('talent', QUALITY_TALENT_WEIGHT, QUALITY_BUCKET) + benchDepth * dropW('bench', QUALITY_BENCH_WEIGHT, QUALITY_BUCKET) + rotation * dropW('rotation', QUALITY_ROTATION_WEIGHT, QUALITY_BUCKET);
 }
 
-export function teamFitCompositeScore(fit: number, offense: number, defense: number): number {
-  return fit * FIT_COHERENCE_WEIGHT + offense * FIT_OFFENSE_WEIGHT + defense * FIT_DEFENSE_WEIGHT;
+function teamFitCompositeScore(fit: number, offense: number, defense: number): number {
+  return fit * dropW('fit', FIT_COHERENCE_WEIGHT, FIT_BUCKET) + offense * dropW('offense', FIT_OFFENSE_WEIGHT, FIT_BUCKET) + defense * dropW('defense', FIT_DEFENSE_WEIGHT, FIT_BUCKET);
 }
 
 /**
@@ -1780,7 +1791,7 @@ export function teamFitCompositeScore(fit: number, offense: number, defense: num
  * +-2.6, so the size can't be pinned down; 4 is the cautious middle (the user). A team below `ref`
  * gains at most `maxBonus`.
  */
-export const BALL_LOAD_TUNING = { perUsage: 4, ref: 1.25, maxBonus: 1 };
+const BALL_LOAD_TUNING = { perUsage: 4, ref: 1.25, maxBonus: 1 };
 const SPAN_CONTEXT = spanContext as unknown as Record<string, number[]>;
 /** A player's real share of his team's possessions (`spanContext.json`), 0.16 when unknown. */
 export function realUsageShare(span: PlayerSpan): number {
@@ -1788,7 +1799,7 @@ export function realUsageShare(span: PlayerSpan): number {
 }
 
 /** Real usages of the five players with the most minutes, added up (1.0 = one ball). */
-export function topFiveUsageLoad(team: Team): number {
+function topFiveUsageLoad(team: Team): number {
   if (!team.rotation) return BALL_LOAD_TUNING.ref;
   const rotation = team.rotation;
   const top = team.roster
@@ -1808,7 +1819,7 @@ export function ballHandlerAdjustment(team: Team): number {
  * without the cost (2026-10-28): at 1/0.85 an Overall point of it moved the league margin 0.73 a
  * 100 trips against the ~0.97 the rest of Overall delivers, so 0.75 of that; mean cost 0.54.
  */
-export const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
+const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
 const BALL_HANDLER_REF = 0.54;
 
 export function ballLoadAdjustment(team: Team): number {
@@ -1824,9 +1835,9 @@ export function ballLoadAdjustment(team: Team): number {
  * -0.3, two -3.4. The cost starts past `from` of the minutes and grows `perShare` an Overall point
  * per 1.0 of the minutes beyond it, up to `max`.
  */
-export const DATA_CERTAINTY = { firstFullYear: 1973, from: 0.12, perShare: 16, max: 6, minPlayers: 2, playerMinutes: 10 };
-export const isPreBoxEra = (span: PlayerSpan): boolean => Number(span.spanLabel.slice(0, 4)) < DATA_CERTAINTY.firstFullYear;
-export function preBoxEraShare(team: Team): number {
+const DATA_CERTAINTY = { firstFullYear: 1973, from: 0.12, perShare: 16, max: 6, minPlayers: 2, playerMinutes: 10 };
+const isPreBoxEra = (span: PlayerSpan): boolean => Number(span.spanLabel.slice(0, 4)) < DATA_CERTAINTY.firstFullYear;
+function preBoxEraShare(team: Team): number {
   if (!team.rotation) return 0;
   let total = 0;
   let old = 0;
@@ -1849,25 +1860,50 @@ export function dataCertaintyAdjustment(team: Team): number {
   return -Math.min(DATA_CERTAINTY.max, Math.max(0, preBoxEraShare(team) - DATA_CERTAINTY.from) * DATA_CERTAINTY.perShare);
 }
 
+/** 2026-11-05, the night session (the user: "czy powinno też liczyć ławkę"): the five the bench puts
+ * on the floor — each slot's busiest backup first. Fit blends it in by the bench's share of the
+ * minutes (SRS 0.816 -> 0.822, game 0.795 -> 0.805 on top of the pruned Fit); Offense was measured the
+ * same way and added nothing, so `SC_BENCH=fo` only for measurement. */
+function secondUnit(team: Team): Team | null {
+  if (!team.rotation) return null;
+  const slots = Object.fromEntries(
+    Object.entries(team.rotation.slots).map(([slot, rows]) => {
+      const backup = rows.slice(1).filter((r) => r.minutes > 0).sort((a, b) => b.minutes - a.minutes)[0];
+      return [slot, backup ? [backup, ...rows.filter((r) => r !== backup)] : rows];
+    }),
+  ) as typeof team.rotation.slots;
+  return { ...team, rotation: { ...team.rotation, slots } };
+}
+const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
+function benchShare(team: Team): number {
+  if (!team.rotation) return 0;
+  let bench = 0;
+  for (const rows of Object.values(team.rotation.slots)) for (const r of rows.slice(1)) bench += r.minutes;
+  return Math.min(0.4, bench / 240);
+}
+
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
-  const offense = offenseScore(team);
+  const unit2 = SC_BENCH ? secondUnit(team) : null;
+  const share = unit2 ? benchShare(team) : 0;
+  const offense = unit2 && SC_BENCH.includes('o') ? Math.round((1 - share) * offenseScore(team) + share * offenseScore(unit2)) : offenseScore(team);
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
-  const fit = fitScore(team);
+  const fit0 = fitScore(team);
+  const fit = unit2 && SC_BENCH.includes('f') ? { ...fit0, score: Math.round((1 - share) * fit0.score + share * fitScore(unit2).score) } : fit0;
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
     teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
-    ballLoadAdjustment(team) +
+    (SC_DROP === 'ballLoad' ? 0 : ballLoadAdjustment(team)) +
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
     // game plays it, so the team's number carries it too.
     liftAdjustment(team) +
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
     // for the five on the floor; the team's number takes it for the starters.
-    ballHandlerAdjustment(team) +
-    dataCertaintyAdjustment(team);
+    (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
+    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

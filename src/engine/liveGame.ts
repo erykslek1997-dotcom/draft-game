@@ -138,7 +138,7 @@ export function headToHeadMargin(yours: Lineup, theirs: Lineup): number {
  * rotation; the game is twice the mean of the two teams, an even count, inside `TEMPO.range`. The
  * margin the engine expects is unchanged — only the number of trips moves.
  */
-export const TEMPO = { base: 99, style: 1.78, era: 0.25, range: [88, 112] as [number, number] };
+const TEMPO = { base: 99, style: 1.78, era: 0.25, range: [88, 112] as [number, number] };
 const SPAN_PACE = spanPaceData as unknown as Record<string, [number, number]>;
 function teamPace(roster: GameRoster): number {
   let w = 0;
@@ -164,7 +164,7 @@ const GAME_SECONDS = 48 * 60;
  * 87%; 30 minutes 76 points, 83%. The engine's margin is per 48 minutes, so a short game aims at its
  * share of it. Full teams keep 48.
  */
-export const FIVE_GAME_MINUTES = 36;
+const FIVE_GAME_MINUTES = 36;
 /**
  * 2026-10-02: each shooter draws fouls at his own real rate. A trip is ~2.1 free throws and an
  * and-one adds ~0.02 per shot, so a free-throw rate r (FTA per FGA) comes from a foul on a share
@@ -481,7 +481,7 @@ const RIM_MID_GAP = 0.22;
 const STEAL_SHARE = 0.55;
 const STEAL_K = 0.08;
 /** The defense knobs, in one place so the calibration scripts can sweep them. */
-export const DEFENSE_TUNING = {
+const DEFENSE_TUNING = {
   /** 2026-10-08 (game closer to the engine): 0.062 -> 0.03 and `tov` 0.28 -> 0.05. Blocks and steals
    * moved a team's margin 2.5x and 8x what the engine gives them (and steals fed too many fast
    * breaks); D-TAL now carries the defense through the anchor (`ANCHOR_TUNING`). */
@@ -517,7 +517,7 @@ export const DEFENSE_TUNING = {
  * drafts), where the game used one flat rate — and a real lead handler on the floor takes care of
  * the ball beyond that (best playmaking of the five: mean 92.8, spread 5.2).
  */
-export const OFFENSE_TUNING = {
+const OFFENSE_TUNING = {
   ownTurnovers: 0.6,
   handler: 0.09,
 };
@@ -533,7 +533,7 @@ const REF_FIVE_TURNOVERS = 0.1267;
  * how much better or worse they pass than his real teammates, and his real percentages already
  * hold his real share, so he gains or loses only the difference.
  */
-export const SETUP_TUNING = {
+const SETUP_TUNING = {
   twoBase: 0.02,
   twoSlope: 0.08,
   threeBase: 0.04,
@@ -601,7 +601,7 @@ function handlerZ(off: CourtPlayer[]): number {
  * (his share of unassisted makes, `ownShare`), the shot is never set up (so a catch-and-shoot
  * player also pays his own-shot gap, `setupEdge`) and goes in `LATE_TUNING.penalty` less often.
  */
-export const LATE_TUNING = {
+const LATE_TUNING = {
   share: 0.09,
   /** How much of what a player's late shots lose comes back on all of his shots (`courtFor`): his
    * real percentages already hold them. 1 = all of it. */
@@ -622,7 +622,7 @@ export const LATE_TUNING = {
  * 2026-10-09: real seasons put both ends lower (`SCALE_TUNING`): ~0.15 for a role player made to
  * create, ~0 for a creator, and no general gain for giving the ball up.
  */
-export const STAR_TUNING = {
+const STAR_TUNING = {
   usageCostMax: 0.15,
   usageCostMin: 0,
   creatorShare: 0.6,
@@ -638,7 +638,7 @@ export const STAR_TUNING = {
  * (`STAR_TUNING`, which had 0.4 and 0.1). By the player's spacing (`shooter`) and his share of
  * unassisted makes (`creator`, as in `STAR_TUNING`).
  */
-export const SCALE_TUNING = {
+const SCALE_TUNING = {
   shooter: 0.06,
   creator: 0.08,
 };
@@ -650,7 +650,7 @@ export const SCALE_TUNING = {
  * points per 1.0 of its players' real usage added up, against the drafted fives' `ref`, so the
  * league's shooting stays where it was and only the differences between fives move.
  */
-export const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
+const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
 function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
   const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
@@ -681,7 +681,7 @@ const starness = (span: PlayerSpan) => (1 - defenseResist(span)) / STAR_RESIST.s
  * in the clutch) — and every shot gets harder (clutch eFG ~3 points under the rest), the star's
  * least. It barely moves the average margin; it decides close games.
  */
-export const CLUTCH_TUNING = {
+const CLUTCH_TUNING = {
   minutes: 4,
   margin: 5,
   focus: 0.8,
@@ -701,7 +701,7 @@ function usageCostScale(ownShare: number): number {
  * rather than the man guarding the shooter). The five's rim pressure is the engine's
  * (`rimPressure.ts`), against the drafted rotation fives' 71 (spread 20.5).
  */
-export const RIM_TUNING = {
+const RIM_TUNING = {
   collapse: 0.008,
   foul: 0.08,
   helpFoulShare: 0.2,
@@ -714,7 +714,7 @@ const REF_RIM_PRESSURE = { mean: 71.3, sd: 20.5 };
  * end late in the clock (`iso`), where the star who makes his own shot still gets his. Against the
  * drafted rotation fives' 64.6 (spread 15.6).
  */
-export const SWITCH_TUNING = {
+const SWITCH_TUNING = {
   hunt: 0.35,
   iso: 0.12,
 };
@@ -735,7 +735,7 @@ const REF_SWITCH = { mean: 64.6, sd: 15.6 };
  * swapped out of position now cost what the engine says (100%, was 48%), six more minutes for every
  * starter 116% (was 397%).
  */
-export const ROTATION_TUNING = {
+const ROTATION_TUNING = {
   tovAtPoint: 2.04,
   tovAtGuard: 1.02,
   tovElsewhere: 0.68,
@@ -795,7 +795,7 @@ const FOUL_OUT = 6;
  * teams: the spread around the engine's margin 16.6 -> ~14 points, 30-point blowouts 8.5% -> ~5%,
  * and with `aim` the game still meets the engine's margin (slope ~1.0).
  */
-export const GARBAGE_TUNING = {
+const GARBAGE_TUNING = {
   /** Lead that starts garbage time: [minutes left at least, lead at least]. */
   lead: [[9, 25], [6, 20], [0, 15]] as [number, number][],
   back: 8,
@@ -1020,7 +1020,7 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
  * Stage 4a eased O-TAL, rebounds, three-point rate and the two-point term, which had overshot the
  * engine once the rotation (stage 3) and fit (`FIT_TUNING`) carried their own share.
  */
-export const ANCHOR_TUNING = {
+const ANCHOR_TUNING = {
   /** FG points per point of O-TAL above the drafted average. */
   otal: 0.0016,
   /** FG points per point of two-point % above his position's drafted average (negative: the box
@@ -1071,7 +1071,7 @@ function anchorOf(span: PlayerSpan): { off: number; def: number } {
  * engine's margin per Overall point (83% before) at R² 0.69 (0.65), its gap to the engine no longer
  * follows fit (corr 0.22 -> 0.01), and per 1 SD of a team's offensive fit it plays 1.9 more assists
  * and 0.75 fewer turnovers a game (1.1 and 0.5 before). */
-export const FIT_TUNING = {
+const FIT_TUNING = {
   off: { setup: 0.05, late: 0.08, tov: 0.035 },
   def: { shot: 0.0015, tov: 0.01, hunt: 0.1 },
   ref: { off: 62.8, offSd: 15.7, def: 77.2, defSd: 6.3 },

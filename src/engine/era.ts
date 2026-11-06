@@ -192,7 +192,7 @@ const THREE_VOLUME_REFERENCE_YEARS = [2024, 2025, 2026];
 const modernThreeVolumeSamples = THREE_VOLUME_REFERENCE_YEARS.map((y) =>
   threeVolumeByEndYear.get(clampToKnown(y, KNOWN_THREE_VOLUME_YEARS))!,
 );
-export const MODERN_THREE_VOLUME_BASELINE =
+const MODERN_THREE_VOLUME_BASELINE =
   modernThreeVolumeSamples.reduce((sum, v) => sum + v, 0) / modernThreeVolumeSamples.length;
 
 /**
@@ -208,7 +208,7 @@ export const MODERN_THREE_VOLUME_BASELINE =
  * still measured against their own peers (a genuine era outlier like Bird or Dale Ellis still
  * maxes the volume score) without a low-sample season inflating a marginal shooter into one.
  */
-export const MAX_THREE_VOLUME_SCALE = 8;
+const MAX_THREE_VOLUME_SCALE = 8;
 
 /**
  * 2026-08-19, user's explicit ask (real diagnostic: David Thompson's 1976-78 span, SPC 0,
@@ -220,7 +220,7 @@ export const MAX_THREE_VOLUME_SCALE = 8;
  * player — used to exempt such spans from any correction that would otherwise punish that true 0
  * as if it were a real, judged shooting weakness.
  */
-export const FIRST_THREE_POINT_LINE_END_YEAR = 1980;
+const FIRST_THREE_POINT_LINE_END_YEAR = 1980;
 
 export function predatesThreePointLine(spanLabel: string): boolean {
   const years = spanEndYears(spanLabel);
@@ -230,7 +230,7 @@ export function predatesThreePointLine(spanLabel: string): boolean {
 
 /** Steals and blocks became official stats in 1973-74 (season end year 1974). A span with any
  * earlier season carries 0s or estimates for them, never a full real record. */
-export const FIRST_STEALS_BLOCKS_END_YEAR = 1974;
+const FIRST_STEALS_BLOCKS_END_YEAR = 1974;
 
 export function stealsBlocksFullyRecorded(spanLabel: string): boolean {
   const years = spanEndYears(spanLabel);
@@ -278,7 +278,7 @@ const KNOWN_STEAL_YEARS = [...stealsByEndYear.keys()].sort((a, b) => a - b);
  * convention as `MODERN_THREE_VOLUME_BASELINE`. */
 const STEAL_REFERENCE_YEARS = [2024, 2025, 2026];
 const modernStealSamples = STEAL_REFERENCE_YEARS.map((y) => stealsByEndYear.get(clampToKnown(y, KNOWN_STEAL_YEARS))!);
-export const MODERN_STEAL_BASELINE = modernStealSamples.reduce((sum, v) => sum + v, 0) / modernStealSamples.length;
+const MODERN_STEAL_BASELINE = modernStealSamples.reduce((sum, v) => sum + v, 0) / modernStealSamples.length;
 
 /**
  * 2026-08-05, user explicit ask (Clyde Drexler, Julius Erving): unlike 3-point volume, steal
@@ -421,10 +421,10 @@ export function reboundAvailabilityFactor(spanLabel: string): number {
  * by the 2014-26 mean over the season's own volume. Before 1973-74 blocks were not kept (factor 1).
  */
 const TWO_POINT_ATTEMPTS_BY_END_YEAR = new Map<number, number>([[1974, 101.1], [1975, 99.1], [1976, 94.2], [1977, 92.1], [1978, 92.9], [1979, 91.5], [1980, 87.0], [1981, 86.2], [1982, 86.0], [1983, 87.5], [1984, 85.3], [1985, 86.7], [1986, 84.8], [1987, 83.5], [1988, 82.3], [1989, 81.9], [1990, 80.0], [1991, 79.5], [1992, 79.1], [1993, 76.4], [1994, 74.2], [1995, 65.7], [1996, 63.7], [1997, 63.3], [1998, 67.9], [1999, 65.9], [2000, 69.4], [2001, 67.7], [2002, 67.4], [2003, 66.9], [2004, 65.8], [2005, 65.4], [2006, 63.8], [2007, 63.5], [2008, 64.3], [2009, 63.6], [2010, 64.4], [2011, 64.0], [2012, 63.9], [2013, 62.9], [2014, 62.3], [2015, 62.0], [2016, 61.4], [2017, 59.3], [2018, 58.0], [2019, 58.1], [2020, 55.7], [2021, 54.6], [2022, 53.8], [2023, 54.9], [2024, 54.6], [2025, 51.8], [2026, 52.3]]);
-export const BLOCK_ERA_RULES = { on: true };
+const BLOCK_ERA_RULES = { on: true };
 const MODERN_TWO_POINT_ATTEMPTS = 56.8;
 const blockFactorCache = new Map<string, number>();
-export function blockOpportunityFactor(spanLabel: string): number {
+function blockOpportunityFactor(spanLabel: string): number {
   if (!BLOCK_ERA_RULES.on) return 1;
   const hit = blockFactorCache.get(spanLabel);
   if (hit !== undefined) return hit;

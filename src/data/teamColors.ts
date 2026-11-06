@@ -99,7 +99,3 @@ export function teamColors(code: string, seasonEnd?: number): TeamColors {
   return { primary, secondary, primaryInk: inkOn(primary), secondaryInk: inkOn(secondary) };
 }
 
-/** "'04" for 2004. */
-export function seasonTag(seasonEnd: number): string {
-  return `'${String(seasonEnd % 100).padStart(2, '0')}`;
-}

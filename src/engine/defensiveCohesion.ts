@@ -90,20 +90,20 @@ const PF_RIM_SHARE = Number(DC_ENV?.DC_PFRIM ?? 0.25);
 // was riding into the 90s.
 
 /** Maximum extra separation reserved for a complete all-time defensive shell. */
-export const MAX_ELITE_SHELL_DEFENSE_BONUS = 6;
+const MAX_ELITE_SHELL_DEFENSE_BONUS = 6;
 /**
  * Maximum structural credit for fielding real POA + wing + rim providers even when the rest of
  * the rotation contains attackable players. This is deliberately separate from the elite-shell
  * ceiling: three excellent layers still matter, but they cannot erase weak-link minutes.
  */
-export const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 5;
+const MAX_THREE_LAYER_CORE_DEFENSE_BONUS = 5;
 /** Two distinct high-minute rim protectors establish a real defensive floor even when the
  * perimeter shell is weak. This is a ceiling/foundation bonus, not a substitute for POA/wing
  * coverage, and therefore stays below the complete-shell treatment. */
-export const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 6;
-export const BACKLINE_FOUNDATION_DRTG_BLEND = 0.35;
+const MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS = 6;
+const BACKLINE_FOUNDATION_DRTG_BLEND = 0.35;
 /** Only a small part of a partial core carries into the real-units DRTG projection. */
-export const THREE_LAYER_CORE_DRTG_BLEND = 0.15;
+const THREE_LAYER_CORE_DRTG_BLEND = 0.15;
 
 /**
  * 2026-09-12, user's own explicit design requirement, backed by a rigorous isolation test: took a
@@ -143,22 +143,7 @@ const WEAK_LINK_EXTREME_DTAL_CEILING = 35;
 const WEAK_LINK_EXTREME_DTAL_FLOOR = 10;
 const WEAK_LINK_SHELL_DTAL_FLOOR = 80;
 const WEAK_LINK_SHELL_DTAL_FULL = 90;
-export const MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS = 28;
-/**
- * 2026-09-12, code-review finding (fit.ts's `defensiveCohesionComponent` was rescaling
- * `defenseScoreBonus` onto a 0-100 display scale by dividing by `MAX_BACKLINE_FOUNDATION_
- * DEFENSE_BONUS` alone — stale the moment `weakLinkOvercomeBonus`'s 28-point cap became the
- * largest of the four paths, producing values over 100, up to ~467, shown raw to the user):
- * the true ceiling `defenseScoreBonus` can reach is whichever of the four caps above is
- * currently largest. Exported so any consumer rescaling it stays correct automatically if any
- * one of the four is ever retuned again, instead of hardcoding one and silently going stale.
- */
-export const MAX_DEFENSE_SCORE_BONUS = Math.max(
-  MAX_ELITE_SHELL_DEFENSE_BONUS,
-  MAX_THREE_LAYER_CORE_DEFENSE_BONUS,
-  MAX_BACKLINE_FOUNDATION_DEFENSE_BONUS,
-  MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS,
-);
+const MAX_WEAK_LINK_OVERCOME_DEFENSE_BONUS = 28;
 /** All-time-roster extrapolation target for a complete no-weak-link defensive shell. */
 export const ELITE_SHELL_DRTG_TARGET = 85;
 

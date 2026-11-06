@@ -18,9 +18,6 @@ export function shootingGravity(span: PlayerSpan): number {
   return span.box.threePA * (span.box.threePct - avgThreePct);
 }
 
-/** Retained for `computeTalent`'s gravity term and the calibration scripts that reference it.
- * No longer the `isPlusShooter` cutoff — that moved onto the SPACING scale. */
-export const PLUS_SHOOTER_THRESHOLD = 0.15;
 
 /**
  * Whether a span provides real floor spacing. Drives roster-level "do we have shooting"

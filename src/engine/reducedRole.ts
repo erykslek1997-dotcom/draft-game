@@ -90,7 +90,7 @@ export interface ReducedRoleReference {
 }
 
 const cache = new Map<string, ReducedRoleReference | null>();
-export function reducedRoleReference(span: PlayerSpan): ReducedRoleReference | null {
+function reducedRoleReference(span: PlayerSpan): ReducedRoleReference | null {
   const hit = cache.get(span.id);
   if (hit !== undefined) return hit;
   let result: ReducedRoleReference | null = null;

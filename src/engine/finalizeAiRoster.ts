@@ -21,7 +21,7 @@ export function aiRotation(roster: PlayerSpan[]): Rotation {
  * other windows at his drafted position (no more than `maxDrop` TAL under his best), keeping any
  * that raises the score within the cap. A team score costs ~5 ms now, so a pass is under a second.
  */
-export const WINDOW_SEARCH = { passes: 2, maxDrop: 6 };
+const WINDOW_SEARCH = { passes: 2, maxDrop: 6 };
 
 export function finalizeAiRoster(team: Team, capLimit: number): PlayerSpan[] {
   // Structured: the windows drafted are the plan's; only the glue moves to his cheapest window.

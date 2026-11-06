@@ -42,20 +42,29 @@ export function teammateLift(span: PlayerSpan): TeammateLift {
  * Nash beside the Suns lost three points of 3P% away from them (2026-10-15, the user: good shooters
  * at a poor shooter's 3P%).
  */
-export const LIFT_TUNING = { scale: 1, ref: 0.0034, pointsPerTs: 196, threes: 0.3 };
+const LIFT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+/**
+ * 2026-11-05, the night session (the user: "imo usuwamy jeśli nic 'za' nie znajdziesz"): measured with
+ * `scripts/auditMetrics.ts` on 600 real team-seasons, the lift adds 0.004 to Overall vs real SRS
+ * (0.811 -> 0.815) — noise, and the data it comes from is the same team-seasons (on/off TS beside the
+ * player), so even that is partly circular. Subtracting the real teammates cost players from strong
+ * teams (LeBron 2012-14 -2.4 TS). Off by default — `scale` 0 here turns it off in the game and in
+ * Overall alike; `LIFT_SCALE=1` brings it back for a measurement.
+ */
+export const LIFT_TUNING = { scale: Number(LIFT_ENV?.LIFT_SCALE ?? 0), ref: 0.0034, pointsPerTs: 196, threes: 0.3, realMatesShare: Number(LIFT_ENV?.LIFT_RM ?? 1), overall: Number(LIFT_ENV?.LIFT_OVR ?? 1) };
 
 /** Each player's shooting shift (TS as a fraction) from the four beside him, in the five's order. */
 export function fiveLiftShifts(five: PlayerSpan[]): number[] {
   const lifts = five.map(teammateLift);
   const sum = lifts.reduce((s, l) => s + l.lift, 0);
-  return lifts.map((l) => LIFT_TUNING.scale * (sum - l.lift - l.realMates - LIFT_TUNING.ref));
+  return lifts.map((l) => LIFT_TUNING.scale * (sum - l.lift - LIFT_TUNING.realMatesShare * l.realMates - LIFT_TUNING.ref));
 }
 
 /**
  * A team's mean shooting shift over its rotation: each player by his minutes, the four beside him by
  * how much of his time each is on the floor (their minutes over everyone else's, times four).
  */
-export function teamLiftShift(team: Team): number {
+function teamLiftShift(team: Team): number {
   const minutes = new Map<string, number>();
   for (const slot of Object.values(team.rotation?.slots ?? {})) for (const a of slot) if (a.minutes > 0) minutes.set(a.playerId, (minutes.get(a.playerId) ?? 0) + a.minutes);
   const players = team.roster.filter((p) => (minutes.get(p.id) ?? 0) > 0);
@@ -68,14 +77,14 @@ export function teamLiftShift(team: Team): number {
       const others = total - own;
       let mates = 0;
       if (others > 0) for (const q of players) if (q !== p) mates += (4 * minutes.get(q.id)!) / others * lifts.get(q.id)!.lift;
-      shift += (own / total) * LIFT_TUNING.scale * (mates - lifts.get(p.id)!.realMates - LIFT_TUNING.ref);
+      shift += (own / total) * LIFT_TUNING.scale * (mates - LIFT_TUNING.realMatesShare * lifts.get(p.id)!.realMates - LIFT_TUNING.ref);
     }
   }
   return shift;
 }
 
 /** The same in points a game. */
-export const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsPerTs;
+const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsPerTs;
 
 /**
  * Points of single-game margin one point of team overall is worth (matchup.ts: the overall weight
@@ -83,5 +92,5 @@ export const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.
  * `scoreTeam`) at this rate, so the results ranking, the AI's bench picks and the season seeds see
  * it, and one game's margin still gets exactly `teamLiftPoints`.
  */
-export const LIFT_POINTS_PER_OVERALL = 0.85;
-export const liftAdjustment = (team: Team) => teamLiftPoints(team) / LIFT_POINTS_PER_OVERALL;
+const LIFT_POINTS_PER_OVERALL = 0.85;
+export const liftAdjustment = (team: Team) => (LIFT_TUNING.overall * teamLiftPoints(team)) / LIFT_POINTS_PER_OVERALL;

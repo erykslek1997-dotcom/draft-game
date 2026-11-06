@@ -35,7 +35,7 @@ const STRENGTH_WEIGHT: Record<RimPressureStrength, number> = { mocny: 1, dobry: 
 /** The role-fit unlock needs at least this strength. */
 const ROLE_UNLOCK_WEIGHT = 0.75;
 
-export const HISTORICAL_RIM_PRESSURE_EVIDENCE: HistoricalRimPressureEvidence[] = [
+const HISTORICAL_RIM_PRESSURE_EVIDENCE: HistoricalRimPressureEvidence[] = [
   { playerName: 'Michael Jordan', role: 'Slasher', strength: 'mocny' },
   { playerName: 'Dominique Wilkins', role: 'Slasher', strength: 'mocny' },
   { playerName: 'Elgin Baylor', role: 'Slasher', strength: 'mocny' },

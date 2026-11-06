@@ -6,10 +6,10 @@
  * 2026-10-16: the All-Time daily keeps its own save (`slot` 'daily', the Bomb daily 'bomb'), so starting a regular draft
  * never throws away the day's one try, and leaving the daily brings you back to it, not a new one.
  */
-export const DRAFT_SAVE_KEY = 'draftverse.draftSave.v1';
-export const DRAFT_SAVE_SUMMARY_KEY = 'draftverse.draftSaveSummary.v1';
+const DRAFT_SAVE_KEY = 'draftverse.draftSave.v1';
+const DRAFT_SAVE_SUMMARY_KEY = 'draftverse.draftSaveSummary.v1';
 /** The Team tab's in-progress rotation edits (RotationBuilder's `persistKey`), part of the same save. */
-export const DRAFT_ROTATION_KEY = 'draftverse.draftRotation.v1';
+const DRAFT_ROTATION_KEY = 'draftverse.draftRotation.v1';
 
 export type DraftSaveSlot = 'draft' | 'daily' | 'bomb';
 

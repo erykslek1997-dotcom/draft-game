@@ -117,7 +117,7 @@ const BIG_PLAYMAKING_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
  * codebase uses — absence of data is not evidence of poor playmaking. PG uses its own
  * position-relative baseline/scale/cap (see `PG_PLAYMAKING_BASELINE`'s own docstring, 2026-08-08)
  * — additive-only there too, same as every other position here. */
-export function playmakingSkillAdjustment(span: PlayerSpan): number {
+function playmakingSkillAdjustment(span: PlayerSpan): number {
   const score = playmakingScoreForPlayer(span);
   if (score === null) return 0;
   if (span.primaryPosition === 'PG') {
@@ -227,7 +227,7 @@ const MULTI_LEVEL_MIN_FGA = 12;
 // 2026-09-27: `CURRY_MULTI_LEVEL_CAP` removed with the Curry gravity cap in talent.ts (see
 // `shootingAnomalyBonus` there); the parameter below is kept only for call-site compatibility.
 
-export function multiLevelScoringBonus(span: PlayerSpan, _applyCurryException: boolean = true): number {
+function multiLevelScoringBonus(span: PlayerSpan, _applyCurryException: boolean = true): number {
   if (span.fga < MULTI_LEVEL_MIN_FGA) return 0;
   const shares = classifiedZoneShares(span);
   if (!shares) return 0;
@@ -262,7 +262,7 @@ const RIM_FINISH_SCALE = 0.26;
 const MAX_RIM_FINISH_BONUS = 4.5;
 const RIM_FINISH_POSITIONS: ReadonlySet<Position> = new Set(['PF', 'C']);
 
-export function insideFinishingBonus(span: PlayerSpan): number {
+function insideFinishingBonus(span: PlayerSpan): number {
   if (!RIM_FINISH_POSITIONS.has(span.primaryPosition)) return 0;
   const shares = classifiedZoneShares(span);
   if (!shares) return 0;

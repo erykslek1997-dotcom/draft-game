@@ -70,7 +70,7 @@ import type { Team } from './types';
  * lowest as "weak link" regardless of this threshold (Chauncey Billups at 80, nowhere near
  * attackable, displayed as one) while this exact threshold already correctly gated the separate
  * prose note just below. Exported so the UI can gate the label the same way. */
-export const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
+const HUNTABLE_WEAK_LINK_THRESHOLD = 50;
 
 /** Spacing bottleneck applied to the final fit score below — exported alongside `FIT_WEIGHTS` so
  * a test recomputing "the documented component blend" can reproduce this term too, rather than
@@ -153,18 +153,27 @@ const LAYER_TIE_BREAK = 0.01;
  * Was (step 7): creation .087, pairing .207, role coverage .25, switch .135, rim .058, size .038,
  * title .115.
  */
+/**
+ * 2026-11-05, the night session (the user: "znajdź czy inne elementy nie wpadają w pułapkę teammate
+ * lift"): each part dropped in turn against 600 real team-seasons (SRS) and the game's mechanics
+ * (`scripts/_ablate.ts` on `auditMetrics.ts`). Championship structure, spacing compatibility (Spacing
+ * is in Offense already), switchability and team rim pressure added nothing to either (each off: SRS
+ * 0.810-0.814, game 0.775-0.780 against 0.811 / 0.776); role coverage (0.803 / 0.746 without it) and
+ * pairing carry the Fit. They stay computed and shown; they no longer weigh. Was .293 / .11 / .331 /
+ * .099 / .037 / .13.
+ */
 export const FIT_WEIGHTS = {
   creationStructure: 0,
-  pairingStructure: 0.293,
-  spacingCompatibility: 0.11,
-  defensiveRoleCoverage: 0.331,
-  switchability: 0.099,
+  pairingStructure: 0.293 / 0.624,
+  spacingCompatibility: 0,
+  defensiveRoleCoverage: 0.331 / 0.624,
+  switchability: 0,
   huntResistance: 0,
   defensiveCohesion: 0,
-  rimPressureTeam: 0.037,
+  rimPressureTeam: 0,
   reboundingBalance: 0,
   sizeCoverage: 0,
-  championshipStructure: 0.13,
+  championshipStructure: 0,
 } as const;
 
 const ADDITIONAL_ROLE_CREDIT_FLOOR = 80;

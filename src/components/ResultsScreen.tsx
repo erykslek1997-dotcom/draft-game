@@ -185,7 +185,7 @@ const EMPTY_CORRECTED_ROTATIONS: Record<string, Rotation> = {};
 
 
 /** 1 -> "1st", 2 -> "2nd", 11 -> "11th" — plain English ordinal for the finish-position line. */
-export function ordinal(n: number): string {
+function ordinal(n: number): string {
   const mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
   switch (n % 10) {
@@ -440,8 +440,6 @@ export function nextDraftTip(label: string, team: Team): string | undefined {
  * position — a C at 55 is a below-average C, a PG at 45 a below-average PG.
  */
 const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 49, SG: 43, SF: 47, PF: 58, C: 61 };
-/** Below this many minutes at a slot, a non-starter is shown on the column's spot line. */
-export const SPOT_MINUTES = 6;
 
 /** Your report's Draft Desk voices. The tone follows the final place (2026-09-24, user-reported
  * live: "wygrałem, czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list
