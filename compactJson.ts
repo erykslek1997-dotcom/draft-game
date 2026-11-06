@@ -46,17 +46,16 @@ export function encodeCompact(value: unknown): Encoded {
   return value;
 }
 
-/** JavaScript source for an encoded value — JSON, plus array holes for HOLE. */
+/** Stands in for a key missing from a row. JSON has no array holes, so it is a string the data
+ * never holds (testCompactJson checks the round trip). */
+const HOLE_TEXT = '\u0000h';
+
+/** JSON text for an encoded value; HOLE is written as HOLE_TEXT. */
 export function serializeCompact(value: Encoded): string {
-  if (value === HOLE) return '';
-  if (Array.isArray(value)) {
-    const body = value.map(serializeCompact).join(',');
-    // `[1,]` has length 1 in JavaScript; a trailing hole needs one more comma to count.
-    return `[${body}${value.length > 0 && value[value.length - 1] === HOLE ? ',' : ''}]`;
-  }
+  if (value === HOLE) return JSON.stringify(HOLE_TEXT);
+  if (Array.isArray(value)) return `[${value.map(serializeCompact).join(',')}]`;
   if (value !== null && typeof value === 'object') {
-    const parts = Object.entries(value).map(([k, v]) => `${k === '__proto__' ? `["__proto__"]` : JSON.stringify(k)}:${serializeCompact(v)}`);
-    return `{${parts.join(',')}}`;
+    return `{${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}:${serializeCompact(v)}`).join(',')}}`;
   }
   // JSON.stringify(-0) is "0"; the file's -0 has to survive as -0 to be the same data.
   return Object.is(value, -0) ? '-0' : JSON.stringify(value);
@@ -66,6 +65,7 @@ export function serializeCompact(value: Encoded): string {
 export const DECODER_SOURCE = `
 const KEYS = ${JSON.stringify(KEYS)};
 const ROWS = ${JSON.stringify(ROWS)};
+const HOLE = ${JSON.stringify(HOLE_TEXT)};
 export function decodeCompact(v) {
   if (Array.isArray(v)) {
     for (let i = 0; i < v.length; i++) v[i] = decodeCompact(v[i]);
@@ -81,7 +81,7 @@ export function decodeCompact(v) {
         const o = {};
         for (let i = 0; i < keys.length; i++) {
           const x = row[i];
-          if (x !== undefined) o[keys[i]] = decodeCompact(x);
+          if (x !== HOLE) o[keys[i]] = decodeCompact(x);
         }
         out[r] = o;
       }
@@ -117,7 +117,10 @@ export function compactJson(): Plugin {
       const file = id.slice(PREFIX.length, -SUFFIX.length);
       this.addWatchFile(file);
       const data = JSON.parse(readFileSync(file, 'utf8'));
-      return `import { decodeCompact } from ${JSON.stringify(RUNTIME)};\nexport default decodeCompact(${serializeCompact(encodeCompact(data))});\n`;
+      // 2026-11-06: a string for JSON.parse, not an object literal. iPhones (every iOS browser is
+      // Safari's engine) closed the tab on the ~20 MB literal; JSON.parse is far cheaper to load.
+      const json = serializeCompact(encodeCompact(data));
+      return `import { decodeCompact } from ${JSON.stringify(RUNTIME)};\nexport default decodeCompact(JSON.parse(${JSON.stringify(json)}));\n`;
     },
   };
 }

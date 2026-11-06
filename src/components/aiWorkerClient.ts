@@ -35,6 +35,10 @@ export class AiWorkerClient {
   private finalizers = new Map<number, (rosters: string[][] | null) => void>();
 
   constructor() {
+    if (!workerAffordable()) {
+      this.available = false;
+      return;
+    }
     try {
       this.worker = new Worker(new URL('../engine/aiWorker.ts', import.meta.url), { type: 'module' });
       this.worker.onmessage = (event: MessageEvent<Outbound>) => this.receive(event.data);
@@ -137,6 +141,19 @@ export class AiWorkerClient {
 
 let client: AiWorkerClient | null = null;
 /** One worker for the page, started on first use (the lottery) so it warms up early. */
+/**
+ * 2026-11-06: the worker loads its own copy of the whole engine and player data. On an iPhone (every
+ * iOS browser runs Safari's engine) the two copies went past the tab's memory limit and iOS closed
+ * the page. iOS devices, and phones that report under 4 GB of memory, draft on the page's thread.
+ */
+function workerAffordable(): boolean {
+  if (typeof navigator === 'undefined') return true;
+  const ua = navigator.userAgent;
+  const ios = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  return !ios && !(memory !== undefined && memory < 4);
+}
+
 export function aiWorkerClient(): AiWorkerClient {
   if (!client) client = new AiWorkerClient();
   return client;

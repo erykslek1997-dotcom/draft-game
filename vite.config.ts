@@ -45,6 +45,11 @@ export default defineConfig({
   // another running instance (e.g. the desktop-shortcut launcher) without touching that process.
   // Vite 8 defaults to Safari 16.4; older iPhones (iOS 14–16.3) got a blank page. Lowered so the
   // bundle's syntax is transpiled for them too.
+  // The AI worker is bundled on its own; without this its copy of the player data skipped the
+  // compact encoding (41 MB instead of ~25 MB).
+  worker: {
+    plugins: () => [compactJson()],
+  },
   build: {
     target: ['es2020', 'safari14', 'chrome87', 'firefox78', 'edge88'],
   },
