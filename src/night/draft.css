@@ -305,3 +305,9 @@
 .nt .plist tr.no td.cap.over { opacity: 0.9; }
 .nt .plist tr.clk { cursor: pointer; }
 @media (hover: hover) { .nt .plist tr.clk:not(.no):hover td { background: var(--surf); } }
+
+/* 2026-11-06, the playtest ("pasek na dole jest nie przylepiony"): a row's hidden Draft button kept its
+   box, and on a phone between your picks (every row dimmed, the column 0 wide) those boxes stuck 36px
+   past the screen — the browser widened the page to 432px and the bottom bar fell under the edge.
+   An unavailable row's button is taken out instead. */
+.nt .plist tr.no .draft { display: none; }
