@@ -1,7 +1,7 @@
 import { Fragment, memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
 import { maskName } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
-import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
+import { isRealPositionFit, STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, suggestBasicRotation } from '../engine/rotation';
 import { playableMinutesCap } from '../engine/rotationRoleMinutes';
 import type { Rotation, SlotAssignment } from '../engine/types';
@@ -380,7 +380,9 @@ function RotationBuilderComponent({
   /** Natural fits first, then the out-of-position fallbacks, so the sensible picks are on top. */
   function optionsFor(slot: Position): { player: PlayerSpan; eligible: boolean }[] {
     return roster
-      .map((player) => ({ player, eligible: isPositionEligible(player, slot) }))
+      // 2026-11-06, the user (Shawn Marion "fits" at PG off the one-spot-away fallback): "fits" only
+      // for a position on his card; anyone else can still be picked, marked out of position.
+      .map((player) => ({ player, eligible: isRealPositionFit(player, slot) }))
       .sort((a, b) => Number(b.eligible) - Number(a.eligible));
   }
 
