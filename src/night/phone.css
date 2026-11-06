@@ -656,3 +656,28 @@
   .nt .roster .mt { gap: 6px; }
   .nt .roster .mt .rs-g { gap: 5px; font-size: 10px; letter-spacing: 0; }
 }
+
+/* 2026-11-06, the playtest (Brave with a larger system font: "Curry" cut in half on its card): the
+   card's parts never shrink — the name, with its overflow hidden, was the one the fixed-height column
+   squeezed — and a filled card grows past 104px when the type is bigger. */
+@media (max-width: 600px) {
+  .nt .slot > * { flex-shrink: 0; }
+  .nt .slot.filled, .nt .slots.compact .slot.filled { height: auto; min-height: 104px; }
+}
+
+/* 2026-11-06, the playtest (the bottom bar still below the screen in Brave's in-app tab): the phone's
+   bottom bars are fixed to the screen, not sticky in the page — a browser keeps a fixed element in the
+   part of the page it shows; the page leaves room for the bar under its last line. */
+@media (max-width: 600px) {
+  .nt main > .btn.phone-only:not(.off) { position: fixed; left: 16px; right: 16px; bottom: calc(10px + env(safe-area-inset-bottom) + var(--vv-bottom, 0px)); width: auto; }
+  .nt main > .btn2.phone-only, .nt main > .stackb.phone-only, .nt main > div.phone-only:has(> .btn:not(.off)) {
+    position: fixed; left: 0; right: 0; bottom: var(--vv-bottom, 0px); margin: 0; width: auto; max-width: none; box-sizing: border-box;
+  }
+  .nt main:has(> .btn.phone-only:not(.off), > .btn2.phone-only, > .stackb.phone-only, > div.phone-only:has(> .btn:not(.off))) { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 600px) {
+  /* a fixed bar's content must not be wider than the screen: in a mobile browser that widened the
+     whole page to 432px and pushed the bar under the screen's edge */
+  .nt main > .btn2.phone-only > .btn { min-width: 0; }
+  .nt main > .btn2.phone-only { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); overflow: hidden; }
+}

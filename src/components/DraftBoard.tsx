@@ -1245,12 +1245,14 @@ export default function DraftBoard({
                   const spanOpt = humanSpanOptionsByKey.get(normalizePlayerName(pl.playerName));
                   const eff = spanOpt ? (spanOpt.options.find((o) => o.id === (humanSpanSelection[spanOpt.key] ?? spanOpt.draftedSpan.id)) ?? pl) : pl;
                   const sl = slotOf(pl);
+                  // 2026-11-06, the user: "zamiast 'bench', zrób B1, B2, B3, B4" — the bench in draft order.
+                  const benchNo = sl === 'bench' ? humanTeam.roster.filter((q) => slotOf(q) === 'bench').indexOf(pl) + 1 : 0;
                   const masked = isBombMasked(pl.playerName);
                   const g = gradesOf(eff);
                   return (
                     <tr key={normalizePlayerName(pl.playerName)}>
                       <td className="rd">R{i + 1}</td>
-                      <td className={`sl${sl === 'bench' ? ' bn' : ''}`}>{sl}</td>
+                      <td className={`sl${sl === 'bench' ? ' bn' : ''}`}>{sl === 'bench' ? `B${benchNo}` : sl}</td>
                       <td className="f">
                         <NFace name={pl.playerName} span={pl} />
                       </td>
