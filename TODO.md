@@ -745,6 +745,14 @@ rozdania jako pułapka w Draw Five; krótszy mecz piątek (30 / 36 min).
       kosztuje atak (zegar, przewidywalność, mniej ruchu), kto potrafi huntować (izolacja, PnR),
       różnica sezon vs play-offy, przykłady serii (np. Rockets 2018 na Curry'ego) i źródła danych
       (NBA.com matchups od 2017-18, Synergy ISO/PnR PPP).
+- [ ] **Skalowanie farmerów — uzupełnianie brakujących danych starszych graczy (sprzed ~1997) z podobnych współczesnych — PO LAUNCHU (Eryk 2026-11-06).** Cel: usage%, udział trafień po asyście, play-typy, krycie, których brak dla starych okien, OSZACOWAĆ metodą podobnych graczy (k-nearest-neighbors imputation), a nie zmyślić, i wiedzieć, na ile szacunkowi ufać. Kroki:
+  1. **Wektor gracza** z cech znanych we wszystkich epokach (pkt, zb, ast, straty, przechw., bloki, liczba/skuteczność rzutów, FT, wzrost, waga, pozycja).
+  2. **Normalizacja na tle epoki** (z-score / percentyl względem własnego sezonu) — Reggie 1995 i Klay 2016 lądują blisko mimo innych liczb bezwzględnych. Sedno, bez tego nic nie działa.
+  3. **Miara podobieństwa** (euklidesowa/kosinusowa) z WAGAMI cech dobranymi tak, by minimalizować błąd w teście (krok 5), nie na oko.
+  4. **Imputacja**: k najbliższych współczesnych graczy ze ZNANĄ wartością, średnia ważona odległością.
+  5. **Uczciwy test (leave-one-out na współczesnych):** udajemy, że nie znamy prawdy, szacujemy, porównujemy. Dzieli cechy na: odtwarzalne (pewnie usage, assisted share) → ufamy; słabo odtwarzalne (obrona na piłce, ruch vs rzut z miejsca — wymagają kamer) → ostrożnie; nieodtwarzalne → zostaje ręczna lista jak dziś (`historicalMovementShooters.ts`).
+  6. **Ograniczenia:** regresja do średniej (unikaty jak Rodman/Draymond tracą to, co je wyróżnia); ten sam ślad w boksie, inny styl (strzelec z miejsca vs z ruchu); zmiana gry (3pt od 1980, strefa od 2001) — normalizacja łagodzi, nie usuwa.
+  - **Zasada:** każda oszacowana wartość nosi etykietę źródła (`model` vs `nba`), ocena traktuje szacunek ostrożniej niż pomiar (jak dziś kara za niepewność danych sprzed 1974). Nigdy nie udajemy, że zgadnięte = zmierzone. Dane wejściowe: nowy scrape bbref (shooting = assisted share wg odległości od 1997, per-100 od 1974) + istniejące NBA.com play-types/tracking od 2015.
 - [ ] **Transmisja meczu żywsza (silnik + teksty) — na później (Eryk 2026-10-28).** Dziś relacja jest sztywna. Brakuje:
   - a) **Signature moves gwiazd:** „Dirk one-legged fadeaway from 14 ft over the defender's
        hand”. Z play-by-play NBA (od 1996-97) da się wyciągnąć typ rzutu (fadeaway, turnaround,
