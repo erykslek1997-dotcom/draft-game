@@ -1,7 +1,7 @@
 import { Fragment, memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
 import { maskName } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
-import { STARTER_SLOTS, isPositionEligible } from '../engine/positions';
+import { isRealPositionFit, STARTER_SLOTS, isPositionEligible } from '../engine/positions';
 import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, suggestBasicRotation } from '../engine/rotation';
 import { playableMinutesCap } from '../engine/rotationRoleMinutes';
 import type { Rotation, SlotAssignment } from '../engine/types';
@@ -56,6 +56,8 @@ interface Props {
   submitRef?: MutableRefObject<(() => void) | null>;
   /** Whether the rotation can be submitted, and why not, for the host's button. */
   onStatus?: (status: { valid: boolean; reason?: string }) => void;
+  /** The five starting in the rotation, by player name (2026-11-06: Your Nine follows it). */
+  onStarters?: (starters: Partial<Record<Position, string>>) => void;
   /** Show this component's own Submit under the table (the phone, or no host button). */
   showSubmit?: boolean;
 }
@@ -112,6 +114,32 @@ function buildInitialRows(
   return result;
 }
 
+/**
+ * 2026-11-06, the user ("mogłoby reagować"): while the draft runs, each drafted player who isn't in
+ * the rotation yet takes his spot — starter where it's empty, otherwise the open minutes there or at
+ * his other listed spot. Rows already set stay. Mutates `rows`; true when anything moved.
+ */
+function placeDrafted(rows: RowsBySlot, players: PlayerSpan[]): boolean {
+  let changed = false;
+  const placed = new Set(STARTER_SLOTS.flatMap((slot) => rows[slot].map((r) => r.playerId)));
+  for (const p of players) {
+    if (placed.has(p.id)) continue;
+    const spots = [p.primaryPosition, ...(p.secondaryPositions ?? [])].filter((x): x is Position => STARTER_SLOTS.includes(x as Position));
+    const empty = spots.find((slot) => !rows[slot][0]?.playerId);
+    if (empty) {
+      rows[empty] = [{ playerId: p.id, minutes: rows[empty][0]?.minutes || 36 }, ...rows[empty].slice(1)];
+      changed = true;
+      continue;
+    }
+    const open = spots.find((slot) => slotTotal(rows, slot) < GAME_MINUTES && rows[slot].filter((r) => r.playerId).length < MAX_ROWS_PER_SLOT);
+    if (open) {
+      rows[open] = [...rows[open].filter((r) => r.playerId), { playerId: p.id, minutes: GAME_MINUTES - slotTotal(rows, open) }];
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function rowsToSlots(rows: RowsBySlot): Record<Position, SlotAssignment[]> {
   const slots = {} as Record<Position, SlotAssignment[]>;
   for (const slot of STARTER_SLOTS) {
@@ -158,12 +186,16 @@ function RotationBuilderComponent({
   persistKey,
   submitRef,
   onStatus,
+  onStarters,
   showSubmit = true,
 }: Props) {
   const [restoredRows] = useState(() => readPersistedRows(persistKey, roster));
-  const [rows, setRows] = useState<RowsBySlot>(
-    () => restoredRows ?? buildInitialRows(roster, initialRotation, rosterComplete, seedStrategy),
-  );
+  const [rows, setRows] = useState<RowsBySlot>(() => {
+    if (restoredRows) return restoredRows;
+    const initial = buildInitialRows(roster, initialRotation, rosterComplete, seedStrategy);
+    if (!rosterComplete && !initialRotation) placeDrafted(initial, roster);
+    return initial;
+  });
   useEffect(() => {
     if (!persistKey) return;
     try {
@@ -177,6 +209,8 @@ function RotationBuilderComponent({
   // player's years swaps his span id, and the Team tab used to remount this whole editor for it,
   // wiping every row. Now a row keeps its place and minutes and follows the player to his new years;
   // only a player who left the roster entirely empties his rows.
+  // Set once the player edits a row himself; the draft's own placements (below) don't count.
+  const editedByHand = useRef(Boolean(restoredRows));
   const prevRosterRef = useRef(roster);
   useEffect(() => {
     const prev = prevRosterRef.current;
@@ -195,9 +229,16 @@ function RotationBuilderComponent({
           return { ...r, playerId: idByName.get(nameById.get(r.playerId) ?? '') ?? '' };
         });
       }
+      // 2026-11-06, the user ("mogłoby reagować": McHale drafted, PF still read "Open 12"): while the
+      // draft runs, a newly drafted player takes his spot — starter where it's empty, otherwise the
+      // open minutes there or at his other listed spot. Nothing already set is touched.
+      if (!rosterComplete) {
+        const prevNames = new Set(prev.map((p) => p.playerName));
+        if (placeDrafted(next, roster.filter((p) => !prevNames.has(p.playerName)))) changed = true;
+      }
       return changed ? next : cur;
     });
-  }, [roster]);
+  }, [roster, rosterComplete]);
   // Whether the rows currently on screen came from the automatic seed and haven't been touched —
   // drives the "suggested, not optimized" note below.
   const [isSuggestion, setIsSuggestion] = useState(() => !restoredRows && rosterComplete && !initialRotation && seedStrategy === 'basic');
@@ -208,7 +249,8 @@ function RotationBuilderComponent({
   useEffect(() => {
     if (!rosterComplete || initialRotation) return;
     const untouched = STARTER_SLOTS.every((slot) => rows[slot].every((r) => !r.playerId));
-    if (!untouched) return;
+    // Rows the draft placed on its own (no edit by hand) still give way to the full suggestion.
+    if (!untouched && editedByHand.current) return;
     setRows(buildInitialRows(roster, null, true, seedStrategy));
     setIsSuggestion(seedStrategy === 'basic');
     // Only the incomplete -> complete transition matters here; `roster` changing afterwards
@@ -222,6 +264,7 @@ function RotationBuilderComponent({
   const [picker, setPicker] = useState<{ slot: Position; rowIdx: number } | null>(null);
 
   function updateRow(slot: Position, rowIdx: number, patch: Partial<Row>) {
+    editedByHand.current = true;
     setIsSuggestion(false);
     setRows((prev) => {
       const next = { ...prev, [slot]: [...prev[slot]] };
@@ -231,6 +274,7 @@ function RotationBuilderComponent({
   }
 
   function addRow(slot: Position) {
+    editedByHand.current = true;
     setIsSuggestion(false);
     setRows((prev) => ({ ...prev, [slot]: [...prev[slot], { playerId: '', minutes: 0 }] }));
   }
@@ -239,6 +283,7 @@ function RotationBuilderComponent({
    * back to an open gap no drag could close. They go to the player before him at the position now
    * (the one he came in for), so the spot keeps its 48. */
   function removeRow(slot: Position, rowIdx: number) {
+    editedByHand.current = true;
     setIsSuggestion(false);
     setRows((prev) => {
       const list = prev[slot].map((r) => ({ ...r }));
@@ -292,6 +337,7 @@ function RotationBuilderComponent({
       const rect = bar.getBoundingClientRect();
       const atMinute = Math.round(((e.clientX - rect.left) / rect.width) * GAME_MINUTES);
       const leftMinutes = Math.max(0, Math.min(pairTotal, atMinute - before));
+      editedByHand.current = true;
       setIsSuggestion(false);
       setRows((prev) => {
         const list = [...prev[slot]];
@@ -334,7 +380,9 @@ function RotationBuilderComponent({
   /** Natural fits first, then the out-of-position fallbacks, so the sensible picks are on top. */
   function optionsFor(slot: Position): { player: PlayerSpan; eligible: boolean }[] {
     return roster
-      .map((player) => ({ player, eligible: isPositionEligible(player, slot) }))
+      // 2026-11-06, the user (Shawn Marion "fits" at PG off the one-spot-away fallback): "fits" only
+      // for a position on his card; anyone else can still be picked, marked out of position.
+      .map((player) => ({ player, eligible: isRealPositionFit(player, slot) }))
       .sort((a, b) => Number(b.eligible) - Number(a.eligible));
   }
 
@@ -379,6 +427,12 @@ function RotationBuilderComponent({
   useEffect(() => {
     onStatus?.({ valid: allValid && !confirmDisabled, reason: submitBlockedReason });
   }, [allValid, confirmDisabled, submitBlockedReason, onStatus]);
+  const startersKey = STARTER_SLOTS.map((slot) => roster.find((p) => p.id === rows[slot][0]?.playerId)?.playerName ?? '').join('|');
+  useEffect(() => {
+    if (!onStarters) return;
+    const names = startersKey.split('|');
+    onStarters(Object.fromEntries(STARTER_SLOTS.map((slot, i) => [slot, names[i]]).filter(([, n]) => n)) as Partial<Record<Position, string>>);
+  }, [startersKey, onStarters]);
   if (submitRef) submitRef.current = handleConfirm;
 
   const nameOf = (id: string) => maskName(roster.find((p) => p.id === id)?.playerName ?? '');
