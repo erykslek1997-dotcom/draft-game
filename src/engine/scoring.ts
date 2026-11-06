@@ -1874,6 +1874,8 @@ function secondUnit(team: Team): Team | null {
   ) as typeof team.rotation.slots;
   return { ...team, rotation: { ...team.rotation, slots } };
 }
+/** The share of the spacing bottleneck the second unit pays (`U2_BOTTLENECK`, measurement). */
+const U2_BOTTLENECK = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.U2_BOTTLENECK ?? 1);
 const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
 function benchShare(team: Team): number {
   if (!team.rotation) return 0;
@@ -1891,7 +1893,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
   const fit0 = fitScore(team);
-  const fit = unit2 && SC_BENCH.includes('f') ? { ...fit0, score: Math.round((1 - share) * fit0.score + share * fitScore(unit2).score) } : fit0;
+  const fit = unit2 && SC_BENCH.includes('f') ? { ...fit0, score: Math.round((1 - share) * fit0.score + share * fitScore(unit2, { bottleneckScale: U2_BOTTLENECK }).score) } : fit0;
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +

@@ -162,11 +162,14 @@ const LAYER_TIE_BREAK = 0.01;
  * pairing carry the Fit. They stay computed and shown; they no longer weigh. Was .293 / .11 / .331 /
  * .099 / .037 / .13.
  */
+const FIT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+/** Spacing's weight back in Fit (`FIT_SPC`, measurement; the pruned Fit has none). */
+const FIT_SPACING_SHARE = Number(FIT_ENV?.FIT_SPC ?? 0);
 export const FIT_WEIGHTS = {
   creationStructure: 0,
-  pairingStructure: 0.293 / 0.624,
-  spacingCompatibility: 0,
-  defensiveRoleCoverage: 0.331 / 0.624,
+  pairingStructure: (0.293 / 0.624) * (1 - FIT_SPACING_SHARE),
+  spacingCompatibility: FIT_SPACING_SHARE,
+  defensiveRoleCoverage: (0.331 / 0.624) * (1 - FIT_SPACING_SHARE),
   switchability: 0,
   huntResistance: 0,
   defensiveCohesion: 0,
@@ -787,7 +790,8 @@ export function fiveSwitchability(players: PlayerSpan[], slots: Position[]): num
   return rescaleSwitchability(mean(individual) * 0.75 + Math.min(...individual) * 0.25);
 }
 
-export function fitScore(team: Team): FitScoreResult {
+/** How much of the spacing bottleneck a five pays (`bottleneckScale`; the second unit's read, scoring.ts). */
+export function fitScore(team: Team, options: { bottleneckScale?: number } = {}): FitScoreResult {
   const starterEntries = primaryStarters(team);
   const starters = starterEntries.map((entry) => entry.player);
   const notes: string[] = [];
@@ -1117,7 +1121,7 @@ export function fitScore(team: Team): FitScoreResult {
   // begins below 60 on the team Spacing score (2026-09-30: was 75 on the old, higher-reading
   // compatibility scale) and tops out at 18 points, so poor spacing matters without zeroing every
   // historically non-modern lineup.
-  const spacingBottleneckPenalty = Math.min(
+  const spacingBottleneckPenalty = (options.bottleneckScale ?? 1) * Math.min(
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );

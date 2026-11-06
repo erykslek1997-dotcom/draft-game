@@ -321,11 +321,16 @@ function initiatorRating(player: PlayerSpan): number {
   return (INITIATOR_ARCHETYPE_FACTOR[player.offensiveArchetype] ?? OTHER_INITIATOR_FACTOR) * (playmakingScoreForPlayer(player) ?? 40);
 }
 
+/** 2026-11-06, the user (Curry + Klay + Draymond at Fit 58): the screener who catches on the short
+ * roll and makes the play (Draymond, Jokić, Garnett, Horford) is the third kind of screener, beside
+ * the roller and the popper — his playmaking, at this share. `SR_SHARE` overrides it (measurement). */
+const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0);
 function screenerGravity(player: PlayerSpan, slot: Position): number {
   const roll = rimPressureForFit(player) * (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE);
   const popTagged = player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player);
   const pop = teamSpacingValue(player) * (popTagged ? 1 : UNTAGGED_POP_SHARE);
-  return Math.max(roll, pop) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
+  const shortRoll = (playmakingScoreForPlayer(player) ?? 0) * SHORT_ROLL_SHARE;
+  return Math.max(roll, pop, shortRoll) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
 }
 
 export function mismatchStructureScore(
