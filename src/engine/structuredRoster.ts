@@ -1,7 +1,10 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { displayTierForSpan, effectiveTalent, tierContextFor } from './grades';
 import { spanOptionsFor } from './spanOptimizer';
-import { positionCompetenceScore } from './positionCompetence';
+import { positionCompetenceScore as rawCompetence } from './positionCompetence';
+import { positionFitMultiplier } from './positions';
+/** Competence at a spot, zero where the game's position rules forbid it (2026-11-06: no wing at PG). */
+const positionCompetenceScore = (p: PlayerSpan, slot: Position) => (positionFitMultiplier(p, slot) > 0 ? rawCompetence(p, slot) : 0);
 import { normalizePlayerName } from '../data/schema';
 import { STARTER_SLOTS, isRealPositionFit } from './positions';
 import { computeSpacing } from './spacing';
@@ -316,6 +319,7 @@ function tierMinutesCap(p: PlayerSpan): number {
   return cap;
 }
 const IRL_MINUTES = { margin: 2, starterFloor: 24, backupDefault: 30, minStint: 4 };
+const BACKUP_QUALITY = { margin: 4 };
 const QUALITY_SLIDE = { starMinutesEach: 18, bigGap: 12, bigHomeMinutes: 12 };
 
 /** The 8-man rotation of a structured roster: starters at home, backups only in their pair. */
@@ -438,6 +442,37 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     if (move <= 0) continue;
     row.minutes -= move;
     backupRow.minutes += move;
+  }
+  // 2026-11-06, the user (Shreveport: Bosh 12 minutes at C, Horry 20 at PF — "dlaczego nie więcej
+  // Bosh?"): within a spot, a backup clearly better (`BACKUP_QUALITY.margin` TAL+) who is listed
+  // there takes the worse backup's minutes, up to his own room — his tier cap and his real minutes
+  // (or `IRL_MINUTES.backupDefault`) plus the margin. The starter's row is untouched.
+  for (const slot of STARTER_SLOTS) {
+    const starterId = s.starters[slot]?.id;
+    const backups = slots[slot]
+      .filter((r) => r.playerId !== starterId && r.minutes > 0)
+      .map((r) => ({ r, p: roster.find((q) => q.id === r.playerId)! }));
+    for (const worse of backups) {
+      const better = roster
+        .filter((q) => q.id !== worse.p.id && q.id !== starterId && isRealPositionFit(q, slot) && effectiveTalent(q) - effectiveTalent(worse.p) >= BACKUP_QUALITY.margin)
+        .filter((q) => STARTER_SLOTS.some((x) => slots[x].some((r) => r.playerId === q.id && r.minutes > 0)))
+        .sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+      for (const q of better) {
+        if (worse.r.minutes <= 0) break;
+        const real = minutesIrl(q);
+        const cap = Math.min(tierMinutesCap(q), real === undefined ? IRL_MINUTES.backupDefault : Math.max(IRL_MINUTES.backupDefault, Math.round(real + IRL_MINUTES.margin)));
+        const move = Math.min(worse.r.minutes, cap - totalOf(q.id));
+        if (move < IRL_MINUTES.minStint && move < worse.r.minutes) continue;
+        if (move <= 0) continue;
+        // A sliver left behind ("1 minuta cmon") goes too, while he stays within his tier's cap.
+        const rest = worse.r.minutes - move;
+        const all = rest > 0 && rest < IRL_MINUTES.minStint && totalOf(q.id) + move + rest <= tierMinutesCap(q) ? move + rest : move;
+        worse.r.minutes -= all;
+        const row = slots[slot].find((r) => r.playerId === q.id);
+        if (row) row.minutes += all;
+        else slots[slot].push({ playerId: q.id, minutes: all });
+      }
+    }
   }
   // 2026-11-05, the user ("Gracze poniżej goat i legend nie powinni grać 40 minut, poniżej all NBA 38
   // i później all star 36"): a player over his tier's cap (`TIER_MINUTES`, the card's tier) hands

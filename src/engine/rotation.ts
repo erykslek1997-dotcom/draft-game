@@ -833,12 +833,45 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
     }
   }
   mergeTinyBackupSlivers(roster, slots, primaryBySlot);
+  rehomeTwoAwayFillers(roster, slots);
   relieveCeilingOverruns(roster, slots);
   addMinuteTexture(roster, slots);
 
   return { slots };
 }
 
+
+/**
+ * 2026-11-06 (testRotationInvariants after the drafts moved: Bo Outlaw, a PF, 4 minutes at SG while
+ * Malcolm Brogdon had room): a stint two positions from a player's own (no fit at all) moves to a
+ * teammate who plays the slot and still has room under his durability and tier cap; a must-start star
+ * placed next to his spot is left alone.
+ */
+function rehomeTwoAwayFillers(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
+  const totals = new Map<string, number>();
+  for (const slot of STARTER_SLOTS) for (const a of slots[slot]) totals.set(a.playerId, (totals.get(a.playerId) ?? 0) + a.minutes);
+  const room = (p: PlayerSpan) => Math.min(maxSustainableMinutes(p, MAX_MINUTES_PER_PLAYER), cardTierMinutesCap(p)) - (totals.get(p.id) ?? 0);
+  for (const slot of STARTER_SLOTS) {
+    for (const entry of slots[slot]) {
+      const player = roster.find((p) => p.id === entry.playerId);
+      if (!player || entry.minutes <= 0 || positionFitMultiplier(player, slot) > 0 || isForcedStarSlot(player, slot)) continue;
+      const helpers = roster
+        .filter((p) => p.id !== player.id && positionFitMultiplier(p, slot) > 0 && room(p) > 0)
+        .sort((a, b) => positionFitMultiplier(b, slot) - positionFitMultiplier(a, slot) || room(b) - room(a));
+      for (const h of helpers) {
+        if (entry.minutes <= 0) break;
+        const take = Math.min(entry.minutes, room(h));
+        const row = slots[slot].find((a) => a.playerId === h.id);
+        if (row) row.minutes += take;
+        else slots[slot].push({ playerId: h.id, minutes: take });
+        entry.minutes -= take;
+        totals.set(h.id, (totals.get(h.id) ?? 0) + take);
+        totals.set(player.id, (totals.get(player.id) ?? 0) - take);
+      }
+    }
+    slots[slot] = slots[slot].filter((a, i) => i === 0 || a.minutes > 0);
+  }
+}
 
 /**
  * 2026-11-05 (testRotationInvariants, the night session): the solver priced a few soft overruns —

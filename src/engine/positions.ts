@@ -73,6 +73,9 @@ export function hardLockedPosition(player: PlayerSpan): Position | null {
 export function positionFitMultiplier(player: PlayerSpan, slot: Position): number {
   const lock = hardLockedPosition(player);
   if (lock) return slot === lock ? 1 : 0;
+  // 2026-11-06, the user (Mike Miller, Ryan Bowen at PG): the point is run by a guard — PG only for a
+  // player whose own position is PG or SG, or who lists PG; a wing who lists SG doesn't run it.
+  if (slot === 'PG' && player.primaryPosition !== 'PG' && player.primaryPosition !== 'SG' && !(player.secondaryPositions ?? []).includes('PG')) return 0;
   // 2026-09-25: graded per player (`positionCompetence.ts`) instead of "listed secondary 0.9,
   // any adjacent slot 0.85/0.5". A real second position now costs only a marginal drop, and an
   // adjacent slot a player can't really play is no longer free to fill.
