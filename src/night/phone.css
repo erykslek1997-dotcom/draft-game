@@ -681,3 +681,8 @@
   .nt main > .btn2.phone-only > .btn { min-width: 0; }
   .nt main > .btn2.phone-only { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); overflow: hidden; }
 }
+@media (max-width: 600px) {
+  /* 2026-11-06, the playtest (screenshot: the filled card taller than the empty slots beside it):
+     every slot in a row takes the row's height — the grid stretches them to the tallest card. */
+  .nt .slot, .nt .slot.empty, .nt .slot.active, .nt .slots.compact .slot { height: auto; min-height: 104px; align-self: stretch; }
+}

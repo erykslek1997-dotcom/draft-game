@@ -772,9 +772,15 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
 /** 2026-11-06, the user ("Klay niedoceniony w D", Curry–Klay–Green at Fit 58): Klay's prime windows —
  * the Warriors' point-of-attack and wing stopper on the best perimeter scorer — read 55-74 off a quiet
  * box; +14 in 2013-19 only, to a B on his card ("Klaya podciągnijmy do B"); his post-injury windows are left as measured. */
-const NAMED_SPAN_DTAL_BONUS: ReadonlyMap<string, number> = new Map(
-  ['2013-15', '2014-16', '2015-17', '2016-18', '2017-18', '2017-19'].map((l) => [`${normalizePlayerName('Klay Thompson')}|${l}`, 14] as [string, number]),
-);
+const spanBonus = (name: string, labels: string[], points: number) => labels.map((l) => [`${normalizePlayerName(name)}|${l}`, points] as [string, number]);
+const NAMED_SPAN_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
+  ...spanBonus('Klay Thompson', ['2013-15', '2014-16', '2015-17', '2016-18', '2017-18', '2017-19'], 14),
+  // 2026-11-06, the user ("KD do ręcznej kalibracji w D, takie C+ do B"): Durant's length and help
+  // defense read C-/C off his box; his OKC prime to a C+, the Warriors years to a B, Phoenix/Houston C+.
+  ...spanBonus('Kevin Durant', ['2010-12', '2011-13', '2012-14', '2013-15', '2014-16'], 22),
+  ...spanBonus('Kevin Durant', ['2015-17', '2016-18', '2017-19', '2018-20', '2019-21'], 22),
+  ...spanBonus('Kevin Durant', ['2020-22', '2021-23', '2022-24', '2023-25', '2024-26'], 10),
+]);
 /** 2026-11-04, the user ("Dlaczego Manu ma 90 obrony"): named ceilings on the final D-TAL — a fine
  * team defender, not Pippen's level. */
 const NAMED_DTAL_CAP: ReadonlyMap<string, number> = new Map([[normalizePlayerName('Manu Ginóbili'), 85]]);
