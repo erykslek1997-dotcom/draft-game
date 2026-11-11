@@ -1,3 +1,4 @@
+import { traitsFor } from '../engine/traits';
 import type { DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { per36 } from '../engine/minutesPerGame';
 
@@ -51,6 +52,9 @@ export function cardRoles(span: PlayerSpan): string[] {
   if (span.defensiveRole === 'Mobile Big' && per36(span.box.bpg, span) < SHOT_BLOCKER_BLK_PER_36) defense = 'Mobile defender';
   if (defense) roles.push(defense);
   else if (per36(span.box.rpg, span) >= REBOUNDER_PER_36) roles.push('Rebounder');
+  // 2026-11-11 (the user: "tak, weteran"; then Hustle, Clutch, Microwave, Glue): the window's traits
+  // (`traits.ts`), after the style labels.
+  roles.push(...traitsFor(span));
   return roles;
 }
 

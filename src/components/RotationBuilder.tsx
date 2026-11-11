@@ -269,6 +269,18 @@ function RotationBuilderComponent({
     setRows((prev) => {
       const next = { ...prev, [slot]: [...prev[slot]] };
       next[slot][rowIdx] = { ...next[slot][rowIdx], ...patch };
+      // 2026-11-11 (the user: George moved from SF to SG still showed at both — "jak go wstawiam na
+      // SG to minuty z SF powinny znikać"): a player put in as a starter leaves every other slot. A
+      // start he had elsewhere stays open (its minutes kept, no one in it) for you to fill; a backup
+      // row of his elsewhere goes.
+      const moved = patch.playerId;
+      if (moved && rowIdx === 0) {
+        for (const other of STARTER_SLOTS) {
+          if (other === slot || !next[other].some((r) => r.playerId === moved)) continue;
+          const rowsThere = next[other].map((r, i) => (i === 0 && r.playerId === moved ? { ...r, playerId: '' } : r)).filter((r, i) => i === 0 || r.playerId !== moved);
+          next[other] = rowsThere;
+        }
+      }
       return next;
     });
   }

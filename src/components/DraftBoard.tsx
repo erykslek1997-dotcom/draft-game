@@ -39,7 +39,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
+import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -51,8 +51,10 @@ const DRAFT_LIST_LIMIT = 140;
 /** 2026-09-14, user-reported live: how many of those (already-capped) rows actually show at once
  * before "See more" is needed — a separate, much smaller number purely for not overwhelming the
  * player with a wall of cards, independent of `DRAFT_LIST_LIMIT`'s own performance reasoning. */
-const DRAFT_VISIBLE_DEFAULT = 30;
-const DRAFT_VISIBLE_STEP = 30;
+// 2026-11-11 (the user: "zamiast tak długiej listy to lista która się zwija i jest krótsza"): ten
+// at first, ten more a click, and "Show fewer" folds it back.
+const DRAFT_VISIBLE_DEFAULT = 10;
+const DRAFT_VISIBLE_STEP = 10;
 /** The caps range's top: no stretch in the pool costs more. */
 const CAPS_TOP = 30;
 
@@ -586,11 +588,16 @@ export default function DraftBoard({
     const auto = bestPrimaryAssignment(humanTeam.roster).assignment;
     const byName = new Map(humanTeam.roster.map((p) => [p.playerName, p]));
     const chosen: Partial<Record<Position, PlayerSpan>> = {};
+    // One player, one card: a rotation saved before the move fix (2026-11-11) can still list him at
+    // two slots — the first keeps him, the other falls back to the best fit.
+    const used = new Set<string>();
     for (const slot of STARTER_SLOTS) {
       const p = rotationStarters[slot] ? byName.get(rotationStarters[slot]!) : undefined;
-      if (p) chosen[slot] = p;
+      if (p && !used.has(p.id)) {
+        chosen[slot] = p;
+        used.add(p.id);
+      }
     }
-    const used = new Set(Object.values(chosen).map((p) => p!.id));
     for (const slot of STARTER_SLOTS) if (!chosen[slot] && auto[slot] && !used.has(auto[slot]!.id)) {
       chosen[slot] = auto[slot];
       used.add(auto[slot]!.id);
@@ -1582,23 +1589,19 @@ export default function DraftBoard({
               extra={
                 <span className="pt-more">
                   <span>Role</span>
-                  <select aria-label="Role" value={roleFilter ?? ''} onChange={(e) => setRoleFilter(e.target.value || null)}>
-                    <option value="">Any</option>
-                    {Object.keys(ROLE_FILTERS)
-                      .filter(roleFits)
-                      .map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                  </select>
+                  <NSelect label="Role" value={roleFilter ?? ''} onChange={(v) => setRoleFilter(v || null)} options={[{ value: '', label: 'Any' }, ...Object.keys(ROLE_FILTERS).filter(roleFits).map((role) => ({ value: role, label: role }))]} />
                   <span>Sort</span>
-                  <select aria-label="Sort" value={boardSort} onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest' | 'priciest')}>
-                    <option value="best">Best first</option>
-                    <option value="value">Most for the caps</option>
-                    <option value="cheapest">Cheapest first</option>
-                    <option value="priciest">Most caps first</option>
-                  </select>
+                  <NSelect
+                    label="Sort"
+                    value={boardSort}
+                    onChange={setBoardSort}
+                    options={[
+                      { value: 'best', label: 'Best first' },
+                      { value: 'value', label: 'Most for the caps' },
+                      { value: 'cheapest', label: 'Cheapest first' },
+                      { value: 'priciest', label: 'Most caps first' },
+                    ]}
+                  />
                 </span>
               }
             />
@@ -1619,7 +1622,15 @@ export default function DraftBoard({
                 <>
                   {' · '}
                   <button type="button" className="lk-inline" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
-                    See more
+                    Show 10 more
+                  </button>
+                </>
+              )}
+              {visibleCount > DRAFT_VISIBLE_DEFAULT && (
+                <>
+                  {' · '}
+                  <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
+                    Show fewer
                   </button>
                 </>
               )}

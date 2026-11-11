@@ -1,3 +1,4 @@
+import { isTwilightWindow } from './veteran';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
@@ -2187,6 +2188,9 @@ function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
   );
 }
 
+/** See `veteranEarly` in the candidate value. */
+const VETERAN_AI = { earlyRounds: 5, share: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.VET_AI ?? 0.15) };
+
 export function pickForAi(
   roster: PlayerSpan[],
   currentFgas: number[],
@@ -2695,6 +2699,9 @@ function pickForAiSized(
       reserveBreachPenalty: -reserveBreachPenalty(capRemainingAfterPick, slotsLeftAfterPick),
       gmProfileBonus: gmProfileBonus(ruleset?.profile, p, ruleset?.profileStrength) * (holesOpen && !fillsHole(p) ? HOLE_GM_TASTE_SHARE : 1),
       boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p) + WINDOW_NOISE_POINTS * windowNoise(ruleset?.boardSeed, p),
+      // 2026-11-11 (the user: Mullin 1997-99 in an all-time five): a veteran window is a bench piece
+      // in the first `VETERAN_AI.earlyRounds` rounds — worth `share` less of its talent term then.
+      veteranEarly: roster.length < VETERAN_AI.earlyRounds && isTwilightWindow(p) ? -VETERAN_AI.share * talentTerm : 0,
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);

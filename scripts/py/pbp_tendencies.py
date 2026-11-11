@@ -4,7 +4,9 @@
 
   - made field goals, and how many came in transition (within TRANSITION_S seconds of a steal or a
     defensive rebound) and late in a possession (LATE_S seconds or more after it began);
-  - who assisted his made field goals (passer name -> count).
+  - who assisted his made field goals (passer name -> count);
+  - clutch (fourth quarter or overtime, five minutes or less left, within five points before the
+    play): field goals and threes made / attempted, free throws made / attempted, points.
 
 A possession starts at a defensive rebound, a turnover, an opponent's made field goal or last
 free throw, or a period start. Shot clock resets on offensive rebounds are ignored: "late" is time
@@ -37,10 +39,12 @@ def main(src_dir, out):
         end = int(f[9:13]) + 1
         made = defaultdict(int); trans = defaultdict(int); late = defaultdict(int)
         passers = defaultdict(lambda: defaultdict(int))
+        clutch = defaultdict(lambda: [0, 0, 0, 0, 0, 0, 0])  # fgm fga 3pm 3pa ftm fta pts
+        margin = 0
         game = None; start_t = 720; start_kind = 'period'; period = 0; last_miss_team = None
         for r in season_rows(os.path.join(src_dir, f)):
             if r['GAME_ID'] != game:
-                game = r['GAME_ID']; period = 0
+                game = r['GAME_ID']; period = 0; margin = 0
             typ = r['EVENTMSGTYPE']
             try:
                 t = secs(r['PCTIMESTRING'])
@@ -49,6 +53,23 @@ def main(src_dir, out):
             if r['PERIOD'] != str(period):
                 period = int(r['PERIOD']); start_t = t; start_kind = 'period'; last_miss_team = None
             team = r['PLAYER1_TEAM_ID']
+            is_clutch = period >= 4 and t <= 300 and abs(margin) <= 5
+            desc = (r['HOMEDESCRIPTION'] or '') + (r['VISITORDESCRIPTION'] or '')
+            if is_clutch and typ in ('1', '2', '3') and r['PLAYER1_NAME']:
+                c = clutch[r['PLAYER1_NAME']]
+                three = '3PT' in desc
+                if typ == '1':
+                    c[0] += 1; c[1] += 1; c[6] += 3 if three else 2
+                    if three: c[2] += 1; c[3] += 1
+                elif typ == '2':
+                    c[1] += 1
+                    if three: c[3] += 1
+                else:
+                    c[5] += 1
+                    if 'MISS' not in desc: c[4] += 1; c[6] += 1
+            sm = r.get('SCOREMARGIN') or ''
+            if sm:
+                margin = 0 if sm == 'TIE' else int(sm) if sm.lstrip('-').isdigit() else margin
             if typ == '1':  # made field goal
                 name = r['PLAYER1_NAME']
                 if name:
@@ -75,10 +96,11 @@ def main(src_dir, out):
                     start_t = t; start_kind = 'dead'
                 if m and m.group(1) == m.group(2) and 'MISS' in d:
                     last_miss_team = team
-        for name in made:
+        for name in set(made) | set(clutch):
             result[f'{name}|{end}'] = {
                 'made': made[name], 'trans': trans[name], 'late': late[name],
                 'passers': dict(sorted(passers[name].items(), key=lambda kv: -kv[1])[:5]),
+                'clutch': clutch[name] if name in clutch else [0] * 7,
             }
         print(f, len(made), 'players', file=sys.stderr, flush=True)
     json.dump(result, open(out, 'w'))

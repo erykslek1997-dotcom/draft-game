@@ -1,3 +1,4 @@
+import { nicknameFor } from '../data/nicknames';
 import { useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
@@ -22,6 +23,7 @@ export const TAP_TO_SHOW = typeof window !== 'undefined' && window.matchMedia?.(
 
 export function shortName(name: string): string {
   const shown = maskName(name);
+  if (shown === name) { const nick = nicknameFor(name); if (nick) return nick; }
   const w = shown.split(' ');
   if (w.length < 2) return shown;
   return `${w[0][0]}. ${w.slice(1).join(' ')}`;
@@ -29,6 +31,7 @@ export function shortName(name: string): string {
 
 export function lastName(name: string): string {
   const shown = maskName(name);
+  if (shown === name) { const nick = nicknameFor(name); if (nick) return nick; }
   const w = shown.split(' ');
   // "Otto Porter Jr." is "Porter Jr.", never just "Jr." (playtest 2026-10-23)
   if (w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1])) return w.slice(-2).join(' ');
@@ -425,5 +428,77 @@ export function NightVoices({ voices, cast, fold }: { voices: { who: string; kin
       )}
       {less}
     </div>
+  );
+}
+
+/**
+ * 2026-11-11 (the user: the system `select` list — white, blue highlight — on a dark game, "takie
+ * elementy trzeba poprawić"): a dropdown drawn in the game's own style, the same on every system.
+ * Escape or a click outside closes it; arrow keys move, Enter picks.
+ */
+export function NSelect<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(0);
+  const current = options.find((o) => o.value === value) ?? options[0];
+  const close = () => setOpen(false);
+  return (
+    <span
+      className={`nsel${open ? ' open' : ''}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) close();
+      }}
+    >
+      <button
+        type="button"
+        className="nsel-b"
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setHover(Math.max(0, options.findIndex((o) => o.value === value)));
+          setOpen((o) => !o);
+        }}
+        onKeyDown={(e) => {
+          if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            setHover(Math.max(0, options.findIndex((o) => o.value === value)));
+            setOpen(true);
+          } else if (open && e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHover((h) => Math.min(options.length - 1, h + 1));
+          } else if (open && e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHover((h) => Math.max(0, h - 1));
+          } else if (open && e.key === 'Enter') {
+            e.preventDefault();
+            onChange(options[hover].value);
+            close();
+          } else if (e.key === 'Escape') close();
+        }}
+      >
+        {current?.label}
+        <i aria-hidden="true">▾</i>
+      </button>
+      {open && (
+        <span className="nsel-l" role="listbox" aria-label={label}>
+          {options.map((o, i) => (
+            <button
+              key={o.value}
+              type="button"
+              role="option"
+              aria-selected={o.value === value}
+              className={`nsel-o${o.value === value ? ' on' : ''}${i === hover ? ' hv' : ''}`}
+              onMouseEnter={() => setHover(i)}
+              onClick={() => {
+                onChange(o.value);
+                close();
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }

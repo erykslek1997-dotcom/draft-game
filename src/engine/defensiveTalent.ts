@@ -767,6 +767,10 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
   // 2026-11-04, the user ("Lowry dlaczego tylko 58 w obronie"): charges drawn and strength the box
   // and his modest DBPM (+0.3 to +0.8) don't see.
   [normalizePlayerName('Kyle Lowry'), 7],
+  // 2026-11-11, the user ("Mookie jest za wysoko oceniony, Porter tam lepiej pasuje"): 2.6 steals a
+  // game read him 97, over Payton (95), Kidd and Smart; his real DBPM (+1.5 to +2.3) is a very good
+  // defender, not the best of his era. Down to Smart / Holiday's level.
+  [normalizePlayerName('Mookie Blaylock'), -9],
   // 2026-11-05, the user ("dlaczego Conley ma tylko 48"): a sound on-ball defender whose quiet box
   // (1.2-1.3 steals, no blocks) and a fading 2013 All-Defense read him in the 40s-50s after 2014.
   ...((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_CONLEY === '0' ? [] : [[normalizePlayerName('Mike Conley'), 8] as [string, number]]),

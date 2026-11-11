@@ -1,3 +1,4 @@
+import { isTwilightWindow } from './veteran';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
 import { ballShare } from './ballHandling';
@@ -226,6 +227,9 @@ const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
 /** 2026-11-04, the user (Battier 2008-10 at offense 37 while spacing B+: "kara na atak wchodzi poniżej
  * spacingu B"): a starter whose card reads spacing B or better is exempt; the volume is already in
  * that letter (grades.ts `LOW_VOLUME_SPACING`), so the card and the penalty always agree. */
+/** 2026-11-11: a veteran window (`veteran.ts`) starts only when clearly the better option — its
+ * starter value is `VETERAN_STARTER_KEEP` of the rest; off the bench he is worth what he is. */
+const VETERAN_STARTER_KEEP = 0.95;
 function starterOffenseFactor(player: PlayerSpan): number {
   if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
@@ -319,7 +323,7 @@ export function bestPrimaryAssignment(
       v =
         maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER) <= 0 || belowStarterTier
           ? 0
-          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot) * starterOffenseFactor(player);
+          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot) * starterOffenseFactor(player) * (isTwilightWindow(player) ? VETERAN_STARTER_KEEP : 1);
       valueByPlayerSlot.set(key, v);
     }
     return v;
