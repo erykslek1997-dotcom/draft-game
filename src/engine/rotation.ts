@@ -435,9 +435,9 @@ const SWAP_SPACING_NEED = 60;
 /**
  * 2026-11-11 (the user: a defender "bez rzutu" belongs in the five "jeśli nie niszczy spacingu
  * drużyny"): a starter let in only by the stopper path (`isStopperOnlyStarter`, below the Starter
- * tier) needs the whole five to average `STOPPER_LINEUP_SPACING` spacing with him in it.
+ * tier) needs the whole five to average `STOPPER_LINEUP_SPACING` (60, the user) spacing with him in it.
  */
-const STOPPER_LINEUP_SPACING = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_SPACING ?? 50);
+const STOPPER_LINEUP_SPACING = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_SPACING ?? 60);
 function stopperLineupOk(lineup: Partial<Record<Position, PlayerSpan>>): boolean {
   const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
   const stoppers = five.filter((p) => isStopperOnlyStarter(p) && !STARTER_ELIGIBLE_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p))));
