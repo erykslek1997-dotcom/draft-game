@@ -800,6 +800,25 @@ const ENDGAME = {
   seconds: 120, lateRule: 120, shotClock: 24, foulUnder: 24, foulEarlyUnder: 60, giveUp: 9, giveUpLate: 6,
   foulSeconds: 2, lastTick: 1, holdSeconds: 20, tripSeconds: 14, quickSeconds: 8, hurryUnder: 60, threeUnder: 30, lastShotUnder: 8, ftPower: 4,
 };
+/**
+ * 2026-11-11 (the user: Barry's three "beats the buzzer" in a one-point loss read like a winner): in
+ * the last two minutes and in overtime a basket says what it did — go-ahead, ties it, cuts it to N —
+ * and a shot at the final horn says whether it won, tied or came too late.
+ */
+function lateText(text: string, own: number, opp: number, pts: number, final: boolean): string {
+  const after = own + pts;
+  const buzzer = / — beats the buzzer!?$/;
+  if (final && buzzer.test(text)) {
+    if (after > opp && own <= opp) return text.replace(buzzer, ' at the buzzer — game winner!');
+    if (after === opp) return text.replace(buzzer, ' at the buzzer — ties it, overtime!');
+    if (after < opp) return text.replace(buzzer, ' at the buzzer — too little, too late');
+    return text;
+  }
+  if (after > opp && own <= opp) return `${text}, go-ahead`;
+  if (after === opp) return `${text}, ties it`;
+  if (after < opp) return `${text}, cuts it to ${opp - after}`;
+  return text;
+}
 interface TripMode { quick?: boolean; hold?: boolean; lastShot?: boolean; needThree?: boolean; heave?: boolean; buzzer?: boolean }
 /** 2026-10-08, the NBA's last-two-minutes rule: a team not yet in the penalty gives free throws from
  * its second foul in the final two minutes of a quarter. */
@@ -1493,6 +1512,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   };
   const bonusFouls = (period: number) => (period >= 4 ? OT_BONUS_FOULS : BONUS_FOULS);
   const finish = (o: GameSide, period: number, pts: number, play: GamePlay | null, leftAfter: number) => {
+    if (play && pts > 0 && play.side === o && period >= 3 && leftAfter <= ENDGAME.seconds) play = { ...play, text: lateText(play.text, score[o], score[1 - o], pts, leftAfter <= 0) };
     score[o] += pts;
     quarters[o][period] += pts;
     if (record) moments.push({ left: Math.max(0, leftAfter), quarter: period, score: [score[0], score[1]], play, lines: snapshot() });
