@@ -43,9 +43,18 @@
    * Tables bbref ships inside an HTML comment are found too. */
   function parseTable(html, id) {
     // bbref serves most league tables inside HTML comments; strip the comment markers so every
-    // table parses the same way, then find it by id.
+    // table parses the same way.
     const doc = new DOMParser().parseFromString(html.replace(/<!--/g, '').replace(/-->/g, ''), 'text/html');
-    const table = doc.getElementById(id);
+    // Find the table by id; if the id guess is wrong, fall back to the page's biggest per-player
+    // table (one whose cells carry data-stat and whose rows name players) and report its real id.
+    let table = doc.getElementById(id);
+    if (!table) {
+      const cand = [...doc.querySelectorAll('table')]
+        .filter((t) => t.querySelector('td[data-stat], th[data-stat]') && t.querySelector('a[href*="/players/"]'))
+        .sort((a, b) => b.querySelectorAll('tbody tr').length - a.querySelectorAll('tbody tr').length);
+      table = cand[0] || null;
+      if (table) console.warn(`  (id "${id}" not found — used biggest table "${table.id || '(no id)'}"; ids on page: ${[...doc.querySelectorAll('table[id]')].map((t) => t.id).join(', ') || 'none'})`);
+    }
     if (!table) return null;
     const rows = [];
     for (const tr of table.querySelectorAll('tbody tr')) {
