@@ -21,6 +21,8 @@ import { tierContextWithSixthMan } from '../src/engine/sixthMan';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const SHARE = Number(args.share ?? 1);
+// --raise=1: seasons reading stronger than the reference earn their difference too (symmetric).
+const RAISE = args.raise === '1';
 const curve = JSON.parse(readFileSync(resolve(import.meta.dirname, 'data/leagueStrengthWs48.json'), 'utf8')).strength as Record<string, number>;
 const ADV = JSON.parse(readFileSync(resolve(import.meta.dirname, 'data/bbrefAdvanced.json'), 'utf8')) as { fields: string[]; rows: Record<string, (number | null)[]> };
 const WS = ADV.fields.indexOf('ws_per_48');
@@ -29,7 +31,7 @@ const raw = new Map(Object.entries(curve).map(([y, v]) => [Number(y), v]));
 const smooth = (y: number) => { const vs = [y - 1, y, y + 1].map((x) => raw.get(x)).filter((v): v is number => v !== undefined); return vs.reduce((a, b) => a + b, 0) / vs.length; };
 const modern = [...raw.keys()].filter((y) => y >= 1980 && y <= 2025);
 const REF = modern.reduce((a, y) => a + smooth(y), 0) / modern.length;
-const deficit = (y: number) => Math.min(0, (raw.has(y) ? smooth(y) : smooth(1952)) - REF); // WS/48 x100
+const deficit = (y: number) => { const d = (raw.has(y) ? smooth(y) : smooth(1952)) - REF; return RAISE ? d : Math.min(0, d); }; // WS/48 x100
 
 // TAL per WS/48 point: slope of displayed TAL on a window's WS/48 across the pool.
 const tal = (s: PlayerSpan) => displayTalentForSpan(tierContextWithSixthMan(s));
@@ -63,8 +65,10 @@ show('1968-1976 (expansion + ABA):', ['Kareem Abdul-Jabbar', 'John Havlicek', 'W
 show('After 1977 (unchanged):', ['Julius Erving', 'Larry Bird', 'Michael Jordan', 'LeBron James', 'Nikola Jokic']);
 
 // Who moves most among cards a drafter would take.
-const movers = draftPool.map((s) => ({ s, t: tal(s), d: discount(s) })).filter((r) => r.t >= 75 && r.d <= -0.5);
+const movers = draftPool.map((s) => ({ s, t: tal(s), d: discount(s) })).filter((r) => r.t >= 75 && Math.abs(r.d) >= 0.5);
 const best = new Map<string, (typeof movers)[number]>();
 for (const r of movers) { const k = r.s.playerName; if (!best.has(k) || best.get(k)!.t < r.t) best.set(k, r); }
-console.log(`\nCards at TAL 75+ that would lose 0.5 or more: ${best.size} players`);
-for (const r of [...best.values()].sort((a, b) => a.d - b.d).slice(0, 20)) console.log(`  ${r.s.playerName.padEnd(22)} ${r.s.spanLabel}  ${Math.round(r.t)} -> ${Math.round(r.t + r.d)}  (${r.d.toFixed(1)})`);
+console.log(`\nCards at TAL 75+ that would move 0.5 or more: ${best.size} players; biggest gains:`);
+for (const r of [...best.values()].sort((a, b) => b.d - a.d).slice(0, 12)) console.log(`  ${r.s.playerName.padEnd(22)} ${r.s.spanLabel}  ${Math.round(r.t)} -> ${Math.round(r.t + r.d)}  (+${r.d.toFixed(1)})`);
+console.log('biggest losses:');
+for (const r of [...best.values()].sort((a, b) => a.d - b.d).slice(0, 12)) console.log(`  ${r.s.playerName.padEnd(22)} ${r.s.spanLabel}  ${Math.round(r.t)} -> ${Math.round(r.t + r.d)}  (${r.d.toFixed(1)})`);
