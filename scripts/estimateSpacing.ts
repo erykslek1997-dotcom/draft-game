@@ -24,10 +24,11 @@ import { computeSpacing } from '../src/engine/spacing';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const K = Number(args.k ?? 10);
-const FT_W = Number(args.ft ?? 3);
+// Defaults = the leak-free tuned weights (--tune=1, TS% locked out): honesty 46.9% (hand) -> 49.5%.
+const FT_W = Number(args.ft ?? 2);
 // TS% folds FG and FT (and how often he drew fouls) into one number, double-counting both; --ts=0 drops it.
 const TS_W = Number(args.ts ?? 0); // off by default: for modern donors TS% carries three-point efficiency, which a pre-line window cannot have
-const FG_W = Number(args.fg ?? 1);
+const FG_W = Number(args.fg ?? 0); // two-point % predicts nothing about a three (bigs shoot the best twos)
 
 const ADV = JSON.parse(readFileSync(resolve(import.meta.dirname, 'data/bbrefAdvanced.json'), 'utf8')) as { fields: string[]; rows: Record<string, (number | null)[]> };
 const POS = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -41,9 +42,13 @@ const avgYears = (s: PlayerSpan, pick: (key: string) => number | null): number |
 const adv = (name: string) => { const i = ADV.fields.indexOf(name); return (s: PlayerSpan) => avgYears(s, (k) => ADV.rows[k]?.[i] ?? null); };
 
 const FEATURES: { name: string; w: number; get: (s: PlayerSpan) => number | null }[] = [
-  ...(['ppg', 'rpg', 'apg'] as const).map((k) => ({ name: k, w: 1, get: (s: PlayerSpan) => s.box[k] })),
+  { name: 'ppg', w: 1, get: (s) => s.box.ppg },
+  { name: 'rpg', w: 2, get: (s) => s.box.rpg },
+  { name: 'apg', w: 0, get: (s) => s.box.apg },
   { name: 'fga', w: 1, get: (s) => s.fga },
-  { name: 'fgPct', w: FG_W, get: (s) => s.box.fgPct },
+  // Two-point %: before the line every shot was a two, so FG% there IS 2P%; a modern FG% mixes in
+  // threes (a shooter's FG% reads lower for it), which would leak the very thing we estimate.
+  { name: 'twoPct', w: FG_W, get: (s) => { const tpa = s.box.threePA || 0, twoA = s.fga - tpa; if (twoA <= 0.5) return null; return (s.box.fgPct * s.fga - (s.box.threePct || 0) * tpa) / twoA; } },
   { name: 'ftPct', w: FT_W, get: (s) => s.box.ftPct },
   { name: 'tsPct', w: TS_W, get: (s) => s.box.tsPct },
   { name: 'height', w: 1, get: (s) => getHeightInches(s.playerName) ?? null },
@@ -52,7 +57,7 @@ const FEATURES: { name: string; w: number; get: (s: PlayerSpan) => number | null
   { name: 'mpg', w: 1, get: adv('mpg') },
   { name: 'ast_pct', w: 1, get: adv('ast_pct') },
   { name: 'ws_per_48', w: 1, get: adv('ws_per_48') },
-  { name: 'per', w: 1, get: adv('per') },
+  { name: 'per', w: 0, get: adv('per') },
 ];
 
 const bin = (s: PlayerSpan) => Math.floor(midYear(s) / 5);
@@ -90,6 +95,35 @@ function neighbours(s: PlayerSpan): { d: number; span: PlayerSpan }[] {
 }
 const estimate = (s: PlayerSpan) => { const ns = neighbours(s); let a = 0, b = 0; for (const n of ns) { const w = 1 / (0.1 + n.d); a += w * spacing.get(n.span.id)!; b += w; } return { value: a / b, near: ns }; };
 
+// --tune=1: coordinate search over each feature's weight (0, 0.5, 1, 2, 3, 4) on the honesty test
+// below, two passes. Tuned on the score it reports, so it flatters a little; kept only if it clearly beats the hand weights.
+function honesty(): number {
+  const truth = DONORS.map((s) => spacing.get(s.id)!);
+  const pred = DONORS.map((s) => estimate(s).value);
+  const mean = truth.reduce((a, b) => a + b, 0) / truth.length;
+  const variance = truth.reduce((a, b) => a + (b - mean) ** 2, 0) / truth.length;
+  return 1 - pred.reduce((a, p, i) => a + (p - truth[i]) ** 2, 0) / pred.length / variance;
+}
+if (args.tune === '1') {
+  let best = honesty();
+  console.log(`hand weights: ${(best * 100).toFixed(1)}%`);
+  for (let pass = 0; pass < 2; pass++) {
+    for (const f of FEATURES) {
+      if (f.name === 'tsPct') continue; // locked at 0: for modern donors it carries three-point efficiency
+      const keep = f.w;
+      for (const v of [0, 0.5, 1, 2, 3, 4]) {
+        if (v === keep) continue;
+        f.w = v;
+        const sc = honesty();
+        if (sc > best + 0.003) { best = sc; } else f.w = keep;
+        if (f.w === v) break;
+      }
+      if (f.w !== keep) console.log(`  ${f.name}: ${keep} -> ${f.w}  (${(best * 100).toFixed(1)}%)`);
+    }
+  }
+  console.log(`tuned weights: ${FEATURES.map((f) => `${f.name} ${f.w}`).join(', ')}\n`);
+}
+
 // Honesty test on the donors.
 {
   const truth = DONORS.map((s) => spacing.get(s.id)!);
@@ -101,7 +135,7 @@ const estimate = (s: PlayerSpan) => { const ns = neighbours(s); let a = 0, b = 0
   let c1 = 0, c2 = 0, c3 = 0; pred.forEach((p, i) => { c1 += (p - mx) * (truth[i] - mean); c2 += (p - mx) ** 2; c3 += (truth[i] - mean) ** 2; });
   const posMean = new Map(POS.map((p) => { const vs = DONORS.filter((s) => s.primaryPosition === p).map((s) => spacing.get(s.id)!); return [p, vs.reduce((a, b) => a + b, 0) / vs.length]; }));
   const base = DONORS.reduce((a, s, i) => a + (posMean.get(s.primaryPosition)! - truth[i]) ** 2, 0) / DONORS.length;
-  console.log(`Modern donors (2000-01 on), n ${DONORS.length}, no three-point feature, FT weight ${FT_W}:`);
+  console.log(`Modern donors (2000-01 on), n ${DONORS.length}, no three-point feature, weights: ${FEATURES.filter((f) => f.w > 0).map((f) => `${f.name} ${f.w}`).join(', ')}:`);
   console.log(`  r ${(c1 / Math.sqrt(c2 * c3)).toFixed(2)}, variance recovered ${(100 * (1 - mse / variance)).toFixed(0)}%  (position mean alone ${(100 * (1 - base / variance)).toFixed(0)}%)`);
   for (const n of ['Stephen Curry', 'Klay Thompson', 'Ray Allen', 'Dirk Nowitzki', 'Steve Nash', 'Kyle Korver', 'Shaquille O\'Neal', 'Rajon Rondo', 'Russell Westbrook', 'Ben Simmons']) {
     const s = DONORS.find((x) => x.playerName === n);
