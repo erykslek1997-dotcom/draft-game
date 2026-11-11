@@ -1383,3 +1383,9 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .eg-v { white-space: nowrap; }
 .st-at tr.open td.open-panel { padding-left: 48px; }
 @media (max-width: 600px) { .st-at tr.open td.open-panel { padding-left: 0; padding-right: 0; } }
+/* 2026-11-11 (the user: the stretch table's dotted stat and grade strings "brzydko to wygląda"):
+   fixed columns — numbers right-aligned in tabular figures, grades centred. */
+.spans .cols { display: inline-grid; column-gap: 6px; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.spans .cols.n3 { grid-template-columns: repeat(3, 3.2em); text-align: right; }
+.spans .cols.g4 { grid-template-columns: repeat(4, 2.4em); text-align: center; }
+.spans th .cols { font: inherit; }

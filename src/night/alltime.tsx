@@ -217,8 +217,13 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
             <th>Years</th>
             <th className="c-hide">Team</th>
             <th className="c-hide">Tier</th>
-            <th className="r">Pts · Reb · Ast</th>
-            <th className="r c-hide">Off · Def · 3PT · Dur</th>
+            {/* 2026-11-11 (the user: "brzydko to wygląda"): fixed columns, not one dotted string */}
+            <th className="r">
+              <span className="cols n3"><span>Pts</span><span>Reb</span><span>Ast</span></span>
+            </th>
+            <th className="r c-hide">
+              <span className="cols g4"><span>Off</span><span>Def</span><span>3PT</span><span>Dur</span></span>
+            </th>
             <th className="r">Caps</th>
             <th />
           </tr>
@@ -237,9 +242,23 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
               </td>
               <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`}>{r.tier}</td>
               <td className="n r">
-                {r.span.box.ppg.toFixed(1)} · {r.span.box.rpg.toFixed(1)} · {r.span.box.apg.toFixed(1)}
+                <span className="cols n3">
+                  <span>{r.span.box.ppg.toFixed(1)}</span>
+                  <span>{r.span.box.rpg.toFixed(1)}</span>
+                  <span>{r.span.box.apg.toFixed(1)}</span>
+                </span>
               </td>
-              <td className="n r c-hide">{r.grades ?? '—'}</td>
+              <td className="n r c-hide">
+                {r.grades ? (
+                  <span className="cols g4">
+                    {r.grades.split(' · ').map((g, i) => (
+                      <span key={i}>{g}</span>
+                    ))}
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </td>
               <td className="cap r">{fmtCaps(r.span.fga)}</td>
               <td className="act r">
                 {r.action && (
