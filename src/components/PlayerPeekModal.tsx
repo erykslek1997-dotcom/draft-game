@@ -228,9 +228,9 @@ export function PlayerPeekModal({
                 className={`btn ${scoutsLeft > 0 ? 'line' : 'off'}`}
                 disabled={scoutsLeft <= 0}
                 onClick={onScout}
-                title={scoutsLeft > 0 ? undefined : 'You have used all your scouting reports for this draft.'}
+                title={scoutsLeft > 0 ? 'Opens every card on the board until your next pick.' : 'You have used both scouting rounds for this draft.'}
               >
-                {scoutsLeft > 0 ? `Scout him · ${scoutsLeft} left` : 'No reports left'}
+                {scoutsLeft > 0 ? `Scout this round · ${scoutsLeft} left` : 'No scouting rounds left'}
               </button>
             </div>
           )}
