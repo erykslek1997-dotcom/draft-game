@@ -1793,3 +1793,19 @@ czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
 
 - **Calibration case: John Havlicek 1962-67** (2026-11-11). Sixth man at ~29 mpg, TS ~3 pp below league, OWS ~0, WS/48 0.094-0.142, 2.8 apg; TAL 50-59 against 82 at his 1970-72 peak. The user reads the early windows as too low. Not fixed by hand. Ruled out: minutes (a lift to 34 mpg adds only 1-2 TAL, because extra volume brings extra misses) and defense (the carry already gives D 76). Check any future O-TAL or era change against these windows.
+
+## Lista z playtestu 2026-11-11 (wieczór)
+
+1. [ ] **Tempo** — do doprecyzowania z Erykiem (odtwarzanie meczu na żywo? animacje draftu?).
+2. [ ] **Skróty nazwisk na kartach** — „Antetoko…” → Giannis, „Wemban…” → Wemby, Abdul-Jabbar → Kareem; przejrzeć inne ucinane nazwiska.
+3. [ ] **Rotacja: przeniesienie gracza** — wstawienie gracza na nową pozycję (George z SF na SG) zabiera mu minuty z poprzedniej; dziś zostaje na obu i Twoja Dziewiątka pokazuje go dwa razy.
+4. [ ] **Lista graczy w drafcie** — krótsza, zwijana (np. 10 na start, „pokaż więcej”) zamiast 30 wierszy.
+5. [ ] **Skaut** — zamiast 3 raportów o pojedynczych graczach: odkrycie kart wszystkich dostępnych graczy na jedną rundę (do następnego wyboru), ok. 2 użycia na draft.
+6. [ ] **Rozpoznawalność w wyborach AI** — w rundach 1–5 AI traktuje nieznanych graczy (bez ASG/nagród) jak trochę droższych; od rundy 6 okazje jak dziś. Ratingi bez zmian (Bob Gross 1976-78 w 5. rundzie psuł immersję). Zmierzyć stratę AI w Overall (cel < ~1 pkt).
+7. [ ] **Rozwijane listy** (sortowanie, filtry) — własny komponent w stylu gry zamiast systemowego `select` (białe tło, niebieskie zaznaczenie).
+8. [ ] **Audyt kart znanych graczy vs reputacja** — lista All-Starów / nagrodzonych z kartą wyraźnie poniżej reputacji, do przeglądu przez Eryka („gra ma być przyjemna w odbiorze”).
+9. [ ] **Kolumny w liście okien gracza** — PTS/REB/AST i OFF/DEF/3PT/DUR w równych kolumnach (cyfry stałej szerokości, oceny wycentrowane), nie jeden ciąg z kropkami.
+10. [ ] **Minuty zmiennika** — rezerwowy gra najwyżej tyle, co najkrócej grający starter (maks. ~30 min); Gerald Wallace grał 36 z ławki.
+11. [ ] **Losowość sezonu** — skład 82/84 Overall na 10. miejscu przy zwycięzcy 84 (mecz bezpośredni +1 dla 10.): (a) rozrzut wyniku meczu 14,7 → poziom NBA ~13, (b) oczekiwany bilans obok faktycznego w tabeli. Rekomendacja: oba.
+12. [ ] **AI: ławka z atakiem** — rezerwowi PF/C bez ataku (Rodman 48, Ostertag 40, Joel Anthony 38 O-TAL u jednej drużyny); kara za O-TAL < ~50, wyjątek: jeden specjalista D ≥ 90; liczyć atak drugiej piątki.
+13. [ ] **Poziom trudności rosnący z doświadczeniem — PRZED LAUNCHEM** (Eryk: „ktoś gra pierwszy raz i niech będzie w stanie zająć 5-6 miejsce, im dłużej gra tym trudniejsi przeciwnicy”). Szkic: 4 poziomy (Debiutant → Zawodowiec → All-Star → Legenda = dzisiejsze AI); awans po drafcie z wynikiem w top 6, cofnięcie po dwóch bardzo słabych; zapis w przeglądarce, potem na koncie. Dźwignie: szum tablicy, krótszy lookahead, mniej myślenia o dopasowaniu (łączy się z pkt 6). Kalibracja „botem-debiutantem” (najlepszy TAL w limicie, bez fitu): Debiutant → śr. 5.–6. z 16, Legenda → 10.–12. Daily i wyzwania na stałym poziomie (uczciwy ranking). Otwarte: czy pokazywać poziom graczowi. Łączy się z „Kalibracja siły AI — ukryty poziom franczyzy”.
