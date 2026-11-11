@@ -510,3 +510,9 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .bg-cell.filled { animation: cell-in 0.5s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
 .feed .ln, .feed .call, .feed .q { animation: ln-in 0.4s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .bg-cell.filled, .feed .ln, .feed .call, .feed .q { animation: none; } }
+/* 2026-11-11 (the user: the final standings' lines "trzeba wyrównać"): on a wide screen the main
+   column's headline takes the aside masthead's box — no double rule on top, the same height, its
+   text on the bottom rule — so the two bottom rules run as one line across the page. */
+@media (min-width: 901px) {
+  .nt .game .headline { border-top: 0; box-sizing: border-box; min-height: 78px; align-items: flex-end; padding: 12px 0 8px; }
+}

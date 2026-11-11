@@ -2188,6 +2188,19 @@ function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
   );
 }
 
+const BENCH_OFFENSE = { floor: 50, share: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_OFF ?? 0.3), specialistD: 90 };
+function benchOffenseAdjustment(p: PlayerSpan, roster: PlayerSpan[], talentTerm: number): number {
+  if (!BENCH_OFFENSE.share) return 0;
+  const o = computeOffensiveTalent(p);
+  if (o >= BENCH_OFFENSE.floor) return 0;
+  // One defensive specialist off the bench is fine: let him through while the roster holds fewer than
+  // two such players (a starter like Ben Wallace counts as the first).
+  if (computeDefensiveTalent(p) >= BENCH_OFFENSE.specialistD) {
+    const specialists = roster.filter((q) => computeOffensiveTalent(q) < BENCH_OFFENSE.floor && computeDefensiveTalent(q) >= BENCH_OFFENSE.specialistD).length;
+    if (specialists < 2) return 0;
+  }
+  return -BENCH_OFFENSE.share * ((BENCH_OFFENSE.floor - o) / BENCH_OFFENSE.floor) * talentTerm;
+}
 /** See `veteranEarly` in the candidate value. */
 const VETERAN_AI = { earlyRounds: 5, share: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.VET_AI ?? 0.15) };
 
@@ -2702,6 +2715,11 @@ function pickForAiSized(
       // 2026-11-11 (the user: Mullin 1997-99 in an all-time five): a veteran window is a bench piece
       // in the first `VETERAN_AI.earlyRounds` rounds — worth `share` less of its talent term then.
       veteranEarly: roster.length < VETERAN_AI.earlyRounds && isTwilightWindow(p) ? -VETERAN_AI.share * talentTerm : 0,
+      // 2026-11-11 (the user: "nie jestem fanem tego że AI dobiera na ławkę PFa i C którzy nic nie
+      // dają w ataku" — Rodman, Ostertag, Joel Anthony on one bench): in the bench rounds a reserve
+      // under `BENCH_OFFENSE.floor` O-TAL is worth less, by how far under; one defensive specialist
+      // (D-TAL `specialistD`+) is let through if the bench has none yet.
+      benchOffense: inBenchRound ? benchOffenseAdjustment(p, roster, talentTerm) : 0,
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
