@@ -25,6 +25,9 @@ import { computeSpacing } from '../src/engine/spacing';
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const K = Number(args.k ?? 10);
 const FT_W = Number(args.ft ?? 3);
+// TS% folds FG and FT (and how often he drew fouls) into one number, double-counting both; --ts=0 drops it.
+const TS_W = Number(args.ts ?? 0); // off by default: for modern donors TS% carries three-point efficiency, which a pre-line window cannot have
+const FG_W = Number(args.fg ?? 1);
 
 const ADV = JSON.parse(readFileSync(resolve(import.meta.dirname, 'data/bbrefAdvanced.json'), 'utf8')) as { fields: string[]; rows: Record<string, (number | null)[]> };
 const POS = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -40,9 +43,9 @@ const adv = (name: string) => { const i = ADV.fields.indexOf(name); return (s: P
 const FEATURES: { name: string; w: number; get: (s: PlayerSpan) => number | null }[] = [
   ...(['ppg', 'rpg', 'apg'] as const).map((k) => ({ name: k, w: 1, get: (s: PlayerSpan) => s.box[k] })),
   { name: 'fga', w: 1, get: (s) => s.fga },
-  { name: 'fgPct', w: 1, get: (s) => s.box.fgPct },
+  { name: 'fgPct', w: FG_W, get: (s) => s.box.fgPct },
   { name: 'ftPct', w: FT_W, get: (s) => s.box.ftPct },
-  { name: 'tsPct', w: 1, get: (s) => s.box.tsPct },
+  { name: 'tsPct', w: TS_W, get: (s) => s.box.tsPct },
   { name: 'height', w: 1, get: (s) => getHeightInches(s.playerName) ?? null },
   { name: 'weight', w: 1, get: (s) => getBodyWeightLbs(s.playerName) ?? null },
   { name: 'position', w: 2, get: (s) => POS.indexOf(s.primaryPosition) },
@@ -80,7 +83,7 @@ function neighbours(s: PlayerSpan): { d: number; span: PlayerSpan }[] {
     if (NAMEOF(o) === me) continue;
     const u = VEC.get(o.id)!;
     let sum = 0, wsum = 0;
-    FEATURES.forEach((f, i) => { if (Number.isNaN(v[i]) || Number.isNaN(u[i])) return; sum += f.w * (v[i] - u[i]) ** 2; wsum += f.w; });
+    FEATURES.forEach((f, i) => { if (f.w === 0 || Number.isNaN(v[i]) || Number.isNaN(u[i])) return; sum += f.w * (v[i] - u[i]) ** 2; wsum += f.w; });
     if (wsum > 0) out.push({ d: Math.sqrt(sum / wsum), span: o });
   }
   return out.sort((a, b) => a.d - b.d).slice(0, K);
