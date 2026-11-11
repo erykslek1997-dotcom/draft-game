@@ -1389,3 +1389,9 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .spans .cols.n3 { grid-template-columns: repeat(3, 3.2em); text-align: right; }
 .spans .cols.g4 { grid-template-columns: repeat(4, 2.4em); text-align: center; }
 .spans th .cols { font: inherit; }
+/* 2026-11-11: NSelect inside the board's filter row keeps the old select's look (underlined value in
+   the condensed face) and is not the row's italic label. */
+.pt-more > .nsel { font: 700 16px var(--cond); color: var(--ink); margin-right: 10px; }
+.pt-more .nsel-b { background: transparent; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 0 2px 1px; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
+.pt-more .nsel-b:hover, .pt-more .nsel.open .nsel-b { border-color: var(--ink); color: var(--ink); }
+.pt-more .nsel-o { font: normal 500 13px var(--sans); }

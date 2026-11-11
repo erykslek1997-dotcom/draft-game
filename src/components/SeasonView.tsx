@@ -32,7 +32,7 @@ import { displayTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark, TeamContext } from '../night/league';
-import { Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx } from '../night/ui';
+import { NSelect, Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx } from '../night/ui';
 import { primaryStarters } from '../engine/rotation';
 import { SpanCard } from './PlayerPeekModal';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -1203,37 +1203,17 @@ function Stats({ teams, season, playoffs, youId, codes, through, playoffsSoFar }
         ))}
         <span className="pt-more">
           <span>Season</span>
-          <select aria-label="Season or playoffs" value={phase} onChange={(e) => setPhase(e.target.value as 'season' | 'playoffs')}>
-            <option value="season">Regular</option>
-            {playoffs && <option value="playoffs">Playoffs</option>}
-          </select>
+          <NSelect label="Season or playoffs" value={phase} onChange={setPhase} options={[{ value: 'season', label: 'Regular' }, ...(playoffs ? [{ value: 'playoffs' as const, label: 'Playoffs' }] : [])]} />
           {view === 'players' && (
             <>
               <span>Team</span>
-              <select aria-label="Team" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-                <option value="all">All</option>
-                {ordered.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {codes.get(t.id) ?? t.name}
-                    {t.id === youId ? ' (you)' : ''}
-                  </option>
-                ))}
-              </select>
+              <NSelect label="Team" value={teamId} onChange={setTeamId} options={[{ value: 'all', label: 'All' }, ...ordered.map((t) => ({ value: t.id, label: `${codes.get(t.id) ?? t.name}${t.id === youId ? ' (you)' : ''}` }))]} />
               <span>Pos</span>
-              <select aria-label="Position" value={pos} onChange={(e) => setPos(e.target.value as 'all' | 'G' | 'F' | 'C')}>
-                <option value="all">All</option>
-                <option value="G">G</option>
-                <option value="F">F</option>
-                <option value="C">C</option>
-              </select>
+              <NSelect label="Position" value={pos} onChange={setPos} options={[{ value: 'all', label: 'All' }, { value: 'G', label: 'G' }, { value: 'F', label: 'F' }, { value: 'C', label: 'C' }]} />
               {!playoffPhase && (
                 <>
                   <span>Games</span>
-                  <select aria-label="Minimum games" value={minGames} onChange={(e) => setMinGames(Number(e.target.value))}>
-                    <option value={0}>Any</option>
-                    <option value={41}>41+</option>
-                    <option value={58}>58+</option>
-                  </select>
+                  <NSelect label="Minimum games" value={String(minGames) as '0' | '41' | '58'} onChange={(v) => setMinGames(Number(v))} options={[{ value: '0', label: 'Any' }, { value: '41', label: '41+' }, { value: '58', label: '58+' }]} />
                 </>
               )}
             </>

@@ -39,7 +39,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
+import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -1589,23 +1589,19 @@ export default function DraftBoard({
               extra={
                 <span className="pt-more">
                   <span>Role</span>
-                  <select aria-label="Role" value={roleFilter ?? ''} onChange={(e) => setRoleFilter(e.target.value || null)}>
-                    <option value="">Any</option>
-                    {Object.keys(ROLE_FILTERS)
-                      .filter(roleFits)
-                      .map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                  </select>
+                  <NSelect label="Role" value={roleFilter ?? ''} onChange={(v) => setRoleFilter(v || null)} options={[{ value: '', label: 'Any' }, ...Object.keys(ROLE_FILTERS).filter(roleFits).map((role) => ({ value: role, label: role }))]} />
                   <span>Sort</span>
-                  <select aria-label="Sort" value={boardSort} onChange={(e) => setBoardSort(e.target.value as 'best' | 'value' | 'cheapest' | 'priciest')}>
-                    <option value="best">Best first</option>
-                    <option value="value">Most for the caps</option>
-                    <option value="cheapest">Cheapest first</option>
-                    <option value="priciest">Most caps first</option>
-                  </select>
+                  <NSelect
+                    label="Sort"
+                    value={boardSort}
+                    onChange={setBoardSort}
+                    options={[
+                      { value: 'best', label: 'Best first' },
+                      { value: 'value', label: 'Most for the caps' },
+                      { value: 'cheapest', label: 'Cheapest first' },
+                      { value: 'priciest', label: 'Most caps first' },
+                    ]}
+                  />
                 </span>
               }
             />

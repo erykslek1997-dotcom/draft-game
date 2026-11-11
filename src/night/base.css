@@ -494,3 +494,12 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt .bgrid { overflow-x: auto; }
   .nt .bg-row { width: 900px; }
 }
+/* 2026-11-11: NSelect (ui.tsx), the game's own dropdown instead of the system one. */
+.nsel { position: relative; display: inline-block; }
+.nsel-b { display: inline-flex; align-items: center; gap: 8px; background: var(--surf); color: var(--ink); border: 1px solid var(--rule3); border-radius: 3px; padding: 4px 10px; font: 600 13px var(--sans); cursor: pointer; }
+.nsel-b i { font-style: normal; color: var(--ink3); font-size: 11px; }
+.nsel.open .nsel-b, .nsel-b:hover { border-color: var(--ink2); }
+.nsel-l { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 100%; display: flex; flex-direction: column; background: var(--surf2); border: 1px solid var(--rule3); border-radius: 3px; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55); padding: 4px 0; }
+.nsel-o { text-align: left; white-space: nowrap; background: none; border: 0; color: var(--ink2); font: 500 13px var(--sans); padding: 6px 12px; cursor: pointer; }
+.nsel-o.hv { background: var(--you-tint); color: var(--ink); }
+.nsel-o.on { color: var(--ink); font-weight: 700; }
