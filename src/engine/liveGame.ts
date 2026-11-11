@@ -1,6 +1,8 @@
 import shotTendencyData from '../data/shotTendencies.json';
+import pbpHabitData from '../data/pbpHabits.json';
 import { astPctForSpan, ballHandlerCost, ORTG_PER_TS } from './ballHandling';
 import type { PlayerSpan, Position } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
 import { mulberry32, hashSeed } from './rng';
@@ -275,6 +277,34 @@ function tendencyPhrase(span: PlayerSpan, bucket: 0 | 1 | 2, r: number): string 
   return SHOT_TENDENCIES.phrases[flat[flat.length - 2]];
 }
 /** A made two's words: the window's own shot (rim or not) when known, else its position's moves. */
+/**
+ * 2026-11-11 (the user: "pobieraj wszystko"): play-by-play habits (`scripts/buildPbpHabits.ts`,
+ * NBA.com pbp 1996-97 on). Who finishes the break and who takes the late-clock shot leans to the
+ * window's real share of transition / late-possession makes against the league's (`HABITS.power`,
+ * clamped); a real duo (passer -> scorer assists over a career) finds each other more often.
+ */
+const PBP_HABITS = pbpHabitData as unknown as { league: [number, number]; spans: Record<string, [number, number]>; passers: Record<string, Record<string, number>> };
+const HABITS = { power: 0.6, min: 0.5, max: 2, duoBoost: 1.5, duoFull: 500 };
+function habit(span: PlayerSpan, kind: 0 | 1): number {
+  const h = PBP_HABITS.spans[span.id];
+  if (!h) return 1;
+  return Math.max(HABITS.min, Math.min(HABITS.max, (Math.max(1, h[kind]) / PBP_HABITS.league[kind]) ** HABITS.power));
+}
+function duoBoost(passer: PlayerSpan, scorer: PlayerSpan): number {
+  const n = PBP_HABITS.passers[normalizePlayerName(scorer.playerName)]?.[normalizePlayerName(passer.playerName)];
+  return n ? 1 + HABITS.duoBoost * Math.min(1, n / HABITS.duoFull) : 1;
+}
+/** How often the window's rim makes were dunks (shot detail), for a break's words; 0.5 unknown. */
+function dunkShare(span: PlayerSpan): number {
+  const flat = SHOT_TENDENCIES.spans[span.id]?.[0];
+  if (!flat?.length) return 0.5;
+  let dunk = 0, all = 0;
+  for (let i = 0; i < flat.length; i += 2) {
+    all += flat[i + 1];
+    if (SHOT_TENDENCIES.phrases[flat[i]].includes('dunk')) dunk += flat[i + 1];
+  }
+  return all ? Math.max(0.1, Math.min(0.9, dunk / all)) : 0.5;
+}
 function twoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, r: number): string {
   const moves = movesFor(player.slot);
   return tendencyPhrase(player.span, atRim ? 0 : 1, r) ?? moves[Math.floor(r * moves.length)];
@@ -1613,7 +1643,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const shooterIdx =
         next === 'putback' && putbackBy
           ? off.indexOf(putbackBy)
-          : off.indexOf(pickWeighted(rng, off, late ? (c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower * focus(c) : (c) => c.shotShare * focus(c)));
+          : off.indexOf(pickWeighted(rng, off, late ? (c) => c.shotShare * c.ownShare ** LATE_TUNING.creatorPower * focus(c) * habit(c.player.span, 1) : onBreak && guard === 0 ? (c) => c.shotShare * focus(c) * habit(c.player.span, 0) : (c) => c.shotShare * focus(c)));
       const shot = off[shooterIdx];
       const shooter = shot.player;
       const line = box[o][shooter.label];
@@ -1673,7 +1703,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         let text = three
           ? `${shooter.label} ${threeWords(shooter.span, rng())}`
           : fresh
-            ? `${shooter.label} on the break — ${rng() < 0.5 ? 'dunk' : 'layup'}`
+            ? `${shooter.label} on the break — ${rng() < dunkShare(shooter.span) ? 'dunk' : 'layup'}`
             : next === 'putback'
               ? `${shooter.label} putback`
               : `${shooter.label} ${twoWords(shooter, atRim, rng())}`;
@@ -1695,7 +1725,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         let joker = shooter.joker;
         const mates = off.filter((x) => x.player !== shooter);
         if (setup) {
-          const passer = pickWeighted(rng, mates, (x) => passerWeight(x.player.span) ** PASSER_POWER + 0.2).player;
+          const passer = pickWeighted(rng, mates, (x) => (passerWeight(x.player.span) ** PASSER_POWER + 0.2) * duoBoost(x.player.span, shooter.span)).player;
           box[o][passer.label].ast++;
           text += ` (${passer.label} assist)`;
           joker = joker || passer.joker;
