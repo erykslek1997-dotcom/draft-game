@@ -118,3 +118,26 @@ for (const r of rows.sort((a, b) => Math.abs(b.est.value - b.now) - Math.abs(a.e
 }
 const offList = rows.filter((r) => r.now === 0);
 console.log(`\n  ${offList.length} of ${rows.length} read 0 today (off the hand list)`);
+
+// 2026-11-11 (the user: "ratingi typu A chyba zbyt wysoko"): two corrections before any use.
+// 1) Stretch: the estimate shrinks to the mean (Rondo 0 -> 34, Curry 100 -> 82); refit truth on the
+//    estimate over the donors (leave-one-out) and invert the shrink.
+// 2) The engine's pre-line share (0.85): a three is a harder shot than a fifteen-footer.
+{
+  const pred = DONORS.map((s) => estimate(s).value), truth = DONORS.map((s) => spacing.get(s.id)!);
+  const mp = pred.reduce((a, b) => a + b, 0) / pred.length, mt = truth.reduce((a, b) => a + b, 0) / truth.length;
+  const b = pred.reduce((a, p, i) => a + (p - mp) * (truth[i] - mt), 0) / pred.reduce((a, p) => a + (p - mp) ** 2, 0);
+  const a = mt - b * mp;
+  const SHARE = Number(args.share ?? 0.85);
+  const final = (v: number) => Math.max(0, Math.min(100, (a + b * v) * SHARE));
+  console.log(`\nStretch: truth = ${a.toFixed(1)} + ${b.toFixed(2)} x estimate; then x ${SHARE}`);
+  const { spacingGrade } = await import('../src/engine/grades');
+  const pick = ['Calvin Murphy', 'Tiny Archibald', 'Gail Goodrich', 'Fred Brown', 'Earl Monroe', 'Bob Cousy', 'Bobby Wanzer', 'Jerry West', 'Oscar Robertson', 'Rick Barry', 'Pete Maravich', 'Walt Frazier', 'John Havlicek', 'Bill Sharman', 'Elgin Baylor', 'Hal Greer', 'Dave Bing', 'Bill Russell', 'Wilt Chamberlain', 'Wes Unseld'];
+  console.log('  player               window    FT    today       twins raw     final');
+  for (const n of pick) {
+    const r = rows.find((x) => x.s.playerName === n) ?? (() => { const s = peak.get(normalizePlayerName(n)); return s ? { s, now: spacing.get(s.id)!, est: estimate(s) } : undefined; })();
+    if (!r) continue;
+    const f = final(r.est.value);
+    console.log(`  ${n.padEnd(20)} ${r.s.spanLabel}  ${(r.s.box.ftPct * 100).toFixed(0)}%  ${String(r.now).padStart(3)} ${spacingGrade(r.now).padEnd(3)}    ${r.est.value.toFixed(0).padStart(3)} ${spacingGrade(r.est.value).padEnd(3)}    ${f.toFixed(0).padStart(3)} ${spacingGrade(f)}`);
+  }
+}
