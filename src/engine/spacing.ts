@@ -5,6 +5,7 @@ import { players } from '../data/players';
 import { draftPool } from '../data/draftPool';
 import { preZoneShootingSkill, onPreZoneHandList } from './preZoneShooting';
 import preLineTwinsData from '../data/preLineSpacingTwins.json';
+import { envVar } from './env';
 
 /**
  * SPACING — "how much does this player's shooting bend a defense," on the same 0-100 display
@@ -412,11 +413,11 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * ladders here (a copy would drift). Omitting it is the production path and behaves exactly as
  * before — nothing in `src/` passes it.
  */
-const ERA_VOLUME_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_ERA ?? 1);
+const ERA_VOLUME_SHARE = Number(envVar('SPC_ERA') ?? 1);
 const ACCURATE_LOW_VOLUME = {
-  lift: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_LIFT ?? 2),
+  lift: Number(envVar('SPC_LIFT') ?? 2),
   fromAccuracy: 6,
-  fadeAt: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_FADE ?? 8),
+  fadeAt: Number(envVar('SPC_FADE') ?? 8),
 };
 function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   const position = span.primaryPosition;
@@ -486,7 +487,7 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
  * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
-const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SPC_SMOOTH ?? '0.34,0.2,0.1,0.03').split(',').map(Number);
+const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = (envVar('SPC_SMOOTH') ?? '0.34,0.2,0.1,0.03').split(',').map(Number);
 const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
 let windowsByPlayerYears: Map<string, PlayerSpan> | null = null;

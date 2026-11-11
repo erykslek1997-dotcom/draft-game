@@ -6,6 +6,7 @@ import { effectiveTalent } from './grades';
 import { athleticismScoreForSpan } from './athleticismLookup';
 import { allAssignments, primaryStarters, GAME_MINUTES } from './rotation';
 import type { Team } from './types';
+import { envVar, processEnv } from './env';
 
 /**
  * 2026-09-05, user-reported: a flat D-TAL ceiling (60, for every position alike) doesn't mean
@@ -135,7 +136,7 @@ function rimProtectorBar(player: PlayerSpan): number | null {
 
 /** Night session (the user: "hunting / weak link od poziomu C-, żeby gracz nie brał kogoś średniego i
  * był za to karany"): `HUNT_BAR_CAP` caps the huntable bar (D-TAL; C- starts at 39). Unset, no cap. */
-const HUNT_BAR_CAP = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.HUNT_BAR_CAP ?? Infinity);
+const HUNT_BAR_CAP = Number(envVar('HUNT_BAR_CAP') ?? Infinity);
 function averageDtalFor(player: PlayerSpan): number {
   return Math.min(HUNT_BAR_CAP, averageDtalForUncapped(player));
 }
@@ -246,7 +247,7 @@ const MAX_COVER_DAMPENING = 0.55;
  * D-TAL a perimeter defender needs to start covering the weak link (`COVER_GATE`; the rim keeps 88),
  * and whether the cover also softens the weakest-starter headroom cost (on; `HEAD_DAMP=0` off). On
  * 600 real team-seasons / the game: SRS 0.823 = , game 0.796 -> 0.797. */
-const HUNT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const HUNT_ENV = processEnv;
 const PERIMETER_COVER_GATE = Number(HUNT_ENV?.COVER_GATE ?? 78);
 /** 2026-11-06, the user ("78 za niski... powinien współgrać z TAL słabszego; do Nasha musi być mega
  * mocny, a do kogoś lepszego już nie aż tak"): the perimeter gate rises with the weakest link's

@@ -12,6 +12,7 @@ import { midrangeGravitySpacing, PRE_ZONE_MIDRANGE_SHARE } from './midrangeGravi
 import { preZoneShootingSkill } from './preZoneShooting';
 import starterShareData from '../data/starterShare.json';
 import type { Rotation } from './types';
+import { envVar } from './env';
 
 /**
  * 2026-11-05, the user's test draft ("każdy ma być na swojej pozycji, oprócz ławkowiczów którzy mogą
@@ -208,7 +209,7 @@ export function startedIrl(p: PlayerSpan): boolean {
 }
 
 /** A star never comes off the bench (the user: "KD czy Nash z ławki nieakceptowalne"). */
-export const STRUCTURE_STAR_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAR_TAL ?? 82);
+export const STRUCTURE_STAR_TAL = Number(envVar('STAR_TAL') ?? 82);
 
 /**
  * The structured reading of a roster, and what breaks it. The starter at each slot is always the

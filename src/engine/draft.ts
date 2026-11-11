@@ -59,9 +59,9 @@ function structureCost(roster: PlayerSpan[]): number {
  * shape with PG or SG) nothing.
  */
 const BENCH_PRIORITY = {
-  forward: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_F ?? 0.3),
-  centre: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_C ?? 0.6),
-  guard: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_G ?? 0),
+  forward: Number(envVar('BENCH_F') ?? 0.3),
+  centre: Number(envVar('BENCH_C') ?? 0.6),
+  guard: Number(envVar('BENCH_G') ?? 0),
 };
 function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Position] }[]): number {
   let cost = 0;
@@ -80,15 +80,14 @@ function benchPriorityCost(backups: { player: PlayerSpan; pair: [Position, Posit
  * starter falls short, `FLOORS.spacing` `FLOORS.perSpacing` per point the team's spacing falls short.
  * 0 is off.
  */
-const envOf = (name: string) => (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[name];
 const FLOORS = {
-  starterTal: Number(envOf('FLOOR_TAL') ?? 0),
-  perTal: Number(envOf('FLOOR_TAL_COST') ?? 0.3),
-  spacing: Number(envOf('FLOOR_SPACING') ?? 60),
-  perSpacing: Number(envOf('FLOOR_SPACING_COST') ?? 0.6),
+  starterTal: Number(envVar('FLOOR_TAL') ?? 0),
+  perTal: Number(envVar('FLOOR_TAL_COST') ?? 0.3),
+  spacing: Number(envVar('FLOOR_SPACING') ?? 60),
+  perSpacing: Number(envVar('FLOOR_SPACING_COST') ?? 0.6),
   /** The starting spots the TAL floor covers (the user: SF, SG and PF are the weak ones; PG and C
    * carry the stars). */
-  positions: (envOf('FLOOR_POS') ?? 'PG,SG,SF,PF,C').split(',') as Position[],
+  positions: (envVar('FLOOR_POS') ?? 'PG,SG,SF,PF,C').split(',') as Position[],
 };
 function starterFloorCost(starters: Partial<Record<Position, PlayerSpan>>): number {
   if (FLOORS.starterTal <= 0) return 0;
@@ -105,8 +104,8 @@ function structuredTeamValue(roster: PlayerSpan[]): number {
   const spacingShort = FLOORS.spacing > 0 ? Math.max(0, FLOORS.spacing - scored.spacingScore) : 0;
   return scored.overallExact - structureCost(roster) - FLOORS.perSpacing * spacingShort;
 }
-const STRUCTURE_GLUE_COST_PER_FGA = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_GLUE ?? 0);
-const STRUCTURE_PROBLEM_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_COST ?? 6);
+const STRUCTURE_GLUE_COST_PER_FGA = Number(envVar('STRUCT_GLUE') ?? 0);
+const STRUCTURE_PROBLEM_COST = Number(envVar('STRUCT_COST') ?? 6);
 const teamScoreMemo = new Map<string, number>();
 setAiTeamScorer((roster) => {
   const key = roster.map((p) => p.id).sort().join(',');
@@ -134,6 +133,7 @@ import type { DraftHistoryEntry, Team } from './types';
 import { readStructure, structuredRotation, STRUCTURE } from './structuredRoster';
 import { STRUCTURED_AI } from './structuredMode';
 import { buildJointPlan } from './jointPlan';
+import { envVar } from './env';
 
 export { TEAM_COUNT };
 export const ROUNDS = ROSTER_SIZE; // 9 rounds x TEAM_COUNT teams
@@ -754,7 +754,7 @@ function planClaimsFor(seed: number): Map<string, string> {
  * once, at the first CPU pick, from a simulated draft: every CPU team's planned players, its plan
  * memory seeded from them.
  */
-const JOINT_ON = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.JOINT ?? '0') === '1';
+const JOINT_ON = (envVar('JOINT') ?? '0') === '1';
 function jointClaims(state: DraftState): Map<string, string> {
   const claims = planClaimsFor(state.seed);
   if (!JOINT_ON || claims.has(JOINT_BUILT)) return claims;

@@ -4,6 +4,7 @@ import { primaryStarters } from './rotation';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import type { Team } from './types';
 import { usageForSpan } from './usageLookup';
+import { processEnv } from './env';
 
 /**
  * 2026-11-06, the user ("heliocentryczni ofensywni zawodnicy ... najlepsi z piłką i poza nią nie
@@ -18,7 +19,7 @@ import { usageForSpan } from './usageLookup';
  * with a cost missed their Overall by about -7 Overall a unit (a small sample, and real teams adapt,
  * Wade gave up the ball after 2012); half of that, the user: "spróbujmy".
  */
-const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
+const env = processEnv ?? {};
 export const HELIO = {
   usageFrom: 0.24,
   usageFull: 0.32,

@@ -32,6 +32,7 @@ import { registerNeighbourWindows } from './neighbourWindows';
 import { interiorStrength, spacingScore } from './scoring';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import type { Team } from './types';
+import { processEnv } from './env';
 
 /**
  * `fitScore` — how well the starting five's roles actually complement each other. Answers
@@ -162,7 +163,7 @@ const LAYER_TIE_BREAK = 0.01;
  * pairing carry the Fit. They stay computed and shown; they no longer weigh. Was .293 / .11 / .331 /
  * .099 / .037 / .13.
  */
-const FIT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const FIT_ENV = processEnv;
 /** Spacing's weight back in Fit (`FIT_SPC`, measurement; the pruned Fit has none). */
 const FIT_SPACING_SHARE = Number(FIT_ENV?.FIT_SPC ?? 0);
 /** Share of the dropped parts' old weights brought back (`FIT_RESTORE`, measurement). */

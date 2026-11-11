@@ -18,6 +18,7 @@ import { cardTierMinutesCap, minuteProfileForSpan, playableMinutesCap, MINUTES_C
 import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import type { Rotation, SlotAssignment, Team } from './types';
+import { envVar } from './env';
 
 export const GAME_MINUTES = 48;
 /** Exported so `scoring.ts`'s Curry spacing floor can treat a normal starter workload as "fully
@@ -441,7 +442,7 @@ const SWAP_SPACING_NEED = 60;
  * drużyny"): a starter let in only by the stopper path (`isStopperOnlyStarter`, below the Starter
  * tier) needs the whole five to average `STOPPER_LINEUP_SPACING` (60, the user) spacing with him in it.
  */
-const STOPPER_LINEUP_SPACING = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_SPACING ?? 60);
+const STOPPER_LINEUP_SPACING = Number(envVar('STOPPER_SPACING') ?? 60);
 function stopperLineupOk(lineup: Partial<Record<Position, PlayerSpan>>): boolean {
   const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
   const stoppers = five.filter((p) => isStopperOnlyStarter(p) && !STARTER_ELIGIBLE_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p))));

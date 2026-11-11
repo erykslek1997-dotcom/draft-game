@@ -7,6 +7,7 @@ import { rimPressureForFit } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { eraBaseline } from './era';
 import { boxRatesForSpan } from './boxRatesLookup';
+import { envVar } from './env';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -328,8 +329,8 @@ function initiatorRating(player: PlayerSpan): number {
  * the roller and the popper — his playmaking, at this share. Measured with the stagger and the relief
  * below on 600 real team-seasons / the game: SRS 0.822 -> 0.823, game 0.805 -> 0.797; the user's
  * Curry–Klay–Pierce–Green–Bam Fit 58 -> 77 ("fit 77 to w sumie dość wysoko, więc chyba ok"). */
-const SHORT_ROLL_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_SHARE ?? 0.8);
-const SHORT_ROLL_RELIEF = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SR_RELIEF ?? '1') === '1';
+const SHORT_ROLL_SHARE = Number(envVar('SR_SHARE') ?? 0.8);
+const SHORT_ROLL_RELIEF = (envVar('SR_RELIEF') ?? '1') === '1';
 /** Team spacing a surrounding player needs to count as a real shooter beside the short roll. */
 const SHORT_ROLL_SHOOTER = 70;
 function screenerGravity(player: PlayerSpan, slot: Position): number {
@@ -387,7 +388,7 @@ export function mismatchStructureScore(
  * 1977-78 on). One point of TS over the league or 0.5 of AST/TOV over 2.0 counts the same; ±6 such
  * points is the full swing of `LEAD_EFFICIENCY` either way. `LEAD_EFF` overrides it (measurement).
  */
-const LEAD_EFFICIENCY = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.LEAD_EFF ?? 0);
+const LEAD_EFFICIENCY = Number(envVar('LEAD_EFF') ?? 0);
 function leadEfficiency(lead: PlayerSpan): number {
   if (LEAD_EFFICIENCY === 0) return 1;
   const relTs = (lead.box.tsPct - eraBaseline(lead.spanLabel).avgTs) * 100;
