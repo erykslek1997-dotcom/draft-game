@@ -36,7 +36,7 @@ for (const r of csv('src/data/raw/bbref/team_advanced.csv')) {
 }
 
 // Minutes by team-season.
-const rows = csv('src/data/raw/playerSeasonTeams.csv').filter((r) => Number(r.seasonEnd) >= FROM && Number(r.seasonEnd) <= TO && drtg.has(`${r.seasonEnd}|${r.team}`) && Number(r.minutes) > 0);
+const rows = csv('src/data/raw/playerSeasonTeams.csv').filter((r) => (args.parity == null || Number(r.seasonEnd) % 2 === Number(args.parity)) && Number(r.seasonEnd) >= FROM && Number(r.seasonEnd) <= TO && drtg.has(`${r.seasonEnd}|${r.team}`) && Number(r.minutes) > 0);
 const teamSeasons = new Map<string, { y: number; players: { p: number; m: number }[] }>();
 const playerIdx = new Map<string, number>(), names: string[] = [], playerMinutes: number[] = [];
 for (const r of rows) {
