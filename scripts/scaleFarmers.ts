@@ -58,6 +58,9 @@ const FEATURES: Feature[] = [
   { name: 'position', group: 'body', get: (s) => POS.indexOf(s.primaryPosition) },
   { name: 'threePA', group: 'three', get: (s) => s.box.threePA },
   { name: 'threePct', group: 'three', get: (s) => (s.box.threePA >= 0.5 ? s.box.threePct : null) },
+  // 2026-11-11: share of his shots that were threes — a low-usage player taking mostly threes is the
+  // spot-up (corner) shooter; the same 3PA beside many twos is more often a pull-up above the break.
+  { name: 'threeRate', group: 'three', get: (s) => (s.fga > 0 && s.box.threePA >= 0.5 ? s.box.threePA / s.fga : null) },
   { name: 'mpg', group: 'minutes', get: advField('mpg') },
   ...['ast_pct', 'orb_pct', 'drb_pct', 'tov_pct', 'stl_pct', 'blk_pct'].map((f) => ({ name: f, group: 'rates', get: advField(f) })),
   ...['ws_per_48', 'obpm', 'dbpm', 'per'].map((f) => ({ name: f, group: 'quality', get: advField(f) })),
@@ -159,7 +162,7 @@ if (TUNE) {
   console.log(`tuned group weights: ${GROUPS.map((g) => `${g} ${tuned[g]}`).join(', ')} (mean recovered over trusted targets ${(best * 100).toFixed(1)}%)\n`);
 }
 // What a pre-1974 window can have: no steals, blocks, split rebounds, turnovers, BPM, usage, threes.
-const PRE74_MISSING = new Set(['spg', 'bpg', 'orb_pct', 'drb_pct', 'tov_pct', 'stl_pct', 'blk_pct', 'obpm', 'dbpm', 'usg_pct', 'threePA', 'threePct']);
+const PRE74_MISSING = new Set(['spg', 'bpg', 'orb_pct', 'drb_pct', 'tov_pct', 'stl_pct', 'blk_pct', 'obpm', 'dbpm', 'usg_pct', 'threePA', 'threePct', 'threeRate']);
 function scorePre74(t: Target, w: Weights): number {
   const sample = SAMPLES.get(t.label)!;
   const fw = featureWeights(w, t.excludes).map((x, i) => (PRE74_MISSING.has(FEATURES[i].name) ? 0 : x));
