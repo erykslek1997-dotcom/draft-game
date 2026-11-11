@@ -798,7 +798,7 @@ const NEED_THREE_RATE = 0.85;
  * inside the last shot clock). */
 const ENDGAME = {
   seconds: 120, lateRule: 120, shotClock: 24, foulUnder: 24, foulEarlyUnder: 60, giveUp: 9, giveUpLate: 6,
-  foulSeconds: 3, holdSeconds: 20, tripSeconds: 14, quickSeconds: 8, hurryUnder: 60, threeUnder: 30, lastShotUnder: 8, ftPower: 4,
+  foulSeconds: 2, lastTick: 1, holdSeconds: 20, tripSeconds: 14, quickSeconds: 8, hurryUnder: 60, threeUnder: 30, lastShotUnder: 8, ftPower: 4,
 };
 interface TripMode { quick?: boolean; hold?: boolean; lastShot?: boolean; needThree?: boolean; heave?: boolean; buzzer?: boolean }
 /** 2026-10-08, the NBA's last-two-minutes rule: a team not yet in the penalty gives free throws from
@@ -1727,7 +1727,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   const closeOut = (period: number, seconds: number, first: GameSide) => {
     let clock = seconds;
     let o = first;
-    while (clock > 0.5) {
+    while (clock > 0) {
       const d = (1 - o) as GameSide;
       const lead = score[o] - score[d];
       if (period === 3) updateGarbage(garbageCutAt(clock / 60));
@@ -1737,9 +1737,12 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const giveUp = clock <= ENDGAME.shotClock ? ENDGAME.giveUpLate : ENDGAME.giveUp;
       const foulNow = !garbage && lead > 0 && lead <= giveUp && (clock <= ENDGAME.foulUnder || (clock <= ENDGAME.foulEarlyUnder && lead >= 4));
       if (foulNow) {
-        const spent = Math.min(clock, ENDGAME.foulSeconds);
+        // A foul comes right after the inbound: at most half of what is left, so a clock that shows
+        // time after the free throws really has it (the user: two plays at 0:00 made no sense).
+        const spent = Math.min(ENDGAME.foulSeconds, clock / 2);
         addMinutes(both, spent / 60);
         clock -= spent;
+        if (clock < ENDGAME.lastTick) clock = 0;
         const inBonus = teamFouls[d][period] >= bonusFouls(period) || (lateNow && lateFouls[d][period] >= 1);
         const fouler = pickWeighted(rng, both[d].map((c) => c.player), (p) => 1 / (1 + box[d][p.label].pf));
         foul(d, fouler, k, period, lateNow);
@@ -1776,6 +1779,8 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       addMinutes(both, spent / 60);
       const lateBefore = clock <= ENDGAME.lateRule;
       clock -= spent;
+      // Under a second left after a trip, the period is over: the feed never shows two plays at 0:00.
+      if (clock < ENDGAME.lastTick) clock = 0;
       const clutch = Math.abs(lead) <= CLUTCH_TUNING.margin;
       trip(k, o, both, period, clutch, lateBefore, clock, mode);
       o = d;
