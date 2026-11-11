@@ -7,7 +7,8 @@ import { getSettings, type DraftSpeed } from '../settings';
  * 2026-10-16, the user ("okienko ustawień gdzie np będzie zmiana szybkości draftowania"): the pace is
  * a setting again, in the settings window (settings.ts) — calm by default.
  */
-const CPU_PICK_DELAY_MS = 450;
+// 2026-11-11 (the user: animations "płynniej i wolniej"): every pace ~25% calmer.
+const CPU_PICK_DELAY_MS = 650;
 
 /**
  * 2026-09-26, the user: "jak odpalamy draft to spokojnie, niech użytkownik się oswoi, pierwsze
@@ -15,8 +16,8 @@ const CPU_PICK_DELAY_MS = 450;
  * settles in and the "draft is about to begin" line shows), and the first round of CPU picks runs
  * at `FIRST_ROUND_MS`, so the first sixteen picks can be read one by one.
  */
-const OPENING_PAUSE_MS = 2600;
-const FIRST_ROUND_MS = 1300;
+const OPENING_PAUSE_MS = 3000;
+const FIRST_ROUND_MS = 1600;
 
 /** Fast is about three times quicker; Instant keeps only a beat so the board still repaints. */
 const SPEED_FACTOR: Record<DraftSpeed, number> = { calm: 1, fast: 0.35, instant: 0 };

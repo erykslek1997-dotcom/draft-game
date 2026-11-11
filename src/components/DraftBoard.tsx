@@ -172,7 +172,10 @@ export function draftButtonTitle(state: DraftState, spanId: string, canPick: boo
 /** 2026-09-25, user's ask ("rozszerzenie scouting report o wszystkie sezony, tylko surowe
  * statystyki; gracz może 3 razy w ciągu draftu użyć scouta żeby pokazać dokładnie offense,
  * defense itd"): how many full scouting reports a draft allows. */
-const SCOUT_REPORTS_PER_DRAFT = 3;
+// 2026-11-11 (the user: "scout zamiast 3x ocenia pojedynczego gracza, pozwala na podejrzenie
+// wszystkich graczy wybieranych w tej rundzie"): a scouting ROUND — every card open until your next
+// pick — twice a draft.
+const SCOUT_REPORTS_PER_DRAFT = 2;
 
 
 
@@ -244,7 +247,7 @@ type AtTab = 'draft' | 'team';
 
 
 /** How long the taken cards take to fold away when the player's own turn comes. */
-const GHOST_SWEEP_MS = 1300;
+const GHOST_SWEEP_MS = 1600;
 
 export default function DraftBoard({
   state,
@@ -303,19 +306,20 @@ export default function DraftBoard({
   const [peekPlayer, setPeekPlayer] = useState<string | null>(null);
   // A face on the board or the team opens his scouting card, with Draft when he's still there.
   const openFace = (span: PlayerSpan) => setPeekPlayer(span.playerName);
-  // Scouting reports used this draft — kept per draft seed so a resumed draft remembers them.
-  const scoutKey = `draftverse.scouted.v1.${state.seed}`;
-  const [scoutedPlayers, setScoutedPlayers] = useState<Set<string>>(() => {
+  // Scouting rounds used this draft (the size of your roster when each began) — kept per draft seed
+  // so a resumed draft remembers them.
+  const scoutKey = `draftverse.scoutRounds.v2.${state.seed}`;
+  const [scoutRounds, setScoutRounds] = useState<number[]>(() => {
     try {
-      // Drop reports left over from earlier drafts.
+      // Drop reports left over from earlier drafts (and the old per-player reports).
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('draftverse.scouted.v1.') && key !== scoutKey) localStorage.removeItem(key);
+        if (key && (key.startsWith('draftverse.scouted.v1.') || (key.startsWith('draftverse.scoutRounds.v2.') && key !== scoutKey))) localStorage.removeItem(key);
       }
       const raw = localStorage.getItem(scoutKey);
-      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+      return raw ? (JSON.parse(raw) as number[]) : [];
     } catch {
-      return new Set();
+      return [];
     }
   });
   // 2026-10-14, the Big Board: your own ranking of who you want next, kept per draft like the
@@ -387,14 +391,16 @@ export default function DraftBoard({
   function toggleBigBoard(name: string) {
     saveBigBoard(bigBoard.includes(name) ? bigBoard.filter((n) => n !== name) : [...bigBoard, name]);
   }
-  function scoutPlayer(name: string) {
-    setScoutedPlayers((prev) => {
-      if (prev.has(name) || prev.size >= SCOUT_REPORTS_PER_DRAFT) return prev;
-      const next = new Set(prev).add(name);
+  // A scouting round opens every card until your next pick (the name only says where it was asked).
+  function scoutPlayer(_name?: string) {
+    setScoutRounds((prev) => {
+      const now = state.teams.find((t) => t.isHuman)!.roster.length;
+      if (prev.includes(now) || prev.length >= SCOUT_REPORTS_PER_DRAFT) return prev;
+      const next = [...prev, now];
       try {
-        localStorage.setItem(scoutKey, JSON.stringify([...next]));
+        localStorage.setItem(scoutKey, JSON.stringify(next));
       } catch {
-        // storage unavailable — the reports still work for this session
+        // storage unavailable — the scouting still works for this session
       }
       return next;
     });
@@ -439,6 +445,8 @@ export default function DraftBoard({
   // `currentTeam` stays correct as-is — you're deliberately building whichever team is currently
   // on the clock, not one fixed team, so `teamForPanels` only swaps behavior in normal play.
   const humanTeam = state.teams.find((t) => t.isHuman)!;
+  const scoutingNow = scoutRounds.includes(humanTeam.roster.length);
+  const scoutedPlayers = { has: (_name: string) => scoutingNow };
   const teamForPanels = state.commissionerMode ? currentTeam : humanTeam;
   // Every team's cap: the real 100.9, or the day's in a daily (2026-10-16).
   const capLimit = draftCapLimit(state);
@@ -1000,7 +1008,7 @@ export default function DraftBoard({
   const used = capLimit - humanBudget.capLeft;
   const spotWord = (n: number) => (n === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][n] ?? n} spots`);
   const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
-  const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutedPlayers.size;
+  const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutRounds.length;
   const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
   const gradeTone = (v: string) => (v === 'S' ? 'top' : v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   const gradesOf = (sp: PlayerSpan) => ({
@@ -1051,7 +1059,7 @@ export default function DraftBoard({
       )}
       {helpOpen && (
         <NightHowTo
-          lead={`All-Time Draft · ${state.teams.length} teams, ${ROUNDS} rounds, one player a round. ${scoutsLeft} of ${SCOUT_REPORTS_PER_DRAFT} scouting reports left.`}
+          lead={`All-Time Draft · ${state.teams.length} teams, ${ROUNDS} rounds, one player a round. ${scoutsLeft} of ${SCOUT_REPORTS_PER_DRAFT} scouting rounds left — each opens every card until your next pick.`}
           rules={howToPlay.map((r) => [r.title, r.body] as [string, ReactNode])}
           onClose={closeHelp}
         />
@@ -1634,7 +1642,17 @@ export default function DraftBoard({
                   </button>
                 </>
               )}
-              {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'} · {scoutsLeft} scouting {scoutsLeft === 1 ? 'report' : 'reports'} left
+              {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
+              {' · '}
+              {scoutingNow ? (
+                <b>Scouting this round: every card open until your next pick</b>
+              ) : scoutsLeft > 0 ? (
+                <button type="button" className="lk-inline" onClick={() => scoutPlayer()}>
+                  Scout this round · {scoutsLeft} left
+                </button>
+              ) : (
+                'no scouting rounds left'
+              )}
             </div>
           </section>
         )}

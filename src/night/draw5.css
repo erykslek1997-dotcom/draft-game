@@ -33,7 +33,7 @@
 .nt {
   .hand-c { display: flex; min-width: 0; }
   .hand-c > .card { flex: 1; }
-  .hand .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .hand .card { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.22s ease; }
   .hand-c:hover > button.card:not(:disabled):not(.dim):not(.you-took), .hand button.card:not(:disabled):not(.dim):focus-visible { box-shadow: 0 0 0 2px var(--red); transform: translateY(-6px); outline: 0; }
   .card.joker:disabled { opacity: 0.35; }
   .dealt { position: relative; display: flex; min-width: 0; }
@@ -44,13 +44,13 @@
   /* the AI's turn after its deal (2026-10-22): think, then take — the same lift as your pick */
   .ai-c { display: flex; min-width: 0; }
   .ai-c > .card { flex: 1; }
-  .ai-hand.think .ai-c > .card { animation: ai-look 1.3s ease-in-out both; animation-delay: calc(var(--i) * 260ms); }
-  .ai-c .card.dim { animation: ai-dim 0.35s both; opacity: 1; }
-  .ai-c .card.ai-took { animation: ai-took 0.35s both; }
-  .ai-c .took { animation: ai-tag 0.3s both; animation-delay: 0.15s; }
+  .ai-hand.think .ai-c > .card { animation: ai-look 1.55s ease-in-out both; animation-delay: calc(var(--i) * 300ms); }
+  .ai-c .card.dim { animation: ai-dim 0.5s ease-out both; opacity: 1; }
+  .ai-c .card.ai-took { animation: ai-took 0.5s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+  .ai-c .took { animation: ai-tag 0.45s ease-out both; animation-delay: 0.2s; }
   .ai-think::after { content: '…'; display: inline-block; width: 1.2em; text-align: left; animation: ai-dots 1s steps(4) infinite; overflow: hidden; vertical-align: bottom; }
-  .hand .card.you-took, .hand-c:hover > .card.you-took { box-shadow: 0 0 0 2px var(--gold); transform: translateY(-8px); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-  .hand .card.dim:not(.over) { transition: opacity 0.25s ease; }
+  .hand .card.you-took, .hand-c:hover > .card.you-took { box-shadow: 0 0 0 2px var(--gold); transform: translateY(-8px); transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.25, 1), box-shadow 0.28s ease; }
+  .hand .card.dim:not(.over) { transition: opacity 0.35s ease; }
   
   
   
