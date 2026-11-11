@@ -1394,4 +1394,4 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .pt-more > .nsel { font: 700 16px var(--cond); color: var(--ink); margin-right: 10px; }
 .pt-more .nsel-b { background: transparent; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 0 2px 1px; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
 .pt-more .nsel-b:hover, .pt-more .nsel.open .nsel-b { border-color: var(--ink); color: var(--ink); }
-.pt-more .nsel-o { font: normal 500 13px var(--sans); }
+.pt-more .nsel-o { font: normal 500 13px var(--sans); padding: 7px 14px; line-height: 1.2; }
