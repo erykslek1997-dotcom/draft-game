@@ -9,7 +9,7 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 // `effectiveTalent`'s own docstring for the full "why").
 import { maxSustainableMinutes } from './durability';
 import { allocateMinutes, BENCH_MINUTES_CAP, SIXTH_MAN_MINUTES_CAP } from './minuteAllocation';
-import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
+import { STARTER_STANDARD_TAL, isJustifiedRoleStarter, isStopperOnlyStarter } from './starterStandard';
 import { overallTierForSpan, effectiveTalent, spacesTheFloor } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
@@ -351,6 +351,7 @@ export function bestPrimaryAssignment(
   function search(slotIdx: number, score: number, primaryMatches: number) {
     if (bestScore > -Infinity && score + suffixMax[slotIdx] < bestScore - PRUNE_MARGIN) return;
     if (slotIdx === STARTER_SLOTS.length) {
+      if (!stopperLineupOk(current)) return;
       // Explicit secondary positions remain full-value, exactly as `starterFitMultiplier`
       // promises. When two complete lineups have IDENTICAL value, however, prefer the one that
       // places more players at their primary position. This is a pure tiebreak, not a secondary-
@@ -431,6 +432,18 @@ export function bestPrimaryAssignment(
  * at least `SWAP_MIN_SPACING_GAIN`. One swap per slot, the largest spacing gain first.
  */
 const SWAP_SPACING_NEED = 60;
+/**
+ * 2026-11-11 (the user: a defender "bez rzutu" belongs in the five "jeśli nie niszczy spacingu
+ * drużyny"): a starter let in only by the stopper path (`isStopperOnlyStarter`, below the Starter
+ * tier) needs the whole five to average `STOPPER_LINEUP_SPACING` (60, the user) spacing with him in it.
+ */
+const STOPPER_LINEUP_SPACING = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_SPACING ?? 60);
+function stopperLineupOk(lineup: Partial<Record<Position, PlayerSpan>>): boolean {
+  const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);
+  const stoppers = five.filter((p) => isStopperOnlyStarter(p) && !STARTER_ELIGIBLE_TIERS.has(overallTierForSpan(tierContextWithSixthMan(p))));
+  if (!stoppers.length) return true;
+  return lineupSpacingOf(lineup) >= STOPPER_LINEUP_SPACING;
+}
 const SPACING_RESEARCH = { need: 55, perPoint: 0.12, cap: 75, minGain: 5 };
 function lineupSpacingOf(lineup: Partial<Record<Position, PlayerSpan>>): number {
   const five = STARTER_SLOTS.map((slot) => lineup[slot]).filter((p): p is PlayerSpan => p !== undefined);

@@ -527,10 +527,13 @@ const PRE_LINE_FULL = new Set(['jerry west']);
  * The hand list keeps its word; the same pre-line share applies.
  */
 const PRE_LINE_TWINS = preLineTwinsData as Record<string, number>;
+/** 2026-11-11 (the user: Archibald and Monroe "tak jak bliźniaki"): on the hand list for the
+ * midrange read, but before the line their spacing is the twins' estimate. */
+const PRE_LINE_TWIN_OVER_HAND = new Set(['tiny archibald', 'earl monroe']);
 function preLinePoints(span: PlayerSpan): number {
   if (Math.max(...spanEndYears(span.spanLabel)) > LAST_SEASON_WITHOUT_THE_LINE) return 0;
   const twin = PRE_LINE_TWINS[span.id];
-  if (twin !== undefined && !onPreZoneHandList(span)) return (twin * PRE_LINE_SHARE * MAX_SPACING_POINTS) / 100;
+  if (twin !== undefined && (!onPreZoneHandList(span) || PRE_LINE_TWIN_OVER_HAND.has(normalizePlayerName(span.playerName)))) return (twin * PRE_LINE_SHARE * MAX_SPACING_POINTS) / 100;
   const skill = preZoneShootingSkill(span);
   if (!skill) return 0;
   const share = PRE_LINE_FULL.has(normalizePlayerName(span.playerName)) ? 1 : PRE_LINE_SHARE;

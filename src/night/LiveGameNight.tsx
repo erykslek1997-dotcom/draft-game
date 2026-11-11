@@ -62,10 +62,16 @@ function winProbability(moment: GameMoment | undefined, expected: number, gameSe
   return 0.5 * (1 + erf((lead + expected * left) / (sd * Math.SQRT2)));
 }
 
+/** 2026-11-11: overtime periods follow the four quarters (engine `closeOut`): 4 is OT, 5 is 2OT. */
+function periodLabel(q: number): string {
+  return q < 4 ? `Q${q + 1}` : q === 4 ? 'OT' : `${q - 3}OT`;
+}
+
 function quarterClock(m: GameMoment | undefined, gameSeconds = 2880): string {
   const quarterSeconds = gameSeconds / 4;
   if (!m) return `${Math.floor(quarterSeconds / 60)}:${String(Math.floor(quarterSeconds % 60)).padStart(2, '0')}`;
-  const quarterLeft = Math.max(0, m.left - (3 - m.quarter) * quarterSeconds);
+  // In overtime `left` is that period's own clock.
+  const quarterLeft = m.quarter >= 4 ? Math.max(0, m.left) : Math.max(0, m.left - (3 - m.quarter) * quarterSeconds);
   return `${Math.floor(quarterLeft / 60)}:${String(Math.floor(quarterLeft % 60)).padStart(2, '0')}`;
 }
 
@@ -219,7 +225,8 @@ export default function LiveGameNight({
       .map((_l, k) => k)
       .filter((k) => !starterIdx[side].includes(k))
       .sort((a, b) => rows[b].min - rows[a].min);
-  const [period, setPeriod] = useState<'game' | 0 | 1 | 2 | 3>('game');
+  const [period, setPeriod] = useState<'game' | number>('game');
+  const periods = Math.max(4, game.quarters[0].length);
   // a phone shows a finished game's key moments only, the rest one tap away (playtest 2026-10-22)
   const [phoneFull, setPhoneFull] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -257,7 +264,7 @@ export default function LiveGameNight({
   const lines = now?.lines ?? [game.labels[0].map(zeroLine), game.labels[1].map(zeroLine)];
 
   const quarters = useMemo(() => {
-    const q: [number[], number[]] = [[0, 0, 0, 0], [0, 0, 0, 0]];
+    const q: [number[], number[]] = [Array(periods).fill(0), Array(periods).fill(0)];
     let prev: [number, number] = [0, 0];
     for (const m of game.moments.slice(0, upto)) {
       q[0][m.quarter] += m.score[0] - prev[0];
@@ -265,7 +272,7 @@ export default function LiveGameNight({
       prev = m.score;
     }
     return q;
-  }, [game.moments, upto]);
+  }, [game.moments, upto, periods]);
 
   const callsAt = useMemo(() => {
     const at = new Map<number, { side?: 0 | 1; text: string }[]>();
@@ -346,7 +353,7 @@ export default function LiveGameNight({
             if (pts > best.pts) best = { side, label: game.labels[side][k], pts };
           });
         }
-        if (next) rows.push({ key: `q${i}`, kind: 'q', text: `End of Q${m.quarter + 1}: ${short[0]} ${m.score[0]}, ${short[1]} ${m.score[1]}.${best.pts > 0 ? ` ${maskName(best.label)} ${best.pts} in the quarter.` : ''}` });
+        if (next) rows.push({ key: `q${i}`, kind: 'q', text: `End of ${periodLabel(m.quarter)}: ${short[0]} ${m.score[0]}, ${short[1]} ${m.score[1]}.${best.pts > 0 ? ` ${maskName(best.label)} ${best.pts} in the quarter.` : ''}` });
         qStart = m.lines;
       }
     }
@@ -403,7 +410,7 @@ export default function LiveGameNight({
       const line = won ? `${maskName(starLabel)} led the way: ${stat}.` : `The ${short[them]} were the better team. ${maskName(starLabel)} did what he could: ${stat}.`;
       return { eb: 'Final', title, line: <>{line}</>, margin };
     }
-    const at = `Live · Q${(now?.quarter ?? 0) + 1} · ${quarterClock(now, game.gameSeconds)}`;
+    const at = `Live · ${periodLabel(now?.quarter ?? 0)} · ${quarterClock(now, game.gameSeconds)}`;
     for (let i = upto - 1; i >= Math.max(0, upto - 6); i--) {
       const m = game.moments[i];
       if (!m.play || m.play.quiet || m.play.minor) continue;
@@ -442,7 +449,7 @@ export default function LiveGameNight({
   /* ---------- the box by period ---------- */
   const periodBox = useMemo(() => {
     const ends: number[] = [];
-    for (let q = 0; q < 4; q++) {
+    for (let q = 0; q < periods; q++) {
       let last = -1;
       for (let i = 0; i < upto; i++) if (game.moments[i].quarter === q) last = i;
       ends.push(last);
@@ -474,7 +481,7 @@ export default function LiveGameNight({
   }, [game, upto, period, lines]);
 
   const liveQuarter = now?.quarter ?? 0;
-  const periodName = period === 'game' ? 'Game' : `Q${period + 1}`;
+  const periodName = period === 'game' ? 'Game' : periodLabel(period);
 
   /* ---------- pieces ---------- */
   const tallyEl = (
@@ -483,7 +490,7 @@ export default function LiveGameNight({
       mid={done ? 'Final' : shown < 0 ? 'Tip-off' : quarterClock(now, game.gameSeconds)}
       ai={done || shown >= 0 ? score[1] : '0'}
       youK={short[0]}
-      midK={done ? `Q4 0:00` : shown < 0 ? 'Q1' : `Q${liveQuarter + 1}`}
+      midK={done ? `${periodLabel(game.moments[game.moments.length - 1]?.quarter ?? 3)} 0:00` : shown < 0 ? 'Q1' : periodLabel(liveQuarter)}
       aiK={short[1]}
       clock={!done && shown >= 0}
       plain
@@ -576,10 +583,9 @@ export default function LiveGameNight({
       <tbody>
         <tr>
           <th>Team</th>
-          <th>Q1</th>
-          <th>Q2</th>
-          <th>Q3</th>
-          <th>Q4</th>
+          {Array.from({ length: periods }, (_, q) => (
+            <th key={q}>{periodLabel(q)}</th>
+          ))}
           <th>T</th>
         </tr>
         {([0, 1] as const).map((side) => (
@@ -657,11 +663,11 @@ export default function LiveGameNight({
   const fullBox = (
     <>
       <div className="seg" role="group" aria-label="Period and team">
-        {(['game', 0, 1, 2, 3] as const).map((q) => {
+        {(['game', ...Array.from({ length: periods }, (_, q) => q)] as ('game' | number)[]).map((q) => {
           const played = q === 'game' || periodBox.quartersPlayed[q];
           return (
             <button key={String(q)} type="button" className={period === q ? 'on' : undefined} disabled={!played} onClick={() => setPeriod(q)}>
-              {q === 'game' ? 'Game' : `Q${q + 1}`}
+              {q === 'game' ? 'Game' : periodLabel(q)}
               {q !== 'game' && !done && q === liveQuarter && shown >= 0 && <small>now</small>}
             </button>
           );
@@ -935,7 +941,7 @@ export default function LiveGameNight({
         {done && <div className="phone-only stackb">{endActions}</div>}
         <div className="split">
           <section>
-            <H3 note={done ? 'newest first' : `Q${liveQuarter + 1} · newest first`}>Play-by-play</H3>
+            <H3 note={done ? 'newest first' : `${periodLabel(liveQuarter)} · newest first`}>Play-by-play</H3>
             {feedEl}
           </section>
           <div className="stack">

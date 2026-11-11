@@ -781,6 +781,45 @@ const HUNT_PER_DTAL = 0.03;
 /** Fouls away from the shot per trip, the bonus from the fifth team foul, six to foul out. */
 const NON_SHOOTING_FOUL = 0.065;
 const BONUS_FOULS = 4;
+/** In overtime a team is in the penalty from its fourth foul. */
+const OT_BONUS_FOULS = 3;
+const OVERTIME_SECONDS = 300;
+const MAX_OVERTIMES = 3;
+/** 2026-11-11: the end of a quarter — how often the trip before the last goes early for a
+ * 2-for-1, and how often that extra trip is only a heave from deep. */
+const END_OF_QUARTER = { twoForOne: 0.55, heave: 0.3, extraSeconds: 5 };
+const HEAVE_PCT = 0.04;
+/** A shot taken early on purpose (2-for-1, a team behind hurrying) is a little worse. */
+const QUICK_SHOT_PENALTY = 0.02;
+/** A team that needs a three takes one this often. */
+const NEED_THREE_RATE = 0.85;
+/** The clocked endgame (`closeOut`), seconds. A team behind fouls on purpose under `foulUnder`
+ * (under `foulEarlyUnder` when down four or more), not when down more than `giveUp` (`giveUpLate`
+ * inside the last shot clock). */
+const ENDGAME = {
+  seconds: 120, lateRule: 120, shotClock: 24, foulUnder: 24, foulEarlyUnder: 60, giveUp: 9, giveUpLate: 6,
+  foulSeconds: 2, lastTick: 1, holdSeconds: 20, tripSeconds: 14, quickSeconds: 8, hurryUnder: 60, threeUnder: 30, lastShotUnder: 8, ftPower: 4,
+};
+/**
+ * 2026-11-11 (the user: Barry's three "beats the buzzer" in a one-point loss read like a winner): in
+ * the last two minutes and in overtime a basket says what it did — go-ahead, ties it, cuts it to N —
+ * and a shot at the final horn says whether it won, tied or came too late.
+ */
+function lateText(text: string, own: number, opp: number, pts: number, final: boolean): string {
+  const after = own + pts;
+  const buzzer = / — beats the buzzer!?$/;
+  if (final && buzzer.test(text)) {
+    if (after > opp && own <= opp) return text.replace(buzzer, ' at the buzzer — game winner!');
+    if (after === opp) return text.replace(buzzer, ' at the buzzer — ties it, overtime!');
+    if (after < opp) return text.replace(buzzer, ' at the buzzer — too little, too late');
+    return text;
+  }
+  if (after > opp && own <= opp) return `${text}, go-ahead`;
+  if (after === opp) return `${text}, ties it`;
+  if (after < opp) return `${text}, cuts it to ${opp - after}`;
+  return text;
+}
+interface TripMode { quick?: boolean; hold?: boolean; lastShot?: boolean; needThree?: boolean; heave?: boolean; buzzer?: boolean }
 /** 2026-10-08, the NBA's last-two-minutes rule: a team not yet in the penalty gives free throws from
  * its second foul in the final two minutes of a quarter. */
 const LATE_PERIOD_SHARE = 2 / 12;
@@ -1400,16 +1439,17 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
   ];
   let lastCourt: [CourtPlayer[], CourtPlayer[]] = [starting[0], starting[1]];
   // A defender in foul trouble (2 in the first quarter, 3 by half, 4 in the third, 5) plays softer.
-  const inTrouble = (side: GameSide, p: Player, quarter: number) => box[side][p.label].pf >= TROUBLE_FOULS[quarter];
-  const foul = (side: GameSide, p: Player, k: number, quarter: number) => {
+  const inTrouble = (side: GameSide, p: Player, quarter: number) => box[side][p.label].pf >= TROUBLE_FOULS[Math.min(3, quarter)];
+  const foul = (side: GameSide, p: Player, k: number, quarter: number, late: boolean = lateInQuarter(k)) => {
     const line = box[side][p.label];
     line.pf++;
     teamFouls[side][quarter]++;
-    if (lateInQuarter(k)) lateFouls[side][quarter]++;
+    if (late) lateFouls[side][quarter]++;
     if (line.pf >= FOUL_OUT && !fouledOut[side].has(p)) {
       fouledOut[side].add(p);
       // His remaining minutes go to the bench: whoever is listed at his slot, else anyone free.
-      for (let j = k + 1; j < POSSESSIONS; j++) {
+      // From the next trip on; past the schedule (the clocked endgame, overtime) its last five.
+      for (let j = Math.min(k + 1, POSSESSIONS - 1); j < POSSESSIONS; j++) {
         const court = schedule[side][j];
         const at = court.findIndex((c) => c.player === p);
         if (at < 0) continue;
@@ -1456,25 +1496,35 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     return GARBAGE_TUNING.lead.find(([m]) => minutesLeft >= m)?.[1] ?? Infinity;
   };
 
-  for (let k = 0; k < POSSESSIONS; k++) {
-    if (k >= (POSSESSIONS * 3) / 4) {
-      const lead = Math.abs(score[0] - score[1]);
-      const cut = garbageCut(k);
-      if (!garbage && lead >= cut) garbage = true;
-      else if (garbage && lead < cut - GARBAGE_TUNING.back) garbage = false;
-    }
+  const garbageCutAt = (minutesLeft: number) => GARBAGE_TUNING.lead.find(([m]) => minutesLeft >= m)?.[1] ?? Infinity;
+  const updateGarbage = (cut: number) => {
+    const lead = Math.abs(score[0] - score[1]);
+    if (!garbage && lead >= cut) garbage = true;
+    else if (garbage && lead < cut - GARBAGE_TUNING.back) garbage = false;
+  };
+  const fivesAt = (k: number): [CourtPlayer[], CourtPlayer[]] => {
+    const at = Math.min(k, POSSESSIONS - 1);
     const benches = garbage ? [garbageFive(0), garbageFive(1)] : null;
-    const both: [CourtPlayer[], CourtPlayer[]] = [benches?.[0] ?? schedule[0][k], benches?.[1] ?? schedule[1][k]];
-    lastCourt = both;
-    for (const side of [0, 1] as GameSide[]) for (const c of both[side]) box[side][c.player.label].min += possessionMinutes;
-    const o = (k % 2) as GameSide;
+    return [benches?.[0] ?? schedule[0][at], benches?.[1] ?? schedule[1][at]];
+  };
+  const addMinutes = (both: [CourtPlayer[], CourtPlayer[]], minutes: number) => {
+    for (const side of [0, 1] as GameSide[]) for (const c of both[side]) box[side][c.player.label].min += minutes;
+  };
+  const bonusFouls = (period: number) => (period >= 4 ? OT_BONUS_FOULS : BONUS_FOULS);
+  const finish = (o: GameSide, period: number, pts: number, play: GamePlay | null, leftAfter: number) => {
+    if (play && pts > 0 && play.side === o && period >= 3 && leftAfter <= ENDGAME.seconds) play = { ...play, text: lateText(play.text, score[o], score[1 - o], pts, leftAfter <= 0) };
+    score[o] += pts;
+    quarters[o][period] += pts;
+    if (record) moments.push({ left: Math.max(0, leftAfter), quarter: period, score: [score[0], score[1]], play, lines: snapshot() });
+  };
+
+  /** One trip down the floor for side `o`; `leftAfter` is the clock the feed shows after it. */
+  const trip = (k: number, o: GameSide, both: [CourtPlayer[], CourtPlayer[]], quarter: number, clutch: boolean, qLate: boolean, leftAfter: number, mode: TripMode) => {
     const d = (1 - o) as GameSide;
     const off = both[o];
     const defCourt = both[d];
     const def = defCourt.map((c) => c.player);
     const clash = clashFor(off, defCourt);
-    const quarter = Math.min(3, Math.floor((k * 4) / POSSESSIONS));
-    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / gameMinutes) && Math.abs(score[o] - score[d]) <= CLUTCH_TUNING.margin;
     let play: GamePlay | null = null;
     let pts = 0;
     const onBreak = breakNext[o];
@@ -1482,22 +1532,35 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     // Away from the ball: a foul that is not on a shot (side out, or two shots in the bonus).
     if (!onBreak && rng() < NON_SHOOTING_FOUL * clash.foulRate) {
       const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex ** DEFENSE_TUNING.foul);
-      const inBonus = teamFouls[d][quarter] >= BONUS_FOULS || (lateInQuarter(k) && lateFouls[d][quarter] >= 1);
-      foul(d, fouler, k, quarter);
+      const inBonus = teamFouls[d][quarter] >= bonusFouls(quarter) || (qLate && lateFouls[d][quarter] >= 1);
+      foul(d, fouler, k, quarter, qLate);
       if (inBonus) {
         const fouled = pickWeighted(rng, off, (c) => c.shotShare).player;
         const ft = freeThrows(o, fouled, 2);
         pts += ft.made;
         play = { side: o, text: `${fouled.label} ${ft.made}/2 in the bonus`, joker: fouled.joker, quiet: ft.made === 0 };
-        score[o] += pts;
-        quarters[o][quarter] += pts;
-        if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
-        continue;
+        finish(o, quarter, pts, play, leftAfter);
+        return;
       }
     }
     let next: 'open' | 'putback' | 'reset' = 'open';
     let putbackBy: CourtPlayer | null = null;
     for (let guard = 0; guard < 4; guard++) {
+      // A heave from deep with the period running out (`END_OF_QUARTER.heave`).
+      if (guard === 0 && mode.heave) {
+        const thrower = pickWeighted(rng, off, (c) => c.shotShare).player;
+        const tl = box[o][thrower.label];
+        tl.fga++;
+        tl.tpa++;
+        if (rng() < HEAVE_PCT) {
+          tl.fgm++;
+          tl.tpm++;
+          tl.pts += 3;
+          pts += 3;
+          play = { side: o, text: `${thrower.label} from way downtown — beats the buzzer!`, joker: thrower.joker, quiet: false };
+        } else play = { side: o, text: `${thrower.label} heave at the buzzer — no good`, joker: thrower.joker, quiet: false, minor: true };
+        break;
+      }
       const tovChance = DEFENSE_TUNING.turnover * clash.tovMul * (next === 'reset' ? RESET_TURNOVER : 1) * (onBreak && guard === 0 ? 0.5 : 1);
       if (next !== 'putback' && rng() < tovChance) {
         if (rng() < clash.stealShare) {
@@ -1515,7 +1578,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         }
         break;
       }
-      const late = next !== 'putback' && !(onBreak && guard === 0) && rng() < clash.lateP * (next === 'reset' ? LATE_TUNING.reset : 1);
+      const late = next !== 'putback' && !(onBreak && guard === 0) && (guard === 0 && (mode.hold || mode.lastShot) ? true : guard === 0 && mode.quick ? false : rng() < clash.lateP * (next === 'reset' ? LATE_TUNING.reset : 1));
       const focus = (c: CourtPlayer) => (clutch ? 1 + CLUTCH_TUNING.focus * starness(c.player.span) : 1);
       const shooterIdx =
         next === 'putback' && putbackBy
@@ -1534,12 +1597,12 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const soft = inTrouble(d, defender, quarter) ? TROUBLE_SOFTEN : 1;
       const mods = clash.mods[shooterIdx];
       const fresh = onBreak && guard === 0;
-      const three = next !== 'putback' && rng() < (fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
+      const three = next !== 'putback' && rng() < (guard === 0 && mode.needThree ? NEED_THREE_RATE : fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
       const atRim = !three && (next === 'putback' || fresh || rng() < shot.rimShare);
       const drawn = atRim ? Math.max(0.5, 1 + RIM_TUNING.foul * clash.rimZ) : 1;
       const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * drawn * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
       if (rng() < foulChance) {
-        foul(d, atRim && !hunting && rng() < RIM_TUNING.helpFoulShare ? def[clash.rimAnchor] : defender, k, quarter);
+        foul(d, atRim && !hunting && rng() < RIM_TUNING.helpFoulShare ? def[clash.rimAnchor] : defender, k, quarter, qLate);
         const ft = freeThrows(o, shooter, three ? 3 : 2);
         pts += ft.made;
         play = { side: o, text: `${shooter.label} ${ft.made}/${three ? 3 : 2} at the line`, joker: shooter.joker, quiet: ft.made === 0 };
@@ -1570,7 +1633,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
       const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0) + (three && setup ? RIM_TUNING.collapse * clash.rimZ : 0);
       const pressure = clutch ? CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span)) : 0;
-      const p = Math.max(0.05, base + edge - pressure) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1) * (garbage ? (score[o] > score[d] ? 1 - GARBAGE_TUNING.coast : 1 + GARBAGE_TUNING.coast) : 1);
+      const p = Math.max(0.05, base + edge - pressure - (guard === 0 && mode.quick ? QUICK_SHOT_PENALTY : 0)) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1) * (garbage ? (score[o] > score[d] ? 1 - GARBAGE_TUNING.coast : 1 + GARBAGE_TUNING.coast) : 1);
       if (rng() < p) {
         const value = three ? 3 : 2;
         line.fgm++;
@@ -1589,8 +1652,9 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         // launch — same shot, said plainly (the rng draw is kept so every game plays out the same).
         if (hunting) text = `${shooter.label} ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
         if (late) text = `${shooter.label} beats the shot clock — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
+        if (mode.buzzer) text = `${shooter.label} ${three ? 'three' : moves[Math.floor(rng() * moves.length)]} — beats the buzzer`;
         if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
-          foul(d, defender, k, quarter);
+          foul(d, defender, k, quarter, qLate);
           line.fta++;
           if (rng() < shooter.span.box.ftPct) {
             line.ftm++;
@@ -1635,11 +1699,126 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       if (rng() < BREAK_AFTER_REBOUND) breakNext[d] = 2;
       break;
     }
-    score[o] += pts;
-    quarters[o][quarter] += pts;
-    if (record) moments.push({ left: Math.max(0, gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS), quarter, score: [score[0], score[1]], play, lines: snapshot() });
+    finish(o, quarter, pts, play, leftAfter);
+  };
+
+  const quarterOf = (k: number) => Math.min(3, Math.floor((k * 4) / POSSESSIONS));
+  const leftBefore = (k: number) => gameSeconds - (k * gameSeconds) / POSSESSIONS;
+  // 2026-11-11 (the user: "2-for-one w końcówce kwarty", "rzuty na koniec kwarty"): the trip before
+  // a quarter's last may go early (`END_OF_QUARTER.twoForOne`) for one more short trip at the end;
+  // otherwise the last trip of a quarter holds for the final shot.
+  let extraFor: GameSide | null = null;
+  let k = 0;
+  for (; k < POSSESSIONS; k++) {
+    const quarter = quarterOf(k);
+    // The last minutes of the fourth are played on the clock (`closeOut`).
+    if (quarter === 3 && leftBefore(k) <= ENDGAME.seconds) break;
+    if (k >= (POSSESSIONS * 3) / 4) updateGarbage(garbageCut(k));
+    const both = fivesAt(k);
+    lastCourt = both;
+    addMinutes(both, possessionMinutes);
+    const o = (k % 2) as GameSide;
+    const clutch = k >= POSSESSIONS * (1 - CLUTCH_TUNING.minutes / gameMinutes) && Math.abs(score[o] - score[1 - o]) <= CLUTCH_TUNING.margin;
+    const lastOfQuarter = quarter < 3 && quarterOf(k + 1) !== quarter;
+    const secondLast = quarter < 3 && !lastOfQuarter && quarterOf(k + 2) !== quarter;
+    let mode: TripMode = {};
+    if (secondLast && rng() < END_OF_QUARTER.twoForOne) {
+      mode = { quick: true };
+      extraFor = o;
+    }
+    if (lastOfQuarter && extraFor === null) mode = { lastShot: true, buzzer: true };
+    const leftAfter = gameSeconds - ((k + 1) * gameSeconds) / POSSESSIONS;
+    // After a 2-for-1 the other side's trip leaves the few seconds the extra trip plays.
+    trip(k, o, both, quarter, clutch, lateInQuarter(k), leftAfter + (lastOfQuarter && extraFor !== null ? END_OF_QUARTER.extraSeconds : 0), mode);
+    if (lastOfQuarter && extraFor !== null) {
+      trip(k, extraFor, both, quarter, false, true, leftAfter, { lastShot: true, buzzer: true, heave: rng() < END_OF_QUARTER.heave });
+      extraFor = null;
+    }
   }
-  // Overtime would need more possessions; a tie goes to whoever the model favours, on a last shot.
+
+  /**
+   * 2026-11-11 (the user: "logika końcówki spotkań i faulowania pod koniec spotkania"): the last
+   * `ENDGAME.seconds` of the fourth and every overtime are played on the clock. A leader runs it
+   * (`holdSeconds`); a team behind hurries (`quickSeconds`) and looks for threes when a two is not
+   * enough; a team behind with little time fouls on purpose — side outs until the bonus, then two
+   * shots, the ball going to the leader's best free-throw shooters. A tie with the ball and under a
+   * shot clock left holds for the last shot.
+   */
+  const closeOut = (period: number, seconds: number, first: GameSide) => {
+    let clock = seconds;
+    let o = first;
+    while (clock > 0) {
+      const d = (1 - o) as GameSide;
+      const lead = score[o] - score[d];
+      if (period === 3) updateGarbage(garbageCutAt(clock / 60));
+      const both = fivesAt(k);
+      lastCourt = both;
+      const lateNow = clock <= ENDGAME.lateRule;
+      const giveUp = clock <= ENDGAME.shotClock ? ENDGAME.giveUpLate : ENDGAME.giveUp;
+      const foulNow = !garbage && lead > 0 && lead <= giveUp && (clock <= ENDGAME.foulUnder || (clock <= ENDGAME.foulEarlyUnder && lead >= 4));
+      if (foulNow) {
+        // A foul comes right after the inbound: at most half of what is left, so a clock that shows
+        // time after the free throws really has it (the user: two plays at 0:00 made no sense).
+        const spent = Math.min(ENDGAME.foulSeconds, clock / 2);
+        addMinutes(both, spent / 60);
+        clock -= spent;
+        if (clock < ENDGAME.lastTick) clock = 0;
+        const inBonus = teamFouls[d][period] >= bonusFouls(period) || (lateNow && lateFouls[d][period] >= 1);
+        const fouler = pickWeighted(rng, both[d].map((c) => c.player), (p) => 1 / (1 + box[d][p.label].pf));
+        foul(d, fouler, k, period, lateNow);
+        if (!inBonus) {
+          finish(o, period, 0, { side: d, text: `${fouler.label} fouls to stop the clock`, joker: fouler.joker, quiet: false, minor: true }, clock);
+          k++;
+          continue;
+        }
+        const fouled = pickWeighted(rng, both[o], (c) => (c.shotShare + 0.05) * Math.max(0.3, c.player.span.box.ftPct) ** ENDGAME.ftPower).player;
+        const ft = freeThrows(o, fouled, 2);
+        finish(o, period, ft.made, { side: o, text: `${fouled.label} ${ft.made}/2 — fouled on purpose`, joker: fouled.joker, quiet: false }, clock);
+        o = d;
+        k++;
+        continue;
+      }
+      let mode: TripMode = {};
+      let spent: number;
+      if (lead > 0) {
+        mode = { hold: true };
+        spent = clock <= ENDGAME.shotClock + 2 ? clock : Math.min(clock, ENDGAME.holdSeconds);
+      } else if (lead === 0 && clock <= ENDGAME.shotClock) {
+        mode = { lastShot: true, buzzer: true };
+        spent = clock;
+      } else if (lead < 0) {
+        const need = -lead;
+        const hurry = clock <= ENDGAME.hurryUnder;
+        mode = { quick: hurry, needThree: (need === 3 && clock <= ENDGAME.threeUnder) || (need >= 4 && hurry) };
+        spent = Math.min(clock, hurry ? ENDGAME.quickSeconds : ENDGAME.tripSeconds);
+        if (clock <= ENDGAME.lastShotUnder) {
+          mode = { lastShot: true, buzzer: true, needThree: need >= 3 };
+          spent = clock;
+        }
+      } else spent = Math.min(clock, ENDGAME.tripSeconds);
+      addMinutes(both, spent / 60);
+      const lateBefore = clock <= ENDGAME.lateRule;
+      clock -= spent;
+      // Under a second left after a trip, the period is over: the feed never shows two plays at 0:00.
+      if (clock < ENDGAME.lastTick) clock = 0;
+      const clutch = Math.abs(lead) <= CLUTCH_TUNING.margin;
+      trip(k, o, both, period, clutch, lateBefore, clock, mode);
+      o = d;
+      k++;
+    }
+  };
+  closeOut(3, k < POSSESSIONS ? leftBefore(k) : 0, (k % 2) as GameSide);
+  // 2026-11-11: overtime — five minutes on the clock, a jump ball, the bonus from the fourth foul.
+  for (let ot = 0; ot < MAX_OVERTIMES && score[0] === score[1]; ot++) {
+    for (const side of [0, 1] as GameSide[]) {
+      quarters[side].push(0);
+      teamFouls[side].push(0);
+      lateFouls[side].push(0);
+    }
+    garbage = false;
+    closeOut(4 + ot, OVERTIME_SECONDS, rng() < 0.5 ? 0 : 1);
+  }
+  // Still level after the overtimes: whoever the model favours, on a last shot.
   if (score[0] === score[1]) {
     const o: GameSide = margin >= 0 ? 0 : 1;
     const shooter = pickWeighted(rng, lastCourt[o], (c) => c.shotShare).player;
@@ -1647,11 +1826,11 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     box[o][shooter.label].fgm++;
     box[o][shooter.label].fga++;
     score[o] += 2;
-    quarters[o][3] += 2;
+    quarters[o][quarters[o].length - 1] += 2;
     if (record)
       moments.push({
         left: 0,
-        quarter: 3,
+        quarter: quarters[o].length - 1,
         score: [score[0], score[1]],
         play: { side: o, text: `${shooter.label} at the buzzer — game winner`, joker: shooter.joker, quiet: false },
         lines: snapshot(),
