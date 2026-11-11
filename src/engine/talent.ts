@@ -959,7 +959,7 @@ function fitOffenseAnchor(): NonNullable<typeof offenseAnchorFit> {
  */
 const PRE_BPM_OBPM = preBpmObpmData as Record<string, number>;
 const PRE_BPM_MINUTES = preBpmDwsMinutesData as unknown as Record<string, [number, number]>;
-const OBPM_ESTIMATE_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.OBPM_EST ?? 0.5);
+const OBPM_ESTIMATE_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.OBPM_EST ?? 0);
 function estimatedObpm(span: PlayerSpan): { obpm: number; minutes: number } | null {
   const obpm = PRE_BPM_OBPM[span.id];
   if (obpm === undefined) return null;
