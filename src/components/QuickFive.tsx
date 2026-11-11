@@ -35,6 +35,7 @@ import { lowRimPressure } from './DraftChrome';
 import { MiniTournamentView, type MiniTournamentSummary } from './MiniTournamentView';
 import { MINI_ROUNDS } from '../engine/miniTournament';
 import type { DailyDraftDay } from '../dailyDraftDay';
+import { DailyLeaderboard } from './DailyLeaderboard';
 import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
 import { maskName } from './bombMask';
@@ -985,6 +986,7 @@ function QuickResults({
         </Btn>
       )}
       {daily && <EmptyNote>Same players, same order for everyone today.</EmptyNote>}
+      {daily && <DailyLeaderboard mode="mini" day={daily.day} testing={daily.testing} />}
     </NightGame>
   );
 }

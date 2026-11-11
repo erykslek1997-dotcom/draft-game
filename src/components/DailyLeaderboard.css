@@ -1,0 +1,25 @@
+/* 2026-11-11, the daily leaderboard (DailyLeaderboard.tsx), in the calm results look. */
+.dlb {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px; margin: 12px 0;
+  background: var(--calm-raised, #0b111b); border: 1px solid var(--calm-line, #182433); border-radius: 14px;
+  color: var(--at-ink, #e8eef6); font-family: var(--calm-sans, Inter, system-ui, sans-serif); font-size: 14px;
+}
+.dlb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dlb-head h3 { margin: 0; font-size: 15px; }
+.dlb-me { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
+.dlb-me form { display: inline-flex; gap: 6px; }
+.dlb-me input { font: inherit; width: 12em; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--at-edge, #24344a); background: var(--calm-raised-2, #101826); color: inherit; }
+.dlb-link { font: inherit; font-size: 12.5px; font-weight: 500; background: none; border: 0; padding: 0; color: var(--at-accent, #4fb3ff); cursor: pointer; }
+.dlb-google {
+  margin-left: auto; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--at-edge, #24344a); background: var(--calm-raised-2, #101826); color: var(--at-ink, #e8eef6);
+}
+.dlb-google:hover, .dlb-link:hover { border-color: var(--at-accent, #4fb3ff); }
+.dlb-google:focus-visible, .dlb-link:focus-visible { outline: 2px solid var(--at-accent, #4fb3ff); outline-offset: 2px; }
+.dlb-note { margin: 0; color: var(--at-ink-soft, #9fb0c4); font-size: 13px; }
+.dlb-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.dlb-rows li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 8px; background: var(--calm-raised-2, #101826); }
+.dlb-rows li.is-me { outline: 1px solid color-mix(in srgb, var(--gold, #ffd166) 60%, transparent); }
+.dlb-rank { font: 700 12px var(--calm-num, ui-monospace, monospace); color: var(--at-ink-faint, #66788e); }
+.dlb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlb-score { font: 700 13px var(--calm-num, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
