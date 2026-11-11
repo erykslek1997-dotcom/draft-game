@@ -1,3 +1,4 @@
+import { CLUTCH_TRAIT, GLUE, MICROWAVE, hasTrait } from './traits';
 import shotTendencyData from '../data/shotTendencies.json';
 import pbpHabitData from '../data/pbpHabits.json';
 import { astPctForSpan, ballHandlerCost, ORTG_PER_TS } from './ballHandling';
@@ -775,6 +776,8 @@ function defenseResist(span: PlayerSpan): number {
   }
   return r;
 }
+/** A Clutch player (`traits.ts`) gets the ball in the clutch like a star of `CLUTCH_TRAIT.starness`. */
+const clutchness = (span: PlayerSpan) => Math.max(starness(span), hasTrait(span, 'Clutch') ? CLUTCH_TRAIT.starness : 0);
 /** How much of a star he is, 0 to 1 (O-TAL 85 -> 100). */
 const starness = (span: PlayerSpan) => (1 - defenseResist(span)) / STAR_RESIST.share;
 /**
@@ -1239,6 +1242,8 @@ function fiveFit(spans: PlayerSpan[]): { off: number; def: number } {
   return f;
 }
 
+/** The starting five's ids per side's court cache, so a court knows who came off the bench. */
+const startersOfCourt = new WeakMap<Map<string, CourtPlayer[]>, Set<string>>();
 function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlayer[] {
   const key = five.map((p) => p.span.id).join('|');
   let court = cache.get(key);
@@ -1262,13 +1267,18 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const anchor = five.reduce((sum, p) => sum + anchorOf(p.span).off, 0) / Math.max(1, five.length) + overload + handlers;
     // What the four beside him give him, less what his real teammates gave him (`teammateLift.ts`).
     const lifted = fiveLiftShifts(five.map((p) => p.span));
+    // 2026-11-11, traits (`traits.ts`): a Microwave off the bench shoots better; each Glue guy on the
+    // floor lifts the whole five.
+    const startersHere = startersOfCourt.get(cache);
+    const glueLift = GLUE.make * five.filter((p) => hasTrait(p.span, 'Glue')).length;
+    const traitMake = five.map((p) => glueLift + (startersHere && !startersHere.has(p.span.id) && hasTrait(p.span, 'Microwave') ? MICROWAVE.make : 0));
     court = five.map((player, i) => ({
       player,
       shotShare: lines[i].shotWeight,
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
-      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i])),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes)),
+      twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i] + traitMake[i])),
+      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes + traitMake[i] * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
@@ -1362,6 +1372,7 @@ function gameSetup(rosters: [GameRoster, GameRoster], tiring: boolean, gameMinut
   const POSSESSIONS = possessionsFor(rosters, gameSeconds);
   const courts = [new Map<string, CourtPlayer[]>(), new Map<string, CourtPlayer[]>()];
   const starterFive = (r: GameRoster) => STARTER_SLOTS.map((slot) => r.slotMinutes[slot][0]?.player).filter((p): p is Player => Boolean(p));
+  for (const side of [0, 1] as GameSide[]) startersOfCourt.set(courts[side], new Set(starterFive(rosters[side]).map((p) => p.span.id)));
   const starting = [courtFor(courts[0], starterFive(rosters[0])), courtFor(courts[1], starterFive(rosters[1]))];
   const possessionMinutes = gameSeconds / POSSESSIONS / 60;
   // The substitutions are deterministic, so the whole game's fives are known before tip-off.
@@ -1681,7 +1692,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         break;
       }
       const late = next !== 'putback' && !(onBreak && guard === 0) && (guard === 0 && (mode.hold || mode.lastShot) ? true : guard === 0 && mode.quick ? false : rng() < clash.lateP * (next === 'reset' ? LATE_TUNING.reset : 1));
-      const focus = (c: CourtPlayer) => (clutch ? 1 + CLUTCH_TUNING.focus * starness(c.player.span) : 1);
+      const focus = (c: CourtPlayer) => (clutch ? 1 + CLUTCH_TUNING.focus * clutchness(c.player.span) : 1);
       const shooterIdx =
         next === 'putback' && putbackBy
           ? off.indexOf(putbackBy)
@@ -1734,7 +1745,8 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const setupShare = Math.min(0.97, (three ? shot.setup3 : shot.setup2) / (1 - LATE_TUNING.share));
       const setup = next !== 'putback' && !late && rng() < setupShare * (next === 'reset' ? RESET_ASSISTED : 1);
       const edge = (three ? shot.edge3 : shot.edge2) * (setup ? 1 - setupShare : -setupShare) - (late ? LATE_TUNING.penalty : 0) + (three && setup ? RIM_TUNING.collapse * clash.rimZ : 0);
-      const pressure = clutch ? CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span)) : 0;
+      // 2026-11-11: a Clutch player (`traits.ts`) loses nothing to the pressure and makes a little more.
+      const pressure = clutch ? (hasTrait(shooter.span, 'Clutch') ? -CLUTCH_TRAIT.make : CLUTCH_TUNING.penalty * (1 - CLUTCH_TUNING.starKeep * starness(shooter.span))) : 0;
       const p = Math.max(0.05, base + edge - pressure - (guard === 0 && mode.quick ? QUICK_SHOT_PENALTY : 0)) * hunt * makeScale[o] * (tired[o].get(shooter.label) ?? 1) * (garbage ? (score[o] > score[d] ? 1 - GARBAGE_TUNING.coast : 1 + GARBAGE_TUNING.coast) : 1);
       if (rng() < p) {
         const value = three ? 3 : 2;

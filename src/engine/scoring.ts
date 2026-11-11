@@ -1,3 +1,4 @@
+import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
@@ -1946,6 +1947,7 @@ function benchShare(team: Team): number {
   return Math.min(0.4, bench / 240);
 }
 
+const TRAITS_ON = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.TRAITS !== '0';
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
@@ -1955,9 +1957,12 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const defense = defenseScore(team);
   const spacing = spacingScore(team);
   const fit0 = fitScore(team);
-  const fit = unit2 && SC_BENCH.includes('f')
+  let fit = unit2 && SC_BENCH.includes('f')
     ? { ...fit0, score: Math.round(STAGGER ? staggeredFit(team, fit0.score) : (1 - share) * fit0.score + share * fitScore(unit2, { bottleneckScale: U2_BOTTLENECK }).score) }
     : fit0;
+  // 2026-11-11: the traits' FIT (`traits.ts`: a veteran or a microwave off the bench, glue guys).
+  const traitFit = TRAITS_ON ? traitFitBonus(team).fit : 0;
+  if (traitFit) fit = { ...fit, score: Math.min(100, fit.score + traitFit) };
   const rotation = rotationScore(team);
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
