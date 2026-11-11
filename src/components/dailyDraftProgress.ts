@@ -22,6 +22,8 @@ export interface DailyDraftResult {
   place: number;
   field: number;
   overall: number;
+  /** The league's median score that day (the leaderboard's points use the margin over it). */
+  median?: number;
   /** All-Time only, once the season has been played. */
   season?: DailyDraftSeason;
 }
