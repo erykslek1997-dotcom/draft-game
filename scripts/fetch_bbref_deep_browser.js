@@ -42,12 +42,10 @@
   /** Rows of one table as objects keyed by bbref's data-stat names (stable across header changes).
    * Tables bbref ships inside an HTML comment are found too. */
   function parseTable(html, id) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    let table = doc.getElementById(id);
-    if (!table) {
-      const m = html.match(new RegExp(`<!--\\s*(<div[^]*?id="${id}"[^]*?</table>)`));
-      if (m) table = new DOMParser().parseFromString(m[1], 'text/html').getElementById(id);
-    }
+    // bbref serves most league tables inside HTML comments; strip the comment markers so every
+    // table parses the same way, then find it by id.
+    const doc = new DOMParser().parseFromString(html.replace(/<!--/g, '').replace(/-->/g, ''), 'text/html');
+    const table = doc.getElementById(id);
     if (!table) return null;
     const rows = [];
     for (const tr of table.querySelectorAll('tbody tr')) {
