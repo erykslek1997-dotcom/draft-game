@@ -947,6 +947,7 @@ const CARRY_DWS_SLACK = 0.5;
  * matched it and carried the floor: only a window whose own DBPM is genuinely positive carries. */
 const CARRY_MIN_DBPM = 0.5;
 const CARRY_PRE_BPM_DISCOUNT = 4;
+const CARRY_PRE_BPM_GAP_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CARRY_GAP ?? 8);
 let windowsByName: Map<string, PlayerSpan[]> | null = null;
 const carryCache = new Map<string, number>();
 function accoladeFloor(span: PlayerSpan): number {
@@ -1006,7 +1007,11 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
       const dws = dwsPerSeason(w);
       if (dws == null) continue;
       if (preBpm) {
-        if (r?.dbpm == null && ownDws! >= dws - CARRY_DWS_SLACK) result = Math.max(result, floor - CARRY_DISCOUNT - CARRY_PRE_BPM_DISCOUNT);
+        // 2026-11-11 (Gus Johnson 1963-68 read D 5-11 beside 78-88 once the votes began): a window
+        // short of the voted one's defensive Win Shares no longer loses the whole floor, only
+        // `CARRY_PRE_BPM_GAP_COST` per Win Share it falls short.
+        const gap = Math.max(0, dws - CARRY_DWS_SLACK - ownDws!);
+        if (r?.dbpm == null && (gap === 0 || CARRY_PRE_BPM_GAP_COST > 0)) result = Math.max(result, floor - CARRY_DISCOUNT - CARRY_PRE_BPM_DISCOUNT - CARRY_PRE_BPM_GAP_COST * gap);
         continue;
       }
       if (r?.dbpm == null) continue;
