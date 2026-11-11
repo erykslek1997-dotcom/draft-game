@@ -969,6 +969,15 @@ function preBpmDwsPerSeason(span: PlayerSpan): number | null {
   }
   return mp > 0 ? (dws / mp) * 36 * 82 : null;
 }
+/** 2026-11-11 (the user: Havlicek's early cards): the carried All-Defense floor for a window from
+ * before 1973-74, where no BPM or stocks exist — what TAL's defense credit reads for such a window
+ * instead of a box-only D that cannot see him. 0 for any later window (their D is measured).
+ * Registration-free (award data and the pool only), so a cached TAL never depends on load order. */
+export function preBpmCarriedDefense(span: PlayerSpan): number {
+  if (realSpan(span) !== null) return 0;
+  return carriedAccoladeFloor(span);
+}
+
 function carriedAccoladeFloor(span: PlayerSpan): number {
   if (!DTAL_RULES.carry) return 0;
   const hit = carryCache.get(span.id);

@@ -10,7 +10,7 @@ import { rimPressureOffenseTerm } from './rimPressure';
 import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
-import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason } from './defensiveTalent';
+import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason, preBpmCarriedDefense } from './defensiveTalent';
 import { withHustleBonus } from '../data/hustleDefenders';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
@@ -2164,6 +2164,7 @@ const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
 const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
 /** First season (end year) with steals and blocks in the box score. */
 const DEFENSE_CREDIT_STOCKS_FROM = 1974;
+const CARRY_INTO_TAL = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CARRY_TAL ?? '1') !== '0';
 
 export function defenseCreditLift(span: PlayerSpan, tal: number): number {
   const fade = clamp01((DEFENSE_CREDIT_FADE_TO - tal) / (DEFENSE_CREDIT_FADE_TO - DEFENSE_CREDIT_FADE_FROM));
@@ -2172,7 +2173,10 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
   const group = pos === 'PG' || pos === 'SG' ? 'G' : pos === 'SF' ? 'W' : 'B';
   const otal = computeOffensiveTalentBase(span);
   const band = otal < 57 ? 'L' : otal < 67 ? 'M' : 'H';
-  const dtal = withHustleBonus(span, computeDefensiveTalentBase(span));
+  // 2026-11-11: a window from before 1973-74 reads the All-Defense floor carried from his later
+  // windows on defensive Win Shares (`preBpmCarriedDefense`) where that beats the box-only read.
+  const carried = CARRY_INTO_TAL ? preBpmCarriedDefense(span) : 0;
+  const dtal = withHustleBonus(span, Math.max(computeDefensiveTalentBase(span), carried));
   let lift = DEFENSE_CREDIT_WEIGHT[band][group] * (dtal - DEFENSE_CREDIT_POSITION_MEAN[group]) * fade;
   // A poor defender loses half — and only in the rotation band: below TAL 50 the cut fades out
   // (zero at 40), so the replacement-level tail isn't pushed further down.
