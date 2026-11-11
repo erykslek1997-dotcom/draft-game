@@ -1,3 +1,4 @@
+import { isVeteranWindow } from '../engine/veteran';
 import type { DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { per36 } from '../engine/minutesPerGame';
 
@@ -51,6 +52,8 @@ export function cardRoles(span: PlayerSpan): string[] {
   if (span.defensiveRole === 'Mobile Big' && per36(span.box.bpg, span) < SHOT_BLOCKER_BLK_PER_36) defense = 'Mobile defender';
   if (defense) roles.push(defense);
   else if (per36(span.box.rpg, span) >= REBOUNDER_PER_36) roles.push('Rebounder');
+  // 2026-11-11 (the user: "tak, weteran"): a former scorer's late, reduced-role window (`veteran.ts`).
+  if (isVeteranWindow(span)) roles.push('Veteran');
   return roles;
 }
 
