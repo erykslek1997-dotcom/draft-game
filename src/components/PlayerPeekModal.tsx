@@ -13,7 +13,7 @@ import { portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, displa
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
-import { spacingUngraded, type GradeKey } from './gradeHelp';
+import { type GradeKey } from './gradeHelp';
 import { draftButtonTitle } from './DraftBoard';
 import { spanAwards } from '../engine/spanAwards';
 
@@ -75,8 +75,10 @@ function gradeList(span: PlayerSpan): Array<[string, Grade, GradeKey]> {
 function Grades({ span, locked = false }: { span: PlayerSpan; locked?: boolean }) {
   return (
     <div className={`pk2-g6${locked ? ' lock' : ''}`}>
-      {gradeList(span).map(([label, grade, key]) => {
-        const shown = locked ? '?' : key === '3PT' && spacingUngraded(span) ? NOT_YET : grade;
+      {gradeList(span).map(([label, grade]) => {
+        // 2026-11-11: a window before the line shows its estimated spacing letter (hand list or
+        // statistical twins); its 3P% stays a dash with the era note.
+        const shown = locked ? '?' : grade;
         // 2026-10-29 (the user: the card "looks like crap"; S read like a B): S and A green, B and C plain, D and F red.
         const tone = /^[SA]/.test(shown) ? 'hi' : /^[DF]/.test(shown) ? 'lo' : undefined;
         return (
