@@ -1,3 +1,4 @@
+import { nicknameFor } from '../data/nicknames';
 import { Fragment, createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { PlayerSpan } from '../data/schema';
@@ -82,6 +83,8 @@ const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${
  * turns it round (2026-10-29, the user: "Zrób Giannis A."): "Giannis Antetokounmpo" → "Giannis A.". */
 const LONG_SURNAME = 10;
 const shortName = (name: string) => {
+  const nick = nicknameFor(name);
+  if (nick) return nick;
   const i = name.indexOf(' ');
   if (i < 0) return name;
   const last = name.slice(i + 1);

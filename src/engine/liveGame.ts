@@ -1,3 +1,4 @@
+import { nicknameFor } from '../data/nicknames';
 import { CLUTCH_TRAIT, GLUE, MICROWAVE, hasTrait } from './traits';
 import shotTendencyData from '../data/shotTendencies.json';
 import pbpHabitData from '../data/pbpHabits.json';
@@ -357,6 +358,9 @@ function threeWords(span: PlayerSpan, r: number): string {
 }
 
 function lastName(name: string): string {
+  // 2026-11-11: the names everyone uses (`nicknames.ts`) — "Giannis dunk", "Kareem skyhook".
+  const nick = nicknameFor(name);
+  if (nick) return nick;
   const parts = name.split(' ');
   const last = parts[parts.length - 1];
   return /^(Jr\.?|Sr\.?|II|III|IV)$/.test(last) && parts.length > 2 ? parts[parts.length - 2] : last;
