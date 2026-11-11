@@ -244,7 +244,7 @@ type AtTab = 'draft' | 'team';
 
 
 /** How long the taken cards take to fold away when the player's own turn comes. */
-const GHOST_SWEEP_MS = 1300;
+const GHOST_SWEEP_MS = 1600;
 
 export default function DraftBoard({
   state,

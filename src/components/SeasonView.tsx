@@ -1528,7 +1528,7 @@ function PlayoffsChapter({
       if (simming && (seriesOver || !live)) setSimming(false);
       return;
     }
-    const t = window.setTimeout(() => setReveal({ kind: 'live', round: live.round, game: simStep + 1 }), simStep === 6 ? 1800 : 1000);
+    const t = window.setTimeout(() => setReveal({ kind: 'live', round: live.round, game: simStep + 1 }), simStep === 6 ? 2200 : 1300);
     return () => window.clearTimeout(t);
   }, [simStep, simming, seriesOver, live, setReveal]);
   const oppOf = (s: LivePlayoffSeries) => (s.teamAId === youId ? s.teamBId : s.teamAId);

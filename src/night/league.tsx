@@ -9,7 +9,7 @@ import { bandInk } from './color';
 import { reducedMotion } from '../settings';
 
 /** How long the drum holds on your ball before the result comes in, ms. */
-const LANDED_HOLD_MS = 1600;
+const LANDED_HOLD_MS = 2100;
 import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt, Tally, fmtCaps, type NavLinks } from './frame';
 
 /** League team marks and the lottery: light pieces (no player data), so the menu's early lottery
@@ -123,7 +123,7 @@ export function NightLottery({
   }, [slot, teamCount]);
   useEffect(() => {
     if (!done || !onRevealed) return;
-    const id = window.setTimeout(onRevealed, 250);
+    const id = window.setTimeout(onRevealed, 350);
     return () => window.clearTimeout(id);
   }, [done, onRevealed]);
   const picks = useMemo(() => snakePicks(slot, teamCount, rounds), [slot, teamCount, rounds]);

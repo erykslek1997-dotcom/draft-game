@@ -503,3 +503,10 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .nsel-o { text-align: left; white-space: nowrap; background: none; border: 0; color: var(--ink2); font: 500 13px var(--sans); padding: 6px 12px; cursor: pointer; }
 .nsel-o.hv { background: var(--you-tint); color: var(--ink); }
 .nsel-o.on { color: var(--ink); font-weight: 700; }
+/* 2026-11-11 (the user: animations "płynniej i wolniej"): what used to pop in now eases in — a pick
+   landing on the draft board, a new line on the live feed. */
+@keyframes cell-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+@keyframes ln-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.bg-cell.filled { animation: cell-in 0.5s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+.feed .ln, .feed .call, .feed .q { animation: ln-in 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .bg-cell.filled, .feed .ln, .feed .call, .feed .q { animation: none; } }

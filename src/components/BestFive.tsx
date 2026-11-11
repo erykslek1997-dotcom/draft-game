@@ -105,15 +105,15 @@ const NTH = ['next', '3rd', '4th', '5th'];
  */
 const TEMPO = {
   /** Between two cards leaving the deck. */
-  step: 480,
+  step: 580,
   /** One card's flight and turn. */
-  flight: 950,
+  flight: 1100,
   /** The AI looking at its hand. */
-  think: 1300,
+  think: 1550,
   /** A taken card held up before the table moves on (yours and the AI's). */
-  take: 1500,
+  take: 1800,
   /** Your card lifting before the next deal. */
-  pick: 650,
+  pick: 780,
 };
 
 /**

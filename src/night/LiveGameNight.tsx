@@ -17,7 +17,8 @@ import { Actions, Btn, H3, Mast, NFace, NightGame, Prompt, SLOTS, Tally, buzz, s
  * Pace (2026-10-14, the user: "ważne żeby wyważyć czas trwania"): about 12 s a quarter for the first
  * three, the fourth slower, a close finish about a second a play, a blowout's fourth fast.
  */
-const PACE = { early: 250, fourth: 420, blowout: 170, clutchPlay: 1500, clutchQuiet: 500, quarterBreak: 2500 };
+// 2026-11-11 (the user: animations "płynniej i wolniej"): ~25% calmer throughout.
+const PACE = { early: 320, fourth: 520, blowout: 210, clutchPlay: 1800, clutchQuiet: 620, quarterBreak: 3000 };
 const CLUTCH = { seconds: 120, margin: 8 };
 const BLOWOUT_MARGIN = 20;
 // 2026-10-15 (playtest 7: "brakuje szybkości 1/8, 1/4, 1/2"): the slow speeds stay.
