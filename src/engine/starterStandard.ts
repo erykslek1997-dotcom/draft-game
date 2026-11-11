@@ -19,12 +19,19 @@ const ROLE_STARTER_MIN_TAL = 50;
 const ROLE_STARTER_MIN_SPACING = 55;
 const ROLE_STARTER_MIN_DEFENSE = 56;
 
+/**
+ * 2026-11-11 (the user: "poluzujmy pod daily i challenges" — small pools often hold a stopper and no
+ * starter-tier wing): an elite defender reads as a role starter without the shot, from a higher TAL.
+ * Thybulle 2020-22 (TAL 56, D 96), Roberson's windows. Every mode: the rotation does not know it.
+ */
+const STOPPER_MIN_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_TAL ?? 55);
+const STOPPER_MIN_DEFENSE = 85;
+
 export function isJustifiedRoleStarter(span: PlayerSpan): boolean {
-  return (
-    effectiveTalent(span) >= ROLE_STARTER_MIN_TAL &&
-    teamSpacingValue(span) >= ROLE_STARTER_MIN_SPACING &&
-    computeDefensiveTalent(span) >= ROLE_STARTER_MIN_DEFENSE
-  );
+  const tal = effectiveTalent(span);
+  const d = computeDefensiveTalent(span);
+  if (tal >= STOPPER_MIN_TAL && d >= STOPPER_MIN_DEFENSE) return true;
+  return tal >= ROLE_STARTER_MIN_TAL && teamSpacingValue(span) >= ROLE_STARTER_MIN_SPACING && d >= ROLE_STARTER_MIN_DEFENSE;
 }
 
 /** A starter the five can carry: TAL at the standard, or a justified role starter below it. */
