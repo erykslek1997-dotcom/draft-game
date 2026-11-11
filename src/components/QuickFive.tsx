@@ -36,6 +36,7 @@ import { MiniTournamentView, type MiniTournamentSummary } from './MiniTournament
 import { MINI_ROUNDS } from '../engine/miniTournament';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { DailyLeaderboard } from './DailyLeaderboard';
+import { medianOf } from '../online/points';
 import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
 import { maskName } from './bombMask';
@@ -650,7 +651,7 @@ function QuickResults({
   const best = ranked[0];
   const tier = resultTier(humanRank, TEAM_COUNT);
   useEffect(() => {
-    if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
+    if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite, median: medianOf(ranked.map((r) => r.score.composite)) });
   }, [daily, humanRank, human.score.composite]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {

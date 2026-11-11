@@ -49,6 +49,7 @@ import { exportFullDraft } from '../engine/draftExport';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
 import { DailyLeaderboard } from './DailyLeaderboard';
+import { medianOf } from '../online/points';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
@@ -934,7 +935,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return { wins: row.wins, losses: row.losses, place, playoffs };
   }, [daily, humanRanked, seasonState]);
   useEffect(() => {
-    if (daily && !daily.testing && humanRanked) saveDailyDraftResult(daily.mode, daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall });
+    if (daily && !daily.testing && humanRanked) saveDailyDraftResult(daily.mode, daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall, median: medianOf(ranked.map((r) => r.breakdown.overall)) });
   }, [daily, humanRanked, ranked.length]);
   useEffect(() => {
     if (daily && !daily.testing && dailySeason) saveDailyDraftSeason(daily.mode, daily.day, dailySeason);
@@ -1057,7 +1058,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <Kv k="You" v={hero.breakdown.overall} />
         </section>
       )}
-      {daily && <DailyLeaderboard mode={daily.mode} day={daily.day} testing={daily.testing} />}
+      {daily && <DailyLeaderboard mode={daily.mode} day={daily.day} testing={daily.testing} version={dailySeason ? 1 : 0} />}
       <Actions links={{ ...links, menuPhoneOnly: true }}>
         <Btn onClick={() => setSeasonOpen(true)}>{played ? 'Open the season →' : 'Play the season →'}</Btn>
         <div className="btn2">

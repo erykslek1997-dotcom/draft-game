@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { DailyDraftMode } from '../dailyDraftDay';
 import { setNickname, signInWithGoogle, signOut, useAccount } from '../online/account';
-import { fetchDailyLeaderboard, submitDailyScore, type LeaderboardRow } from '../online/leaderboard';
+import { fetchDailyLeaderboard, fetchWeeklyLeaderboard, submitDailyScore, type LeaderboardRow } from '../online/leaderboard';
+import { dailyPoints, type PointsBreakdown } from '../online/points';
 import { onlineEnabled } from '../online/supabase';
-import { dailyDraftResult } from './dailyDraftProgress';
+import { dailyDraftResult, dailyDraftStreak } from './dailyDraftProgress';
 import './DailyLeaderboard.css';
 
 /**
@@ -13,25 +14,29 @@ import './DailyLeaderboard.css';
  * menu, so the result is sent the next time the table is shown, not only right after the draft.
  * Without the online build settings this renders nothing.
  */
-export function DailyLeaderboard({ mode, day, testing }: { mode: DailyDraftMode; day: string; testing?: boolean }) {
+export function DailyLeaderboard({ mode, day, testing, version = 0 }: { mode: DailyDraftMode; day: string; testing?: boolean; /** Bump when the saved result changes (the season was played) to resend. */ version?: number }) {
   const { account, refresh } = useAccount();
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sending' | 'saved' | 'error'>('idle');
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<'day' | 'week'>('day');
+  const [mine, setMine] = useState<PointsBreakdown | null>(null);
   const [name, setName] = useState('');
 
   useEffect(() => {
     if (!onlineEnabled || testing) return;
     let alive = true;
     void (async () => {
-      const mine = dailyDraftResult(mode, day);
-      if (account && mine) {
+      const result = dailyDraftResult(mode, day);
+      const points = result ? dailyPoints({ mode, ...result, streak: dailyDraftStreak(mode, day) }) : null;
+      if (alive) setMine(points);
+      if (account && result && points) {
         setStatus('sending');
-        const r = await submitDailyScore(account.id, mode, day, mine);
+        const r = await submitDailyScore(account.id, mode, day, result, points);
         if (alive) setStatus(r === 'error' ? 'error' : 'saved');
       }
-      const board = await fetchDailyLeaderboard(mode, day);
+      const board = tab === 'day' ? await fetchDailyLeaderboard(mode, day) : await fetchWeeklyLeaderboard(mode, day);
       if (alive) {
         setRows(board);
         setLoaded(true);
@@ -40,7 +45,7 @@ export function DailyLeaderboard({ mode, day, testing }: { mode: DailyDraftMode;
     return () => {
       alive = false;
     };
-  }, [account, mode, day, testing]);
+  }, [account, mode, day, testing, tab, version]);
 
   if (!onlineEnabled || testing) return null;
   const myIndex = account ? (rows ?? []).findIndex((r) => r.userId === account.id) : -1;
@@ -48,7 +53,11 @@ export function DailyLeaderboard({ mode, day, testing }: { mode: DailyDraftMode;
   return (
     <section className="dlb" aria-label="Today's leaderboard">
       <div className="dlb-head">
-        <h3>Today’s leaderboard</h3>
+        <h3>Leaderboard</h3>
+        <span className="dlb-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'day'} className={tab === 'day' ? 'is-on' : undefined} onClick={() => setTab('day')}>Today</button>
+          <button type="button" role="tab" aria-selected={tab === 'week'} className={tab === 'week' ? 'is-on' : undefined} onClick={() => setTab('week')}>This week</button>
+        </span>
         {account ? (
           <span className="dlb-me">
             {editing ? (
@@ -80,6 +89,12 @@ export function DailyLeaderboard({ mode, day, testing }: { mode: DailyDraftMode;
           </button>
         ) : null}
       </div>
+      {mine && tab === 'day' && (
+        <p className="dlb-mine">
+          Your points today: <b>{mine.total.toFixed(1)}</b>
+          <span> · draft {mine.draft.toFixed(1)}{mode !== 'mini' ? ` · season ${mine.season ? mine.season.toFixed(1) : '— play it for up to 47'}` : ''}{mine.streak ? ` · streak +${mine.streak}` : ''}</span>
+        </p>
+      )}
       {status === 'error' && <p className="dlb-note">Couldn’t send your score. It’s saved here; it will go up next time.</p>}
       {rows === null ? (
         <p className="dlb-note">{loaded ? 'The leaderboard is offline right now. Your result is saved here.' : 'Loading…'}</p>
@@ -91,14 +106,14 @@ export function DailyLeaderboard({ mode, day, testing }: { mode: DailyDraftMode;
             <li key={r.userId} className={i === myIndex ? 'is-me' : undefined}>
               <span className="dlb-rank">{i + 1}</span>
               <span className="dlb-name">{r.nickname}</span>
-              <span className="dlb-score">{r.overall.toFixed(1)}</span>
+              <span className="dlb-score">{r.points.toFixed(1)}{r.days !== undefined ? <small> · {r.days}d</small> : null}</span>
             </li>
           ))}
           {myIndex >= 10 && rows[myIndex] && (
             <li className="is-me">
               <span className="dlb-rank">{myIndex + 1}</span>
               <span className="dlb-name">{rows[myIndex].nickname}</span>
-              <span className="dlb-score">{rows[myIndex].overall.toFixed(1)}</span>
+              <span className="dlb-score">{rows[myIndex].points.toFixed(1)}</span>
             </li>
           )}
         </ol>

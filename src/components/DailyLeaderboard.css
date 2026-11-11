@@ -23,3 +23,10 @@
 .dlb-rank { font: 700 12px var(--calm-num, ui-monospace, monospace); color: var(--at-ink-faint, #66788e); }
 .dlb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlb-score { font: 700 13px var(--calm-num, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
+
+.dlb-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--calm-raised-2, #101826); border: 1px solid var(--calm-line, #182433); }
+.dlb-tabs button { font: inherit; font-size: 12.5px; font-weight: 600; border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; background: none; color: var(--at-ink-soft, #9fb0c4); }
+.dlb-tabs button.is-on { background: var(--at-ink, #e8eef6); color: var(--at-paper, #05080d); }
+.dlb-mine { margin: 0; font-size: 13.5px; }
+.dlb-mine b { font-family: var(--calm-num, ui-monospace, monospace); color: var(--gold, #ffd166); }
+.dlb-mine span, .dlb-score small { color: var(--at-ink-soft, #9fb0c4); font-weight: 500; }
