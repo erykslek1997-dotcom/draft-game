@@ -105,7 +105,9 @@ const recomputedOverall = Math.round(
     // 2026-11-11: partial decade-drift correction.
     eraAdjustment(fullRoster),
 );
-assert(breakdown.overall === recomputedOverall, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
+// 2026-11-11: within one point — the parts are read rounded, Overall from their exact values, so a
+// team sitting near a .5 (this one moved there when the lineup search changed) can round apart.
+assert(Math.abs(breakdown.overall - recomputedOverall) <= 1, 'Overall is the 50/50 quality-vs-fit blend, quality folding in rotation and fit folding in offense/defense');
 
 // 2026-09-28: neighbour-season spacing smoothing reads Chris Webber 1996-98 (two of its three
 // seasons on the shortened line) at 43, no longer a shooter, and this "four-shooter" five fell to
