@@ -1791,3 +1791,5 @@ czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
    wyjątków do potwierdzenia przez Eryka; kara w obronie zespołowej (switch/hunt), nie w D-TAL; SRS może spaść najwyżej
    minimalnie — inaczej kara idzie do symulacji zamiast do oceny.
 5. Do oceny: Bam 2020-22 = 87 (sufit All-NBA); Danny Green 2016-18 61 -> 46, Kirilenko 2002-04 84 -> 74 po zasadzie okien.
+
+- **Calibration case: John Havlicek 1962-67** (2026-11-11). Sixth man at ~29 mpg, TS ~3 pp below league, OWS ~0, WS/48 0.094-0.142, 2.8 apg; TAL 50-59 against 82 at his 1970-72 peak. The user reads the early windows as too low. Not fixed by hand. Ruled out: minutes (a lift to 34 mpg adds only 1-2 TAL, because extra volume brings extra misses) and defense (the carry already gives D 76). Check any future O-TAL or era change against these windows.
