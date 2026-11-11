@@ -248,13 +248,14 @@ const spacingGain = (delta: number) => Math.max(-MAX_SPACING_GAIN, Math.min(MAX_
 /** A tired player makes fewer shots (`fatigue.ts`, the same curve the minute solver prices). */
 const fatigue = (minutes: number) => 1 - ROTATION_TUNING.fatigueScale * fatigueShare(minutes);
 
-const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
-const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
-// Fallback for windows without shot detail (mostly before 1996-97): no step-back, a word of a later game.
-const GUARD_MOVES = ['pull-up jumper', 'floater', 'drive to the rim', 'jumper from the elbow'];
-function movesFor(slot: Position): string[] {
-  if (slot === 'C' || slot === 'PF') return BIG_MOVES;
-  return slot === 'PG' ? GUARD_MOVES : WING_MOVES;
+// Fallback words for windows without shot detail (mostly before 1996-97), split at the rim / away
+// from it (2026-11-11: a big's mid-range make read "dunk" from one list for both).
+const BIG_MOVES = { rim: ['layup', 'dunk', 'layup off the glass'], mid: ['hook shot', 'turnaround jumper', 'short jumper'] };
+const WING_MOVES = { rim: ['driving layup', 'layup', 'dunk'], mid: ['pull-up jumper', 'mid-range jumper', 'floater'] };
+const GUARD_MOVES = { rim: ['drive to the rim', 'driving layup', 'layup'], mid: ['pull-up jumper', 'floater', 'jumper from the elbow'] };
+function movesFor(slot: Position, atRim: boolean): string[] {
+  const set = slot === 'C' || slot === 'PF' ? BIG_MOVES : slot === 'PG' ? GUARD_MOVES : WING_MOVES;
+  return atRim ? set.rim : set.mid;
 }
 
 /**
@@ -331,7 +332,7 @@ const SIGNATURE_MOVES: ReadonlyMap<string, { rim?: string[]; mid?: string[] }> =
 );
 const SIGNATURE_SHARE = { none: 0.6, withData: 0.35 };
 function twoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, r: number): string {
-  const moves = movesFor(player.slot);
+  const moves = movesFor(player.slot, atRim);
   const sig = SIGNATURE_MOVES.get(normalizePlayerName(player.span.playerName))?.[atRim ? 'rim' : 'mid'];
   if (sig) {
     const hasData = !!SHOT_TENDENCIES.spans[player.span.id]?.[atRim ? 0 : 1]?.length;
@@ -340,6 +341,15 @@ function twoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, 
     r = (r - share) / (1 - share);
   }
   return tendencyPhrase(player.span, atRim ? 0 : 1, r) ?? moves[Math.floor(r * moves.length)];
+}
+/**
+ * 2026-11-11 (the user: "dunk to beat the buzzer to raczej pewnie jakiś ułamek"): a two at the horn is
+ * a jumper or a drive — no dunk, alley-oop or putback in the words. At the rim it is a layup.
+ */
+function buzzerTwoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, r: number): string {
+  if (!atRim) return twoWords(player, false, r);
+  const words = twoWords(player, true, r);
+  return /dunk|alley|putback|tip/.test(words) ? (r < 0.5 ? 'driving layup' : 'layup in traffic') : words;
 }
 function threeWords(span: PlayerSpan, r: number): string {
   return tendencyPhrase(span, 2, r) ?? (r < 0.3 ? 'corner three' : 'three');
@@ -1743,7 +1753,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         // launch — same shot, said plainly (the rng draw is kept so every game plays out the same).
         if (hunting) text = `${shooter.label} ${three ? 'three' : twoWords(shooter, atRim, rng())}`;
         if (late) text = `${shooter.label} beats the shot clock — ${three ? threeWords(shooter.span, 0) : twoWords(shooter, atRim, rng())}`;
-        if (mode.buzzer) text = `${shooter.label} ${three ? threeWords(shooter.span, 0) : twoWords(shooter, atRim, rng())} — beats the buzzer`;
+        if (mode.buzzer) text = `${shooter.label} ${three ? threeWords(shooter.span, 0) : buzzerTwoWords(shooter, atRim, rng())} — beats the buzzer`;
         if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
           foul(d, defender, k, quarter, qLate);
           line.fta++;
