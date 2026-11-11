@@ -131,3 +131,14 @@ for (const [d, gs] of [...byDec].sort((a, b) => a[0] - b[0])) console.log(`  ${d
 
 const csv = ['player,span,tal,tier,twins,gap,twin1,twin2,twin3,twin4,twin5', ...rows.sort((a, b) => b.gap - a.gap).map((r) => [r.span.playerName, r.span.spanLabel, r.tal.toFixed(1), r.tier, r.twins.toFixed(1), r.gap.toFixed(1), ...r.near.slice(0, 5).map((n) => `${n.span.playerName} ${n.span.spanLabel} (${Math.round(tal(n.span))})`)].map((x) => `"${x}"`).join(','))];
 if (args.csv) { writeFileSync(args.csv, csv.join('\n')); console.log(`\nwrote ${args.csv}`); }
+
+// --player="John Havlicek": every window of one player with its ten twins.
+if (args.player) {
+  for (const s of draftPool.filter((x) => x.playerName === args.player).sort((a, b) => a.spanLabel.localeCompare(b.spanLabel))) {
+    const near = neighbours(s);
+    let num = 0, den = 0;
+    for (const n of near) { const w = 1 / (0.1 + n.d); num += w * tal(n.span); den += w; }
+    console.log(`\n${s.playerName} ${s.spanLabel}  TAL ${Math.round(tal(s))}  vs twins ${(num / den).toFixed(0)}  (${s.box.ppg.toFixed(1)} pts, ${s.box.rpg.toFixed(1)} reb, ${s.box.apg.toFixed(1)} ast, TS ${(s.box.tsPct * 100).toFixed(0)}%)`);
+    console.log('  ' + near.map((n) => `${n.span.playerName} ${n.span.spanLabel} ${Math.round(tal(n.span))}`).join(' · '));
+  }
+}
