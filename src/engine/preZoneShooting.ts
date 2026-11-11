@@ -61,3 +61,9 @@ const PRE_ZONE_RULES = { model: true };
 export function preZoneShootingSkill(span: PlayerSpan): number | undefined {
   return PRE_ZONE_MIDRANGE_SPACING.get(normalizePlayerName(span.playerName)) ?? (PRE_ZONE_RULES.model ? PRE_ZONE_MODEL[span.id] : undefined);
 }
+
+/** 2026-11-11: true when the user set this player by hand (the review list), so a data estimate
+ * must not override him. */
+export function onPreZoneHandList(span: PlayerSpan): boolean {
+  return PRE_ZONE_MIDRANGE_SPACING.has(normalizePlayerName(span.playerName));
+}

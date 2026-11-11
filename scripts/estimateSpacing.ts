@@ -178,3 +178,17 @@ console.log(`\n  ${offList.length} of ${rows.length} read 0 today (off the hand 
     console.log(`  ${n.padEnd(20)} ${r.s.spanLabel}  ${(r.s.box.ftPct * 100).toFixed(0)}%  ${String(r.now).padStart(3)} ${spacingGrade(r.now).padEnd(3)}    ${r.est.value.toFixed(0).padStart(3)} ${spacingGrade(r.est.value).padEnd(3)}    ${f.toFixed(0).padStart(3)} ${spacingGrade(f)}`);
   }
 }
+
+// --out=path: the stretched estimate (before the 0.85 pre-line share, which the engine applies) for
+// every window wholly before the line, by span id — src/data/preLineSpacingTwins.json.
+if (args.out) {
+  const pred = DONORS.map((s) => estimate(s).value), truth = DONORS.map((s) => spacing.get(s.id)!);
+  const mp = pred.reduce((a, b) => a + b, 0) / pred.length, mt = truth.reduce((a, b) => a + b, 0) / truth.length;
+  const b = pred.reduce((a, p, i) => a + (p - mp) * (truth[i] - mt), 0) / pred.reduce((a, p) => a + (p - mp) ** 2, 0);
+  const a = mt - b * mp;
+  const out: Record<string, number> = {};
+  for (const s of draftPool) if (lastYear(s) <= 1979) out[s.id] = Math.round(Math.max(0, Math.min(100, a + b * estimate(s).value)));
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(args.out, JSON.stringify(out));
+  console.log(`\nwrote ${Object.keys(out).length} pre-line windows to ${args.out}`);
+}
