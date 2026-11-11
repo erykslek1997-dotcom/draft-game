@@ -5,6 +5,7 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
+import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
 import { darkoDefenseBonus, darkoDefenseShortfall, realDefenseExcessDetail } from './darkoCorrection';
@@ -945,6 +946,7 @@ const CARRY_DWS_SLACK = 0.5;
 /** Klay Thompson's All-Defense 2019 came with a DBPM of −1.7, so his post-injury windows (−1.6)
  * matched it and carried the floor: only a window whose own DBPM is genuinely positive carries. */
 const CARRY_MIN_DBPM = 0.5;
+const CARRY_PRE_BPM_DISCOUNT = 4;
 let windowsByName: Map<string, PlayerSpan[]> | null = null;
 const carryCache = new Map<string, number>();
 function accoladeFloor(span: PlayerSpan): number {
@@ -952,8 +954,30 @@ function accoladeFloor(span: PlayerSpan): number {
 }
 function dwsPerSeason(span: PlayerSpan): number | null {
   const r = realSpan(span);
-  return r?.dws != null && r.minutes > 0 ? (r.dws / r.minutes) * 36 * 82 : null;
+  if (r?.dws != null && r.minutes > 0) return (r.dws / r.minutes) * 36 * 82;
+  return preBpmDwsPerSeason(span);
 }
+/** 2026-11-11: defensive Win Shares before 1973-74, where the real-advanced data stops (bbref's
+ * advanced table, `fetch_bbref_deep_browser.js`): [dws, minutes] by name|season-end. */
+const PRE_BPM_DWS = preBpmDwsData as unknown as Record<string, [number, number]>;
+function preBpmDwsPerSeason(span: PlayerSpan): number | null {
+  const name = normalizePlayerName(span.playerName);
+  let dws = 0, mp = 0;
+  for (const y of spanEndYears(span.spanLabel)) {
+    const row = PRE_BPM_DWS[`${name}|${y}`];
+    if (row) { dws += row[0]; mp += row[1]; }
+  }
+  return mp > 0 ? (dws / mp) * 36 * 82 : null;
+}
+/** 2026-11-11 (the user: Havlicek's early cards): the carried All-Defense floor for a window from
+ * before 1973-74, where no BPM or stocks exist — what TAL's defense credit reads for such a window
+ * instead of a box-only D that cannot see him. 0 for any later window (their D is measured).
+ * Registration-free (award data and the pool only), so a cached TAL never depends on load order. */
+export function preBpmCarriedDefense(span: PlayerSpan): number {
+  if (realSpan(span) !== null) return 0;
+  return carriedAccoladeFloor(span);
+}
+
 function carriedAccoladeFloor(span: PlayerSpan): number {
   if (!DTAL_RULES.carry) return 0;
   const hit = carryCache.get(span.id);
@@ -961,7 +985,12 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
   let result = 0;
   const own = realSpan(span);
   const ownDws = dwsPerSeason(span);
-  if (own?.dbpm != null && own.dbpm >= CARRY_MIN_DBPM && ownDws != null) {
+  // 2026-11-11 (the user: "a gracze jak Havlicek"): BBRef has no BPM before 1973-74, so a window
+  // from before then could never carry — Havlicek 1966-68 read D 27 beside 81 one season later,
+  // DeBusschere 31 / 88, Gus Johnson 7 / 86, West 29 / 81. Without a BPM on either side, defensive
+  // Win Shares alone decide, at `CARRY_PRE_BPM_DISCOUNT` more off for the thinner evidence.
+  const preBpm = own?.dbpm == null && ownDws != null;
+  if ((own?.dbpm != null && own.dbpm >= CARRY_MIN_DBPM && ownDws != null) || preBpm) {
     if (!windowsByName) {
       windowsByName = new Map();
       for (const p of draftPool) {
@@ -975,8 +1004,13 @@ function carriedAccoladeFloor(span: PlayerSpan): number {
       if (floor <= 0) continue;
       const r = realSpan(w);
       const dws = dwsPerSeason(w);
-      if (r?.dbpm == null || dws == null) continue;
-      if (own.dbpm >= r.dbpm - CARRY_DBPM_SLACK && ownDws >= dws - CARRY_DWS_SLACK) result = Math.max(result, floor - CARRY_DISCOUNT);
+      if (dws == null) continue;
+      if (preBpm) {
+        if (r?.dbpm == null && ownDws! >= dws - CARRY_DWS_SLACK) result = Math.max(result, floor - CARRY_DISCOUNT - CARRY_PRE_BPM_DISCOUNT);
+        continue;
+      }
+      if (r?.dbpm == null) continue;
+      if (own!.dbpm! >= r.dbpm - CARRY_DBPM_SLACK && ownDws! >= dws - CARRY_DWS_SLACK) result = Math.max(result, floor - CARRY_DISCOUNT);
     }
   }
   carryCache.set(span.id, result);

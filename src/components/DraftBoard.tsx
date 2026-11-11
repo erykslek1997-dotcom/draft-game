@@ -1,7 +1,6 @@
 import { spanAwards } from '../engine/spanAwards';
 import { offenseRatingGrade, defenseRatingGrade } from '../engine/ratingScale';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { spacingUngraded } from './gradeHelp';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
@@ -1000,7 +999,8 @@ export default function DraftBoard({
   const gradesOf = (sp: PlayerSpan) => ({
     off: offenseRatingGrade(sp),
     def: defenseRatingGrade(sp),
-    tp: spacingUngraded(sp) ? '—' : spacingGrade(computeSpacing(sp), sp),
+    // 2026-11-11: windows before the line show the estimate's letter too, as the card does.
+    tp: spacingGrade(computeSpacing(sp), sp),
     dur: durabilityGrade(computeDurability(sp)),
   });
 

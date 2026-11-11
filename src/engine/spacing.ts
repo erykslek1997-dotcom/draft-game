@@ -3,7 +3,8 @@ import { normalizePlayerName } from '../data/schema';
 import { eraScaledThreePA, spanEndYears } from './era';
 import { players } from '../data/players';
 import { draftPool } from '../data/draftPool';
-import { preZoneShootingSkill } from './preZoneShooting';
+import { preZoneShootingSkill, onPreZoneHandList } from './preZoneShooting';
+import preLineTwinsData from '../data/preLineSpacingTwins.json';
 
 /**
  * SPACING — "how much does this player's shooting bend a defense," on the same 0-100 display
@@ -517,8 +518,19 @@ const smoothedCache = new Map<string, SpacingBreakdown>();
 const LAST_SEASON_WITHOUT_THE_LINE = 1979;
 const PRE_LINE_SHARE = 0.85;
 const PRE_LINE_FULL = new Set(['jerry west']);
+/**
+ * 2026-11-11 (the user: "jak mamy bliźniaków, to możemy oszacować spacing tych którzy nie mieli
+ * możliwości rzucać za 3"): for a player off the hand list, his spacing read off modern players
+ * whose game looked like his (`scripts/estimateSpacing.ts`: no three-point feature, free throws,
+ * rebounds and position weighted, tuned leak-free; 49.5% of modern spacing recovered) instead of the
+ * midrange-zone model, which reads the fifteen-footer (Calvin Murphy, 92% at the line, read 8).
+ * The hand list keeps its word; the same pre-line share applies.
+ */
+const PRE_LINE_TWINS = preLineTwinsData as Record<string, number>;
 function preLinePoints(span: PlayerSpan): number {
   if (Math.max(...spanEndYears(span.spanLabel)) > LAST_SEASON_WITHOUT_THE_LINE) return 0;
+  const twin = PRE_LINE_TWINS[span.id];
+  if (twin !== undefined && !onPreZoneHandList(span)) return (twin * PRE_LINE_SHARE * MAX_SPACING_POINTS) / 100;
   const skill = preZoneShootingSkill(span);
   if (!skill) return 0;
   const share = PRE_LINE_FULL.has(normalizePlayerName(span.playerName)) ? 1 : PRE_LINE_SHARE;
