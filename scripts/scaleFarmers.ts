@@ -228,3 +228,41 @@ for (const name of ['Klay Thompson', 'Danny Green', 'Kyle Korver', 'JJ Redick', 
     }
   }
 }
+
+// 2026-11-11 (the user: "jak to wykorzystać do estymacji TAL"): the TAL inputs a pre-1974 window
+// lacks — steals, blocks, their rates, BPM — predicted from ONLY what such a window has. Truth: the
+// 1974+ windows, leave-one-player-out. Says whether old-timers' D-TAL can rest on estimated stocks
+// instead of hand floors (Russell 99, Wilt 84) and the "thin read, no cut" exemption.
+{
+  const PRE74 = Float64Array.from(FEATURES, (f) => (PRE74_MISSING.has(f.name) ? 0 : tuned[f.group] ?? 0));
+  const stockTargets: [string, (s: PlayerSpan) => number | null][] = [
+    ['steals per game', (s) => (midYear(s) >= 1975 ? s.box.spg : null)],
+    ['blocks per game', (s) => (midYear(s) >= 1975 ? s.box.bpg : null)],
+    ['STL%', advField('stl_pct')],
+    ['BLK%', advField('blk_pct')],
+    ['DBPM', advField('dbpm')],
+    ['OBPM', advField('obpm')],
+    ['DRB%', advField('drb_pct')],
+  ];
+  console.log('\nPre-1974 TAL inputs predicted from pre-1974 features only (truth = 1974+ windows):');
+  for (const [label, get] of stockTargets) {
+    const byPlayer = new Map<string, PlayerSpan[]>();
+    for (const s of draftPool) if (get(s) !== null && midYear(s) >= 1975) byPlayer.set(NAMEOF(s), [...(byPlayer.get(NAMEOF(s)) ?? []), s]);
+    const sample = [...byPlayer.values()].map((ws) => ws.sort((a, b) => midYear(a) - midYear(b))[Math.floor(ws.length / 2)]);
+    const truth = sample.map((s) => get(s)!);
+    const pred = sample.map((s) => predict(neighbours(s, sample, PRE74), get));
+    const mean = truth.reduce((a, b) => a + b, 0) / truth.length;
+    const variance = truth.reduce((a, b) => a + (b - mean) ** 2, 0) / truth.length;
+    const mse = pred.reduce((a, p, i) => a + (p - truth[i]) ** 2, 0) / pred.length;
+    console.log(`  ${label.padEnd(16)} n ${String(sample.length).padStart(4)}  r ${corr(pred, truth).toFixed(2)}  recovered ${(100 * (1 - mse / variance)).toFixed(0)}%`);
+  }
+  for (const name of ['Bill Russell', 'Wilt Chamberlain', 'Jerry West', 'Oscar Robertson', 'Elgin Baylor', 'Walt Frazier', 'Nate Thurmond']) {
+    const s = draftPool.filter((x) => x.playerName === name).sort((a, b) => b.box.ppg - a.box.ppg)[0];
+    if (!s || midYear(s) >= 1974) continue;
+    const parts = stockTargets.slice(0, 5).map(([label, get]) => {
+      const donors = draftPool.filter((x) => get(x) !== null && midYear(x) >= 1975);
+      return `${label} ${predict(neighbours(s, donors, PRE74), get).toFixed(2)}`;
+    });
+    console.log(`  ${name.padEnd(17)} ${s.spanLabel}: ${parts.join(' · ')}`);
+  }
+}
