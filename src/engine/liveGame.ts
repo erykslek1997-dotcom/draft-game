@@ -1,3 +1,4 @@
+import shotTendencyData from '../data/shotTendencies.json';
 import { astPctForSpan, ballHandlerCost, ORTG_PER_TS } from './ballHandling';
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
@@ -247,10 +248,39 @@ const fatigue = (minutes: number) => 1 - ROTATION_TUNING.fatigueScale * fatigueS
 
 const BIG_MOVES = ['layup', 'dunk', 'hook shot', 'putback'];
 const WING_MOVES = ['pull-up jumper', 'driving layup', 'floater', 'mid-range jumper'];
-const GUARD_MOVES = ['pull-up jumper', 'floater', 'drive to the rim', 'step-back jumper'];
+// Fallback for windows without shot detail (mostly before 1996-97): no step-back, a word of a later game.
+const GUARD_MOVES = ['pull-up jumper', 'floater', 'drive to the rim', 'jumper from the elbow'];
 function movesFor(slot: Position): string[] {
   if (slot === 'C' || slot === 'PF') return BIG_MOVES;
   return slot === 'PG' ? GUARD_MOVES : WING_MOVES;
+}
+
+/**
+ * 2026-11-11 (the user: "rób później na podstawie pbp"): what a window really scored with, from
+ * NBA.com shot detail 1996-97 on (`scripts/buildShotTendencies.ts`): at the rim, other twos, threes,
+ * each a weighted list of phrases. `r` is the one draw the text already took, so the dice — and every
+ * game — stay as they were; a window without data keeps its position's moves.
+ */
+const SHOT_TENDENCIES = shotTendencyData as { phrases: string[]; spans: Record<string, number[][]> };
+function tendencyPhrase(span: PlayerSpan, bucket: 0 | 1 | 2, r: number): string | null {
+  const flat = SHOT_TENDENCIES.spans[span.id]?.[bucket];
+  if (!flat?.length) return null;
+  let total = 0;
+  for (let i = 1; i < flat.length; i += 2) total += flat[i];
+  let x = r * total;
+  for (let i = 0; i < flat.length; i += 2) {
+    x -= flat[i + 1];
+    if (x < 0) return SHOT_TENDENCIES.phrases[flat[i]];
+  }
+  return SHOT_TENDENCIES.phrases[flat[flat.length - 2]];
+}
+/** A made two's words: the window's own shot (rim or not) when known, else its position's moves. */
+function twoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, r: number): string {
+  const moves = movesFor(player.slot);
+  return tendencyPhrase(player.span, atRim ? 0 : 1, r) ?? moves[Math.floor(r * moves.length)];
+}
+function threeWords(span: PlayerSpan, r: number): string {
+  return tendencyPhrase(span, 2, r) ?? (r < 0.3 ? 'corner three' : 'three');
 }
 
 function lastName(name: string): string {
@@ -1640,19 +1670,18 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
         if (three) line.tpm++;
         line.pts += value;
         pts += value;
-        const moves = movesFor(shooter.slot);
         let text = three
-          ? `${shooter.label} ${rng() < 0.3 ? 'corner three' : 'three'}`
+          ? `${shooter.label} ${threeWords(shooter.span, rng())}`
           : fresh
             ? `${shooter.label} on the break — ${rng() < 0.5 ? 'dunk' : 'layup'}`
             : next === 'putback'
               ? `${shooter.label} putback`
-              : `${shooter.label} ${moves[Math.floor(rng() * moves.length)]}`;
+              : `${shooter.label} ${twoWords(shooter, atRim, rng())}`;
         // 2026-10-28, the user: hunting stays in the engine but out of the words until its rebuild after
         // launch — same shot, said plainly (the rng draw is kept so every game plays out the same).
-        if (hunting) text = `${shooter.label} ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
-        if (late) text = `${shooter.label} beats the shot clock — ${three ? 'three' : moves[Math.floor(rng() * moves.length)]}`;
-        if (mode.buzzer) text = `${shooter.label} ${three ? 'three' : moves[Math.floor(rng() * moves.length)]} — beats the buzzer`;
+        if (hunting) text = `${shooter.label} ${three ? 'three' : twoWords(shooter, atRim, rng())}`;
+        if (late) text = `${shooter.label} beats the shot clock — ${three ? threeWords(shooter.span, 0) : twoWords(shooter, atRim, rng())}`;
+        if (mode.buzzer) text = `${shooter.label} ${three ? threeWords(shooter.span, 0) : twoWords(shooter, atRim, rng())} — beats the buzzer`;
         if (!three && rng() < AND_ONE * (fresh || next === 'putback' ? BREAK_FOUL : 1)) {
           foul(d, defender, k, quarter, qLate);
           line.fta++;

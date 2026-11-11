@@ -108,8 +108,10 @@ function playStat(text: string, line: BoxLineStats | undefined): string | undefi
 
 function shotZone(text: string): 'rim' | 'mid' | 'three' | null {
   if (/\bthree\b/i.test(text)) return 'three';
-  if (/layup|dunk|putback|tip-in|alley|hook|at the rim|and one/i.test(text)) return 'rim';
-  if (/jumper|fadeaway|floater|mid-range|pull-up|elbow/i.test(text)) return 'mid';
+  // 2026-11-11: the shot-detail phrases (engine `shotTendencies`) — finger roll at the rim, bank shot
+  // and long two away from it.
+  if (/layup|dunk|putback|tip-in|alley|hook|finger roll|at the rim|and one/i.test(text)) return 'rim';
+  if (/jumper|fadeaway|floater|mid-range|pull-up|step-back|bank shot|long two|elbow/i.test(text)) return 'mid';
   return null;
 }
 
