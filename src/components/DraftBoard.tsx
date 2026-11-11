@@ -586,11 +586,16 @@ export default function DraftBoard({
     const auto = bestPrimaryAssignment(humanTeam.roster).assignment;
     const byName = new Map(humanTeam.roster.map((p) => [p.playerName, p]));
     const chosen: Partial<Record<Position, PlayerSpan>> = {};
+    // One player, one card: a rotation saved before the move fix (2026-11-11) can still list him at
+    // two slots — the first keeps him, the other falls back to the best fit.
+    const used = new Set<string>();
     for (const slot of STARTER_SLOTS) {
       const p = rotationStarters[slot] ? byName.get(rotationStarters[slot]!) : undefined;
-      if (p) chosen[slot] = p;
+      if (p && !used.has(p.id)) {
+        chosen[slot] = p;
+        used.add(p.id);
+      }
     }
-    const used = new Set(Object.values(chosen).map((p) => p!.id));
     for (const slot of STARTER_SLOTS) if (!chosen[slot] && auto[slot] && !used.has(auto[slot]!.id)) {
       chosen[slot] = auto[slot];
       used.add(auto[slot]!.id);
