@@ -27,6 +27,15 @@ const ROLE_STARTER_MIN_DEFENSE = 56;
 const STOPPER_MIN_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_TAL ?? 55);
 const STOPPER_MIN_DEFENSE = 85;
 
+/** True when only the stopper path lets this player start: the lineup search then keeps him out of
+ * any five whose spacing he would sink (the user: "jeśli nie niszczy spacingu drużyny"). */
+export function isStopperOnlyStarter(span: PlayerSpan): boolean {
+  const tal = effectiveTalent(span);
+  const d = computeDefensiveTalent(span);
+  if (!(tal >= STOPPER_MIN_TAL && d >= STOPPER_MIN_DEFENSE)) return false;
+  return !(tal >= ROLE_STARTER_MIN_TAL && teamSpacingValue(span) >= ROLE_STARTER_MIN_SPACING && d >= ROLE_STARTER_MIN_DEFENSE);
+}
+
 export function isJustifiedRoleStarter(span: PlayerSpan): boolean {
   const tal = effectiveTalent(span);
   const d = computeDefensiveTalent(span);
