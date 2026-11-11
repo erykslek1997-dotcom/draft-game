@@ -305,8 +305,40 @@ function dunkShare(span: PlayerSpan): number {
   }
   return all ? Math.max(0.1, Math.min(0.9, dunk / all)) : 0.5;
 }
+/**
+ * 2026-11-11 (the user: "według twojej propozycji"): signature moves of legends whose prime is before
+ * shot detail (1996-97). Without data a window says them `SIGNATURE_SHARE.none` of the time in that
+ * bucket; with data (Jordan's, Hakeem's last windows) `withData`, the rest from the data.
+ */
+const SIGNATURE_MOVES: ReadonlyMap<string, { rim?: string[]; mid?: string[] }> = new Map(
+  (
+    [
+      ['Kareem Abdul-Jabbar', { mid: ['skyhook'] }],
+      ['Hakeem Olajuwon', { rim: ['Dream Shake into the layup'], mid: ['Dream Shake, turnaround jumper', 'Dream Shake, up-and-under'] }],
+      ['Magic Johnson', { mid: ['baby hook'] }],
+      ['Michael Jordan', { rim: ['driving dunk', 'switch-hand layup'], mid: ['fadeaway jumper', 'turnaround fadeaway'] }],
+      ['George Gervin', { rim: ['finger roll'] }],
+      ['Kevin McHale', { rim: ['up-and-under'], mid: ['turnaround jumper from the block'] }],
+      ['Wilt Chamberlain', { rim: ['finger roll', 'dunk'], mid: ['fadeaway bank shot'] }],
+      ['Larry Bird', { mid: ['fadeaway jumper', 'step-in jumper'] }],
+      ['Julius Erving', { rim: ['baseline scoop', 'tomahawk dunk'] }],
+      ['James Worthy', { rim: ['tomahawk dunk'] }],
+      ['Isiah Thomas', { mid: ['floater'] }],
+      ['Adrian Dantley', { rim: ['pump fake and the layup'], mid: ['pump fake and turnaround'] }],
+      ['Alex English', { mid: ['baseline jumper'] }],
+    ] as [string, { rim?: string[]; mid?: string[] }][]
+  ).map(([name, moves]) => [normalizePlayerName(name), moves]),
+);
+const SIGNATURE_SHARE = { none: 0.6, withData: 0.35 };
 function twoWords(player: { span: PlayerSpan; slot: Position }, atRim: boolean, r: number): string {
   const moves = movesFor(player.slot);
+  const sig = SIGNATURE_MOVES.get(normalizePlayerName(player.span.playerName))?.[atRim ? 'rim' : 'mid'];
+  if (sig) {
+    const hasData = !!SHOT_TENDENCIES.spans[player.span.id]?.[atRim ? 0 : 1]?.length;
+    const share = hasData ? SIGNATURE_SHARE.withData : SIGNATURE_SHARE.none;
+    if (r < share) return sig[Math.floor((r / share) * sig.length)];
+    r = (r - share) / (1 - share);
+  }
   return tendencyPhrase(player.span, atRim ? 0 : 1, r) ?? moves[Math.floor(r * moves.length)];
 }
 function threeWords(span: PlayerSpan, r: number): string {
