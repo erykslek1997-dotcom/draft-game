@@ -51,8 +51,10 @@ const DRAFT_LIST_LIMIT = 140;
 /** 2026-09-14, user-reported live: how many of those (already-capped) rows actually show at once
  * before "See more" is needed — a separate, much smaller number purely for not overwhelming the
  * player with a wall of cards, independent of `DRAFT_LIST_LIMIT`'s own performance reasoning. */
-const DRAFT_VISIBLE_DEFAULT = 30;
-const DRAFT_VISIBLE_STEP = 30;
+// 2026-11-11 (the user: "zamiast tak długiej listy to lista która się zwija i jest krótsza"): ten
+// at first, ten more a click, and "Show fewer" folds it back.
+const DRAFT_VISIBLE_DEFAULT = 10;
+const DRAFT_VISIBLE_STEP = 10;
 /** The caps range's top: no stretch in the pool costs more. */
 const CAPS_TOP = 30;
 
@@ -1624,7 +1626,15 @@ export default function DraftBoard({
                 <>
                   {' · '}
                   <button type="button" className="lk-inline" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
-                    See more
+                    Show 10 more
+                  </button>
+                </>
+              )}
+              {visibleCount > DRAFT_VISIBLE_DEFAULT && (
+                <>
+                  {' · '}
+                  <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
+                    Show fewer
                   </button>
                 </>
               )}
