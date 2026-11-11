@@ -20,6 +20,8 @@ import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { spanEndYears } from '../src/engine/era';
 import { displayTalentForSpan, overallTierForSpan } from '../src/engine/grades';
 import { tierContextWithSixthMan } from '../src/engine/sixthMan';
+import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeOffensiveTalent } from '../src/engine/talent';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const K = Number(args.k ?? 10);
@@ -140,5 +142,40 @@ if (args.player) {
     for (const n of near) { const w = 1 / (0.1 + n.d); num += w * tal(n.span); den += w; }
     console.log(`\n${s.playerName} ${s.spanLabel}  TAL ${Math.round(tal(s))}  vs twins ${(num / den).toFixed(0)}  (${s.box.ppg.toFixed(1)} pts, ${s.box.rpg.toFixed(1)} reb, ${s.box.apg.toFixed(1)} ast, TS ${(s.box.tsPct * 100).toFixed(0)}%)`);
     console.log('  ' + near.map((n) => `${n.span.playerName} ${n.span.spanLabel} ${Math.round(tal(n.span))}`).join(' · '));
+  }
+}
+
+// 2026-11-11 (the user: "inny bliźniak od PTS, REB, AST... albo podział na ofensywę i defensywę"):
+// --split with --player — offensive twins on offensive features only, compared on O-TAL; defensive
+// twins on defensive features only (size, rebounding, stocks, DBPM, defensive win shares), on D-TAL.
+if (args.player && args.split) {
+  const OFF = new Set(['ppg', 'apg', 'fga', 'fgPct', 'ftPct', 'tsPct', 'threePA', 'threePct', 'ast_pct', 'tov_pct', 'obpm', 'usg_pct', 'per', 'mpg', 'position']);
+  const DEF = new Set(['rpg', 'spg', 'bpg', 'height', 'weight', 'position', 'orb_pct', 'drb_pct', 'stl_pct', 'blk_pct', 'dbpm', 'mpg']);
+  const twinsOn = (s: PlayerSpan, keep: Set<string>) => {
+    const v = VEC.get(s.id)!, me = NAMEOF(s);
+    const all: { d: number; span: PlayerSpan }[] = [];
+    for (const o of draftPool) {
+      if (NAMEOF(o) === me) continue;
+      const u = VEC.get(o.id)!;
+      let sum = 0, wsum = 0;
+      FEATURES.forEach((f, i) => {
+        if (!keep.has(f.name) || Number.isNaN(v[i]) || Number.isNaN(u[i])) return;
+        sum += (v[i] - u[i]) ** 2; wsum += 1;
+      });
+      if (wsum >= 3) all.push({ d: Math.sqrt(sum / wsum), span: o });
+    }
+    all.sort((a, b) => a.d - b.d);
+    const out: { d: number; span: PlayerSpan }[] = [];
+    const seen = new Set<string>();
+    for (const n of all) { if (seen.has(NAMEOF(n.span))) continue; seen.add(NAMEOF(n.span)); out.push(n); if (out.length === K) break; }
+    return out;
+  };
+  const wavg = (ns: { d: number; span: PlayerSpan }[], f: (s: PlayerSpan) => number) => { let a = 0, b = 0; for (const n of ns) { const w = 1 / (0.1 + n.d); a += w * f(n.span); b += w; } return a / b; };
+  console.log(`\n=== ${args.player}: offensive vs defensive twins ===`);
+  for (const s of draftPool.filter((x) => x.playerName === args.player).sort((a, b) => a.spanLabel.localeCompare(b.spanLabel))) {
+    const o = twinsOn(s, OFF), d = twinsOn(s, DEF);
+    console.log(`\n${s.spanLabel}  O-TAL ${Math.round(computeOffensiveTalent(s))} vs O-twins ${wavg(o, computeOffensiveTalent).toFixed(0)}   D-TAL ${computeDefensiveTalent(s)} vs D-twins ${wavg(d, computeDefensiveTalent).toFixed(0)}`);
+    console.log('  O: ' + o.slice(0, 6).map((n) => `${n.span.playerName} ${n.span.spanLabel}`).join(' · '));
+    console.log('  D: ' + d.slice(0, 6).map((n) => `${n.span.playerName} ${n.span.spanLabel}`).join(' · '));
   }
 }
