@@ -350,7 +350,11 @@ export function spacingGrade(value: number, span?: PlayerSpan): Grade {
   const rank = percentileRank(value, spacingGradeSortedValues);
   const eraScaledGrade = gradeForValue(rank, spacingGradeSThreshold);
   if (!span) return eraScaledGrade;
-  // Before the line (or with no threes at all) there is no aim to read: the old cap stays.
+  // 2026-11-11 (the user: "zdjąć limit dla graczy bez danych"): a window wholly before the line has
+  // no three-point data at all, only the estimate the engine plays (hand list or statistical twins);
+  // the card shows that number's letter instead of capping every pre-1980 shooter at D-.
+  if (Math.max(...spanEndYears(span.spanLabel)) <= 1979) return eraScaledGrade;
+  // With no threes at all after the line there is no aim to read: the old cap stays.
   const cap =
     Number(span.spanLabel.slice(0, 4)) >= 1979 && span.box.threePA > 0
       ? gradeRank(accuracySpacingCap(span.box.threePct ?? 0, span.box.threePA))
