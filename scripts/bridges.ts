@@ -18,7 +18,7 @@
  *
  *   npx tsx scripts/bridges.ts [--metric=per|ws48|bpm] [--min=500]
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
@@ -131,4 +131,10 @@ console.log('  season   ' + curves.map(({ a }) => `anchor ${a}`.padStart(10)).jo
 for (const y of [1951, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2025]) {
   if (!base.strength.has(y)) continue;
   console.log(`  ${y - 1}-${String(y).slice(2)}  ` + curves.map(({ c }) => c.strength.get(y)!.toFixed(1).padStart(10)).join(''));
+}
+
+// --out=path: the league-strength curve (anchor 27) by season end year, for scripts/eraDiscountPreview.ts.
+if (args.out) {
+  writeFileSync(args.out, JSON.stringify({ metric: METRIC, anchor: 27, strength: Object.fromEntries(base.strength) }));
+  console.log(`\nwrote ${args.out}`);
 }
