@@ -19,7 +19,7 @@ import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDra
 import { positionCompetence, PARTIAL_POSITION_GRACE_MINUTES } from './positionCompetence';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes, durabilityValueFactor } from './durability';
-import { effectiveTalent, overallTierForSpan, tierRank } from './grades';
+import { displayTalentForSpan, effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import {
@@ -1824,6 +1824,48 @@ export function ballHandlerAdjustment(team: Team): number {
 const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
 const BALL_HANDLER_REF = 0.54;
 
+/**
+ * 2026-11-11, the audit (the user: "ławka z 4 solidnych graczy jest gorzej oceniana niż 3 lepszych +
+ * ktoś kto nie gra"): `benchDepthScore` reads only the reserves who play, so the last man on the
+ * bench was invisible. The card number of the weakest reserve (playing or not), at `per` Overall a
+ * point around the drafted teams' typical one (`ref`, so the league's Overall stays put). Measured:
+ * real SRS r 0.8237 -> 0.8269, the game's judge 0.8082 -> 0.8106 — the only bench change that
+ * raised both (more bench weight overall: real up, game down; crediting a sitting player's number
+ * directly: game 0.81 -> 0.78). Needs a real bench (`minBench`), so a starters-only draft is untouched.
+ */
+const BENCH_FLOOR = {
+  per: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_FLOOR_PER ?? 0.05),
+  ref: 41,
+  minBench: 3,
+};
+export function weakestReserveTalent(team: Team): number | null {
+  const bench = benchWithMinutes(team);
+  if (bench.length < BENCH_FLOOR.minBench) return null;
+  return Math.min(...bench.map(({ player }) => displayTalentForSpan(tierContextWithSixthMan(player))));
+}
+/**
+ * 2026-11-11, the audit's decade drift (Eryk: "25-50% korekty"): holding Overall fixed, later
+ * team-seasons underperform their SRS — the engine over-credits modern box stats (pace, 3s,
+ * efficiency) relative to a team's standing in its own era. The full fit was -2.9 Overall a decade
+ * (real SRS r 0.827 -> 0.854); a partial `ERA_PER_YEAR` of that, so modern teams come down and
+ * 80s-90s teams up, without overshooting into old-timers-overrated. A team term, not a card change —
+ * the draft board numbers stay put; the era discount lives in Overall (the whole-of-Siła-epoki card
+ * version is post-launch). Centred on 2003 so the league's mean Overall barely moves.
+ */
+const ERA_PER_YEAR = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ERA_K ?? -0.073);
+const ERA_PIVOT = 2003;
+export function eraAdjustment(team: Team): number {
+  const years = primaryStarters(team).map((e) => Number(e.player.spanLabel.slice(0, 4)) + 2).filter((y) => Number.isFinite(y));
+  if (!years.length) return 0;
+  const mean = years.reduce((a, b) => a + b, 0) / years.length;
+  return ERA_PER_YEAR * (mean - ERA_PIVOT);
+}
+
+export function benchFloorAdjustment(team: Team): number {
+  const weakest = weakestReserveTalent(team);
+  return weakest === null ? 0 : BENCH_FLOOR.per * (weakest - BENCH_FLOOR.ref);
+}
+
 export function ballLoadAdjustment(team: Team): number {
   return Math.min(BALL_LOAD_TUNING.maxBonus, -BALL_LOAD_TUNING.perUsage * (topFiveUsageLoad(team) - BALL_LOAD_TUNING.ref));
 }
@@ -1931,7 +1973,11 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-06: starters who really played (and won) together (chemistry.ts).
     chemistryAdjustment(team) +
     // 2026-11-06: two players who live on the ball, the second one poor without it (heliocentric.ts).
-    heliocentricAdjustment(team);
+    heliocentricAdjustment(team) +
+    // 2026-11-11: the weakest reserve's card number (see BENCH_FLOOR).
+    benchFloorAdjustment(team) +
+    // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
+    eraAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
