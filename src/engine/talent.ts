@@ -11,6 +11,8 @@ import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason, preBpmCarriedDefense } from './defensiveTalent';
+import preBpmObpmData from '../data/preBpmObpmTwins.json';
+import preBpmDwsMinutesData from '../data/preBpmDefensiveWinShares.json';
 import { withHustleBonus } from '../data/hustleDefenders';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
@@ -948,15 +950,35 @@ function fitOffenseAnchor(): NonNullable<typeof offenseAnchorFit> {
   }
   return fit;
 }
+/**
+ * 2026-11-11 (the user: "teraz chociażby o-tal"): before 1973-74 there is no BPM, so the anchor had
+ * nothing to lean on and old windows kept the bare box formula. `scripts/estimateObpm.ts` reads
+ * their OBPM off the statistically closest players from 1976-77 on (leave-one-player-out: r 0.94,
+ * 88% of the variance), with minutes from bbref's advanced table. An estimate pulls with
+ * `OBPM_ESTIMATE_SHARE` of a real OBPM's weight. The anchor's position fit stays on real OBPM only.
+ */
+const PRE_BPM_OBPM = preBpmObpmData as Record<string, number>;
+const PRE_BPM_MINUTES = preBpmDwsMinutesData as unknown as Record<string, [number, number]>;
+const OBPM_ESTIMATE_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.OBPM_EST ?? 0.5);
+function estimatedObpm(span: PlayerSpan): { obpm: number; minutes: number } | null {
+  const obpm = PRE_BPM_OBPM[span.id];
+  if (obpm === undefined) return null;
+  const name = normalizePlayerName(span.playerName);
+  let minutes = 0;
+  for (const y of spanEndYears(span.spanLabel)) minutes += PRE_BPM_MINUTES[`${name}|${y}`]?.[1] ?? 0;
+  return minutes > 0 ? { obpm, minutes } : null;
+}
 function offenseAnchor(span: PlayerSpan, boxOffense: number): number {
   if (fittingOffenseAnchor || !OFFENSE_ANCHOR.share) return 0;
-  const real = realObpm(span);
+  const measured = realObpm(span);
+  const estimate = measured || !OBPM_ESTIMATE_SHARE ? null : estimatedObpm(span);
+  const real = measured ?? estimate;
   if (!real) return 0;
   offenseAnchorFit ??= fitOffenseAnchor();
   const f = offenseAnchorFit.get(OFFENSE_ANCHOR.poolWide ? 'SF' : span.primaryPosition);
   if (!f || f.sdObpm <= 0) return 0;
   const implied = f.meanOff + ((real.obpm - f.meanObpm) / f.sdObpm) * f.sdOff;
-  return OFFENSE_ANCHOR.share * Math.min(1, real.minutes / OFFENSE_ANCHOR.fullMinutes) * (implied - boxOffense);
+  return OFFENSE_ANCHOR.share * (measured ? 1 : OBPM_ESTIMATE_SHARE) * Math.min(1, real.minutes / OFFENSE_ANCHOR.fullMinutes) * (implied - boxOffense);
 }
 
 function rawComponents(
