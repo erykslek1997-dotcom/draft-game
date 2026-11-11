@@ -1,4 +1,4 @@
-import { isVeteranWindow } from './veteran';
+import { isTwilightWindow } from './veteran';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
@@ -2701,7 +2701,7 @@ function pickForAiSized(
       boardNoise: boardNoisePoints(talent) * boardNoise(ruleset?.boardSeed, p) + WINDOW_NOISE_POINTS * windowNoise(ruleset?.boardSeed, p),
       // 2026-11-11 (the user: Mullin 1997-99 in an all-time five): a veteran window is a bench piece
       // in the first `VETERAN_AI.earlyRounds` rounds — worth `share` less of its talent term then.
-      veteranEarly: roster.length < VETERAN_AI.earlyRounds && isVeteranWindow(p) ? -VETERAN_AI.share * talentTerm : 0,
+      veteranEarly: roster.length < VETERAN_AI.earlyRounds && isTwilightWindow(p) ? -VETERAN_AI.share * talentTerm : 0,
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);

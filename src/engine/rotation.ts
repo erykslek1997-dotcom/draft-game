@@ -1,4 +1,4 @@
-import { isVeteranWindow } from './veteran';
+import { isTwilightWindow } from './veteran';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions } from './positionCompetence';
 import { ballShare } from './ballHandling';
@@ -323,7 +323,7 @@ export function bestPrimaryAssignment(
       v =
         maxSustainableMinutes(player, MAX_MINUTES_PER_PLAYER) <= 0 || belowStarterTier
           ? 0
-          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot) * starterOffenseFactor(player) * (isVeteranWindow(player) ? VETERAN_STARTER_KEEP : 1);
+          : Math.max(0, talent - standardGap) * starterFitMultiplier(player, slot) * starterOffenseFactor(player) * (isTwilightWindow(player) ? VETERAN_STARTER_KEEP : 1);
       valueByPlayerSlot.set(key, v);
     }
     return v;
