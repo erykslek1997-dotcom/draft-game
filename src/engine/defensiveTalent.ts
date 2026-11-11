@@ -5,6 +5,7 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
+import preBpmTeamDefenseData from '../data/preBpmTeamDefense.json';
 import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
@@ -898,16 +899,41 @@ function neutralDataFloor(span: PlayerSpan): number {
   return mean >= NEUTRAL_DATA_MEAN ? NEUTRAL_DATA_FLOOR : 0;
 }
 
+/**
+ * 2026-11-11 (the user: "a wiemy czy grali w słabych albo mocnych obronach?"): before 1973-74,
+ * where no DBPM exists, the defense of a player's teams. `scripts/teamDefenseRapm.ts` fits team
+ * defensive ratings 1951-1973 on minutes shares (ridge), and maps each player's result to the D-TAL
+ * scale through the same fit on 1974-2000 (D-TAL = 35.7 + 11.4 x beta, r 0.48; DBPM r 0.55).
+ * `TEAM_D.mode` "floor" raises only; "blend" pulls both ways. Weight grows with the player's
+ * minutes in the fit, full at `fullMinutes`.
+ */
+const TEAM_D_DATA = preBpmTeamDefenseData as unknown as Record<string, [number, number]>;
+const envNum = (k: string, d: number) => Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[k] ?? d);
+const TEAM_D = { share: envNum('TEAM_D', 0), mode: (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.TEAM_D_MODE ?? 'floor', fullMinutes: 15000, lastYear: 1973 };
+const teamDefenseKey = (name: string) => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+/** The mapping's intercept: an average teammate (beta 0) reads this D-TAL. */
+const TEAM_D_MEAN = 35.7;
+function withTeamDefense(span: PlayerSpan, value: number): number {
+  if (!TEAM_D.share) return value;
+  const years = spanEndYears(span.spanLabel);
+  if (!years.length || Math.max(...years) > TEAM_D.lastYear) return value;
+  const row = TEAM_D_DATA[teamDefenseKey(span.playerName)];
+  if (!row) return value;
+  const [target, minutes] = row;
+  const w = TEAM_D.share * Math.min(1, minutes / TEAM_D.fullMinutes);
+  if (TEAM_D.mode === 'floor') return Math.max(value, value + (target - value) * w);
+  if (TEAM_D.mode === 'shift') return value + (target - TEAM_D_MEAN) * w;
+  return value + (target - value) * w;
+}
+
 export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const bonus = (NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0) + (NAMED_SPAN_DTAL_BONUS.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0);
   const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
-  const result = Math.max(
-    0,
-    Math.min(100, Math.round(Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span), boxEliteConfirmedFloor(span), neutralDataFloor(span)))),
-  );
+  const floored = Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span), boxEliteConfirmedFloor(span), neutralDataFloor(span));
+  const result = Math.max(0, Math.min(100, Math.round(withTeamDefense(span, floored))));
   playoffDefensiveTalentCache.set(span.id, result);
   return result;
 }

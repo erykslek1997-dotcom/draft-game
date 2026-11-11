@@ -110,3 +110,10 @@ const ranked = names.map((n, i) => ({ n, b: best![i], m: playerMinutes[i] })).fi
 console.log('\nTop 20:'); for (const x of ranked.slice(0, 20)) console.log(`  ${x.n.padEnd(24)} ${x.b >= 0 ? '+' : ''}${x.b.toFixed(2)}  (${Math.round(x.m)} min)`);
 console.log('Bottom 10:'); for (const x of ranked.slice(-10)) console.log(`  ${x.n.padEnd(24)} ${x.b >= 0 ? '+' : ''}${x.b.toFixed(2)}`);
 if (args.show) for (const s of args.show.split(';')) { const x = ranked.find((r) => norm(r.n) === norm(s)); console.log(`  ${s}: ${x ? `${x.b.toFixed(2)} (rank ${ranked.indexOf(x) + 1}/${ranked.length})` : '-'}`); }
+// --dump=path: every player's beta and minutes in this fit, keyed by normalized name.
+if (args.dump) {
+  const out: Record<string, [number, number]> = {};
+  names.forEach((n, i) => { out[norm(n)] = [Math.round(best![i] * 1000) / 1000, Math.round(playerMinutes[i])]; });
+  (await import('node:fs')).writeFileSync(args.dump, JSON.stringify(out));
+  console.log(`wrote ${names.length} players to ${args.dump}`);
+}
