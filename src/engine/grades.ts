@@ -1319,6 +1319,19 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Donovan Mitchell', 86], // All-NBA, not MVP
     ['Ray Allen', 85], // high-mid All-NBA
     ['Kevin Johnson', 85], // high-mid All-NBA
+    // 2026-11-11, the card audit (`scripts/auditCards.ts`: peak card vs ten statistical twins, with
+    // RAPTOR's overall impact as a third read) — defensive specialists the engine lifted far over
+    // what the rest of their game and their on/off say (the user: "jestem za obniżeniem wysokich,
+    // oprócz Lopeza" — his spacing makes him a near-unicorn, so he keeps his 75).
+    ['Greg Ostertag', 66], // was 72; twins 42, RAPTOR overall -1.3..+0.9 — a starter, not All-star
+    ['Shawn Bradley', 67], // was 71; twins 48, RAPTOR overall +1.0..2.7
+    ['Caldwell Jones', 62], // was 68; twins 37, RAPTOR overall -1.3..-0.1
+    ['Mark Eaton', 69], // was 73; two DPOYs keep him a high starter
+    ['Michael Cooper', 69], // was 73; DPOY 1987, sixth man
+    ['Raja Bell', 69], // was 76; twins 50, RAPTOR overall +0.5..1.7
+    ['Robert Horry', 70], // was 74; the playoff shots keep him over his twins (39)
+    ['Tiago Splitter', 68], // was 71; small cut, RAPTOR liked him (+3.3..4.0)
+    ['Tony Allen', 67], // was 69; small cut, RAPTOR defense +3.1..3.6
   ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
 );
 
@@ -1467,7 +1480,9 @@ function displayTalentUncompressed(ctx: TierGateContext): number {
   const held = hold ? Math.min(value, tierCeiling(hold)) : value;
   // After the holds: a Starter hold kept a wing out of All-star (the user: "Tal 69 bo przebijał do
   // all star" — Battier), and the premium stays under the card's All-star line (`THREE_AND_D.below`).
-  return held + threeAndDPremium(ctx, held);
+  // 2026-11-11, the card audit: a named ceiling is the user's own call, so the premium cannot climb
+  // over it either (Ostertag's 66 was coming back as 72 through the defensive-big premium).
+  return Math.min(namedPlayerCeiling(ctx.playerName), held + threeAndDPremium(ctx, held));
 }
 
 /**
