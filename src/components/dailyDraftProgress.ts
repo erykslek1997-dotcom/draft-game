@@ -113,6 +113,19 @@ export function mergeDailyDraftDays(mode: DailyDraftMode, days: Record<string, D
   write({ ...progress, [mode]: { days: merged, streak: { current, best: Math.max(best, own.streak.best), lastDay: prev } } });
 }
 
+/** 2026-11-12, the account panel: days played across the daily drafts and the best streak. */
+export function dailyDraftTotals(): { days: number; bestStreak: number } {
+  const progress = read();
+  let days = 0;
+  let bestStreak = 0;
+  for (const m of Object.values(progress)) {
+    if (!m) continue;
+    days += Object.keys(m.days).length;
+    bestStreak = Math.max(bestStreak, m.streak.best);
+  }
+  return { days, bestStreak };
+}
+
 /** Forgets the day's result (testing replays only). */
 export function clearDailyDraftResult(mode: DailyDraftMode, day: string): void {
   const progress = read();

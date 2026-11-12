@@ -3,6 +3,8 @@ import { setNickname, signInWithGoogle, signOut, useAccount, type NicknameResult
 import { Dialog } from '../night/frame';
 import { onlineEnabled } from '../online/supabase';
 import { pullDailyHistory } from '../online/sync';
+import { careerStats, levelOf, setCareerUser, syncCareer } from '../online/career';
+import { dailyDraftTotals } from './dailyDraftProgress';
 import './DailyLeaderboard.css';
 
 /**
@@ -30,12 +32,14 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
     if (!account) return;
     if (account.needsName) setName(account.nickname);
     let alive = true;
-    void pullDailyHistory(account.id).then((n) => alive && n > 0 && onSynced?.());
+    setCareerUser(account.needsName ? null : account.id);
+    void Promise.all([pullDailyHistory(account.id), account.needsName ? false : syncCareer(account.id)]).then(([n, more]) => alive && (n > 0 || more) && onSynced?.());
     return () => {
       alive = false;
+      setCareerUser(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account?.id]);
+  }, [account?.id, account?.needsName]);
   if (!onlineEnabled || account === undefined) return null;
   if (menu && account?.needsName) {
     return (
@@ -88,6 +92,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
             <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>Sign in →</button>
           )}
         </div>
+        <CareerPanel />
       </section>
     );
   }
@@ -121,6 +126,46 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
           <button type="button" className="dlb-link" onClick={() => void signOut()}>Sign out</button>
         </span>
       )}
+    </div>
+  );
+}
+
+/** 2026-11-12, the career on the account panel: level, drafts per mode, wins, titles, records. */
+function CareerPanel() {
+  const stats = careerStats();
+  const daily = dailyDraftTotals();
+  const lv = levelOf(stats.xp);
+  const best = Math.max(0, ...Object.values(stats.bestOverall).map((v) => v ?? 0));
+  const cells: [string, string][] = [
+    ['Draw Five', String(stats.played.drawfive)],
+    ['Mini', String(stats.played.mini)],
+    ['All-Time', String(stats.played.alltime)],
+    ['The Bomb', String(stats.played.bomb)],
+    ['Draw Five wins', String(stats.drawFiveWins)],
+    ['Drafts won', String(stats.wins)],
+    ['Titles', String(stats.titles)],
+    ['Best Overall', best ? best.toFixed(1) : '—'],
+    ['Daily days', String(daily.days)],
+    ['Best streak', String(daily.bestStreak)],
+    ['Best week', stats.bestWeekPoints ? `+${stats.bestWeekPoints.toFixed(1)}` : '—'],
+    ['Drafts', String(stats.total)],
+  ];
+  return (
+    <div className="m2-career">
+      <div className="m2-lv">
+        <b>Level {lv.level}</b>
+        <span className="m2-lv-bar" aria-hidden><i style={{ width: `${Math.round((100 * lv.into) / lv.next)}%` }} /></span>
+        <span>{lv.into} / {lv.next} XP</span>
+      </div>
+      <dl className="m2-stats">
+        {cells.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="m2-career-note">Free drafts count on the week’s table too: top half adds points, bottom half takes them away.</p>
     </div>
   );
 }
