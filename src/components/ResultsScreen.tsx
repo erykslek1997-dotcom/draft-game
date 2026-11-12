@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { recordDraft } from '../online/career';
+import { careerResults, careerStats, levelOf, recordDraft } from '../online/career';
 import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
@@ -48,9 +48,9 @@ import {
 import { DESK_CAST, buildDesk, buildRivalDesk, theirVoice, type DeskLine } from '../engine/desk';
 import { exportFullDraft } from '../engine/draftExport';
 import type { DailyDraftDay } from '../dailyDraftDay';
-import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
+import { dailyDraftResult, dailyDraftStreak, saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
 import { DailyLeaderboard } from './DailyLeaderboard';
-import { medianOf } from '../online/points';
+import { dailyPoints, medianOf } from '../online/points';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
@@ -1169,7 +1169,42 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   );
 
   if (seasonOpen) {
-    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined }} />;
+    // 2026-11-12, the run's last word (the user: "na sam koniec podsumowanie: które miejsce w PR, które w
+    // sezonie, ile XP"): the draft's rank, the season, the playoffs, the points and the XP it earned.
+    let summary: ReactNode = null;
+    if (humanRanked && seasonState.status === 'done' && seasonState.playoffs) {
+      const { season, playoffs } = seasonState;
+      const id = humanRanked.team.id;
+      const seed = season.standings.findIndex((r) => r.teamId === id) + 1;
+      const row = season.standings[seed - 1];
+      const runs = playoffs.rounds.flat().filter((x) => x.teamAId === id || x.teamBId === id);
+      const last = runs[runs.length - 1];
+      const po = playoffs.championId === id ? '🏆 Champions' : last ? `Out in the ${last.roundLabel.replace('Quarterfinals', 'quarters').replace('Semifinals', 'semis')}` : 'Missed';
+      const entry = careerResults().find((r) => r.id === careerId);
+      const lv = levelOf(careerStats().xp);
+      const dayResult = daily && !daily.testing ? dailyDraftResult(daily.mode, daily.day) : null;
+      const dayPts = dayResult ? dailyPoints({ mode: daily!.mode, ...dayResult, streak: dailyDraftStreak(daily!.mode, daily!.day) }).total : null;
+      summary = (
+        <section className="yrun">
+          <H3>Your run</H3>
+          <Kv k="Power ranking" v={`${ordinal(humanRanked.rank)} of ${ranked.length}`} />
+          <Kv k="Season" v={row ? `${row.wins}–${row.losses} · ${ordinal(seed)} seed` : '—'} />
+          <Kv k="Playoffs" v={po} />
+          {dayPts !== null ? <Kv k="Daily points" v={dayPts.toFixed(1)} /> : entry ? <Kv k="Week points" v={`${entry.points > 0 ? '+' : ''}${entry.points.toFixed(1)}`} /> : null}
+          {entry && <Kv k="XP" v={`+${entry.xp}`} />}
+          <div className="m2-lv yrun-lv">
+            <b>Level {lv.level}</b>
+            <span className="m2-lv-bar" aria-hidden>
+              <i style={{ width: `${Math.round((100 * lv.into) / lv.next)}%` }} />
+            </span>
+            <span>
+              {lv.into}/{lv.next}
+            </span>
+          </div>
+        </section>
+      );
+    }
+    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined, summary }} />;
   }
 
   // 2026-10-22, playtest ("brakuje informacji kto wygrał mistrzostwo", "jak damy back to the results
