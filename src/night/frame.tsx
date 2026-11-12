@@ -1,4 +1,4 @@
-import { Suspense, createContext, lazy, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { Suspense, createContext, lazy, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { getSettings, reducedMotion } from '../settings';
 import './index.css';
@@ -20,6 +20,56 @@ export const CapI = () => <i className="capi" aria-hidden />;
 
 // Caps always carry one decimal, so a column of them lines up ("19.0" next to "22.5"; playtest 2026-10-22).
 export const fmtCaps = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
+
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+/** How wide `text` sets in `el`'s font, in CSS pixels. */
+function textWidth(text: string, el: HTMLElement): number {
+  const cs = getComputedStyle(el);
+  if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
+  if (!measureCtx) return text.length * parseFloat(cs.fontSize) * 0.55;
+  measureCtx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const spacing = parseFloat(cs.letterSpacing) || 0;
+  return measureCtx.measureText(text).width + spacing * text.length;
+}
+
+/**
+ * A name in the first of its `forms` that fits the room it has (2026-11-12, the user: "S. G.
+ * Alexander i W. Chamberlain na desktopie się nie mieści?"): a wide desktop card says
+ * "W. Chamberlain", a phone's narrow one "Wilt". The span fills its box (`.fit-name` is a block
+ * at full width), so the room is the box, never the text in it; it re-measures when the box resizes
+ * and once the web fonts are in. Nothing fits → the last form, cut with an ellipsis.
+ */
+export function FitName({ forms, className, as: Tag = 'span' }: { forms: string[]; className?: string; as?: 'span' | 'b' }) {
+  const ref = useRef<HTMLElement>(null);
+  const key = forms.join('\u0001');
+  const [pick, setPick] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const all = key.split('\u0001');
+    let live = true;
+    const choose = () => {
+      if (!live) return;
+      const room = el.clientWidth;
+      if (room <= 0) return; // hidden (the other form of a slot's name): measured when it shows
+      const k = all.findIndex((f) => textWidth(f, el) <= room + 0.5);
+      setPick(k < 0 ? all.length - 1 : k);
+    };
+    choose();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(choose);
+    ro?.observe(el);
+    document.fonts?.ready.then(choose).catch(() => {});
+    return () => {
+      live = false;
+      ro?.disconnect();
+    };
+  }, [key]);
+  return (
+    <Tag ref={ref as RefObject<HTMLSpanElement>} className={cx('fit-name', className)}>
+      {forms[Math.min(pick, forms.length - 1)]}
+    </Tag>
+  );
+}
 
 /** A scouting letter's tone: S and A grades read green, C and below red (the chips, the REPORT column,
  * a player's stretches all say it the same way). */

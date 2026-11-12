@@ -85,7 +85,14 @@
 .stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); color: var(--you); }
 .stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }
 .cutnote { font: italic 500 12px var(--sans); color: var(--ink3); padding: 6px 0 0; }
-.leaders { width: 100%; border-collapse: collapse; }
+.leaders { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.leaders col.lk { width: 100px; }
+.leaders td.k { white-space: nowrap; }
+.leaders col.lt { width: 48px; }
+.leaders col.lv { width: 56px; }
+.leaders td.ln { white-space: nowrap; }
+.leaders td.ln .pn { display: block; width: 100%; text-align: left; }
+.leaders td.tm { font: 600 12px var(--num); color: var(--ink3); white-space: nowrap; }
 .leaders td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink2); }
 .leaders td.k { font: 700 13px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); width: 90px; }
 .leaders td b { color: var(--ink); font-weight: 600; }

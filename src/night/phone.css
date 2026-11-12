@@ -96,7 +96,7 @@
     .slot.filled img, .slot.filled .ini { width: 28px; height: 28px; font-size: 12px; margin: 1px 0 2px; }
     .slot .nm { margin-top: 0; font-size: 13px; line-height: 1.3; /* room for the descenders: Billups, Holmgren */ flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 3px; }
     .slot .nm .sl-l { display: none; }
-    .slot .nm .sl-s { display: inline; }
+    .slot .nm .sl-s { display: block; }
     .slot .sb { font-size: 11px; }
     .slots.compact .slot { height: 76px; }
     .bench { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }

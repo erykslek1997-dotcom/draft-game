@@ -1,4 +1,4 @@
-import { initialAndSurname, nicknameIfNeeded } from '../data/nicknames';
+import { initialAndSurname, nameForms, nicknameIfNeeded } from '../data/nicknames';
 import { useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
@@ -8,7 +8,7 @@ import { isBombMasked, maskName, maskText, maskYears } from '../components/bombM
 import { cardRoles } from '../components/cardRoles';
 import { BRAND_MARK } from '../brand';
 import { bandInk } from './color';
-import { CapI, FaceContext, fmtCaps, cx } from './frame';
+import { CapI, FaceContext, FitName, fmtCaps, cx } from './frame';
 export * from './frame';
 
 /**
@@ -27,11 +27,23 @@ export function shortName(name: string): string {
   return shown === name ? nicknameIfNeeded(name, regular) : regular;
 }
 
+/** The forms of a name for a measured box (`FitName`), longest first: the masked Bomb name never
+ * gets a nickname. */
+export function fitForms(name: string, forms: (shown: string) => string[]): string[] {
+  const shown = maskName(name);
+  const list = [...new Set(forms(shown))];
+  return shown === name ? nameForms(name, list) : list;
+}
+
+/** "W. Chamberlain" where the box has room, "Wilt" where it hasn't (`FitName`). */
+export function FitShortName({ name, as }: { name: string; as?: 'span' | 'b' }) {
+  return <FitName as={as} forms={fitForms(name, (shown) => [initialAndSurname(shown)])} />;
+}
+
 export function lastName(name: string): string {
   const shown = maskName(name);
-  const w = shown.split(' ');
   // "Otto Porter Jr." is "Porter Jr.", never just "Jr." (playtest 2026-10-23)
-  const regular = w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1]) ? w.slice(-2).join(' ') : w[w.length - 1];
+  const regular = surnameOf(shown);
   return shown === name ? nicknameIfNeeded(name, regular) : regular;
 }
 
@@ -135,7 +147,7 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                   <NFace name={starter.span.playerName} span={starter.span} />
                 </span>
                 <span className="rl-main">
-                  <b>{shortName(starter.span.playerName)}</b>
+                  <FitShortName as="b" name={starter.span.playerName} />
                   <span>
                     {maskYears(starter.span.playerName, starter.span.spanLabel)} · {Math.round(starter.minutes)}m
                   </span>
@@ -149,7 +161,7 @@ export function RosterList({ rows, compact }: { rows: { slot: string; starter?: 
                         <NFace name={b.span.playerName} span={b.span} />
                       </span>
                       <span className="rl-main">
-                        <b>{shortName(b.span.playerName)}</b>
+                        <FitShortName as="b" name={b.span.playerName} />
                         <span>
                           {maskYears(b.span.playerName, b.span.spanLabel)} · {Math.round(b.minutes)}m
                         </span>
@@ -180,7 +192,9 @@ export function RosterCard({ span, slot, extra, foot }: { span: PlayerSpan; slot
       <div className="pic">
         <NFace name={span.playerName} span={span} />
       </div>
-      <div className="nm">{shortName(span.playerName)}</div>
+      <div className="nm">
+        <FitShortName name={span.playerName} />
+      </div>
       <div className="sb">
         <span className="sb-yc">
           <span className="sb-yr">{maskYears(span.playerName, span.spanLabel)}</span>
@@ -291,11 +305,16 @@ export function CardBack() {
 /** A slot of your five: filled (cream card), the active one (red), an empty one. */
 /** A phone's slot has room for about seven letters: a longer surname gives way to the first name
  * ("Klay" for Thompson; 2026-10-29, the user: "Może być po prostu 'Klay'"). */
-const SLOT_NAME_MAX = 7;
-function phoneSlotName(name: string): string {
-  const last = lastName(name);
-  const first = name.split(' ')[0];
-  return last.length > SLOT_NAME_MAX && first !== last && first.length < last.length ? first : last;
+function surnameOf(shown: string): string {
+  const w = shown.split(' ');
+  return w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1]) ? w.slice(-2).join(' ') : w[w.length - 1];
+}
+/** 2026-11-12: which of these fits is measured (`FitName`), not counted — the surname, else a
+ * shorter first name, else the nickname. */
+function phoneSlotForms(shown: string): string[] {
+  const last = surnameOf(shown);
+  const first = shown.split(' ')[0];
+  return first !== last && first.length < last.length ? [last, first] : [last];
 }
 
 export function Slot({
@@ -331,8 +350,8 @@ export function Slot({
         </div>
         <NFace name={span.playerName} />
         <div className="nm">
-          <span className="sl-l">{shortName(span.playerName)}</span>
-          <span className="sl-s">{phoneSlotName(span.playerName)}</span>
+          <FitName className="sl-l" forms={fitForms(span.playerName, (shown) => [initialAndSurname(shown)])} />
+          <FitName className="sl-s" forms={fitForms(span.playerName, phoneSlotForms)} />
         </div>
         <div className="sb">
           <span className="sb-y">{maskYears(span.playerName, span.spanLabel)}</span>

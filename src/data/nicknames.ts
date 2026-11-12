@@ -46,3 +46,17 @@ export function nicknameIfNeeded(name: string, regular: string): string {
   if (!nick) return regular;
   return regular.length > SHORT_NAME_MAX || SHARED_SHORT_NAME.has(normalizePlayerName(name)) ? nick : regular;
 }
+
+/**
+ * 2026-11-12 (the user: "na desktopie się nie mieści?" — "W. Chamberlain" fits a wide card, "Wilt"
+ * was there only because of a character count): the forms a name can take where the room is
+ * measured, longest first, the nickname last. The screen shows the first one that fits
+ * (`FitName`). A short name shared with another pool player ("M. Johnson") never shows: the
+ * nickname is the only form.
+ */
+export function nameForms(name: string, forms: string[]): string[] {
+  const nick = nicknameFor(name);
+  if (!nick) return forms;
+  if (SHARED_SHORT_NAME.has(normalizePlayerName(name))) return [nick];
+  return [...forms.filter((f) => f !== nick), nick];
+}
