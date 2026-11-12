@@ -41,6 +41,7 @@ import { ballHandlerCost } from './ballHandling';
 import { teamSpacingValue } from './midrangeGravity';
 import { usageForSpan } from './usageLookup';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { envVar } from './env';
 
 // ---------------------------------------------------------------------------
 // dev debug — off by default, no cost on the hot path. `draft.ts` flips it on from a dev-only
@@ -1668,7 +1669,7 @@ const USER_VALIDATED_PEAK_SPANS = new Map<string, string>([
  * — in this pool one FGA buys ~2.5-3 TAL of role player (top 30 at 4/6/8 FGA: 56/67/71), weighed
  * by his ~20 minutes against a star's ~36.
  */
-const WINDOW_FGA_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.WINDOW_FGA_RATE ?? 1.6);
+const WINDOW_FGA_RATE = Number(envVar('WINDOW_FGA_RATE') ?? 1.6);
 
 /**
  * 2026-11-04, the user ("jakby uznać wszystkie spany do 5 TAL różnicy za równe temu w peaku?
@@ -1946,27 +1947,27 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 export const AI_PLAN = {
-  on: ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN ?? '0') === '1',
+  on: (envVar('AI_PLAN') ?? '0') === '1',
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
   // Embiid left as a 19.9-FGA glue).
   fromRoster: STRUCTURED_AI ? 0 : 2,
-  alternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_ALT ?? (STRUCTURED_AI ? 8 : 14)),
+  alternatives: Number(envVar('AI_PLAN_ALT') ?? (STRUCTURED_AI ? 8 : 14)),
   cheapFga: 7,
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
   reserveGlue: STRUCTURED_AI,
   reserveGlueFga: 2.5,
-  nearTal: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_NEAR ?? 3),
+  nearTal: Number(envVar('STRUCT_NEAR') ?? 3),
   nearFga: 1,
-  scarceRole: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STRUCT_SCARCE ?? -1),
+  scarceRole: Number(envVar('STRUCT_SCARCE') ?? -1),
   glueAlternatives: STRUCTURED_AI ? 4 : 0,
-  structuralPerPair: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SPAIR ?? 2),
-  structuralPerSlot: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_SSLOT ?? 1),
-  cheapAlternatives: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_CHEAP ?? (STRUCTURED_AI ? 4 : 6)),
+  structuralPerPair: Number(envVar('AI_PLAN_SPAIR') ?? 2),
+  structuralPerSlot: Number(envVar('AI_PLAN_SSLOT') ?? 1),
+  cheapAlternatives: Number(envVar('AI_PLAN_CHEAP') ?? (STRUCTURED_AI ? 4 : 6)),
   passes: 2,
-  warmPasses: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.AI_PLAN_WARM ?? 1),
+  warmPasses: Number(envVar('AI_PLAN_WARM') ?? 1),
   crowdCost: 1.5,
-  share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[k] ?? '0') === '1'),
+  share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => (envVar(k) ?? '0') === '1'),
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
 const planMemory = new Map<string, string[]>();
@@ -2188,7 +2189,7 @@ function complementScore(gaps: FiveGaps, p: PlayerSpan): number {
   );
 }
 
-const BENCH_OFFENSE = { floor: 50, share: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_OFF ?? 0.3), specialistD: 90 };
+const BENCH_OFFENSE = { floor: 50, share: Number(envVar('BENCH_OFF') ?? 0.3), specialistD: 90 };
 function benchOffenseAdjustment(p: PlayerSpan, roster: PlayerSpan[], talentTerm: number): number {
   if (!BENCH_OFFENSE.share) return 0;
   const o = computeOffensiveTalent(p);
@@ -2202,7 +2203,7 @@ function benchOffenseAdjustment(p: PlayerSpan, roster: PlayerSpan[], talentTerm:
   return -BENCH_OFFENSE.share * ((BENCH_OFFENSE.floor - o) / BENCH_OFFENSE.floor) * talentTerm;
 }
 /** See `veteranEarly` in the candidate value. */
-const VETERAN_AI = { earlyRounds: 5, share: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.VET_AI ?? 0.15) };
+const VETERAN_AI = { earlyRounds: 5, share: Number(envVar('VET_AI') ?? 0.15) };
 
 export function pickForAi(
   roster: PlayerSpan[],

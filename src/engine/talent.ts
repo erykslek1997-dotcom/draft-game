@@ -11,8 +11,6 @@ import { hiddenValueBonus } from './historicalApmCorrection';
 import { shootingGravity, PLUS_SHOOTER_SPACING } from './shooting';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent, computeDefensiveTalentBase, computeDefensiveTalentRegularSeason, preBpmCarriedDefense } from './defensiveTalent';
-import preBpmObpmData from '../data/preBpmObpmTwins.json';
-import preBpmDwsMinutesData from '../data/preBpmDefensiveWinShares.json';
 import { withHustleBonus } from '../data/hustleDefenders';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { playoffImpactForSpan, playoffTalentTerm } from './playoffImpact';
@@ -36,6 +34,7 @@ import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from 
 // single file is otherwise cosmetic in acyclic code; it is load-bearing here specifically because
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
 import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
+import { envVar } from './env';
 
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but
@@ -950,35 +949,15 @@ function fitOffenseAnchor(): NonNullable<typeof offenseAnchorFit> {
   }
   return fit;
 }
-/**
- * 2026-11-11 (the user: "teraz chociażby o-tal"): before 1973-74 there is no BPM, so the anchor had
- * nothing to lean on and old windows kept the bare box formula. `scripts/estimateObpm.ts` reads
- * their OBPM off the statistically closest players from 1976-77 on (leave-one-player-out: r 0.94,
- * 88% of the variance), with minutes from bbref's advanced table. An estimate pulls with
- * `OBPM_ESTIMATE_SHARE` of a real OBPM's weight. The anchor's position fit stays on real OBPM only.
- */
-const PRE_BPM_OBPM = preBpmObpmData as Record<string, number>;
-const PRE_BPM_MINUTES = preBpmDwsMinutesData as unknown as Record<string, [number, number]>;
-const OBPM_ESTIMATE_SHARE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.OBPM_EST ?? 0);
-function estimatedObpm(span: PlayerSpan): { obpm: number; minutes: number } | null {
-  const obpm = PRE_BPM_OBPM[span.id];
-  if (obpm === undefined) return null;
-  const name = normalizePlayerName(span.playerName);
-  let minutes = 0;
-  for (const y of spanEndYears(span.spanLabel)) minutes += PRE_BPM_MINUTES[`${name}|${y}`]?.[1] ?? 0;
-  return minutes > 0 ? { obpm, minutes } : null;
-}
 function offenseAnchor(span: PlayerSpan, boxOffense: number): number {
   if (fittingOffenseAnchor || !OFFENSE_ANCHOR.share) return 0;
-  const measured = realObpm(span);
-  const estimate = measured || !OBPM_ESTIMATE_SHARE ? null : estimatedObpm(span);
-  const real = measured ?? estimate;
+  const real = realObpm(span);
   if (!real) return 0;
   offenseAnchorFit ??= fitOffenseAnchor();
   const f = offenseAnchorFit.get(OFFENSE_ANCHOR.poolWide ? 'SF' : span.primaryPosition);
   if (!f || f.sdObpm <= 0) return 0;
   const implied = f.meanOff + ((real.obpm - f.meanObpm) / f.sdObpm) * f.sdOff;
-  return OFFENSE_ANCHOR.share * (measured ? 1 : OBPM_ESTIMATE_SHARE) * Math.min(1, real.minutes / OFFENSE_ANCHOR.fullMinutes) * (implied - boxOffense);
+  return OFFENSE_ANCHOR.share * Math.min(1, real.minutes / OFFENSE_ANCHOR.fullMinutes) * (implied - boxOffense);
 }
 
 function rawComponents(
@@ -2186,7 +2165,7 @@ const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
 const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
 /** First season (end year) with steals and blocks in the box score. */
 const DEFENSE_CREDIT_STOCKS_FROM = 1974;
-const CARRY_INTO_TAL = ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CARRY_TAL ?? '1') !== '0';
+const CARRY_INTO_TAL = (envVar('CARRY_TAL') ?? '1') !== '0';
 
 export function defenseCreditLift(span: PlayerSpan, tal: number): number {
   const fade = clamp01((DEFENSE_CREDIT_FADE_TO - tal) / (DEFENSE_CREDIT_FADE_TO - DEFENSE_CREDIT_FADE_FROM));

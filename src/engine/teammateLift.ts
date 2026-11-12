@@ -1,6 +1,7 @@
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import liftData from '../data/teammateLift.json';
+import { processEnv } from './env';
 
 /**
  * 2026-10-15, the user ("jak wpływają na efficiency zawodników obok"): how much better a player's
@@ -42,7 +43,7 @@ export function teammateLift(span: PlayerSpan): TeammateLift {
  * Nash beside the Suns lost three points of 3P% away from them (2026-10-15, the user: good shooters
  * at a poor shooter's 3P%).
  */
-const LIFT_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const LIFT_ENV = processEnv;
 /**
  * 2026-11-05, the night session (the user: "imo usuwamy jeśli nic 'za' nie znajdziesz"): measured with
  * `scripts/auditMetrics.ts` on 600 real team-seasons, the lift adds 0.004 to Overall vs real SRS

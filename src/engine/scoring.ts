@@ -43,6 +43,7 @@ import { heliocentricAdjustment } from './heliocentric';
 import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD } from './fit';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
+import { envVar } from './env';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -1767,7 +1768,7 @@ const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
 
 /** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
  * renormalising the rest of its half. Unset, nothing changes. */
-const SC_DROP = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_DROP ?? '';
+const SC_DROP = envVar('SC_DROP') ?? '';
 const dropW = (part: string, w: number, bucket: Record<string, number>) => {
   if (!SC_DROP || !(SC_DROP in bucket)) return w;
   return part === SC_DROP ? 0 : w / (1 - bucket[SC_DROP]);
@@ -1835,7 +1836,7 @@ const BALL_HANDLER_REF = 0.54;
  * directly: game 0.81 -> 0.78). Needs a real bench (`minBench`), so a starters-only draft is untouched.
  */
 const BENCH_FLOOR = {
-  per: Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.BENCH_FLOOR_PER ?? 0.05),
+  per: Number(envVar('BENCH_FLOOR_PER') ?? 0.05),
   ref: 41,
   minBench: 3,
 };
@@ -1853,7 +1854,7 @@ export function weakestReserveTalent(team: Team): number | null {
  * the draft board numbers stay put; the era discount lives in Overall (the whole-of-Siła-epoki card
  * version is post-launch). Centred on 2003 so the league's mean Overall barely moves.
  */
-const ERA_PER_YEAR = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.ERA_K ?? -0.073);
+const ERA_PER_YEAR = Number(envVar('ERA_K') ?? -0.073);
 const ERA_PIVOT = 2003;
 export function eraAdjustment(team: Team): number {
   const years = primaryStarters(team).map((e) => Number(e.player.spanLabel.slice(0, 4)) + 2).filter((y) => Number.isFinite(y));
@@ -1920,11 +1921,11 @@ function secondUnit(team: Team): Team | null {
   return { ...team, rotation: { ...team.rotation, slots } };
 }
 /** The share of the spacing bottleneck the second unit pays (`U2_BOTTLENECK`, measurement). */
-const U2_BOTTLENECK = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.U2_BOTTLENECK ?? 1);
-const SC_BENCH = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SC_BENCH ?? 'f';
+const U2_BOTTLENECK = Number(envVar('U2_BOTTLENECK') ?? 1);
+const SC_BENCH = envVar('SC_BENCH') ?? 'f';
 /** 2026-11-06 (on by default; `STAGGER=0` for the all-backups unit): the bench as it really comes in — each slot's backup beside the four
  * starters, weighted by his minutes there — instead of all five backups at once. */
-const STAGGER = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STAGGER !== '0';
+const STAGGER = envVar('STAGGER') !== '0';
 function staggeredFit(team: Team, starters: number): number {
   if (!team.rotation) return starters;
   let total = 0;
@@ -1947,7 +1948,7 @@ function benchShare(team: Team): number {
   return Math.min(0.4, bench / 240);
 }
 
-const TRAITS_ON = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.TRAITS !== '0';
+const TRAITS_ON = envVar('TRAITS') !== '0';
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);

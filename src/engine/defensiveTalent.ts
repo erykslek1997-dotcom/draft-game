@@ -5,7 +5,6 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
-import preBpmTeamDefenseData from '../data/preBpmTeamDefense.json';
 import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
@@ -19,6 +18,7 @@ import { playoffImpactForSpan } from './playoffImpact';
 import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { blendWithNeighbours, neighbourWindowsFor, neighbourWindowsRegistered, onNeighbourWindowsRegistered } from './neighbourWindows';
 import { withHustleBonus } from '../data/hustleDefenders';
+import { envVar } from './env';
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -773,7 +773,7 @@ const NAMED_DTAL_BONUS: ReadonlyMap<string, number> = new Map([
   [normalizePlayerName('Mookie Blaylock'), -9],
   // 2026-11-05, the user ("dlaczego Conley ma tylko 48"): a sound on-ball defender whose quiet box
   // (1.2-1.3 steals, no blocks) and a fading 2013 All-Defense read him in the 40s-50s after 2014.
-  ...((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_CONLEY === '0' ? [] : [[normalizePlayerName('Mike Conley'), 8] as [string, number]]),
+  ...(envVar('DT_CONLEY') === '0' ? [] : [[normalizePlayerName('Mike Conley'), 8] as [string, number]]),
 ]);
 /** 2026-11-06, the user ("Klay niedoceniony w D", Curry–Klay–Green at Fit 58): Klay's prime windows —
  * the Warriors' point-of-attack and wing stopper on the best perimeter scorer — read 55-74 off a quiet
@@ -812,7 +812,7 @@ const NAMED_DTAL_CAP: ReadonlyMap<string, number> = new Map([[normalizePlayerNam
  */
 const RECOGNIZED_DEFENDER_FLOOR_MIN = 60;
 const RECOGNIZED_DEFENDER_FLOOR_MAX = 88;
-const RECOGNIZED_DEFENDER_FULL_RATE = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.DT_RFULL ?? 0.6);
+const RECOGNIZED_DEFENDER_FULL_RATE = Number(envVar('DT_RFULL') ?? 0.6);
 // 2026-11-05 (11c, the user: LeBron 2012-14 at 82, Kobe 2001-03 at 82 with All-Defense 1st teams):
 // the recognized-defender floor reaches its top at a 0.6 rate (two 1st-team seasons of three) instead
 // of 0.75 — LeBron 2012-14 82 -> 86, Kobe 2001-03 82 -> 87.
@@ -903,33 +903,6 @@ function neutralDataFloor(span: PlayerSpan): number {
   return mean >= NEUTRAL_DATA_MEAN ? NEUTRAL_DATA_FLOOR : 0;
 }
 
-/**
- * 2026-11-11 (the user: "a wiemy czy grali w słabych albo mocnych obronach?"): before 1973-74,
- * where no DBPM exists, the defense of a player's teams. `scripts/teamDefenseRapm.ts` fits team
- * defensive ratings 1951-1973 on minutes shares (ridge), and maps each player's result to the D-TAL
- * scale through the same fit on 1974-2000 (D-TAL = 35.7 + 11.4 x beta, r 0.48; DBPM r 0.55).
- * `TEAM_D.mode` "floor" raises only; "blend" pulls both ways. Weight grows with the player's
- * minutes in the fit, full at `fullMinutes`.
- */
-const TEAM_D_DATA = preBpmTeamDefenseData as unknown as Record<string, [number, number]>;
-const envNum = (k: string, d: number) => Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env[k] ?? d);
-const TEAM_D = { share: envNum('TEAM_D', 0), mode: (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.TEAM_D_MODE ?? 'floor', fullMinutes: 15000, lastYear: 1973 };
-const teamDefenseKey = (name: string) => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
-/** The mapping's intercept: an average teammate (beta 0) reads this D-TAL. */
-const TEAM_D_MEAN = 35.7;
-function withTeamDefense(span: PlayerSpan, value: number): number {
-  if (!TEAM_D.share) return value;
-  const years = spanEndYears(span.spanLabel);
-  if (!years.length || Math.max(...years) > TEAM_D.lastYear) return value;
-  const row = TEAM_D_DATA[teamDefenseKey(span.playerName)];
-  if (!row) return value;
-  const [target, minutes] = row;
-  const w = TEAM_D.share * Math.min(1, minutes / TEAM_D.fullMinutes);
-  if (TEAM_D.mode === 'floor') return Math.max(value, value + (target - value) * w);
-  if (TEAM_D.mode === 'shift') return value + (target - TEAM_D_MEAN) * w;
-  return value + (target - value) * w;
-}
-
 export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = playoffDefensiveTalentCache.get(span.id);
@@ -937,7 +910,7 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const bonus = (NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0) + (NAMED_SPAN_DTAL_BONUS.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0);
   const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
   const floored = Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span), boxEliteConfirmedFloor(span), neutralDataFloor(span));
-  const result = Math.max(0, Math.min(100, Math.round(withTeamDefense(span, floored))));
+  const result = Math.max(0, Math.min(100, Math.round(floored)));
   playoffDefensiveTalentCache.set(span.id, result);
   return result;
 }
@@ -977,7 +950,7 @@ const CARRY_DWS_SLACK = 0.5;
  * matched it and carried the floor: only a window whose own DBPM is genuinely positive carries. */
 const CARRY_MIN_DBPM = 0.5;
 const CARRY_PRE_BPM_DISCOUNT = 4;
-const CARRY_PRE_BPM_GAP_COST = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.CARRY_GAP ?? 8);
+const CARRY_PRE_BPM_GAP_COST = Number(envVar('CARRY_GAP') ?? 8);
 let windowsByName: Map<string, PlayerSpan[]> | null = null;
 const carryCache = new Map<string, number>();
 function accoladeFloor(span: PlayerSpan): number {

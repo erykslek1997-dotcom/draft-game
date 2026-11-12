@@ -2,6 +2,7 @@ import type { PlayerSpan } from '../data/schema';
 import { effectiveTalent } from './grades';
 import { teamSpacingValue } from './midrangeGravity';
 import { computeDefensiveTalent } from './defensiveTalent';
+import { envVar } from './env';
 
 /**
  * 2026-10-01, the user's own rule after grading the 73 sub-65-TAL starters of 100 AI drafts one by
@@ -24,7 +25,7 @@ const ROLE_STARTER_MIN_DEFENSE = 56;
  * starter-tier wing): an elite defender reads as a role starter without the shot, from a higher TAL.
  * Thybulle 2020-22 (TAL 56, D 96), Roberson's windows. Every mode: the rotation does not know it.
  */
-const STOPPER_MIN_TAL = Number((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.STOPPER_TAL ?? 55);
+const STOPPER_MIN_TAL = Number(envVar('STOPPER_TAL') ?? 55);
 const STOPPER_MIN_DEFENSE = 85;
 
 /** True when only the stopper path lets this player start: the lineup search then keeps him out of

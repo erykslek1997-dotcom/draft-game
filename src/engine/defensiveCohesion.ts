@@ -5,6 +5,7 @@ import { STARTER_SLOTS } from './positions';
 import type { Team } from './types';
 import type { DefensiveRole, Position } from '../data/schema';
 import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
+import { processEnv } from './env';
 
 /** 2026-11-05, defense calibration (the user: "średnia piątki poniżej 80 działa bardzo zero-jedynkowo",
  * "obręcz 77, zbyt dużo wymaga", LeBron beside Embiid): the elite-shell average ramps 70-90 (was a
@@ -13,7 +14,7 @@ import { secondaryDefensiveRoleStrength } from '../data/defensiveRoleProfiles';
  * AI-drafted teams (`scripts/_defcal.ts`): Defense max 99 -> 90, over 90 2.1% -> 0%, over 80 30% ->
  * 33%, defense-first teams in each draft's top three 4/18 -> 1/18; the user's Conley / White / OG /
  * LeBron / Embiid five cohesion 53 -> 67. Each knob is overridable from the environment. */
-const DC_ENV = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env;
+const DC_ENV = processEnv;
 const dcPair = (v: string | undefined, d: [number, number]): [number, number] => (v ? (v.split(',').map(Number) as [number, number]) : d);
 const WING_ROLES: DefensiveRole[] = ['Wing Stopper', 'Chaser', 'Switch Big'];
 /** Same discount shape `poa` below already applies to a non-exact-tag POA candidate — a real,
