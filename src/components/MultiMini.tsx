@@ -56,8 +56,13 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MpError | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Set when the room came from the address bar or a refresh, not from this form.
+  const [fromLink, setFromLink] = useState(false);
   const [me, setMe] = useState<string | null>(null);
 
+  // The form is a link's join form until that room turns out to be over.
+  const linkCode = notice ? undefined : initialCode;
   const cleanNick = nick.trim().replace(/\s+/g, ' ').slice(0, 24);
   async function enter(join: string | null) {
     if (cleanNick.length < 2) return;
@@ -93,7 +98,10 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
 
   // A link or a refresh: back into the room (the name is already known from last time).
   useEffect(() => {
-    if (initialCode && savedNick().trim().length >= 2) void enter(initialCode);
+    if (initialCode && savedNick().trim().length >= 2) {
+      setFromLink(true);
+      void enter(initialCode);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,15 +151,15 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
             <input value={nick} maxLength={24} onChange={(e) => setNick(e.target.value)} placeholder="Name" />
           </label>
           <label>
-            <span>{initialCode ? 'Room from your link' : 'Join a friend’s room'}</span>
+            <span>{linkCode ? 'Room from your link' : 'Join a friend’s room'}</span>
             <span className="mp-row">
-              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE" className="mp-code" readOnly={Boolean(initialCode)} />
+              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE" className="mp-code" readOnly={Boolean(linkCode)} />
               <Btn disabled={busy || cleanNick.length < 2 || code.trim().length !== 5} onClick={() => void enter(code.trim().toUpperCase())}>
                 {busy ? 'Joining…' : 'Join'}
               </Btn>
             </span>
           </label>
-          {!initialCode && (
+          {!linkCode && (
             <div className="mp-make">
               <span>No code? Start your own room and send the link.</span>
               <span className="mp-caps">
@@ -173,16 +181,40 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
           )}
           {cleanNick.length < 2 && <p className="mp-note">Pick a name first (2 letters or more).</p>}
           {error && <p className="mp-err">{MP_ERROR_TEXT[error]}</p>}
+          {notice && <p className="mp-note">{notice}</p>}
         </form>
       </NightGame>
     );
   }
-  return <Room roomId={roomId} code={roomCode} me={me} onExit={exit} />;
+  return (
+    <Room
+      roomId={roomId}
+      code={roomCode}
+      me={me}
+      onExit={exit}
+      onOver={
+        fromLink
+          ? () => {
+              // A finished room in the address bar (playtest 2026-11-12): forget it, start fresh.
+              rememberRoom(null);
+              setRoomId(null);
+              setRoomCode(null);
+              setCode('');
+              setFromLink(false);
+              setNotice(`Room ${roomCode} is over. Make a new one or join another.`);
+            }
+          : undefined
+      }
+    />
+  );
 }
 
-function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: string; onExit: () => void }) {
+function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: string; me: string; onExit: () => void; onOver?: () => void }) {
   const live = useRoom(roomId);
   const { room, members, picks } = live;
+  useEffect(() => {
+    if (room?.status === 'done' && onOver) onOver();
+  }, [room?.status, onOver]);
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
   const isHost = room?.host === me;
