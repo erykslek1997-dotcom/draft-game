@@ -309,9 +309,11 @@ $$;
 
 -- 2026-11-12: a room is a Mini (16 teams) or a Duel (2 teams, one each).
 alter table public.mp_rooms add column if not exists teams int not null default 16 check (teams in (2, 16));
+alter table public.mp_rooms add column if not exists cap numeric not null default 70 check (cap between 40 and 120);
 drop function if exists public.mp_create(bigint, text, int, int, int);
+drop function if exists public.mp_create(bigint, text, int, int, int, int);
 
-create or replace function public.mp_create(p_seed bigint, p_nick text, p_level int, p_max int default 4, p_clock int default 120, p_teams int default 16) returns text
+create or replace function public.mp_create(p_seed bigint, p_nick text, p_level int, p_max int default 4, p_clock int default 120, p_teams int default 16, p_cap numeric default 70) returns text
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -327,8 +329,8 @@ begin
   for i in 1..20 loop
     v_code := (select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + floor(random() * 32)::int, 1), '') from generate_series(1, 5));
     begin
-      insert into mp_rooms (code, host, seed, max_players, clock_s, teams)
-      values (v_code, uid, p_seed, case when p_teams = 2 then 2 else p_max end, p_clock, case when p_teams = 2 then 2 else 16 end) returning id into v_room;
+      insert into mp_rooms (code, host, seed, max_players, clock_s, teams, cap)
+      values (v_code, uid, p_seed, case when p_teams = 2 then 2 else p_max end, p_clock, case when p_teams = 2 then 2 else 16 end, p_cap) returning id into v_room;
       exit;
     exception when unique_violation then v_room := null;
     end;
@@ -447,7 +449,7 @@ end $$;
 revoke all on function public.mp_tourney(uuid, int) from public, anon;
 grant execute on function public.mp_tourney(uuid, int) to authenticated;
 
-revoke all on function public.mp_create(bigint, text, int, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
+revoke all on function public.mp_create(bigint, text, int, int, int, int, numeric), public.mp_join(text, text, int), public.mp_leave(uuid),
   public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid), public.mp_live_players() from public, anon;
-grant execute on function public.mp_create(bigint, text, int, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
+grant execute on function public.mp_create(bigint, text, int, int, int, int, numeric), public.mp_join(text, text, int), public.mp_leave(uuid),
   public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid) to authenticated;

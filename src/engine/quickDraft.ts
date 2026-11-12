@@ -116,24 +116,36 @@ export interface QuickDraftState {
   pool?: Set<string>;
 }
 
-/** The Duel's board: 8 players a position, five strong ones and three cheap ones, from the seed. */
-const DUEL_STRONG = 5;
-const DUEL_CHEAP = 3;
+/**
+ * The Duel's board (2026-11-12, the user: 90 players, "3 elite, 3 ok, 3 tanich" per tier): 18 a
+ * position from the seed — six elite (the position's top 15), six solid (its next 60) and six cheap
+ * (9 caps or less) — one season per player.
+ */
+const DUEL_PER_TIER = 6;
+const DUEL_ELITE_TOP = 15;
+const DUEL_SOLID_TOP = 75;
 const DUEL_CHEAP_MAX = 9;
 export function duelPool(seed: number): Set<string> {
   const rng = mulberry32(mixSeed(seed, 7));
-  const pick = <T,>(list: T[], n: number) => {
-    const copy = [...list];
-    const out: T[] = [];
-    while (out.length < n && copy.length) out.push(copy.splice(Math.floor(rng() * copy.length), 1)[0]);
-    return out;
-  };
   const ids = new Set<string>();
+  const names = new Set<string>();
+  const pick = (list: PlayerSpan[]) => {
+    const copy = list.filter((p) => !names.has(p.playerName));
+    for (let n = 0; n < DUEL_PER_TIER && copy.length; n++) {
+      const p = copy.splice(Math.floor(rng() * copy.length), 1)[0];
+      if (names.has(p.playerName)) {
+        n--;
+        continue;
+      }
+      names.add(p.playerName);
+      ids.add(p.id);
+    }
+  };
   for (const pos of STARTER_SLOTS) {
-    const strong = pick(aiPool.filter((p) => p.primaryPosition === pos), DUEL_STRONG);
-    const names = new Set(strong.map((p) => p.playerName));
-    const cheap = pick(players.filter((p) => p.primaryPosition === pos && p.fga <= DUEL_CHEAP_MAX && !names.has(p.playerName)), DUEL_CHEAP);
-    for (const p of [...strong, ...cheap]) ids.add(p.id);
+    const ranked = players.filter((p) => p.primaryPosition === pos).sort((x, y) => effectiveTalent(y) - effectiveTalent(x));
+    pick(ranked.slice(0, DUEL_ELITE_TOP));
+    pick(ranked.slice(DUEL_ELITE_TOP, DUEL_SOLID_TOP));
+    pick(ranked.filter((p) => p.fga <= DUEL_CHEAP_MAX).slice(0, 120));
   }
   return ids;
 }
@@ -524,8 +536,8 @@ export function applyQuickServerPick(state: QuickDraftState, playerId: string): 
 
 /** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own).
  * Two teams make a Duel: the first two seats, on its small board. */
-export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT): QuickDraftState {
+export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT, cap?: number): QuickDraftState {
   const base = createQuickDraft(undefined, seed);
   const teams = base.teams.slice(0, teamCount).map((t, i) => ({ ...t, isHuman: i === mySlot, draftSlot: i + 1 }));
-  return { ...base, teams, ...(teamCount === 2 ? { pool: duelPool(seed) } : {}) };
+  return { ...base, teams, ...(cap ? { capLimit: cap } : {}), ...(teamCount === 2 ? { pool: duelPool(seed) } : {}) };
 }

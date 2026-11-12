@@ -30,7 +30,7 @@ console.log('multiplayer replay ok');
 let d1 = createQuickMultiplayerDraft(5, 0, 2);
 let d2 = createQuickMultiplayerDraft(5, 1, 2);
 assert.equal(d1.teams.length, 2);
-assert.equal(d1.pool!.size, 40);
+assert.equal(d1.pool!.size, 90);
 const duelLog: string[] = [];
 guard = 0;
 while (!d1.complete && guard++ < 20) {

@@ -7,6 +7,8 @@ import {
   AWAY_MS,
   MAX_PLAYERS,
   MP_ERROR_TEXT,
+  ROOM_CAP_MAX,
+  ROOM_CAP_MIN,
   createRoom,
   joinRoom,
   leaveRoom,
@@ -49,6 +51,7 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
     if (account?.nickname && !nick) setNick(account.nickname);
   }, [account, nick]);
   const [code, setCode] = useState(initialCode ?? '');
+  const [cap, setCap] = useState(70);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,7 +70,7 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
     }
     let joinCode = join;
     if (!joinCode) {
-      const made = await createRoom(cleanNick, level, duel);
+      const made = await createRoom(cleanNick, level, duel, cap);
       if ('error' in made) {
         setBusy(false);
         setError(made.error);
@@ -151,6 +154,18 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
           {!initialCode && (
             <div className="mp-make">
               <span>No code? Start your own room and send the link.</span>
+              <span className="mp-caps">
+                Cap <b>{cap.toFixed(1)}</b>
+                <input
+                  type="range"
+                  min={ROOM_CAP_MIN}
+                  max={ROOM_CAP_MAX}
+                  step={0.1}
+                  value={cap}
+                  onChange={(e) => setCap(Math.round(Number(e.target.value) * 10) / 10)}
+                  aria-label="Cap (FGA) for each five"
+                />
+              </span>
               <Btn kind="line" disabled={busy || cleanNick.length < 2} onClick={() => void enter(null)}>
                 {busy && !code ? 'Making a room…' : 'Make a new room'}
               </Btn>
@@ -193,6 +208,7 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
       seed: room.seed,
       mySlot: mine.slot,
       teams: room.teams ?? 16,
+      cap: room.cap ?? 70,
       names,
       here: herePlayers,
       picks: picks.map((p) => p.player_id),
@@ -236,6 +252,7 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
             <Kv k="Code" v={code} gold />
             <Kv k="Teams" v={room?.teams === 2 ? '2 · one each' : `${TEAM_COUNT} · the rest CPU`} />
             <Kv k="Pick clock" v={`${room?.clock_s ?? 120} s`} />
+            <Kv k="Cap" v={(room?.cap ?? 70).toFixed(1)} />
           </section>
           <Actions links={{ onMenu: onExit }}>
             <Btn kind="line" onClick={onExit}>
