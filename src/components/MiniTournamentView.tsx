@@ -86,7 +86,10 @@ export function MiniTournamentView({
   const next = shown < MINI_ROUNDS.length ? yourGame(shown) : undefined;
   const alive = out === null || out >= shown;
   const finished = shown >= MINI_ROUNDS.length;
-  const nick = (id: string) => teamNickname(byId.get(id)?.name ?? '');
+  const nick = (id: string) => {
+    const team = byId.get(id);
+    return `${teamNickname(team?.name ?? '')}${team?.gm ? ` (${team.gm})` : ''}`;
+  };
   const code = (id: string) => codeOf(byId.get(id)!);
   const wins = t.rounds.slice(0, shown).filter((r) => r.some((g) => g.winnerId === you.id)).length;
   const losses = out !== null && out < shown ? 1 : 0;

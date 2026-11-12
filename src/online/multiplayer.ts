@@ -156,6 +156,18 @@ export function roomLink(code: string): string {
   return `${window.location.origin}${import.meta.env.BASE_URL}?room=${code}`;
 }
 
+/** What the player on the clock is browsing (sent live, never stored). */
+export interface Peek {
+  user: string;
+  /** Position tab, or ALL. */
+  tab: string;
+  /** Caps filter top, or null for any. */
+  upTo: number | null;
+  /** The player they last starred or looked at, masked like the list shows him. */
+  eyeing?: string;
+  at: number;
+}
+
 export interface RoomLive {
   room: MpRoom | null;
   members: MpMember[];
@@ -166,6 +178,8 @@ export interface RoomLive {
   now: () => number;
   /** Reloads the picks at once (after your own pick). */
   refresh: () => void;
+  peek: Peek | null;
+  sendPeek: (p: Omit<Peek, 'at' | 'user'>) => void;
 }
 
 /** Everything a room's screen needs, kept up to date over Realtime (or polling when that's busy). */
@@ -175,6 +189,9 @@ export function useRoom(roomId: string | null): RoomLive {
   const [picks, setPicks] = useState<MpPick[]>([]);
   const [live, setLive] = useState(true);
   const offset = useRef(0);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const meRef = useRef<string | null>(null);
+  const [peek, setPeek] = useState<Peek | null>(null);
 
   const loadRoom = useCallback(async () => {
     if (!supabase || !roomId) return;
@@ -214,6 +231,7 @@ export function useRoom(roomId: string | null): RoomLive {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mp_members', filter: `room_id=eq.${roomId}` }, () => void loadMembers())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mp_rooms', filter: `id=eq.${roomId}` }, () => void loadRoom())
+      .on('broadcast', { event: 'peek' }, ({ payload }) => setPeek({ ...(payload as Peek), at: Date.now() }))
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setLive(true);
@@ -224,6 +242,8 @@ export function useRoom(roomId: string | null): RoomLive {
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLive(false);
       });
 
+    channelRef.current = channel;
+    void sb.auth.getSession().then(({ data }) => (meRef.current = data.session?.user.id ?? null));
     const ping = async () => {
       const sent = Date.now();
       const { data } = await sb.rpc('mp_ping', { p_room: roomId });
@@ -235,6 +255,7 @@ export function useRoom(roomId: string | null): RoomLive {
     return () => {
       window.clearInterval(pinger);
       if (channel) void sb.removeChannel(channel);
+      channelRef.current = null;
       channel = null;
     };
   }, [roomId, loadRoom, loadMembers, loadPicks]);
@@ -250,5 +271,10 @@ export function useRoom(roomId: string | null): RoomLive {
   }, [live, roomId, loadPicks, loadRoom]);
 
   const now = useCallback(() => Date.now() + offset.current, []);
-  return { room, members, picks, live, now, refresh: () => void loadPicks() };
+  const sendPeek = useCallback((p: Omit<Peek, 'at' | 'user'>) => {
+    const ch = channelRef.current;
+    if (!ch || !meRef.current) return;
+    void ch.send({ type: 'broadcast', event: 'peek', payload: { ...p, user: meRef.current } });
+  }, []);
+  return { room, members, picks, live, now, refresh: () => void loadPicks(), peek, sendPeek };
 }

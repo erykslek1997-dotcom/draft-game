@@ -105,6 +105,10 @@ export interface MiniMp {
   lastPickAt: number;
   clockS: number;
   now: () => number;
+  /** Live: what the friend on the clock is browsing ("Ola is looking at PGs"). */
+  peekLine?: string;
+  /** Sends what you browse while on the clock. */
+  sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
   /** The tournament, round by round together. */
   tourney?: { gate: number; waiting?: string; onShown: (rounds: number) => void };
   /** Server time the first pick opens, ms: the lottery plays until then. */
@@ -147,7 +151,7 @@ const CAPS_TOP = 30;
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp }: Props) {
   const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
   const [state, setState] = useState<QuickDraftState>(() =>
-    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams, mp.cap), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
+    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams, mp.cap, mp.names), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
   );
   const TEAM_COUNT = state.teams.length;
   // A room's draft opens on the lottery (the order the host's start drew), then the first pick.
@@ -295,6 +299,8 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         clock={mp && !state.complete ? Math.max(0, Math.ceil((mp.lastPickAt + mp.clockS * 1000 - mp.now()) / 1000)) : undefined}
         clockFor={mp ? (mp.names.has(teamIdx) && mp.here.has(teamIdx)) || teamIdx === mp.mySlot : false}
         gmOf={mp ? (i) => mp.names.get(i) : undefined}
+        peekLine={mp?.peekLine}
+        sendPeek={mp?.sendPeek}
         awayOf={mp ? (i) => mp.names.has(i) && !mp.here.has(i) : undefined}
         onAutoFinish={() => {
           setAutoFinishing(true);
@@ -420,7 +426,11 @@ function QuickDraftBoard({
   clockFor,
   gmOf,
   awayOf,
+  peekLine,
+  sendPeek,
 }: {
+  peekLine?: string;
+  sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
   /** Multiplayer: the player running a team (by index), none for a CPU team. */
   gmOf?: (teamIndex: number) => string | undefined;
   awayOf?: (teamIndex: number) => boolean;
@@ -455,6 +465,7 @@ function QuickDraftBoard({
     }
   });
   const toggleStar = (name: string) => {
+    if (!bigBoard.includes(name)) setEyeing(maskName(name));
     const next = bigBoard.includes(name) ? bigBoard.filter((n) => n !== name) : [...bigBoard, name];
     setBigBoard(next);
     try {
@@ -493,6 +504,13 @@ function QuickDraftBoard({
       .sort((a, b) => b.tal - a.tal || allStarCount(b.span.playerName) - allStarCount(a.span.playerName));
   }, [available, on, search, caps]);
   const shown = filtered.slice(0, visible);
+  // Live for the room: what you browse on the clock (the tab, the caps filter, your latest star).
+  const [eyeing, setEyeing] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!sendPeek || !canPick) return;
+    const t = window.setTimeout(() => sendPeek({ tab: on, upTo: caps[1] >= CAPS_TOP ? null : caps[1], eyeing }), 250);
+    return () => window.clearTimeout(t);
+  }, [sendPeek, canPick, on, caps, eyeing]);
   const anyLegal = !canPick || shown.some((e) => isQuickPickLegal(state, e.span.id));
 
   const spanById = useMemo(() => new Map(state.teams.flatMap((t) => t.roster.map((p) => [p.id, p] as const))), [state.teams]);
@@ -664,6 +682,7 @@ function QuickDraftBoard({
       ) : (
         <Prompt eb={`On the clock · Pick ${overall}${clock !== undefined && clockFor ? ` · ${fmtClock(clock)}` : ''}`} title={teamLabel(currentTeam)} now>
           {gmOf && (gmOf(currentTeamIndex(state)) ? <b>{gmOf(currentTeamIndex(state))}{awayOf?.(currentTeamIndex(state)) ? ' (away, the CPU picks)' : ''} is picking. </b> : 'A CPU GM is picking. ')}
+          {peekLine && <span className="mp-peek">{peekLine} </span>}
           {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'} The list stays open while they think.
         </Prompt>
       )}

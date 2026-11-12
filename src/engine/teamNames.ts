@@ -37,7 +37,7 @@ export function draftTeamNames(count: number, rng: () => number, humanTeamName?:
  * ranking added the number. Names are unique within a draft, and the slot is already shown where
  * it matters (the pick counter, the lottery), so the label is just the name. */
 export function teamLabel(team: Team): string {
-  return team.name;
+  return team.gm ? `${team.name} (${team.gm})` : team.name;
 }
 
 /** Just the nickname ("Sea Lions" for "Long Beach Sea Lions") — headlines and the playoff bracket.

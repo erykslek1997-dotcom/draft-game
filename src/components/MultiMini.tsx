@@ -27,6 +27,13 @@ import { TEAM_COUNT } from '../engine/positions';
 import { QUICK_ROUNDS } from '../engine/quickDraft';
 
 const NICK_KEY = 'draftverse.mp.nick';
+
+/** The team (index) on the clock after `done` picks: the snake, as the server counts it. */
+function onClockSlot(teams: number, done: number): number {
+  const round = Math.floor(done / teams);
+  const i = done % teams;
+  return round % 2 === 0 ? i : teams - 1 - i;
+}
 /** The draft lottery everyone watches after the start; the first pick opens after it. */
 const LOTTERY_MS = 20_000;
 
@@ -249,6 +256,14 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
       clockS: room.clock_s,
       now: live.now,
       leader,
+      sendPeek: live.sendPeek,
+      peekLine: (() => {
+        const p = live.peek;
+        const onClock = members.find((m) => m.slot === onClockSlot(room.teams, picks.length));
+        if (!p || !onClock || p.user !== onClock.user_id || p.user === me || Date.now() - p.at > 60_000) return undefined;
+        const what = p.tab === 'ALL' ? 'the whole list' : `${p.tab}s`;
+        return `Live: ${onClock.nickname} is looking at ${what}${p.upTo !== null ? ` up to ${p.upTo} caps` : ''}${p.eyeing ? `, just starred ${p.eyeing}` : ''}.`;
+      })(),
       tourney: (() => {
         // A round opens when everyone still here has seen the one before it.
         const others = members.filter((m) => m.user_id !== me && m.slot !== null && here(m.last_seen));
@@ -261,7 +276,7 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room, members, picks, mine, me, roomId, Math.floor(live.now() / 5000)]);
+  }, [room, members, picks, mine, me, roomId, live.peek, Math.floor(live.now() / 5000)]);
 
   if (mp) {
     return (

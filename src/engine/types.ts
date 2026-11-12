@@ -19,6 +19,8 @@ export interface Team {
   /** 1-based position in the round-1 draft order, shown next to the name as "#4". */
   draftSlot: number;
   isHuman: boolean;
+  /** Multiplayer: the friend running this team (2026-11-12), shown with its name everywhere. */
+  gm?: string;
   roster: PlayerSpan[]; // drafted players, in pick order
   rotation: Rotation | null;
 }
