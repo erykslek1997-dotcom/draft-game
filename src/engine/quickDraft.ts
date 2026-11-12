@@ -112,6 +112,42 @@ export interface QuickDraftState {
   capLimit: number;
   /** The day's rule in a daily — the human team's only; the CPU drafts from the whole pool. */
   dailyRule?: DailyRule;
+  /** A Duel's small board (2026-11-12): only these players can be drafted. */
+  pool?: Set<string>;
+}
+
+/**
+ * The Duel's board (2026-11-12, the user: 90 players, "3 elite, 3 ok, 3 tanich" per tier): 18 a
+ * position from the seed — six elite (the position's top 15), six solid (its next 60) and six cheap
+ * (9 caps or less) — one season per player.
+ */
+const DUEL_PER_TIER = 6;
+const DUEL_ELITE_TOP = 15;
+const DUEL_SOLID_TOP = 75;
+const DUEL_CHEAP_MAX = 9;
+export function duelPool(seed: number): Set<string> {
+  const rng = mulberry32(mixSeed(seed, 7));
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  const pick = (list: PlayerSpan[]) => {
+    const copy = list.filter((p) => !names.has(p.playerName));
+    for (let n = 0; n < DUEL_PER_TIER && copy.length; n++) {
+      const p = copy.splice(Math.floor(rng() * copy.length), 1)[0];
+      if (names.has(p.playerName)) {
+        n--;
+        continue;
+      }
+      names.add(p.playerName);
+      ids.add(p.id);
+    }
+  };
+  for (const pos of STARTER_SLOTS) {
+    const ranked = players.filter((p) => p.primaryPosition === pos).sort((x, y) => effectiveTalent(y) - effectiveTalent(x));
+    pick(ranked.slice(0, DUEL_ELITE_TOP));
+    pick(ranked.slice(DUEL_ELITE_TOP, DUEL_SOLID_TOP));
+    pick(ranked.filter((p) => p.fga <= DUEL_CHEAP_MAX).slice(0, 120));
+  }
+  return ids;
 }
 
 const availableCache = new WeakMap<QuickDraftState, PlayerSpan[]>();
@@ -189,13 +225,14 @@ export function snakeOrderIndex(round: number, pickInRound: number): number {
 }
 
 export function currentTeamIndex(state: QuickDraftState): number {
-  return snakeOrderIndex(state.round, state.pickInRound);
+  const n = state.teams.length;
+  return state.round % 2 === 0 ? state.pickInRound : n - 1 - state.pickInRound;
 }
 
 export function availablePlayers(state: QuickDraftState): PlayerSpan[] {
   let cached = availableCache.get(state);
   if (!cached) {
-    cached = players.filter((p) => !state.draftedIds.has(p.id));
+    cached = players.filter((p) => !state.draftedIds.has(p.id) && (!state.pool || state.pool.has(p.id)));
     availableCache.set(state, cached);
   }
   return cached;
@@ -213,7 +250,7 @@ function getCheapestLookup(state: QuickDraftState): CheapestLookup {
 function advance(state: QuickDraftState): QuickDraftState {
   let { round, pickInRound } = state;
   pickInRound += 1;
-  if (pickInRound >= TEAM_COUNT) {
+  if (pickInRound >= state.teams.length) {
     pickInRound = 0;
     round += 1;
   }
@@ -301,7 +338,7 @@ export function quickPickBudget(state: QuickDraftState): QuickPickBudget {
   if (slotsAfter > 0) {
     const { sorted } = getCheapestLookup(state);
     for (let i = 0; i < slotsAfter && i < sorted.length; i++) reserved += sorted[i].fga;
-    reserved += MARGIN_PER_CONTENDING_TEAM * (TEAM_COUNT - 1) * slotsAfter;
+    reserved += MARGIN_PER_CONTENDING_TEAM * (state.teams.length - 1) * slotsAfter;
   }
   const round1 = (n: number) => Math.round(n * 10) / 10;
   return { capLeft: round1(capLeft), slotsLeft, reserved: round1(reserved), maxThisPick: round1(Math.max(0, capLeft - reserved)) };
@@ -329,7 +366,7 @@ export function makeQuickPick(state: QuickDraftState, playerId: string): QuickDr
   for (const p of siblings) draftedIds.add(p.id);
 
   const teams = state.teams.map((t, i) => (i === teamIdx ? { ...t, roster: [...t.roster, player] } : t));
-  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const pickNumber = state.round * state.teams.length + state.pickInRound + 1;
   const history = [...state.history, { pickNumber, teamId: team.id, playerId: player.id }];
 
   return advance({ ...state, teams, draftedIds, history });
@@ -407,9 +444,9 @@ function resolveAutomatedPick(state: QuickDraftState): QuickDraftState | null {
   }
 
   const currentFgas = team.roster.map((p) => p.fga);
-  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const pickNumber = state.round * state.teams.length + state.pickInRound + 1;
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
-  const preferred = pickForAi(team.roster, currentFgas, preferredPool, TEAM_COUNT, pickNumber, rng, rulesetFor(state));
+  const preferred = pickForAi(team.roster, currentFgas, preferredPool, state.teams.length, pickNumber, rng, rulesetFor(state));
   const preferredState = makeQuickPick(state, preferred.id);
   if (preferredState !== state) return preferredState;
 
@@ -418,7 +455,7 @@ function resolveAutomatedPick(state: QuickDraftState): QuickDraftState | null {
   const legal = fullAvailable.filter((p) => isQuickPickLegal(state, p.id));
   if (legal.length === 0) return null;
 
-  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber, rng, rulesetFor(state));
+  const fallback = pickForAi(team.roster, currentFgas, legal, state.teams.length, pickNumber, rng, rulesetFor(state));
   const fallbackState = makeQuickPick(state, fallback.id);
   if (fallbackState !== state) return fallbackState;
 
@@ -440,7 +477,7 @@ export function resolveQuickAiPickIfNeeded(state: QuickDraftState): QuickDraftSt
 export function autoFinishQuickDraft(state: QuickDraftState): QuickDraftState {
   let s = state;
   let guard = 0;
-  while (!s.complete && guard++ < QUICK_ROUNDS * TEAM_COUNT + 1) {
+  while (!s.complete && guard++ < QUICK_ROUNDS * s.teams.length + 1) {
     const next = resolveAutomatedPick(s);
     if (!next || next === s) break;
     s = next;
@@ -476,4 +513,31 @@ export function finalizeQuickRotation(team: Team): Team {
     slots[slot] = p ? [{ playerId: p.id, minutes: 48 } satisfies SlotAssignment] : [];
   }
   return { ...team, rotation: { slots } };
+}
+
+/** The CPU's pick for whoever is on the clock, human or not: a player who ran out of time or left
+ * a multiplayer room (2026-11-12). Every screen computes the same pick from the same state. */
+export function resolveQuickAutoPick(state: QuickDraftState): QuickDraftState | null {
+  if (state.complete) return null;
+  return resolveAutomatedPick(state);
+}
+
+/**
+ * A pick that came from the multiplayer room's log. The server checks whose turn it is, not the
+ * caps, so a pick this board can't take (a tampered client) becomes the CPU's pick instead: every
+ * screen replays the same log the same way, so the boards never drift apart.
+ */
+export function applyQuickServerPick(state: QuickDraftState, playerId: string): QuickDraftState {
+  if (state.complete) return state;
+  const next = makeQuickPick(state, playerId);
+  if (next !== state) return next;
+  return resolveAutomatedPick(state) ?? state;
+}
+
+/** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own).
+ * Two teams make a Duel: the first two seats, on its small board. */
+export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT, cap?: number, gms?: Map<number, string>): QuickDraftState {
+  const base = createQuickDraft(undefined, seed);
+  const teams = base.teams.slice(0, teamCount).map((t, i) => ({ ...t, isHuman: i === mySlot, draftSlot: i + 1, ...(i !== mySlot && gms?.get(i) ? { gm: gms.get(i) } : {}) }));
+  return { ...base, teams, ...(cap ? { capLimit: cap } : {}), ...(teamCount === 2 ? { pool: duelPool(seed) } : {}) };
 }

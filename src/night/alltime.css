@@ -1424,3 +1424,67 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .pt-more .nsel-b { background: transparent; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 0 2px 1px; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
 .pt-more .nsel-b:hover, .pt-more .nsel.open .nsel-b { border-color: var(--ink); color: var(--ink); }
 .pt-more .nsel-o { font: normal 500 13px var(--sans); padding: 7px 14px; line-height: 1.2; }
+
+/* 2026-11-12, the account panel under the dailies (AccountBar menu). */
+.m2-acct { display: grid; gap: 8px; margin-top: 24px; }
+.m2-acct-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 14px; border: 1px solid var(--rule3); border-radius: 3px; }
+.m2-acct-who { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.m2-acct-who b { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }
+.m2-acct-who span { font-size: 12.5px; color: var(--ink3); }
+.m2-acct-who form { display: flex; gap: 10px; align-items: baseline; }
+.m2-acct-who input { font: inherit; padding: 3px 8px; border: 1px solid var(--rule2); border-radius: 3px; background: none; color: var(--ink); width: 12em; }
+.m2-acct-act { display: inline-flex; gap: 14px; }
+.nt .m2-acct .m2-acct-go { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+.nt .m2-acct .m2-acct-go:hover { background: var(--ink); color: var(--bg); }
+.m2-acct-err { color: var(--red, #ff6b6b); font-size: 12.5px; }
+.m2-pick form { display: grid; gap: 12px; }
+.m2-pick p { margin: 0; color: var(--ink2); font-size: 14px; }
+.m2-pick input { font: 700 20px var(--cond); text-transform: none; padding: 8px 12px; border: 1px solid var(--rule2); border-radius: 3px; background: none; color: var(--ink); }
+.nt .m2-pick .m2-acct-go, .m2-pick .m2-acct-go { justify-self: start; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.m2-career { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--rule3); border-top: 0; border-radius: 0 0 3px 3px; margin-top: -9px; }
+.m2-lv { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--ink3); }
+.m2-lv b { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); white-space: nowrap; }
+.m2-lv-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--rule3); overflow: hidden; }
+.m2-lv-bar i { display: block; height: 100%; background: var(--gold); }
+.m2-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 12px; margin: 0; }
+.m2-stats div { display: grid; gap: 1px; }
+.m2-stats dt { font-size: 11.5px; color: var(--ink3); }
+.m2-stats dd { margin: 0; font: 700 18px var(--cond); color: var(--ink); font-variant-numeric: tabular-nums; }
+.m2-career-note { margin: 0; font-size: 12px; font-style: italic; color: var(--ink3); }
+@media (max-width: 560px) { .m2-stats { grid-template-columns: repeat(3, 1fr); } }
+.yrun-lv { margin-top: 8px; }
+.yrun-lv b { font-size: 13px; }
+.m2-pick-row { display: flex; align-items: center; gap: 16px; }
+
+/* 2026-11-12: free names offered when yours is taken. */
+.m2-acct-ideas { display: flex; flex-wrap: wrap; gap: 8px; }
+.nt .m2-acct-ideas button, .m2-acct-ideas button { font: 700 13px var(--cond); color: var(--ink); background: none; border: 1px dashed var(--rule2); border-radius: 999px; padding: 4px 12px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+
+/* 2026-11-12: Mini Draft with friends — the entry form and the lobby. */
+.mp-form { display: grid; gap: 16px; max-width: 520px; margin-top: 8px; }
+.mp-form label { display: grid; gap: 6px; }
+.mp-form label > span:first-child { font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); }
+.mp-form input { font: 700 20px var(--cond); padding: 8px 12px; border: 1px solid var(--rule2); border-radius: 3px; background: none; color: var(--ink); min-width: 0; }
+.mp-form input.mp-code { width: 7.5em; text-transform: uppercase; letter-spacing: 0.2em; }
+.mp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mp-note { margin: 0; color: var(--ink3); font-size: 14px; }
+.mp-err { margin: 0; color: #e0645a; font-size: 14px; }
+.mp-link { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 20px; }
+.mp-link code { font: 13px ui-monospace, monospace; color: var(--ink2); padding: 6px 10px; border: 1px solid var(--rule); border-radius: 3px; overflow-wrap: anywhere; max-width: 100%; }
+.mp-players { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 2px; }
+.mp-players li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.mp-players b { font: 700 18px var(--cond); color: var(--ink); }
+.mp-players span { color: var(--ink3); font-size: 13px; }
+.mp-players li.away { opacity: 0.45; }
+.mp-busy { position: sticky; top: 0; z-index: 5; padding: 6px 16px; font-size: 13px; text-align: center; background: var(--gold); color: var(--bg); }
+.mp-make { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.mp-make > span { color: var(--ink3); font-size: 14px; }
+.mp-form .mp-row .btn, .mp-form .mp-row button { width: auto; flex: 0 0 auto; }
+.mp-caps { display: flex; align-items: center; gap: 8px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); }
+.mp-caps b { font: 700 18px var(--cond); color: var(--gold); min-width: 3em; letter-spacing: 0; }
+.mp-caps input[type='range'] { flex: 1; max-width: 320px; accent-color: var(--gold); }
+/* 2026-11-12: a friend's column on a room's board. */
+.bg-team.gm b { color: var(--gold); }
+.bg-team.gm { box-shadow: inset 0 -2px 0 var(--gold); }
+.log td.w.gm { color: var(--gold); max-width: 6em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-peek { color: var(--gold); font-style: italic; }

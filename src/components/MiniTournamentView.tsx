@@ -38,9 +38,18 @@ export function MiniTournamentView({
   onBack,
   onNewDraft,
   onFinished,
+  summary,
   onShare,
   overlay,
+  gate,
+  waiting,
+  onShown,
 }: {
+  /** Multiplayer: rounds you may reveal so far (the room goes round by round together). */
+  gate?: number;
+  /** Who the room waits for, when the gate holds you. */
+  waiting?: string;
+  onShown?: (rounds: number) => void;
   /** The sixteen teams, best draft grade first: index 0 is the 1 seed. */
   seeded: Team[];
   /** Each team's draft grade, by id. */
@@ -54,6 +63,8 @@ export function MiniTournamentView({
   onNewDraft?: () => void;
   /** Called once the whole bracket has been shown. */
   onFinished?: (summary: MiniTournamentSummary) => void;
+  /** 2026-11-12, the run's summary, shown once the final is played. */
+  summary?: ReactNode;
   onShare?: () => void;
   overlay?: ReactNode;
 }) {
@@ -64,14 +75,21 @@ export function MiniTournamentView({
   const out = exitRound(t, you.id);
   // Rounds shown so far: a round is revealed when your game in it is played or simmed, or all at
   // once with "Sim to the end" once you are out.
-  const [shown, setShown] = useState(0);
+  const [shown, setShownRaw] = useState(0);
+  const cap = gate ?? MINI_ROUNDS.length;
+  const setShown = (v: number | ((s: number) => number)) => setShownRaw((s) => Math.min(cap, Math.max(s, typeof v === 'function' ? v(s) : v)));
+  useEffect(() => onShown?.(shown), [shown, onShown]);
+  const held = gate !== undefined && shown >= gate && shown < MINI_ROUNDS.length;
   const [watching, setWatching] = useState<MiniGame | null>(null);
   const [openRound, setOpenRound] = useState<number | null>(null);
   const yourGame = (round: number) => t.rounds[round]?.find((g) => g.teamAId === you.id || g.teamBId === you.id);
   const next = shown < MINI_ROUNDS.length ? yourGame(shown) : undefined;
   const alive = out === null || out >= shown;
   const finished = shown >= MINI_ROUNDS.length;
-  const nick = (id: string) => teamNickname(byId.get(id)?.name ?? '');
+  const nick = (id: string) => {
+    const team = byId.get(id);
+    return `${teamNickname(team?.name ?? '')}${team?.gm ? ` (${team.gm})` : ''}`;
+  };
   const code = (id: string) => codeOf(byId.get(id)!);
   const wins = t.rounds.slice(0, shown).filter((r) => r.some((g) => g.winnerId === you.id)).length;
   const losses = out !== null && out < shown ? 1 : 0;
@@ -310,6 +328,8 @@ export function MiniTournamentView({
         ← Back to the results
       </button>
     </>
+  ) : held ? (
+    <p className="mp-note">Waiting for {waiting ?? 'the room'} to catch up. The room plays the bracket together.</p>
   ) : alive && next ? (
     <>
       <Btn onClick={() => setWatching(next)}>▶ Play the {MINI_ROUNDS[next.round]}</Btn>
@@ -336,6 +356,7 @@ export function MiniTournamentView({
       </section>
       {duel}
       {road}
+      {finished && summary}
       <Actions links={finished ? { ...links, menuPhoneOnly: true } : links}>{buttons}</Actions>
     </>
   );

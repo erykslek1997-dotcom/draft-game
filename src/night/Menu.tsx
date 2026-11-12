@@ -9,6 +9,7 @@ import { dailyDraftResult, dailyDraftStreak, ordinal } from '../components/daily
 import { readDraftSaveSummary, type DraftSaveSummary } from '../draftSaveSummary';
 import { Btn, Dialog } from './frame';
 import { NightSettings } from './Dialogs';
+import { AccountBar } from '../components/AccountBar';
 
 export type MenuMode = 'bestfive' | 'quickfive' | 'draft';
 
@@ -73,7 +74,13 @@ export function NightMenu({
   stepDone,
   confirm,
   onLiveTest,
+  onFriends,
+  onDuel,
 }: {
+  /** The Duel, 1v1 (test mode). */
+  onDuel?: () => void;
+  /** Mini Draft with friends (online only). */
+  onFriends?: () => void;
   teamName: string;
   onTeamReroll: () => void;
   savedDraft: DraftSaveSummary | null;
@@ -93,6 +100,7 @@ export function NightMenu({
   /** Testing: the live game bench. */
   onLiveTest?: () => void;
 }) {
+  const [, setSynced] = useState(0);
   const [dialog, setDialog] = useState<'settings' | 'howto' | null>(null);
   const [howToMode, setHowToMode] = useState<MenuMode>('bestfive');
   const today = localDayKey();
@@ -185,6 +193,34 @@ export function NightMenu({
                   </button>
                 </li>
               ))}
+              {onFriends && (
+                <li>
+                  <button type="button" className="m2-row" onClick={onFriends}>
+                    <span className="m2-n">{MODES.length + 1}</span>
+                    <ModeMark id="quickfive" />
+                    <div>
+                      <b>Play with friends</b>
+                      <span>A Mini Draft for up to four. Send a link, draft live.</span>
+                    </div>
+                    <em>15 min</em>
+                    <span className="m2-go">Play →</span>
+                  </button>
+                </li>
+              )}
+              {onDuel && (
+                <li>
+                  <button type="button" className="m2-row" onClick={onDuel}>
+                    <span className="m2-n">{MODES.length + 2}</span>
+                    <ModeMark id="quickfive" />
+                    <div>
+                      <b>Duel · test</b>
+                      <span>One on one. Ten picks, one cap, one game.</span>
+                    </div>
+                    <em>5 min</em>
+                    <span className="m2-go">Play →</span>
+                  </button>
+                </li>
+              )}
             </ol>
             <div className="m2-today">
               <span className="m2-tl">Today’s dailies{streak > 0 ? ` · 🔥 ${streak}` : ''}</span>
@@ -230,6 +266,7 @@ export function NightMenu({
                 ))}
               </p>
             )}
+            <AccountBar menu onSynced={() => setSynced((n) => n + 1)} />
             {dataStatus}
             <div className="m2-foot">
               <button type="button" onClick={() => setDialog('howto')}>

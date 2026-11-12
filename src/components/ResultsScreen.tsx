@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { recordDraft } from '../online/career';
+import { RunSummary } from './RunSummary';
 import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
@@ -47,9 +49,9 @@ import {
 import { DESK_CAST, buildDesk, buildRivalDesk, theirVoice, type DeskLine } from '../engine/desk';
 import { exportFullDraft } from '../engine/draftExport';
 import type { DailyDraftDay } from '../dailyDraftDay';
-import { saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
+import { dailyDraftResult, dailyDraftStreak, saveDailyDraftResult, saveDailyDraftSeason } from './dailyDraftProgress';
 import { DailyLeaderboard } from './DailyLeaderboard';
-import { medianOf } from '../online/points';
+import { dailyPoints, medianOf } from '../online/points';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
@@ -948,6 +950,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   useEffect(() => {
     if (daily && !daily.testing && dailySeason) saveDailyDraftSeason(daily.mode, daily.day, dailySeason);
   }, [daily, dailySeason]);
+  // 2026-11-12, the career (online/career.ts): one entry per board, the title once the season is won.
+  const careerMode = daily?.mode === 'bomb' || bomb ? 'bomb' : 'alltime';
+  const careerId = daily ? `${careerMode}:daily:${daily.day}` : `${careerMode}:${draftSeed}`;
+  const careerTitle = humanRanked && seasonState.status === 'done' ? seasonState.playoffs?.championId === humanRanked.team.id : undefined;
+  useEffect(() => {
+    if (!humanRanked || daily?.testing) return;
+    recordDraft({ id: careerId, mode: careerMode, daily: !!daily, place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall, title: careerTitle });
+  }, [careerId, careerMode, daily, humanRanked, ranked.length, careerTitle]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily || !humanRanked) return;
@@ -1166,7 +1176,32 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   );
 
   if (seasonOpen) {
-    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined }} />;
+    // 2026-11-12, the run's last word (the user: "na sam koniec podsumowanie: które miejsce w PR, które w
+    // sezonie, ile XP"): the draft's rank, the season, the playoffs, the points and the XP it earned.
+    let summary: ReactNode = null;
+    if (humanRanked && seasonState.status === 'done' && seasonState.playoffs) {
+      const { season, playoffs } = seasonState;
+      const id = humanRanked.team.id;
+      const seed = season.standings.findIndex((r) => r.teamId === id) + 1;
+      const row = season.standings[seed - 1];
+      const runs = playoffs.rounds.flat().filter((x) => x.teamAId === id || x.teamBId === id);
+      const last = runs[runs.length - 1];
+      const po = playoffs.championId === id ? '🏆 Champions' : last ? `Out in the ${last.roundLabel.replace('Quarterfinals', 'quarters').replace('Semifinals', 'semis')}` : 'Missed';
+      const dayResult = daily && !daily.testing ? dailyDraftResult(daily.mode, daily.day) : null;
+      const dayPts = dayResult ? dailyPoints({ mode: daily!.mode, ...dayResult, streak: dailyDraftStreak(daily!.mode, daily!.day) }).total : null;
+      summary = (
+        <RunSummary
+          careerId={careerId}
+          dayPoints={dayPts}
+          rows={[
+            ['Power ranking', `${ordinal(humanRanked.rank)} of ${ranked.length}`],
+            ['Season', row ? `${row.wins}–${row.losses} · ${ordinal(seed)} seed` : '—'],
+            ['Playoffs', po],
+          ]}
+        />
+      );
+    }
+    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined, summary }} />;
   }
 
   // 2026-10-22, playtest ("brakuje informacji kto wygrał mistrzostwo", "jak damy back to the results

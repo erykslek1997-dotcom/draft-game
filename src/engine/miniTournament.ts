@@ -81,3 +81,13 @@ export function exitRound(t: MiniTournament, teamId: string): number | null {
   for (const games of t.rounds) for (const g of games) if ((g.teamAId === teamId || g.teamBId === teamId) && g.winnerId !== teamId) return g.round;
   return null;
 }
+
+/** The Duel's one game (2026-11-12): the better draft grade is team A, as a higher seed would be. */
+export function duelGame(seeded: Team[], seed: string): MiniGame {
+  const [a, b] = seeded;
+  const cache = buildMatchupCache(seeded);
+  const margin = projectMatchup(a, b, cache.get(a.id), cache.get(b.id), 'playoffs').marginA;
+  const gameSeed = `${seed}:duel:${a.id}:${b.id}`;
+  const game = playPairingGame(prepareTeamPairing(a, b, margin), gameSeed, false);
+  return { round: 0, teamAId: a.id, teamASeed: 1, teamBId: b.id, teamBSeed: 2, margin, seed: gameSeed, final: game.final, winnerId: game.final[0] > game.final[1] ? a.id : b.id };
+}

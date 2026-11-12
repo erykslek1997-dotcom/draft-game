@@ -465,6 +465,8 @@ function readSeasonProgress(seed: string): SeasonProgress | null {
 export interface SeasonEnd {
   onNewDraft?: () => void;
   onMenu: () => void;
+  /** 2026-11-12, the run's summary (draft rank, season, points, XP), shown once the finals are done. */
+  summary?: ReactNode;
 }
 
 export default function SeasonView({ teams, codes, state, onClose, end }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void; end?: SeasonEnd }) {
@@ -708,6 +710,7 @@ function SeasonBody({
           );
         })}
       </section>
+      {finalsDone && end?.summary}
       {extra ?? (
         <section>
           <H3>Your leaders</H3>
