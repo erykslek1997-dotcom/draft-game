@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0.5) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0.5) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -824,9 +824,9 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   let tracked = false;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
-    tracked = !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage === true;
+    tracked = realDefenseExcessDetail(span)?.hasTrackingCoverage === true;
     if (tracked && DBPM_SOURCE.trackingShare <= 0) return measured;
-  } else if (ownShort && !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  } else if (ownShort && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
   // overrule (2026-11-12, testDefensiveHuntability's elite shell).
@@ -864,41 +864,6 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : tracked ? DBPM_SOURCE.trackingShare : DBPM_SOURCE.share);
   return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
 }
-let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
-function dbpmPoolsFor(position: string) {
-  if (!dbpmPools) {
-    const pools = new Map<string, { dbpm: number[]; ladder: number[] }>();
-    for (const raw of draftPool) {
-      const sp = ratingSpan(raw);
-      const real = realSpan(sp);
-      if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) continue;
-      const pos = functionalPosition(sp);
-      const pool = pools.get(pos) ?? { dbpm: [], ladder: [] };
-      pool.dbpm.push(real.dbpm);
-      pool.ladder.push(ladderPoints(pos, displayDefenseRaw(sp)));
-      pools.set(pos, pool);
-    }
-    for (const pool of pools.values()) {
-      pool.dbpm.sort((a, b) => a - b);
-      pool.ladder.sort((a, b) => a - b);
-    }
-    dbpmPools = pools;
-  }
-  return dbpmPools.get(position);
-}
-function withDbpmSource(span: PlayerSpan, boxLadder: number): number {
-  if (DBPM_SOURCE.share <= 0) return boxLadder;
-  const real = realSpan(span);
-  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return boxLadder;
-  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return boxLadder;
-  const pool = dbpmPoolsFor(functionalPosition(span));
-  if (!pool || pool.dbpm.length < 50) return boxLadder;
-  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
-  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
-  const pct = (below + same / 2) / pool.dbpm.length;
-  const implied = pool.ladder[Math.min(pool.ladder.length - 1, Math.max(0, Math.round(pct * (pool.ladder.length - 1))))];
-  return boxLadder + (implied - boxLadder) * DBPM_SOURCE.share;
-}
 
 function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   const accoladeRate = individualDefenseRate(span);
@@ -908,7 +873,7 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
   const boxLadder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
-  const ladder = withDbpm && DBPM_SOURCE.at === 'ladder' ? withDbpmSource(span, boxLadder) : boxLadder;
+  const ladder = boxLadder;
   const base = Math.min(ladder, corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
@@ -933,7 +898,7 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   const measured = Math.max(0, Math.min(100, Math.max(withoutConsensus, consensus)));
   // The DBPM source never reads under the user's own named floor (2026-11-12, Klay 2015-17: the
   // tracking-era DBPM took his WOWY-backed 60 to 45).
-  const final = Math.round(withDbpm && DBPM_SOURCE.at === 'final' ? Math.max(namedFloor, withDbpmOnFinal(span, measured)) : measured);
+  const final = Math.round(withDbpm ? Math.max(namedFloor, withDbpmOnFinal(span, measured)) : measured);
   return { accoladeRate, boxLadder, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 

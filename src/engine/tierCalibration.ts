@@ -19,9 +19,8 @@ import { envVar } from './env';
  * All-NBA 80-87, All-star 70-79, Starter 60-69) 109 of the 201 reviewed windows read a tier under
  * the user's own call and none above. Measured with the engine blocks off (below): real SRS 0.8463 →
  * 0.8478, game 0.8070 → 0.8149 (bands alone 0.8492 / 0.8042). `TIER_BANDS_LABEL=0` restores the old
- * bands; `TIER_TABLE_OFF=1` (measurement only) drops the table: 0.8473 / 0.8181. */
+ * bands. Measured without the table at all: 0.8473 / 0.8181 (the table is the user's call, kept). */
 const BANDS_ON_LABELS = envVar('TIER_BANDS_LABEL') !== '0';
-const TABLE_OFF = envVar('TIER_TABLE_OFF') === '1';
 const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = BANDS_ON_LABELS ? {
   GOAT: [104, 105],
   'Legend': [96, 99],
@@ -119,7 +118,6 @@ export function hasUserWindowOrder(playerName: string): boolean {
 
 /** The table entry for a player, if the user tiered him. */
 export function tierCalibrationFor(playerName: string): CalibrationEntry | undefined {
-  if (TABLE_OFF) return undefined;
   return entries.get(normalizePlayerName(playerName));
 }
 
