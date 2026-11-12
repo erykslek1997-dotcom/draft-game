@@ -536,8 +536,8 @@ export function applyQuickServerPick(state: QuickDraftState, playerId: string): 
 
 /** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own).
  * Two teams make a Duel: the first two seats, on its small board. */
-export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT, cap?: number): QuickDraftState {
+export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT, cap?: number, gms?: Map<number, string>): QuickDraftState {
   const base = createQuickDraft(undefined, seed);
-  const teams = base.teams.slice(0, teamCount).map((t, i) => ({ ...t, isHuman: i === mySlot, draftSlot: i + 1 }));
+  const teams = base.teams.slice(0, teamCount).map((t, i) => ({ ...t, isHuman: i === mySlot, draftSlot: i + 1, ...(i !== mySlot && gms?.get(i) ? { gm: gms.get(i) } : {}) }));
   return { ...base, teams, ...(cap ? { capLimit: cap } : {}), ...(teamCount === 2 ? { pool: duelPool(seed) } : {}) };
 }

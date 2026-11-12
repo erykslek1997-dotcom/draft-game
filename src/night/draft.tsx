@@ -336,7 +336,9 @@ export function PickLog({ rows, title = 'The draft so far', note, newestFirst }:
           {shown.map((r, i) => (
             <tr key={r.n} className={`${r.team.isHuman ? 'y' : 'a'}${(newestFirst ? i === 0 : i === shown.length - 1) ? ' latest' : ''}`}>
               <td className="n">{r.n}</td>
-              <td className="w">{r.code}</td>
+              <td className={r.team.gm ? 'w gm' : 'w'} title={r.team.gm ? `${r.team.gm} · ${r.team.name}` : undefined}>
+                {r.team.gm ?? r.code}
+              </td>
               <td className="p">
                 {maskName(r.span.playerName)}, {r.span.primaryPosition}
               </td>

@@ -1461,3 +1461,5 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 /* 2026-11-12: a friend's column on a room's board. */
 .bg-team.gm b { color: var(--gold); }
 .bg-team.gm { box-shadow: inset 0 -2px 0 var(--gold); }
+.log td.w.gm { color: var(--gold); max-width: 6em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-peek { color: var(--gold); font-style: italic; }
