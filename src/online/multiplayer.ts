@@ -46,10 +46,13 @@ export interface MpPick {
   made_at: string;
 }
 
-export type MpError = 'not_found' | 'started' | 'full' | 'server_full' | 'offline' | 'rate' | 'error';
+export type MpError = 'not_found' | 'started' | 'full' | 'server_full' | 'offline' | 'rate' | 'schema' | 'error';
 
 function errorOf(message: string | undefined): MpError {
   const m = message ?? '';
+  // eslint-disable-next-line no-console
+  console.warn('[multiplayer]', m);
+  if (m.includes('Could not find the function') || m.includes('does not exist') || m.includes('schema cache')) return 'schema';
   if (m.includes('not_found')) return 'not_found';
   if (m.includes('started')) return 'started';
   if (m.includes('server_full')) return 'server_full';
@@ -64,6 +67,7 @@ export const MP_ERROR_TEXT: Record<MpError, string> = {
   full: 'That room is full.',
   server_full: 'Server full right now. Try again in a few minutes.',
   offline: 'Online play isn’t available here.',
+  schema: 'The server needs an update: run supabase/schema.sql again.',
   rate: 'Too many rooms in a short time. Try again later.',
   error: 'Something went wrong. Try again.',
 };
