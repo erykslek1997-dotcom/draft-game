@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 100), career: Number(envVar('DT_DBPM_CAREER') ?? 0) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -736,6 +736,29 @@ const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, e
  * up (Chris Ford 1972-74 23 → 85, Charles Jones, Foots Walker), scorers who didn't defend down
  * (McAdoo 1973-75 65 → 30, Wilkins, Mullin, Gervin).
  */
+/** 2026-11-12 (the user on Kidd 1994-96, Mourning 1992-94, Shaq 1994-96 — "dziwne się wylosowało"):
+ * one early window's DBPM (Kidd 0.1 against 1.3-2.6 for the rest of his career) is noise a career
+ * settles; the window's DBPM moves `DBPM_SOURCE.career` of the way to his minutes-weighted career
+ * DBPM. A player poor at it throughout (McAdoo, about 0 every window) stays where he is. */
+const careerDbpm = new Map<string, number | null>();
+function careerShrunkDbpm(span: PlayerSpan, own: number): number {
+  if (DBPM_SOURCE.career <= 0) return own;
+  const key = normalizePlayerName(span.playerName);
+  let career = careerDbpm.get(key);
+  if (career === undefined) {
+    let sum = 0, minutes = 0;
+    for (const p of draftPool) {
+      if (normalizePlayerName(p.playerName) !== key) continue;
+      const r = realSpan(p);
+      if (r?.dbpm == null || !r.minutes) continue;
+      sum += r.dbpm * r.minutes;
+      minutes += r.minutes;
+    }
+    career = minutes > 0 ? sum / minutes : null;
+    careerDbpm.set(key, career);
+  }
+  return career === null ? own : own + (career - own) * DBPM_SOURCE.career;
+}
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
@@ -767,11 +790,13 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   }
   const pool = dbpmFinalPools.get(functionalPosition(span));
   if (!pool || pool.dbpm.length < 50) return measured;
-  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
-  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
+  const dbpm = careerShrunkDbpm(span, real.dbpm);
+  const below = pool.dbpm.filter((v) => v < dbpm).length;
+  const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
   const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
-  return measured + (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
 }
 let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
 function dbpmPoolsFor(position: string) {
