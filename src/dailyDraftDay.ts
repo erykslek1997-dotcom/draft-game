@@ -129,12 +129,16 @@ export function dailyDraftDay(mode: DailyDraftMode, day: string): DailyDraftDay 
   return { mode, day, seed, cap, rule, ...dailyRuleWords(rule) };
 }
 
+/** The season ending in `end`: 2000 -> "1999-00". A decade is the seasons ending in it, as titles
+ * count (2026-11-12, the user on Curry's 2009-10 on a no-2000s day: it is his first 2010s season). */
+const seasonLabel = (end: number) => `${end - 1}-${String(end).slice(2)}`;
+
 export function dailyRuleWords(rule: DailyRule): Pick<DailyDraftDay, 'title' | 'ruleLine' | 'ruleTag'> {
   switch (rule.kind) {
     case 'team':
       return { title: `No ${rule.name} today`, ruleLine: `No one who ever played for the ${rule.name}`, ruleTag: `${rule.name} · not today` };
     case 'era':
-      return { title: `No ${decadeLabel(rule.decade)} today`, ruleLine: `No one who played in the ${rule.decade}s`, ruleTag: `${decadeLabel(rule.decade)} · not today` };
+      return { title: `No ${decadeLabel(rule.decade)} today`, ruleLine: `No one who played in the ${rule.decade}s (seasons ${seasonLabel(rule.decade)} ${rule.decade + 9 > new Date().getFullYear() ? 'on' : `to ${seasonLabel(rule.decade + 9)}`})`, ruleTag: `${decadeLabel(rule.decade)} · not today` };
     case 'stars':
       return { title: 'One superstar, tops', ruleLine: 'At most one MVP-tier player', ruleTag: 'One MVP-tier already' };
     default:

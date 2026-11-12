@@ -627,10 +627,24 @@ export interface DeskInput {
   tip?: string;
   /** Replays the same panel for the same draft. */
   seed: number;
+  /** 2026-11-12 (TODO 17, the user: "brakuje konkretów … z liczbami z oceny drużyny"): the team's
+   * number in each finding's field and its place in the league ("Spacing 82, 2nd of 16"), said by
+   * the expert after his take. */
+  receipts?: Partial<Record<InsightCategory, string>>;
+  /** The capologist's books: the best and the worst value on the roster, said on air. */
+  ledger?: { best?: string; worst?: string };
+}
+
+/** A take with its number on the end: "…can shoot. Spacing 82, 2nd of 16." */
+function withReceipt(text: string, insight: RosterInsight, receipts: DeskInput['receipts']): string {
+  const r = receipts?.[insight.category];
+  if (!r) return text;
+  const body = text.trimEnd();
+  return `${body}${/[.!?…]$/.test(body) ? '' : '.'} ${r}.`;
 }
 
 /** Your team's panel on the results screen. */
-export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, tip, seed }: DeskInput): DeskLine[] {
+export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, tip, seed, receipts, ledger }: DeskInput): DeskLine[] {
   const rng = mulberry32(mixSeed(seed, 0xde5c));
   const read = readRoster(team);
   const rosterNames = team.roster.map((p) => p.playerName);
@@ -643,13 +657,19 @@ export function buildDesk({ team, strengths, concerns, rank, fieldSize, style, t
   const insightTakes: Take[] = [
     ...strengths.slice(0, rank <= 3 ? 3 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), insight: i, line: { who, kind: 'praise' as const, text: talkFor(i, 'praise', rosterNames, rng) ?? voiced(rng, who, 'praise', i.message) } };
+      return { who, score: 0.5 + 0.5 * Math.min(1, i.score), insight: i, line: { who, kind: 'praise' as const, text: withReceipt(talkFor(i, 'praise', rosterNames, rng) ?? voiced(rng, who, 'praise', i.message), i, receipts) } };
     }),
     ...concerns.slice(0, rank <= 3 ? 1 : 2).map((i) => {
       const who = CATEGORY_EXPERT[i.category];
-      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), insight: i, line: { who, kind: 'concern' as const, text: talkFor(i, 'concern', rosterNames, rng) ?? voiced(rng, who, 'concern', i.message) } };
+      return { who, score: -(0.5 + 0.5 * Math.min(1, i.score)), insight: i, line: { who, kind: 'concern' as const, text: withReceipt(talkFor(i, 'concern', rosterNames, rng) ?? voiced(rng, who, 'concern', i.message), i, receipts) } };
     }),
   ];
+  // The books: what the caps bought, best and worst (the user: "trafione okazje cenowe").
+  if (ledger?.best || ledger?.worst) {
+    const parts = [ledger.best && `Best money spent: ${ledger.best}.`, ledger.worst && `Worst: ${ledger.worst}.`].filter(Boolean).join(' ');
+    // first in line, so the books always make air
+    insightTakes.unshift({ who: 'natalie', score: ledger.best ? 0.6 : -0.6, line: { who: 'natalie', kind: ledger.best ? 'praise' : 'concern', text: `the receipts. ${parts}` } });
+  }
   if (style) insightTakes.push({ who: 'jeremy', score: 0.45, line: { who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` } });
   const flavour = flavourTakes(read).sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
 
@@ -756,7 +776,7 @@ export function theirVoice(text: string): string {
 }
 
 /** A rival's short panel: two or three findings, about them, no host. */
-export function buildRivalDesk({ strengths, concerns, style, rank, seed, third }: { strengths: RosterInsight[]; concerns: RosterInsight[]; style?: string; rank: number; seed: number; third: (s: string) => string }): DeskLine[] {
+export function buildRivalDesk({ strengths, concerns, style, rank, seed, third, receipts }: { strengths: RosterInsight[]; concerns: RosterInsight[]; style?: string; rank: number; seed: number; third: (s: string) => string; receipts?: DeskInput['receipts'] }): DeskLine[] {
   const rng = mulberry32(mixSeed(seed, 0xde5d));
   const out: DeskLine[] = [];
   const used = new Set<ExpertId>();
@@ -764,13 +784,13 @@ export function buildRivalDesk({ strengths, concerns, style, rank, seed, third }
     const who = CATEGORY_EXPERT[i.category];
     if (used.has(who)) continue;
     used.add(who);
-    out.push({ who, kind: 'praise', text: talkFor(i, 'praise', [], rng) ?? voiced(rng, who, 'praise', third(i.message)) });
+    out.push({ who, kind: 'praise', text: withReceipt(talkFor(i, 'praise', [], rng) ?? voiced(rng, who, 'praise', third(i.message)), i, receipts) });
   }
   for (const i of concerns.slice(0, 2)) {
     const who = CATEGORY_EXPERT[i.category];
     if (used.has(who)) continue;
     used.add(who);
-    out.push({ who, kind: 'concern', text: talkFor(i, 'concern', [], rng) ?? voiced(rng, who, 'concern', third(i.message)) });
+    out.push({ who, kind: 'concern', text: withReceipt(talkFor(i, 'concern', [], rng) ?? voiced(rng, who, 'concern', third(i.message)), i, receipts) });
   }
   if (style && !used.has('jeremy') && out.length < 4) out.push({ who: 'jeremy', kind: 'praise', text: `${style} Go watch the tape.` });
   return loosen(out.slice(0, 4), seed);

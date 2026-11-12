@@ -1,9 +1,15 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, computeOffensiveTalent, computeUncappedOffensiveTalent } from './talent';
-import { effectiveTalent, type Grade } from './grades';
+import { effectiveTalent, gradeRank, spacingGrade, type Grade } from './grades';
+import { computeSpacing } from './spacing';
+import { teamSpacingValue } from './midrangeGravity';
 import { realSpan } from './realAdvancedLookup';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
+import { astPctForSpan } from './ballHandling';
+import { modernBox } from './modernBox';
+import { estimatedMinutesPerGame } from './minutesPerGame';
+import { naturalPosition } from './naturalPosition';
 
 /**
  * 2026-11-04, the user ("lepszy niż 89% i tylko 73, no to dziwnie wygląda"; "jedna skala atak +
@@ -160,3 +166,63 @@ function ratingGrade(value: number): Grade {
 }
 export const offenseRatingGrade = (span: PlayerSpan): Grade => ratingGrade(offenseRating(span));
 export const defenseRatingGrade = (span: PlayerSpan): Grade => ratingGrade(defenseRating(span));
+
+/**
+ * 2026-11-12 (the user: "atak, obrona i shooting trochę mało, biorąc pod uwagę, ile tu mamy"): two
+ * more scouting grades on the card's scale — a percentile among the rotation windows at his card's position
+ * (TAL 55+), the median at 60, the same upper anchors and letters as Offense and Defense.
+ *  - Playmaking: his AST% (BBRef; before 1973-74 read from assists a 36 minutes) — the number the
+ *    engine's ball-handling reads.
+ *  - Rebounding: his rebounds a 36 minutes on the modern box (`modernBox`, pace and misses of his era
+ *    taken out) — the glass the live game plays.
+ */
+type Metric = 'playmaking' | 'rebounding';
+/** 2026-11-12 (the user: "LeBron z D- to tak se" — Miami's small ball lists his 2012-14 at PF): the
+ * position the card shows (`naturalPosition`, its first half) sets the peers, so the letter reads
+ * against the position printed beside it (LeBron 2012-14 among SFs: B-, not D- among PFs). 576 of
+ * 10,962 windows differ from their window's own position. */
+const cardPosition = (span: PlayerSpan): string => naturalPosition(span.playerName).split('/')[0];
+const metricValue = (span: PlayerSpan, metric: Metric): number => {
+  if (metric === 'playmaking') return astPctForSpan(span);
+  const m = modernBox(span);
+  return (m.rpg * 36) / Math.max(10, estimatedMinutesPerGame(span) ?? 32);
+};
+const METRIC_ANCHORS: [number, number][] = [[0, FLOOR_RATING], [0.5, RATING_MEDIAN], ...UPPER_ANCHORS];
+let metricPools: Map<string, number[]> | null = null;
+const metricCache = new Map<string, number>();
+function metricRating(span: PlayerSpan, metric: Metric): number {
+  const key = `${span.id}|${metric}`;
+  const hit = metricCache.get(key);
+  if (hit !== undefined) return hit;
+  if (!metricPools) {
+    metricPools = new Map();
+    for (const p of draftPool) {
+      if (effectiveTalent(p) < ROTATION_TAL) continue;
+      for (const m of ['playmaking', 'rebounding'] as const) {
+        const k = `${cardPosition(p)}|${m}`;
+        metricPools.set(k, [...(metricPools.get(k) ?? []), metricValue(p, m)]);
+      }
+    }
+    for (const list of metricPools.values()) list.sort((a, b) => a - b);
+  }
+  const value = Math.round(ratingAt(percentileOf(metricPools.get(`${cardPosition(span)}|${metric}`) ?? [], metricValue(span, metric)), METRIC_ANCHORS));
+  metricCache.set(key, value);
+  return value;
+}
+export const playmakingRating = (span: PlayerSpan): number => metricRating(span, 'playmaking');
+export const reboundingRating = (span: PlayerSpan): number => metricRating(span, 'rebounding');
+export const playmakingRatingGrade = (span: PlayerSpan): Grade => ratingGrade(playmakingRating(span));
+export const reboundingRatingGrade = (span: PlayerSpan): Grade => ratingGrade(reboundingRating(span));
+
+/**
+ * 2026-11-12 (the user: "zmień 3PT na shooting"; "wszystko spójne"): the card's Shooting is the
+ * spacing the engine plays — threes, and the midrange that bends a defense (a big's at
+ * `BIG_MIDRANGE_SHARE`) — graded on the spacing letters. The three-point letter keeps its own caps
+ * (accuracy, no threes after the line); the midrange side is read on the same pool, uncapped, and the
+ * better of the two shows (Garnett 2004-06: threes F, the engine's 36 a C).
+ */
+export function shootingGrade(span: PlayerSpan): Grade {
+  const threes = spacingGrade(computeSpacing(span), span);
+  const engine = spacingGrade(teamSpacingValue(span));
+  return gradeRank(engine) > gradeRank(threes) ? engine : threes;
+}

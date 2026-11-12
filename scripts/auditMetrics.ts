@@ -126,7 +126,7 @@ function audit(label: string, data: { ovr: number; parts: number[]; y: number }[
     const idx = data.map(() => Math.floor(rnd() * data.length));
     return ols(idx.map((i) => X[i]), idx.map((i) => data[i].y)).slice(1);
   });
-  console.log(`\n${label}: n ${data.length}, Overall vs judge r ${corr(data.map((d) => d.ovr), data.map((d) => d.y)).toFixed(3)}, ${perOverall.toFixed(2)} judge units per Overall point`);
+  console.log(`\n${label}: n ${data.length}, Overall vs judge r ${corr(data.map((d) => d.ovr), data.map((d) => d.y)).toFixed(Number(process.env.R_DIGITS ?? 3))}, ${perOverall.toFixed(2)} judge units per Overall point`);
   console.log('  part            r alone   weight in Overall   judge weight (Overall pts)   90%              judge / Overall');
   PARTS.forEach((p, j) => {
     const v = boots.map((b) => b[j] / perOverall).sort((a, b) => a - b);

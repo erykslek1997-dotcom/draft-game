@@ -1,6 +1,9 @@
 import { traitsFor } from '../engine/traits';
 import type { DefensiveRole, OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { per36 } from '../engine/minutesPerGame';
+import { ballShare } from '../engine/ballHandling';
+import { playableMinutesCap } from '../engine/rotationRoleMinutes';
+import { MAX_MINUTES_PER_PLAYER } from '../engine/rotation';
 
 /**
  * 2026-10-07, the UI simplification (the user: "dużo graczy ma podobny TAL"): the draft card shows
@@ -43,8 +46,32 @@ const REBOUNDER_PER_36 = 11;
 const SHOT_BLOCKER_BLK_PER_36 = 1.8;
 const PLAYMAKING_BIG_AST_PER_36 = 5;
 
-/** Up to two style labels, offense first. */
+/** Up to two style labels, offense first, then the window's traits. */
 export function cardRoles(span: PlayerSpan): string[] {
+  return [...styleRoles(span), ...traitsFor(span)];
+}
+
+/**
+ * 2026-11-12 (the user: "brakuje mi dopisku hustle, veteran"; the traits sat at the end of a role line
+ * the list cuts with an ellipsis): what a row or a card shows beside the name, each its own chip —
+ * the window's traits, "On-ball" for a player who holds the ball (`ballShare` ≥ `ON_BALL_SHARE`, the
+ * share where a second such player costs a five; Nash, Harden, Westbrook, Jokić), and "Max N min"
+ * where his durability or real minutes hold him under `SHORT_MINUTES` (Korver 2016-18, Havlicek 1975-77).
+ */
+const ON_BALL_SHARE = 0.18;
+const SHORT_MINUTES = 28;
+export interface CardTags {
+  traits: string[];
+  onBall: boolean;
+  maxMinutes: number | null;
+}
+export function cardTags(span: PlayerSpan): CardTags {
+  const cap = Math.floor(playableMinutesCap(span, MAX_MINUTES_PER_PLAYER));
+  return { traits: traitsFor(span), onBall: ballShare(span) >= ON_BALL_SHARE, maxMinutes: cap < SHORT_MINUTES ? cap : null };
+}
+
+/** The style labels alone (offense, then defense or "Rebounder"); the traits go on chips. */
+export function styleRoles(span: PlayerSpan): string[] {
   let offense = OFFENSE_LABEL[span.offensiveArchetype];
   if (span.offensiveArchetype === 'Versatile Big' && per36(span.box.apg, span) < PLAYMAKING_BIG_AST_PER_36) offense = 'Versatile big';
   const roles = [offense];
@@ -52,9 +79,6 @@ export function cardRoles(span: PlayerSpan): string[] {
   if (span.defensiveRole === 'Mobile Big' && per36(span.box.bpg, span) < SHOT_BLOCKER_BLK_PER_36) defense = 'Mobile defender';
   if (defense) roles.push(defense);
   else if (per36(span.box.rpg, span) >= REBOUNDER_PER_36) roles.push('Rebounder');
-  // 2026-11-11 (the user: "tak, weteran"; then Hustle, Clutch, Microwave, Glue): the window's traits
-  // (`traits.ts`), after the style labels.
-  roles.push(...traitsFor(span));
   return roles;
 }
 

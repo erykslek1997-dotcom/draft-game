@@ -861,20 +861,29 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
 
 /**
  * 2026-11-11 (the user: Gerald Wallace 3 x 12 minutes at SG, SF and PF, 36 off the bench, more than
- * two starters; then "co jak starter gra 24"): a bench player plays at most
- * max(`BENCH_HARD_CAP`, the shortest-playing starter's minutes). What he loses goes first to another
+ * two starters; then "co jak starter gra 24"): a bench player plays at most `benchMinutesCap`. What he loses goes first to another
  * bench player who can play that slot (a ninth man who did not play included), then to the slot's
  * starter, each within his own minute ceiling. (A role swap — backup with more minutes at a slot than
  * its starter — was tried and dropped: starters split slots, so it demoted 30-minute starters.)
  */
 const BENCH_HARD_CAP = 30;
-function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
+/** 2026-11-12 (the user, Fort Worth: Gerald Wallace 36 beside five 36-minute starters — "OBA"): a
+ * bench player always plays less than the shortest-playing starter, and never past
+ * `BENCH_HARD_CAP`; `BENCH_CAP_FLOOR` keeps a 22-minute starter from squeezing the bench to nothing. */
+const BENCH_CAP_FLOOR = 20;
+export function benchMinutesCap(shortestStarter: number): number {
+  if (!Number.isFinite(shortestStarter)) return BENCH_HARD_CAP;
+  return Math.max(BENCH_CAP_FLOOR, Math.min(BENCH_HARD_CAP, shortestStarter - 1));
+}
+export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
   const byId = new Map(roster.map((p) => [p.id, p]));
   const total = (id: string) => STARTER_SLOTS.reduce((m, slot) => m + slots[slot].filter((a) => a.playerId === id).reduce((x, a) => x + a.minutes, 0), 0);
   const ceiling = (p: PlayerSpan) => playableMinutesCap(p, MAX_MINUTES_PER_PLAYER);
   const starters = new Set(STARTER_SLOTS.map((slot) => slots[slot][0]?.playerId).filter((id): id is string => !!id));
   const shortestStarter = Math.min(...[...starters].map(total));
-  const cap = Math.max(BENCH_HARD_CAP, Number.isFinite(shortestStarter) ? shortestStarter : BENCH_HARD_CAP);
+  const cap = benchMinutesCap(shortestStarter);
+  // A bench player never takes on a third spot (2026-11-12: Wallace at SG, SF and PF).
+  const spotsOf = (id: string) => STARTER_SLOTS.filter((slot) => slots[slot].some((a) => a.playerId === id && a.minutes > 0));
   for (const p of roster) {
     if (starters.has(p.id)) continue;
     let over = total(p.id) - cap;
@@ -885,7 +894,7 @@ function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, SlotAssig
       if (over <= 0) break;
       let give = Math.min(over, r.a.minutes);
       const takers = [
-        ...roster.filter((q) => !starters.has(q.id) && q.id !== p.id && positionFitMultiplier(q, r.slot) > 0 && total(q.id) < cap).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
+        ...roster.filter((q) => !starters.has(q.id) && q.id !== p.id && positionFitMultiplier(q, r.slot) > 0 && total(q.id) < cap && new Set([...spotsOf(q.id), r.slot]).size <= 2).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
         ...[slots[r.slot][0]?.playerId].map((id) => (id ? byId.get(id) : undefined)).filter((q): q is PlayerSpan => !!q),
       ];
       for (const q of takers) {

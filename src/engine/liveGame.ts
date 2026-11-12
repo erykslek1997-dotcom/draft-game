@@ -26,6 +26,7 @@ import { teamSpacingValue } from './midrangeGravity';
 import { fiveSwitchability, fitScore, FIT_WEIGHTS } from './fit';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { assignMatchups, defenderProfile, fiveDefense, REFERENCE, type DefenderProfile, type FiveDefense } from './liveDefense';
+import { envVar } from './env';
 
 /**
  * 2026-09-28, the user (Daily Slot Machine 2.0: "możemy zrobić symulacje live? Z statystami"):
@@ -953,6 +954,13 @@ const GARBAGE_TUNING = {
   aim: 1.2,
 };
 const TROUBLE_SOFTEN = 0.6;
+/** 2026-11-12 (Mini, the user: "brak wykluczeń za faule, ale za faul ponad limit technik"; five
+ * players for 36 minutes put Howard at six fouls in 43% of games): a defender in foul trouble stays
+ * out of the way — he is the fouler this much less often (the softer play above, on the whistle).
+ * 300 Mini games (CP3-Kobe-LeBron-Duncan-Howard vs Nash-Allen-Pierce-KG-Shaq): games with a
+ * technical 248 → 148, technicals 811 → 269, Howard at six 44% → 25%; the judges don't move
+ * (real 0.8382, game 0.8029 at 1 and 0.5 alike: they read the per-100 mechanics). */
+const TROUBLE_FOUL_SHARE = Number(envVar('TROUBLE_FOUL') ?? 0.3);
 /** Fouls that put a defender in trouble, by quarter. */
 const TROUBLE_FOULS = [2, 3, 4, 5];
 /** Chance a Poisson count with mean `mean` reaches `n`. */
@@ -1562,6 +1570,33 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     line.pf++;
     teamFouls[side][quarter]++;
     if (late) lateFouls[side][quarter]++;
+    // 2026-11-12 (the user, Mini: "Howard fouls out. His minutes go to the bench." — "w Mini nie ma
+    // ławki"; "brak wykluczeń za faule, ale za faul ponad limit technik"): with nobody free to come in
+    // he stays, and each foul from the sixth on gives the other side one technical free throw, taken
+    // by its best free-throw shooter on the floor; play goes on.
+    const onFloor = (schedule[side][Math.min(k, POSSESSIONS - 1)] ?? []).map((c) => c.player);
+    const nobodyFree = rosters[side].players.every((q) => q === p || onFloor.includes(q) || fouledOut[side].has(q));
+    if (line.pf >= FOUL_OUT && nobodyFree) {
+      const o = (1 - side) as GameSide;
+      const shooters = (schedule[o][Math.min(k, POSSESSIONS - 1)] ?? []).map((c) => c.player);
+      const shooter = [...(shooters.length ? shooters : rosters[o].players)].sort((a, b) => b.span.box.ftPct - a.span.box.ftPct)[0];
+      if (shooter) {
+        const ft = freeThrows(o, shooter, 1);
+        score[o] += ft.made;
+        quarters[o][quarter] += ft.made;
+        const last = moments[moments.length - 1];
+        if (record) {
+          moments.push({
+            left: last ? last.left : gameSeconds,
+            quarter,
+            score: [score[0], score[1]],
+            play: { side: o, text: `${shooter.label} ${ft.made}/1 on the technical (${p.label}'s foul ${line.pf}, no one to come in)`, joker: shooter.joker, quiet: false },
+            lines: snapshot(),
+          });
+        }
+      }
+      return;
+    }
     if (line.pf >= FOUL_OUT && !fouledOut[side].has(p)) {
       fouledOut[side].add(p);
       // His remaining minutes go to the bench: whoever is listed at his slot, else anyone free.
@@ -1648,7 +1683,7 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     breakNext[o] = 0;
     // Away from the ball: a foul that is not on a shot (side out, or two shots in the bonus).
     if (!onBreak && rng() < NON_SHOOTING_FOUL * clash.foulRate) {
-      const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex ** DEFENSE_TUNING.foul);
+      const fouler = pickWeighted(rng, def, (p) => defenderProfile(p.span).foulIndex ** DEFENSE_TUNING.foul * (inTrouble(d, p, quarter) ? TROUBLE_FOUL_SHARE : 1));
       const inBonus = teamFouls[d][quarter] >= bonusFouls(quarter) || (qLate && lateFouls[d][quarter] >= 1);
       foul(d, fouler, k, quarter, qLate);
       if (inBonus) {
@@ -1717,9 +1752,12 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
       const three = next !== 'putback' && rng() < (guard === 0 && mode.needThree ? NEED_THREE_RATE : fresh ? BREAK_THREE_RATE : Math.min(0.9, shot.threeRate * (hunting ? 1 : mods.threeRate) * (next === 'reset' ? RESET_THREE_RATE : 1)));
       const atRim = !three && (next === 'putback' || fresh || rng() < shot.rimShare);
       const drawn = atRim ? Math.max(0.5, 1 + RIM_TUNING.foul * clash.rimZ) : 1;
-      const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * drawn * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1);
+      const careful = soft < 1 ? TROUBLE_FOUL_SHARE : 1;
+      const foulChance = DEFENSE_TUNING.shootingFoul * shot.foul * drawn * (hunting ? defenderProfile(defender.span).foulIndex ** DEFENSE_TUNING.foul : mods.foul) * (fresh || next === 'putback' ? BREAK_FOUL : 1) * careful;
       if (rng() < foulChance) {
-        foul(d, atRim && !hunting && rng() < RIM_TUNING.helpFoulShare ? def[clash.rimAnchor] : defender, k, quarter, qLate);
+        const helper = def[clash.rimAnchor];
+        const help = atRim && !hunting && rng() < RIM_TUNING.helpFoulShare && !inTrouble(d, helper, quarter);
+        foul(d, help ? helper : defender, k, quarter, qLate);
         const ft = freeThrows(o, shooter, three ? 3 : 2);
         pts += ft.made;
         play = { side: o, text: `${shooter.label} ${ft.made}/${three ? 3 : 2} at the line`, joker: shooter.joker, quiet: ft.made === 0 };

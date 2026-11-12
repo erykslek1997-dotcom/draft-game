@@ -118,7 +118,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 .slot.filled { background: var(--card); color: var(--cink); justify-content: flex-start; }
 .slot.filled .top { align-self: stretch; display: flex; justify-content: space-between; padding: 6px 10px; margin-bottom: 8px; background: var(--team); color: #fff; font: 700 12px var(--sans); letter-spacing: 0.06em; }
 .slot img, .slot .ini { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: var(--cface); display: grid; place-items: center; font: 700 18px var(--cond); color: var(--cink2); }
-.slot .nm { margin-top: 6px; font: 700 20px/1.05 var(--cond); }
+.slot .nm { margin-top: 6px; font: 700 20px/1.2 var(--cond); flex-shrink: 0; align-self: stretch; padding: 0 6px; /* never squeezed by the column: g, j, p, y keep their tails ("George") */ }
 .slot .sb { margin-top: 2px; font: 500 11px var(--num); color: var(--cink2); }
 .slot.empty { border: 1.5px dashed var(--rule3); color: var(--ink4); font: 800 34px var(--cond); }
 .slot.empty small, .slot.active small { font: italic 500 13px var(--sans); color: var(--ink3); }
@@ -410,7 +410,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
   .nt .rl-slot { padding: 8px 12px 0; font-size: 14px; }
   .nt .rl-start { flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 6px 10px 14px; }
   .nt .rl-start .rl-face img, .nt .rl-start .rl-face .ini { width: 64px; height: 64px; font-size: 18px; }
-  .nt .rl-start .rl-main { align-items: center; max-width: 100%; }
+  .nt .rl-start .rl-main { align-items: center; max-width: 100%; align-self: stretch; }
   .nt .rl-start .rl-main b { font-size: 20px; }
   .nt .rl-bench { padding: 10px 12px 12px; border-left: 0; border-top: 1px solid var(--rule); gap: 8px; }
   .nt .rl-bench .rl-face img, .nt .rl-bench .rl-face .ini, .nt .rl-bench.many .rl-face img, .nt .rl-bench.many .rl-face .ini { width: 30px; height: 30px; font-size: 12px; }
@@ -516,3 +516,7 @@ h3.gold { color: var(--gold); border-color: var(--gold); }
 @media (min-width: 901px) {
   .nt .game .headline { border-top: 0; box-sizing: border-box; min-height: 78px; align-items: flex-end; padding: 12px 0 8px; }
 }
+
+/* a name that picks its form by the room it has (FitName): a block at full width, so the room is
+   the box and not the text in it */
+.fit-name { display: block; width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

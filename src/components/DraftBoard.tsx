@@ -1,5 +1,5 @@
 import { spanAwards } from '../engine/spanAwards';
-import { offenseRatingGrade, defenseRatingGrade } from '../engine/ratingScale';
+import { offenseRatingGrade, defenseRatingGrade, playmakingRatingGrade, reboundingRatingGrade, shootingGrade } from '../engine/ratingScale';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ROLE_FILTERS, ROLE_POSITIONS, matchesRoleFilter } from './cardRoles';
 import type { PlayerSpan, Position } from '../data/schema';
@@ -9,15 +9,12 @@ import { dailyRuleWords } from '../dailyDraftDay';
 import { dailyRuleBlocks } from '../engine/dailyDraft';
 import { ROSTER_SIZE, totalFga, STARTER_SLOTS } from '../engine/positions';
 import { effectiveTalent, displayTalentForSpan } from '../engine/grades';
-import { computeSpacing } from '../engine/spacing';
 import { spanEndYears } from '../engine/era';
 import { allStarCount } from '../engine/allStarLookup';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import RotationBuilder from './RotationBuilder';
 import type { Rotation, Team } from '../engine/types';
 import {
-  spacingGrade,
-  durabilityGrade,
   displayTierForSpan,
   tierRank,
   type OverallTier,
@@ -27,7 +24,6 @@ import {
 // existing call site in this file (and `DraftPoolBrowser.tsx`, which imports it from here) keeps
 // working unchanged and automatically picks up the 'Sixth Man' relabel.
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
-import { computeDurability } from '../engine/durability';
 import { teamLabel, teamCodes } from '../engine/teamNames';
 import type { FeedbackEntry } from './FeedbackToggle';
 import { upcomingPicks } from './DraftWarRoom';
@@ -1011,12 +1007,15 @@ export default function DraftBoard({
   const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutRounds.length;
   const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
   const gradeTone = (v: string) => (v === 'S' ? 'top' : v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
+  // 2026-11-12 (the user: "atak, obrona i shooting trochę mało"): Shooting is the engine's spacing
+  // (threes and a big's midrange — KG 2004-06 reads C-, not the F of his threes), plus Playmaking
+  // and Rebounding on the card's scale; durability shows as a "Max N min" chip where it bites.
   const gradesOf = (sp: PlayerSpan) => ({
     off: offenseRatingGrade(sp),
     def: defenseRatingGrade(sp),
-    // 2026-11-11: windows before the line show the estimate's letter too, as the card does.
-    tp: spacingGrade(computeSpacing(sp), sp),
-    dur: durabilityGrade(computeDurability(sp)),
+    sht: shootingGrade(sp),
+    ply: playmakingRatingGrade(sp),
+    reb: reboundingRatingGrade(sp),
   });
 
   const asideTop = (
@@ -1210,9 +1209,9 @@ export default function DraftBoard({
                 return {
                   span: o,
                   tier: displayedOverallTier(o),
-                  // 2026-11-04, the user ("fajnie jakbym tu widział OFF DEF 3PT"): he is on your team,
+                  // 2026-11-04, the user ("fajnie jakbym tu widział OFF DEF 3PT"; 2026-11-12 SHT PLY REB): he is on your team,
                   // so his grades are no longer a scouting secret here.
-                  grades: `${g.off} · ${g.def} · ${g.tp} · ${g.dur}`,
+                  grades: `${g.off} · ${g.def} · ${g.sht} · ${g.ply} · ${g.reb}`,
                   peak: o.id === peakId,
                   current: o.id === current.id,
                   action:
@@ -1242,7 +1241,7 @@ export default function DraftBoard({
             </Notice>
           )}
           <section>
-            <H3 note="off · def · 3pt · durability">Roster</H3>
+            <H3 note="off · def · shooting · playmaking · rebounding">Roster</H3>
             <table className="plist roster">
               <colgroup>
                 <col style={{ width: 44 }} />
@@ -1250,10 +1249,11 @@ export default function DraftBoard({
                 <col style={{ width: 52 }} />
                 <col />
                 <col className="c-hide" style={{ width: 130 }} />
-                <col className="c-hide" style={{ width: 58 }} />
-                <col className="c-hide" style={{ width: 58 }} />
-                <col className="c-hide" style={{ width: 58 }} />
-                <col className="c-hide" style={{ width: 58 }} />
+                <col className="c-hide" style={{ width: 50 }} />
+                <col className="c-hide" style={{ width: 50 }} />
+                <col className="c-hide" style={{ width: 50 }} />
+                <col className="c-hide" style={{ width: 50 }} />
+                <col className="c-hide" style={{ width: 50 }} />
                 <col style={{ width: 84 }} />
               </colgroup>
               <thead>
@@ -1265,8 +1265,9 @@ export default function DraftBoard({
                   <th className="c-hide">Tier</th>
                   <th className="num c-hide">Off</th>
                   <th className="num c-hide">Def</th>
-                  <th className="num c-hide">3PT</th>
-                  <th className="num c-hide">Dur</th>
+                  <th className="num c-hide">Sht</th>
+                  <th className="num c-hide">Ply</th>
+                  <th className="num c-hide">Reb</th>
                   <th className="num">Caps</th>
                 </tr>
               </thead>
@@ -1313,8 +1314,9 @@ export default function DraftBoard({
                                 [
                                   ['OFF', g.off],
                                   ['DEF', g.def],
-                                  ['3PT', g.tp],
-                                  ['DUR', g.dur],
+                                  ['SHT', g.sht],
+                                  ['PLY', g.ply],
+                                  ['REB', g.reb],
                                 ] as const
                               ).map(([k, v]) => (
                                 <span key={k}>
@@ -1331,8 +1333,9 @@ export default function DraftBoard({
                       </td>
                       <td className="num gd c-hide"><b className={gradeTone(g.off)}>{masked ? '' : g.off}</b></td>
                       <td className="num gd c-hide"><b className={gradeTone(g.def)}>{masked ? '' : g.def}</b></td>
-                      <td className="num gd c-hide"><b className={gradeTone(g.tp)}>{masked ? '' : g.tp}</b></td>
-                      <td className="num gd c-hide"><b className={gradeTone(g.dur)}>{masked ? '' : g.dur}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.sht)}>{masked ? '' : g.sht}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.ply)}>{masked ? '' : g.ply}</b></td>
+                      <td className="num gd c-hide"><b className={gradeTone(g.reb)}>{masked ? '' : g.reb}</b></td>
                       <td className="cap num">{fmtCaps(eff.fga)}</td>
                     </tr>
                   );
@@ -1489,7 +1492,7 @@ export default function DraftBoard({
               return {
                 span: sp,
                 tier: displayedOverallTier(sp),
-                grades: scouted ? `${g.off} · ${g.def} · ${g.tp} · ${g.dur}` : null,
+                grades: scouted ? `${g.off} · ${g.def} · ${g.sht} · ${g.ply} · ${g.reb}` : null,
                 peak: sp.id === best.id,
                 action: { label: 'Draft', disabled: !legal, title: draftButtonTitle(state, sp.id, canPick, currentTeam), onClick: () => onPick(sp.id) },
               };
@@ -1526,7 +1529,7 @@ export default function DraftBoard({
         ruleNote: ruled && state.dailyRule ? dailyRuleWords(state.dailyRule).ruleTag : undefined,
         taken: ghost ? `taken #${ghost.pickNumber} · ${ghost.teamCode}` : undefined,
         starred: bigBoard.includes(group.playerName),
-        grades: g ? { off: g.off, def: g.def, tp: g.tp } : undefined,
+        grades: g ? { off: g.off, def: g.def, sht: g.sht, ply: g.ply, reb: g.reb } : undefined,
         spans: group.spans.length,
         over: !ghost && !state.complete && target.fga > humanBudget.maxThisPick,
       };

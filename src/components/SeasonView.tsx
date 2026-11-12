@@ -1,4 +1,4 @@
-import { nicknameIfNeeded } from '../data/nicknames';
+import { initialAndSurname, nicknameIfNeeded } from '../data/nicknames';
 import { Fragment, createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { PlayerSpan } from '../data/schema';
@@ -32,7 +32,7 @@ import { displayTierForSpan } from '../engine/grades';
 import { tierContextWithSixthMan } from '../engine/sixthMan';
 import LiveGameNight from '../night/LiveGameNight';
 import { LeagueMark, TeamContext } from '../night/league';
-import { NSelect, Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx } from '../night/ui';
+import { NSelect, Actions, Btn, Dialog, FaceContext, FitName, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx, fitForms } from '../night/ui';
 import { primaryStarters } from '../engine/rotation';
 import { SpanCard } from './PlayerPeekModal';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -891,7 +891,7 @@ function SeasonBody({
     <Btn onClick={startPlayoffs}>{playoffsLabel}</Btn>
   ) : null;
   let main: ReactNode;
-  if (tab === 'overview') main = <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} views={views} mark={mark} report={report} spans={spans} />;
+  if (tab === 'overview') main = <Overview season={season} playoffs={playoffs} you={you} rank={rank} byId={byId} codes={codes} views={views} mark={mark} report={report} spans={spans} />;
   else if (tab === 'standings') main = <FullStandings season={season} byId={byId} youId={you.id} views={views} mark={mark} />;
   else if (tab === 'stats') main = <Stats key={playoffsSoFar ? 'so-far' : 'final'} teams={teams} season={season} playoffs={finalsDone ? playoffs : playoffsSoFar} youId={you.id} codes={codes} playoffsSoFar={playoffsSoFar !== null} />;
   else main = <Awards season={season} playoffs={finalsDone ? playoffs : null} byId={byId} youId={you.id} codes={codes} />;
@@ -919,6 +919,7 @@ function Overview({
   you,
   rank,
   byId,
+  codes,
   views,
   mark,
   report,
@@ -929,6 +930,7 @@ function Overview({
   you: Team;
   rank: number;
   byId: Map<string, Team>;
+  codes: Map<string, string>;
   views: ReturnType<typeof engineTeamViews>;
   mark: (id: string) => ReactNode;
   report: RosterInsight[];
@@ -985,7 +987,16 @@ function Overview({
         <div className="stack">
           <section>
             <H3>League leaders</H3>
+            {/* 2026-11-12 (the user: "SGA tutaj psuje"): one line a leader — the full name where it
+                fits, else "S. Gilgeous-Alexander", else "SGA" (measured, FitName); the team its own
+                column, so a long name never pushes the row onto three lines */}
             <table className="leaders">
+              <colgroup>
+                <col className="lk" />
+                <col />
+                <col className="lt" />
+                <col className="lv" />
+              </colgroup>
               <tbody>
                 {boards.map(([k, value]) => {
                   const l = [...regulars].sort((a, b) => value(b) - value(a))[0];
@@ -993,11 +1004,15 @@ function Overview({
                   return (
                     <tr key={k} className={l.teamId === you.id ? 'you' : undefined}>
                       <td className="k">{k}</td>
-                      <td>
+                      <td className="ln">
                         <b>
-                          <PlayerName line={l} />
-                        </b>{' '}
-                        · {mascot(byId.get(l.teamId))}
+                          <PlayerName line={l}>
+                            <FitName forms={fitForms(l.span.playerName, (shown) => [shown, initialAndSurname(shown)])} />
+                          </PlayerName>
+                        </b>
+                      </td>
+                      <td className="tm" title={mascot(byId.get(l.teamId))}>
+                        {codes.get(l.teamId) ?? ''}
                       </td>
                       <td className="v">{f1(value(l))}</td>
                     </tr>
