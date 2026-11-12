@@ -1,0 +1,87 @@
+drafted players: 269
+
+NO PHOTO (10):
+  Buck Williams (1990-92, TAL 76, 4x)
+  Brian Taylor (1979-81, TAL 64, 3x)
+  Rick Fox (1995-97, TAL 63, 1x)
+  Delonte West (2008-10, TAL 63, 1x)
+  Caldwell Jones (1980-82, TAL 62, 2x)
+  Tree Rollins (1981-83, TAL 61, 1x)
+  Jerome Williams (1996-98, TAL 37, 2x)
+  Chris Dudley (1998-00, TAL 36, 4x)
+  Paul Griffin (1979-81, TAL 35, 1x)
+  Felton Spencer (1997-99, TAL 25, 4x)
+
+ID BUT NO FILE (0):
+  
+
+GREY SILHOUETTE from NBA.com (60):
+  Andrei Kirilenko (2003-05, TAL 84, 10x) [1905]
+  Shawn Marion (2002-04, TAL 83, 8x) [1890]
+  Mark Price (1988-90, TAL 81, 9x) [899]
+  Terry Porter (1989-91, TAL 81, 8x) [345]
+  Marques Johnson (1980-82, TAL 79, 2x) [77160]
+  Bob Dandridge (1977-79, TAL 77, 1x) [76500]
+  Bobby Jones (1977-79, TAL 77, 9x) [77193]
+  Shane Battier (2005-07, TAL 76, 10x) [2203]
+  Charlie Ward (1998-00, TAL 71, 10x) [369]
+  Arvydas Sabonis (1996-98, TAL 69, 1x) [717]
+  Mark Jackson (1998-00, TAL 69, 7x) [349]
+  Mark Eaton (1987-89, TAL 69, 5x) [76631]
+  Michael Cooper (1986-88, TAL 69, 10x) [76444]
+  Raja Bell (2006-08, TAL 69, 5x) [1952]
+  Lamar Odom (2008-10, TAL 69, 1x) [1885]
+  Detlef Schrempf (1994-96, TAL 69, 3x) [96]
+  Clifford Robinson (1997-99, TAL 69, 6x) [361]
+  Derek Fisher (2007-09, TAL 68, 5x) [965]
+  Jason Kidd (2011-13, TAL 67, 10x) [467]
+  Bryon Russell (1997-99, TAL 66, 6x) [935]
+  Derek Harper (1984-86, TAL 66, 6x) [157]
+  Robert Horry (2006-08, TAL 65, 10x) [109]
+  Don Buse (1976-78, TAL 64, 1x) [76317]
+  Rashard Lewis (2009-11, TAL 63, 1x) [1740]
+  Michael Adams (1986-88, TAL 63, 1x) [149]
+  Dana Barros (1994-96, TAL 62, 2x) [344]
+  Nate McMillan (1994-96, TAL 59, 7x) [203]
+  Greg Anthony (1999-01, TAL 58, 7x) [21]
+  DeSagana Diop (2005-07, TAL 55, 6x) [2205]
+  Keith Bogans (2008-10, TAL 54, 3x) [2586]
+  Adrian Griffin (2004-06, TAL 50, 1x) [1559]
+  Stacey Augmon (1998-00, TAL 48, 2x) [278]
+  Kurt Rambis (1986-88, TAL 46, 1x) [77905]
+  Keith Askins (1996-98, TAL 45, 1x) [173]
+  Ryan Bowen (2002-04, TAL 44, 4x) [1763]
+  Lester Conner (1990-92, TAL 44, 1x) [76431]
+  Jim Les (1990-92, TAL 42, 2x) [77372]
+  Renaldo Balkman (2007-09, TAL 41, 1x) [200764]
+  Danny Ferry (2000-02, TAL 39, 3x) [198]
+  T.R. Dunn (1987-89, TAL 38, 10x) [76618]
+  Michael Cage (1996-98, TAL 36, 8x) [262]
+  Ervin Johnson (2002-04, TAL 36, 4x) [911]
+  Jarron Collins (2006-08, TAL 36, 5x) [2260]
+  Fabricio Oberto (2008-10, TAL 35, 3x) [101177]
+  Art Williams (1972-74, TAL 35, 1x) [78539]
+  Brian Shaw (2001-03, TAL 35, 1x) [216]
+  Reggie Evans (2011-13, TAL 34, 1x) [2501]
+  Chris Duhon (2011-13, TAL 33, 1x) [2768]
+  Michael Ruffin (2004-06, TAL 29, 4x) [1913]
+  Jim McIlvaine (1994-96, TAL 29, 1x) [29]
+  Andris Biedriņš (2011-13, TAL 29, 7x) [2740]
+  Luke Walton (2003-05, TAL 28, 1x) [2575]
+  Danny Vranes (1986-88, TAL 28, 1x) [78423]
+  Alan Henderson (2004-06, TAL 25, 1x) [673]
+  Manute Bol (1990-92, TAL 25, 2x) [76195]
+  Bob Weiss (1975-77, TAL 25, 1x) [78485]
+  Dale Schlueter (1975-77, TAL 24, 1x) [78084]
+  Alton Lister (1995-97, TAL 22, 3x) [175]
+  Larry Smith (1991-93, TAL 22, 10x) [78195]
+  Charles Jones (1991-93, TAL 22, 2x) [279]
+
+PHOTO WITH BACKGROUND, not a cut-out (7):
+  Horace Grant (1994-96, TAL 75, 1x) [bb-grantho01]
+  Bob Gross (1976-78, TAL 69, 3x) [bb-grossbo01]
+  Rodney McCray (1986-88, TAL 68, 1x) [bb-mccraro01]
+  Doc Rivers (1988-90, TAL 68, 1x) [bb-riverdo01]
+  Derrick McKey (1991-93, TAL 59, 1x) [bb-mckeyde01]
+  Randy Brown (1994-96, TAL 41, 1x) [bb-brownra02]
+  Jason Collins (2006-08, TAL 32, 2x) [bb-collija04]
