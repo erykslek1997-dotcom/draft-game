@@ -50,7 +50,8 @@ export function MiniTournamentView({
   title: string;
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
   onBack: () => void;
-  onNewDraft: () => void;
+  /** Left out on a daily (one draft a day). */
+  onNewDraft?: () => void;
   /** Called once the whole bracket has been shown. */
   onFinished?: (summary: MiniTournamentSummary) => void;
   onShare?: () => void;
@@ -296,12 +297,18 @@ export function MiniTournamentView({
   const buttons: ReactNode = finished ? (
     <>
       {onShare && <Btn onClick={onShare}>Share</Btn>}
-      <Btn kind={onShare ? 'line' : 'go'} onClick={onNewDraft}>
-        New draft
+      {onNewDraft && (
+        <Btn kind="line" onClick={onNewDraft}>
+          New draft
+        </Btn>
+      )}
+      {/* 2026-11-12, the user: the way out after the tournament was only the small "← Menu" link. */}
+      <Btn kind="line" onClick={links.onMenu}>
+        Main menu
       </Btn>
-      <Btn kind="line" onClick={onBack}>
-        Back to the results
-      </Btn>
+      <button type="button" className="lk-inline back-res" onClick={onBack}>
+        ← Back to the results
+      </button>
     </>
   ) : alive && next ? (
     <>
@@ -329,7 +336,7 @@ export function MiniTournamentView({
       </section>
       {duel}
       {road}
-      <Actions links={links}>{buttons}</Actions>
+      <Actions links={finished ? { ...links, menuPhoneOnly: true } : links}>{buttons}</Actions>
     </>
   );
 

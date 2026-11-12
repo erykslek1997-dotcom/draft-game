@@ -4,7 +4,6 @@ import { pregameOdds, type BoxLineStats, type GameMoment, type LiveGameResult } 
 import { gameCalls, sayPlay } from '../engine/gameCalls';
 import { gameWinProbability } from '../engine/matchup';
 import { maskName } from '../components/bombMask';
-import { reducedMotion } from '../settings';
 import { Actions, Btn, H3, Mast, NFace, NightGame, Prompt, SLOTS, Tally, buzz, shortName, type NavLinks } from './ui';
 
 /**
@@ -209,9 +208,10 @@ export default function LiveGameNight({
   asideExtra?: ReactNode;
 }) {
   const total = game.moments.length;
-  const reduced = reducedMotion();
-  const [shown, setShown] = useState(autoStart && !reduced ? (autoPlay ? 0 : -1) : total);
-  const [running, setRunning] = useState(autoStart && autoPlay && !reduced);
+  // Reduced motion (the setting or the phone's own) used to jump straight to the final — the
+  // user pressed Play and saw the score (2026-11-12). The game is a text feed; it plays either way.
+  const [shown, setShown] = useState(autoStart ? (autoPlay ? 0 : -1) : total);
+  const [running, setRunning] = useState(autoStart && autoPlay);
   const [speed, setSpeed] = useState<Speed>(1);
   const [tab, setTab] = useState<'feed' | 'box' | 'teams'>('feed');
   const [boxSide, setBoxSide] = useState<0 | 1>(sides.you);
