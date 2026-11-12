@@ -30,7 +30,10 @@ export function BoardGrid({
   codeOf,
   onHide,
   windows = WINDOWS,
+  gmOf,
 }: {
+  /** Multiplayer: the player running a team (by its draft slot), shown over its column. */
+  gmOf?: (t: Team) => string | undefined;
   teams: Team[];
   rounds: number;
   /** Round windows the board pages between; one window (the Mini's five rounds) shows no toggle. */
@@ -78,9 +81,9 @@ export function BoardGrid({
         <div className="bg-row bg-head" style={cols}>
           <span className="bg-rl" />
           {order.map((t) => (
-            <span key={t.id} className={`bg-team${t.isHuman ? ' you' : ''}`}>
+            <span key={t.id} className={`bg-team${t.isHuman ? ' you' : ''}${gmOf?.(t) && !t.isHuman ? ' gm' : ''}`}>
               <LeagueMark name={t.name} code={codeOf(t)} />
-              <b>{t.isHuman ? 'You' : teamLabel(t).split(' ')[0]}</b>
+              <b>{t.isHuman ? 'You' : (gmOf?.(t) ?? teamLabel(t).split(' ')[0])}</b>
             </span>
           ))}
         </div>
