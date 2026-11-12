@@ -88,7 +88,7 @@ export function DailyLeaderboard({ mode, day, testing, version = 0, proof }: { m
           </span>
         ) : account === null ? (
           <button type="button" className="dlb-google" onClick={() => void signInWithGoogle()}>
-            Sign in with Google to post your score
+            Sign in to post your score
           </button>
         ) : null}
       </div>
