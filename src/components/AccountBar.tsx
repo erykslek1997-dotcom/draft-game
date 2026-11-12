@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { setNickname, signInWithGoogle, signOut, useAccount } from '../online/account';
+import { setNickname, signInWithGoogle, signOut, useAccount, type NicknameResult } from '../online/account';
+import { Dialog } from '../night/frame';
 import { onlineEnabled } from '../online/supabase';
 import { pullDailyHistory } from '../online/sync';
 import './DailyLeaderboard.css';
@@ -13,8 +14,21 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
   const { account, refresh } = useAccount();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
+  const [error, setError] = useState<NicknameResult | null>(null);
+  const save = (onOk: () => void) => {
+    if (!account) return;
+    void setNickname(account.id, name).then((r) => {
+      setError(r === 'ok' ? null : r);
+      if (r === 'ok') {
+        onOk();
+        refresh();
+      }
+    });
+  };
+  const errorText = error === 'short' ? 'At least 2 characters.' : error === 'taken' ? 'That name is taken. Try another.' : error === 'error' ? 'Couldn’t save. Try again.' : null;
   useEffect(() => {
     if (!account) return;
+    if (account.needsName) setName(account.nickname);
     let alive = true;
     void pullDailyHistory(account.id).then((n) => alive && n > 0 && onSynced?.());
     return () => {
@@ -23,6 +37,23 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account?.id]);
   if (!onlineEnabled || account === undefined) return null;
+  if (menu && account?.needsName) {
+    return (
+      <Dialog title="Pick your name" small className="m2-pick">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save(() => {});
+          }}
+        >
+          <p>This is how you show up on the leaderboards. You can change it later.</p>
+          <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" autoFocus />
+          {errorText && <span className="m2-acct-err">{errorText}</span>}
+          <button type="submit" className="m2-acct-go">Save →</button>
+        </form>
+      </Dialog>
+    );
+  }
   if (menu) {
     return (
       <section className="m2-acct" aria-label="Your account">
@@ -33,12 +64,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void setNickname(account.id, name).then((ok) => {
-                    if (ok) {
-                      setEditing(false);
-                      refresh();
-                    }
-                  });
+                  save(() => setEditing(false));
                 }}
               >
                 <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" autoFocus />
@@ -48,6 +74,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
             ) : (
               <b>{account ? account.nickname : 'Not signed in'}</b>
             )}
+            {editing && errorText && <span className="m2-acct-err">{errorText}</span>}
             <span>{account ? 'Your dailies and streak are saved to your account.' : 'Post your dailies to the leaderboard and keep your streak on any device.'}</span>
           </div>
           {account ? (
@@ -81,12 +108,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
           className="dlb-me"
           onSubmit={(e) => {
             e.preventDefault();
-            void setNickname(account.id, name).then((ok) => {
-              if (ok) {
-                setEditing(false);
-                refresh();
-              }
-            });
+            save(() => setEditing(false));
           }}
         >
           <input id="acct-nick" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" />

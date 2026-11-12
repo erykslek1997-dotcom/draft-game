@@ -67,8 +67,8 @@ export function DailyLeaderboard({ mode, day, testing, version = 0, proof }: { m
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void setNickname(account.id, name).then((ok) => {
-                    if (ok) {
+                  void setNickname(account.id, name).then((r) => {
+                    if (r === 'ok') {
                       setEditing(false);
                       refresh();
                     }

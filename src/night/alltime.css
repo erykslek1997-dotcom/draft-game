@@ -1411,3 +1411,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .m2-acct-act { display: inline-flex; gap: 14px; }
 .nt .m2-acct .m2-acct-go { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
 .nt .m2-acct .m2-acct-go:hover { background: var(--ink); color: var(--bg); }
+.m2-acct-err { color: var(--red, #ff6b6b); font-size: 12.5px; }
+.m2-pick form { display: grid; gap: 12px; }
+.m2-pick p { margin: 0; color: var(--ink2); font-size: 14px; }
+.m2-pick input { font: 700 20px var(--cond); text-transform: none; padding: 8px 12px; border: 1px solid var(--rule2); border-radius: 3px; background: none; color: var(--ink); }
+.nt .m2-pick .m2-acct-go, .m2-pick .m2-acct-go { justify-self: start; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
