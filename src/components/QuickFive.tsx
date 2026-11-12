@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { newDraftId, recordDraft } from '../online/career';
+import { RunSummary } from './RunSummary';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -37,8 +38,8 @@ import { MiniTournamentView, type MiniTournamentSummary } from './MiniTournament
 import { MINI_ROUNDS } from '../engine/miniTournament';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { DailyLeaderboard } from './DailyLeaderboard';
-import { medianOf } from '../online/points';
-import { clearDailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
+import { dailyPoints, medianOf } from '../online/points';
+import { clearDailyDraftResult, dailyDraftResult, dailyDraftStreak, ordinal, saveDailyDraftResult } from './dailyDraftProgress';
 import { DAILY_REPLAY_FOR_TESTING, STREAK_TIERS, untilTomorrow } from './dailyProgress';
 import { maskName } from './bombMask';
 import {
@@ -653,8 +654,8 @@ function QuickResults({
   const tier = resultTier(humanRank, TEAM_COUNT);
   const [careerId] = useState(() => newDraftId('mini'));
   useEffect(() => {
-    if (!daily?.testing) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
-  }, [careerId, daily, humanRank, human.score.composite]);
+    if (!daily?.testing) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite, title: tourneyResult ? tourneyResult.out === null : undefined });
+  }, [careerId, daily, humanRank, human.score.composite, tourneyResult]);
   useEffect(() => {
     if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite, median: medianOf(ranked.map((r) => r.score.composite)) });
   }, [daily, humanRank, human.score.composite]);
@@ -782,6 +783,8 @@ function QuickResults({
     </table>
   );
 
+  const dayResult = daily && !daily.testing ? dailyDraftResult('mini', daily.day) : null;
+  const dayPts = dayResult ? dailyPoints({ mode: 'mini', ...dayResult, streak: dailyDraftStreak('mini', daily!.day) }).total : null;
   if (tourney) {
     return (
       <MiniTournamentView
@@ -794,6 +797,19 @@ function QuickResults({
         onBack={() => setTourney(false)}
         onNewDraft={daily ? undefined : onNewDraft}
         onFinished={setTourneyResult}
+        summary={
+          tourneyResult && (
+            <RunSummary
+              careerId={careerId}
+              dayPoints={dayPts}
+              rows={[
+                ['Power ranking', `${ordinal(humanRank)} of ${TEAM_COUNT}`],
+                ['Tournament', tourneyResult.out === null ? '🏆 Champions' : `Out in the ${MINI_ROUNDS[tourneyResult.out]}`],
+                ['Record', `${tourneyResult.wins}–${tourneyResult.losses} · #${tourneyResult.seed} seed`],
+              ]}
+            />
+          )
+        }
         onShare={() => setShareOpen(true)}
         overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team))} fileName={teamLabel(human.team)} onClose={() => setShareOpen(false)} /> : undefined}
       />

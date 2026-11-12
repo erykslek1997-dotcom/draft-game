@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { careerResults, careerStats, levelOf, recordDraft } from '../online/career';
+import { recordDraft } from '../online/career';
+import { RunSummary } from './RunSummary';
 import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
@@ -1180,28 +1181,18 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
       const runs = playoffs.rounds.flat().filter((x) => x.teamAId === id || x.teamBId === id);
       const last = runs[runs.length - 1];
       const po = playoffs.championId === id ? '🏆 Champions' : last ? `Out in the ${last.roundLabel.replace('Quarterfinals', 'quarters').replace('Semifinals', 'semis')}` : 'Missed';
-      const entry = careerResults().find((r) => r.id === careerId);
-      const lv = levelOf(careerStats().xp);
       const dayResult = daily && !daily.testing ? dailyDraftResult(daily.mode, daily.day) : null;
       const dayPts = dayResult ? dailyPoints({ mode: daily!.mode, ...dayResult, streak: dailyDraftStreak(daily!.mode, daily!.day) }).total : null;
       summary = (
-        <section className="yrun">
-          <H3>Your run</H3>
-          <Kv k="Power ranking" v={`${ordinal(humanRanked.rank)} of ${ranked.length}`} />
-          <Kv k="Season" v={row ? `${row.wins}–${row.losses} · ${ordinal(seed)} seed` : '—'} />
-          <Kv k="Playoffs" v={po} />
-          {dayPts !== null ? <Kv k="Daily points" v={dayPts.toFixed(1)} /> : entry ? <Kv k="Week points" v={`${entry.points > 0 ? '+' : ''}${entry.points.toFixed(1)}`} /> : null}
-          {entry && <Kv k="XP" v={`+${entry.xp}`} />}
-          <div className="m2-lv yrun-lv">
-            <b>Level {lv.level}</b>
-            <span className="m2-lv-bar" aria-hidden>
-              <i style={{ width: `${Math.round((100 * lv.into) / lv.next)}%` }} />
-            </span>
-            <span>
-              {lv.into}/{lv.next}
-            </span>
-          </div>
-        </section>
+        <RunSummary
+          careerId={careerId}
+          dayPoints={dayPts}
+          rows={[
+            ['Power ranking', `${ordinal(humanRanked.rank)} of ${ranked.length}`],
+            ['Season', row ? `${row.wins}–${row.losses} · ${ordinal(seed)} seed` : '—'],
+            ['Playoffs', po],
+          ]}
+        />
       );
     }
     return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined, summary }} />;
