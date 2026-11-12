@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { newDraftId, recordDraft } from '../online/career';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import {
@@ -650,6 +651,10 @@ function QuickResults({
   const human = ranked[humanRank - 1];
   const best = ranked[0];
   const tier = resultTier(humanRank, TEAM_COUNT);
+  const [careerId] = useState(() => newDraftId('mini'));
+  useEffect(() => {
+    if (!daily?.testing) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite });
+  }, [careerId, daily, humanRank, human.score.composite]);
   useEffect(() => {
     if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite, median: medianOf(ranked.map((r) => r.score.composite)) });
   }, [daily, humanRank, human.score.composite]);

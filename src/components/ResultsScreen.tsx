@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { recordDraft } from '../online/career';
 import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
@@ -942,6 +943,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   useEffect(() => {
     if (daily && !daily.testing && dailySeason) saveDailyDraftSeason(daily.mode, daily.day, dailySeason);
   }, [daily, dailySeason]);
+  // 2026-11-12, the career (online/career.ts): one entry per board, the title once the season is won.
+  const careerMode = daily?.mode === 'bomb' || bomb ? 'bomb' : 'alltime';
+  const careerId = daily ? `${careerMode}:daily:${daily.day}` : `${careerMode}:${draftSeed}`;
+  const careerTitle = humanRanked && seasonState.status === 'done' ? seasonState.playoffs?.championId === humanRanked.team.id : undefined;
+  useEffect(() => {
+    if (!humanRanked || daily?.testing) return;
+    recordDraft({ id: careerId, mode: careerMode, daily: !!daily, place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall, title: careerTitle });
+  }, [careerId, careerMode, daily, humanRanked, ranked.length, careerTitle]);
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily || !humanRanked) return;

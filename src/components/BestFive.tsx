@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { newDraftId, recordDraft } from '../online/career';
 import { deckSfx } from './deckSounds';
 import { clearDailyResult, DAILY_REPLAY_FOR_TESTING, currentStreak, dailySeed, recordDailyResult, savedDailyLineup, untilTomorrow, STREAK_TIERS, type Streak } from './dailyProgress';
 import { dailyMeta, DAILY_HAND_SIZE, JOKERS_MAX, JOKERS_MIN, type LegendFive } from '../engine/dailyMeta';
@@ -286,6 +287,10 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     const m = matchFor(lineup, aiLineup);
     setMatch(m);
     setStage(m ? 'game' : 'result');
+    if (!testDay) {
+      const won = m ? m.final[0] > m.final[1] : false;
+      recordDraft({ id: newDraftId('drawfive'), mode: 'drawfive', daily: !!daily, place: m ? (won ? 1 : 2) : 1, field: 2, overall: next.score.composite, won });
+    }
     if (daily && !testDay) {
       setStreak(
         recordDailyResult(daily, lineup, next.grade, next.score.composite, {
