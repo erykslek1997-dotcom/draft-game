@@ -770,9 +770,15 @@ function careerShrunkDbpm(span: PlayerSpan, own: number): number {
   const career = careerDbpmOf(span);
   return career === null ? own : own + (career.dbpm - own) * DBPM_SOURCE.career;
 }
-/** Measurement knob (default off): a window with no DBPM (before 1973-74) reads the player's career
- * DBPM from his 1974+ windows, `share` of the way, never more than `cap` points. */
-const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
+/** 2026-11-12 (the user: "co możemy jakkolwiek policzyć z dostępnych danych przed 1976"; on by his
+ * review): a window with no DBPM (before 1973-74) reads the player's DBPM from his 1974+ windows,
+ * `share` of the way, never more than `cap` points; windows with All-Defense / DPOY keep theirs.
+ * Judge `scripts/auditPartialRosters.ts` (D-TAL against real team DRtg, carded minutes only):
+ * 1951-62 0.470 → 0.531, 1963-73 0.644 → 0.667, both in even and odd years; real SRS 0.8460 →
+ * 0.8463, game 0.8069 → 0.8070. Cap 25 read the judges a little better (0.554, game 0.8118) but
+ * put Oscar's prime at 32-42; the sources call his defense neutral, not poor (Thinking Basketball:
+ * "fairly neutral", "a question mark"), so 15 (Oscar 39-52, Unseld 45-47, Bellamy −15). */
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0.75), cap: Number(envVar('DT_BRIDGE_CAP') ?? 15), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
 /** The bridged window's DBPM: his 1974+ windows, each by its minutes and halved every `halfLife`
  * years between the two windows' middles (0: the plain career mean), so a long career's last
  * seasons do not speak for its first (Kareem 1971-73 reads his 1972-74 2.5, not the career's 1.6
