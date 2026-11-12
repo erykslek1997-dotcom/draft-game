@@ -33,6 +33,13 @@ function defaultNickname(session: Session): string {
 async function loadAccount(session: Session): Promise<Account | null> {
   if (!supabase) return null;
   const id = session.user.id;
+  // 2026-11-12: a session can outlive its account (deleted in the dashboard): ask the server, and if
+  // the user is gone, sign out instead of asking a ghost for a name (a softlock in the playtest).
+  const { data: who, error: whoError } = await supabase.auth.getUser();
+  if (whoError || !who.user) {
+    await supabase.auth.signOut({ scope: 'local' });
+    return null;
+  }
   const { data } = await supabase.from('profiles').select('nickname').eq('id', id).maybeSingle();
   if (data?.nickname) return { id, nickname: data.nickname as string };
   return { id, nickname: defaultNickname(session), needsName: true };
