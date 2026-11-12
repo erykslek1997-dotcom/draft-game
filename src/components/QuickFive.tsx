@@ -1520,26 +1520,9 @@ function DuelResults({
       <Prompt eb="Duel · the fives" title={`Engine favours ${favoured.isHuman ? 'you' : rival} by ${lean}`}>
         {status ?? 'One game decides it.'}
       </Prompt>
-      <section>
-        <H3 note={`${fmtCaps(totalFga(me.team.roster.map((p) => p.fga)))} vs ${fmtCaps(totalFga(them.team.roster.map((p) => p.fga)))} caps`}>You · {rival}</H3>
-        <table className="duel-cmp">
-          <tbody>
-            {STARTER_SLOTS.map((slot) => {
-              const x = me.lineup[slot];
-              const y = them.lineup[slot];
-              return (
-                <tr key={slot}>
-                  <td className="y">{x ? maskName(x.playerName) : '—'}</td>
-                  <td className="c">{x ? fmtCaps(x.fga) : ''}</td>
-                  <td className="pos">{slot}</td>
-                  <td className="c">{y ? fmtCaps(y.fga) : ''}</td>
-                  <td className="r">{y ? maskName(y.playerName) : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
+      {/* The same five cards as the draft screen (playtest 2026-11-12: "mini karty, spójniej"). */}
+      <FiveSlots title="You" note={`${me.score.composite} · ${fmtCaps(totalFga(me.team.roster.map((p) => p.fga)))} caps`} lineup={me.lineup as Partial<Record<Position, PlayerSpan>>} emptyLabel={() => ' '} compact />
+      <FiveSlots title={rival} note={`${them.score.composite} · ${fmtCaps(totalFga(them.team.roster.map((p) => p.fga)))} caps`} lineup={them.lineup as Partial<Record<Position, PlayerSpan>>} emptyLabel={() => ' '} compact />
       <div className="phone-only duel-go">
         {readyBtn}
         {status && <p className="mp-note">{status}</p>}
