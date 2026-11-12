@@ -9,6 +9,7 @@ import { dailyDraftResult, dailyDraftStreak, ordinal } from '../components/daily
 import { readDraftSaveSummary, type DraftSaveSummary } from '../draftSaveSummary';
 import { Btn, Dialog } from './frame';
 import { NightSettings } from './Dialogs';
+import { AccountBar } from '../components/AccountBar';
 
 export type MenuMode = 'bestfive' | 'quickfive' | 'draft';
 
@@ -93,6 +94,7 @@ export function NightMenu({
   /** Testing: the live game bench. */
   onLiveTest?: () => void;
 }) {
+  const [, setSynced] = useState(0);
   const [dialog, setDialog] = useState<'settings' | 'howto' | null>(null);
   const [howToMode, setHowToMode] = useState<MenuMode>('bestfive');
   const today = localDayKey();
@@ -139,6 +141,7 @@ export function NightMenu({
               <span>{BRAND_TAGLINE}</span>
               <span className="m2-ed">{editionLine()}</span>
             </div>
+            <AccountBar onSynced={() => setSynced((n) => n + 1)} />
             <div className="m2-team">
               {franchise && <LeagueMark name={teamName} code={franchiseCode(teamName)} />}
               <span>{franchise ? `${franchise.city} ${franchise.name}` : teamName}</span>

@@ -92,6 +92,27 @@ export function saveDailyDraftSeason(mode: DailyDraftMode, day: string, season: 
   write(progress);
 }
 
+/**
+ * 2026-11-11, the account: days played on another device (from the server) join this browser's
+ * history; days already here win. The streak is rebuilt from the merged days, ending at the latest.
+ */
+export function mergeDailyDraftDays(mode: DailyDraftMode, days: Record<string, DailyDraftResult>): void {
+  const progress = read();
+  const own = progress[mode] ?? emptyMode();
+  const merged = { ...days, ...own.days };
+  const sorted = Object.keys(merged).sort();
+  if (!sorted.length) return;
+  let current = 0;
+  let best = 0;
+  let prev: string | null = null;
+  for (const day of sorted) {
+    current = prev !== null && previousDay(day) === prev ? current + 1 : 1;
+    best = Math.max(best, current);
+    prev = day;
+  }
+  write({ ...progress, [mode]: { days: merged, streak: { current, best: Math.max(best, own.streak.best), lastDay: prev } } });
+}
+
 /** Forgets the day's result (testing replays only). */
 export function clearDailyDraftResult(mode: DailyDraftMode, day: string): void {
   const progress = read();
