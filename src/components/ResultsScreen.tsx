@@ -904,10 +904,16 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     return extras;
   };
 
+  // The season counts once it has been played to its end, not once the background run is done
+  // (2026-11-12, the user: "nie pokazywać wyników sezonu w wynikach draftu, tylko jak ktoś zagra";
+  // a daily player who never plays it gets the draft's points only). Read from the saved progress
+  // each render, so closing the season view brings it in.
+  const seasonDone = seasonState.status === 'done' && seasonState.playoffs !== null && seasonPlayed(scoredTeams);
+
   // 2026-10-09, descriptions plan: once the season has been played, one line on whether it agreed
   // with the grade — within two places of the draft rank, or not.
   const seasonVerdictLine = (() => {
-    if (!heroRanked?.team.isHuman || seasonState.status !== 'done') return null;
+    if (!heroRanked?.team.isHuman || seasonState.status !== 'done' || !seasonDone) return null;
     const place = seasonState.season.standings.findIndex((r) => r.teamId === heroRanked.team.id) + 1;
     if (place < 1) return null;
     const row = seasonState.season.standings[place - 1];
@@ -926,7 +932,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // 2026-10-16, the daily drafts: the day keeps its first result — the place and Overall now, the
   // season once it has been played (the user: points for both, to a leaderboard later).
   const dailySeason = useMemo(() => {
-    if (!daily || !humanRanked || seasonState.status !== 'done') return null;
+    if (!daily || !humanRanked || seasonState.status !== 'done' || !seasonDone) return null;
     const id = humanRanked.team.id;
     const place = seasonState.season.standings.findIndex((r) => r.teamId === id) + 1;
     const row = seasonState.season.standings[place - 1];
@@ -935,7 +941,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
     const last = series[series.length - 1];
     const playoffs = seasonState.playoffs?.championId === id ? 'Champions' : last ? `Out in the ${last.roundLabel}` : 'Missed the playoffs';
     return { wins: row.wins, losses: row.losses, place, playoffs };
-  }, [daily, humanRanked, seasonState]);
+  }, [daily, humanRanked, seasonState, seasonDone]);
   useEffect(() => {
     if (daily && !daily.testing && humanRanked) saveDailyDraftResult(daily.mode, daily.day, { place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall, median: medianOf(ranked.map((r) => r.breakdown.overall)) });
   }, [daily, humanRanked, ranked.length]);
@@ -966,7 +972,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
 
   if (!heroRanked) return null;
   const hero = heroRanked;
-  const played = seasonState.status === 'done' && seasonState.playoffs !== null && seasonPlayed(scoredTeams);
+  const played = seasonDone;
   const heroTeam = displayTeam(hero.team);
   const fieldSize = ranked.length;
   const tier = resultTierLabel(hero.rank, fieldSize);
