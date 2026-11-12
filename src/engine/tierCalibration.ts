@@ -63,10 +63,23 @@ const entries = new Map<string, CalibrationEntry>(
 
 const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
 
+/** The bands the nudges were given on (2026-09-27); a nudge keeps its share of the band's width
+ * (2026-11-12, the user: "cyferki są takie że to jest blisko legend albo mvp" — Eddie Jones's +3 put
+ * him at 88 in a 84-89 band that is 6 points wide, not 8). */
+const NUDGE_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
+  'Legend': [96, 99], MVP: [88, 95], 'All-NBA': [80, 87], 'All-star': [70, 79], Starter: [60, 69], 'Sixth Man': [58, 66],
+};
+function nudgeFor(playerName: string, tier: OverallTier): number {
+  const nudge = nudges.get(normalizePlayerName(playerName)) ?? 0;
+  const [lo, hi] = TIER_BANDS[tier] ?? [0, 0];
+  const [olo, ohi] = NUDGE_BANDS[tier] ?? [lo, hi];
+  return ohi > olo ? (nudge * (hi - lo)) / (ohi - olo) : nudge;
+}
+
 /** The reviewed window's TAL: its place in the tier's band plus the user's nudge, kept in the band. */
 function reviewedTalent(playerName: string, tier: OverallTier, raw: number, keepInBand = true): number {
   const [lo, hi] = TIER_BANDS[tier]!;
-  const value = placeInBand(tier, raw, keepInBand) + (nudges.get(normalizePlayerName(playerName)) ?? 0);
+  const value = placeInBand(tier, raw, keepInBand) + nudgeFor(playerName, tier);
   return keepInBand ? Math.max(lo, Math.min(hi, value)) : value;
 }
 
@@ -160,6 +173,25 @@ function calibratedUnordered(
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below
  * the 200 who were, so none of them reads above the top of All-star. */
+/** 2026-11-12 (the user: "przelicz korekty na nową skalę"): a number the user named on the old
+ * bands (a named ceiling such as Arenas 84 "mid All-NBA", Edwards 87 "top of All-NBA") read on the
+ * label scale — the same piecewise map the bands moved by (60 → 65, 70 → 78, 80 → 84, 88 → 90). */
+const OLD_TO_LABEL: ReadonlyArray<readonly [number, number]> = [[0, 0], [45, 45], [60, 65], [70, 78], [80, 84], [88, 90], [96, 96], [200, 200]];
+export function onLabelScale(value: number): number {
+  if (!BANDS_ON_LABELS) return value;
+  for (let i = 1; i < OLD_TO_LABEL.length; i++) {
+    const [a, b] = OLD_TO_LABEL[i - 1];
+    const [c, d] = OLD_TO_LABEL[i];
+    if (value <= c) return Math.round(b + ((value - a) * (d - b)) / (c - a));
+  }
+  return value;
+}
+/** The top of a tier on the card's label scale (a named hold keeps its tier, not the old number). */
+const LABEL_TIER_TOP: Partial<Record<OverallTier, number>> = { 'Role Player': 64, Starter: 77, 'All-star': 83, 'All-NBA': 89, MVP: 95, Legend: 99 };
+export function labelTierTop(tier: OverallTier): number | undefined {
+  return BANDS_ON_LABELS ? LABEL_TIER_TOP[tier] : undefined;
+}
+
 /** 2026-11-12, the user ("jakby zdjąć te blokady … i zobaczyć co wyjdzie"; then "zrób B"): the engine's
  * own blocks are off — no hold under All-star for players outside the table, no rule-tier ceiling on
  * the displayed number (`grades.ts`), no low-volume ceiling, no grade ceiling or small-role cap on

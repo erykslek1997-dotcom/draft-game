@@ -245,6 +245,12 @@ export const USER_TIER_REVIEW_2: ReadonlyArray<readonly [name: string, spanLabel
   ['Domantas Sabonis', '2022-24', 92, 'Starter'],
   ['Zach LaVine', '2020-22', 88, 'Starter'],
   ['Ron Harper', '1988-90', 81, 'Starter'],
+  // 2026-11-12, the user's TAL Board review: "Hardena bym przerzucił do MVP", "Dwyane Wade też do MVP",
+  // "Kawhi też"; "Eddie Jones do all-star" (and "Eddie … wydaje się wysoko": his nudge is gone).
+  ['James Harden', '2017-19', 122, 'MVP'],
+  ['Dwyane Wade', '2008-10', 117, 'MVP'],
+  ['Kawhi Leonard', '2015-17', 132, 'MVP'],
+  ['Eddie Jones', '1997-99', 83, 'All-star'],
 ];
 
 /**
@@ -278,7 +284,6 @@ export const USER_TAL_NUDGE: Readonly<Record<string, number>> = {
   'Bam Adebayo': NUDGE,
   'Bill Russell': NUDGE,
   'Derrick White': NUDGE,
-  'Eddie Jones': NUDGE,
   'Jalen Brunson': NUDGE,
   'Jimmy Butler': NUDGE,
   'Kyle Lowry': NUDGE,

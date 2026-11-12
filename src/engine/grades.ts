@@ -6,7 +6,7 @@ import { draftPool } from '../data/draftPool';
 import TEAM_CONTEXT from '../data/teamContext.json';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, ENGINE_BLOCKS_OFF, hasUserWindowOrder, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
+import { calibratedDisplayTalent, ENGINE_BLOCKS_OFF, hasUserWindowOrder, labelTierTop, onLabelScale, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1342,7 +1342,9 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
 );
 
 function namedPlayerCeiling(playerName: string | undefined): number {
-  return (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
+  const ceiling = (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
+  // A player in the user's table reads on the label scale, so his named ceiling does too (2026-11-12).
+  return playerName && ceiling !== Infinity && tierCalibrationFor(playerName) ? onLabelScale(ceiling) : ceiling;
 }
 
 /**
@@ -1483,12 +1485,14 @@ function displayTalentUncompressed(ctx: TierGateContext): number {
   const base = Math.min(displayTalentUnheld(ctx), lowVolumeCeiling(ctx));
   const value = base + roleContextShift(ctx, base);
   const hold = rimBonusHold(ctx);
-  const held = hold ? Math.min(value, tierCeiling(hold)) : value;
+  const held = hold ? Math.min(value, labelTierTop(hold) ?? tierCeiling(hold)) : value;
   // After the holds: a Starter hold kept a wing out of All-star (the user: "Tal 69 bo przebijał do
   // all star" — Battier), and the premium stays under the card's All-star line (`THREE_AND_D.below`).
   // 2026-11-11, the card audit: a named ceiling is the user's own call, so the premium cannot climb
   // over it either (Ostertag's 66 was coming back as 72 through the defensive-big premium).
-  return Math.min(namedPlayerCeiling(ctx.playerName), held + threeAndDPremium(ctx, held));
+  // The user's hold binds after the premium too (2026-11-12: Battier 77 + 3-and-D read 78, All-star).
+  const premium = held + threeAndDPremium(ctx, held);
+  return Math.min(namedPlayerCeiling(ctx.playerName), hold ? Math.min(premium, labelTierTop(hold) ?? Infinity) : premium);
 }
 
 /**
