@@ -59,7 +59,7 @@ import { maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
-import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
+import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, PhoneDock, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
 import { effectiveTalent } from '../engine/grades';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
@@ -1454,9 +1454,12 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           </tbody>
         </table>
       </section>
-      <Btn className="phone-only" onClick={() => setSeasonOpen(true)}>
-        {played ? 'Open the season →' : 'Play the season →'}
-      </Btn>
+      <PhoneDock
+        tabs={[
+          { label: 'Result', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+          { label: played ? '▶ Open the season' : '▶ Play the season', go: true, onClick: () => setSeasonOpen(true) },
+        ]}
+      />
     </NightGame>
   );
 }

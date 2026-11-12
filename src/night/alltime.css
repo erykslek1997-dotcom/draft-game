@@ -1481,11 +1481,13 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 
 /* 2026-11-12: the Duel's two fives, side by side. */
 .duel-go { display: grid; gap: 8px; margin-top: 12px; }
-.mp-dock { display: none; }
+.ph-dock { display: none; }
 @media (max-width: 640px) {
   .mp-chat-fab { display: none; }
-  .mp-dock { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: 56px; background: var(--bg); border-top: 1px solid var(--rule2); }
-  .nt .mp-dock button, .mp-dock button { flex: 1; background: none; border: none; color: var(--ink2); font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-  .mp-dock b { background: #e0645a; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; }
-  body:has(.mp-dock) { padding-bottom: 56px; }
+  .ph-dock { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: calc(56px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--bg); border-top: 1px solid var(--rule2); }
+  .nt .ph-dock button, .ph-dock button { flex: 1; min-width: 0; background: none; border: none; border-radius: 0; color: var(--ink2); font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 4px; white-space: nowrap; }
+  .nt .ph-dock button.on, .ph-dock button.on { color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); }
+  .nt .ph-dock button.go, .ph-dock button.go { color: var(--bg); background: var(--ink); }
+  .ph-dock b { background: #e0645a; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; }
+  body:has(.ph-dock) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 }
