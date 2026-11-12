@@ -31,3 +31,11 @@ for (const r of allStars) countByName.set(resolveSourceName(normalizeAwardName(r
 export function allStarCount(playerName: string): number {
   return countByName.get(normalizeAwardName(playerName)) ?? 0;
 }
+
+const yearsByName = new Map<string, Set<number>>();
+for (const r of allStars) yearsByName.set(resolveSourceName(normalizeAwardName(r.name), r.years[0]), new Set(r.years));
+/** All-Star Game selections in the window's seasons (season end years). */
+export function allStarSelectionsIn(playerName: string, endYears: readonly number[]): number {
+  const years = yearsByName.get(normalizeAwardName(playerName));
+  return years ? endYears.filter((y) => years.has(y)).length : 0;
+}

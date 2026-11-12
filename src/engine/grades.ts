@@ -24,6 +24,8 @@ import { computeSpacing, computeRawSpacing } from './spacing';
 import { computeFinishing, namedFinishingS } from './finishing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
+import { allStarSelectionsIn } from './allStarLookup';
+import { envVar } from './env';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffTalentTerm } from './playoffImpact';
 import { realValueTierFloor } from './realValueFloor';
@@ -1547,8 +1549,17 @@ function displayTalentUnheld(ctx: TierGateContext): number {
     const calibrated = calibratedDisplayTalent(name, ctx.spanLabel, ctx.rawTal, windowMeasure(legacy, ctx.rawTal), () => reviewedWindow(name));
     if (calibrated !== undefined) return calibrated;
   }
-  return ctx.playerName ? Math.min(UNCALIBRATED_DISPLAY_MAX, legacy) : legacy;
+  if (!ctx.playerName) return legacy;
+  const held = Math.min(UNCALIBRATED_DISPLAY_MAX, legacy);
+  return ALL_STAR_FLOOR.selections > 0 && ctx.spanLabel && allStarSelectionsIn(ctx.playerName, spanEndYears(ctx.spanLabel)) >= ALL_STAR_FLOOR.selections ? Math.max(held, ALL_STAR_FLOOR.tal) : held;
 }
+/** 2026-11-12 (the user: "Lepszy sygnał tego, kto jest All-Starem, to sam mecz gwiazd … spróbuj tych
+ * one time i 2x", then "rób próg 2"): a window outside the table with at least `selections` All-Star
+ * Game selections reads at least the card's All-star line (78). Real SRS 0.8514 → 0.8539, game
+ * 0.8171 → 0.8226, All-star best windows 55 → 145 (one selection: 0.8554 / 0.8244, 235, but one-time
+ * picks such as Gatling and Magloire). Bowen and Battier, never All-Stars, stay Starters.
+ * `AS_FLOOR=0` turns it off. */
+const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78 };
 
 function legacyDisplayTalent(ctx: TierGateContext): number {
   const smoothed = smoothedDisplayTalent(ctx);
