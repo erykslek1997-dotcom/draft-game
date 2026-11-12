@@ -531,10 +531,14 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // eras together, and the 1970s-80s (little spacing to tell apart) dragged it down. From 1996-97 on
 // 10 points of spacing are worth +0.29 ORtg (90% +0.22…+0.35), ~1.9 O-TAL points; back to 0.17.
 // Offense vs real ORtg from 2000 on r 0.650 -> 0.660. An era-aware weight is step 8's.
-const OFFENSE_OTAL_BLEND_WEIGHT = 0.493;
-const OFFENSE_SPACING_BLEND_WEIGHT = 0.17;
+// 2026-11-12 (measuring, the offense judge — real ORtg against the league, 600 team-seasons: the
+// Offense blend r 0.619, team O-TAL alone 0.768): `OFF_MIX` moves that share of the spacing,
+// playmaking and mismatch weights onto O-TAL.
+const OFF_MIX = Number(envVar('OFF_MIX') ?? 0);
+const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
+const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
-const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17;
+const OFFENSE_PLAYMAKING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 // 2026-10-08, the second half: the live game still gives self-creation nothing on top of O-TAL
 // (0.001 a point on 960 teams), so its share moves to O-TAL. Was .032 (O-TAL .40).
 const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0;
@@ -549,7 +553,7 @@ const OFFENSE_SELF_CREATION_BLEND_WEIGHT = 0;
  * skill rating. Reads `fitScore` here (already computed elsewhere in `scoreTeam`, but not
  * threaded through this function) rather than recomputing the underlying shadow-role-profile
  * machinery a second time. */
-const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.167;
+const OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT = 0.167 * (1 - OFF_MIX);
 
 /** The 6 raw 0-100 dimensions `offenseScore` blends, exposed together so the UI can show
  * playmaking/self-creation individually — 2026-09-05, user's explicit ask ("playmaking i shot
