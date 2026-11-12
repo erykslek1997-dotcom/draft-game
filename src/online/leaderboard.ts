@@ -1,5 +1,6 @@
 import type { DailyDraftMode } from '../dailyDraftDay';
 import type { PointsBreakdown } from './points';
+import type { DailyProof } from './verifyDaily';
 import { supabase } from './supabase';
 
 export interface DailyScore {
@@ -14,12 +15,14 @@ export interface LeaderboardRow {
   points: number;
   /** Today's table only. */
   breakdown?: { draft: number; season: number; streak: number };
+  /** The server re-ran the draft and it matched. */
+  verified?: boolean;
   /** The week's table only: days played. */
   days?: number;
 }
 
 /** Sends (or, once the season is played, updates) today's result and its points. */
-export async function submitDailyScore(userId: string, mode: DailyDraftMode, day: string, score: DailyScore, points: PointsBreakdown): Promise<'saved' | 'error'> {
+export async function submitDailyScore(userId: string, mode: DailyDraftMode, day: string, score: DailyScore, points: PointsBreakdown, proof?: DailyProof): Promise<'saved' | 'error'> {
   if (!supabase) return 'error';
   const { error } = await supabase.from('daily_scores').upsert(
     {
@@ -33,6 +36,7 @@ export async function submitDailyScore(userId: string, mode: DailyDraftMode, day
       draft_points: points.draft,
       season_points: points.season,
       streak_points: points.streak,
+      ...(proof ? { proof } : {}),
     },
     { onConflict: 'user_id,mode,day' },
   );
@@ -44,7 +48,7 @@ export async function fetchDailyLeaderboard(mode: DailyDraftMode, day: string, l
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('daily_leaderboard')
-    .select('user_id, nickname, points, draft_points, season_points, streak_points, created_at')
+    .select('user_id, nickname, points, draft_points, season_points, streak_points, created_at, verified')
     .eq('mode', mode)
     .eq('day', day)
     .order('points', { ascending: false })
@@ -56,6 +60,7 @@ export async function fetchDailyLeaderboard(mode: DailyDraftMode, day: string, l
     nickname: r.nickname as string,
     points: Number(r.points),
     breakdown: { draft: Number(r.draft_points), season: Number(r.season_points), streak: Number(r.streak_points) },
+    verified: r.verified === 'ok',
   }));
 }
 

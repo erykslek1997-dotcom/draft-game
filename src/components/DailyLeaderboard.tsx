@@ -3,6 +3,7 @@ import type { DailyDraftMode } from '../dailyDraftDay';
 import { setNickname, signInWithGoogle, signOut, useAccount } from '../online/account';
 import { fetchDailyLeaderboard, fetchWeeklyLeaderboard, submitDailyScore, type LeaderboardRow } from '../online/leaderboard';
 import { dailyPoints, type PointsBreakdown } from '../online/points';
+import type { DailyProof } from '../online/verifyDaily';
 import { onlineEnabled } from '../online/supabase';
 import { dailyDraftResult, dailyDraftStreak } from './dailyDraftProgress';
 import './DailyLeaderboard.css';
@@ -14,7 +15,7 @@ import './DailyLeaderboard.css';
  * menu, so the result is sent the next time the table is shown, not only right after the draft.
  * Without the online build settings this renders nothing.
  */
-export function DailyLeaderboard({ mode, day, testing, version = 0 }: { mode: DailyDraftMode; day: string; testing?: boolean; /** Bump when the saved result changes (the season was played) to resend. */ version?: number }) {
+export function DailyLeaderboard({ mode, day, testing, version = 0, proof }: { mode: DailyDraftMode; day: string; testing?: boolean; /** Bump when the saved result changes (the season was played) to resend. */ version?: number; /** The draft itself, for the server check. */ proof?: DailyProof }) {
   const { account, refresh } = useAccount();
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -33,7 +34,7 @@ export function DailyLeaderboard({ mode, day, testing, version = 0 }: { mode: Da
       if (alive) setMine(points);
       if (account && result && points) {
         setStatus('sending');
-        const r = await submitDailyScore(account.id, mode, day, result, points);
+        const r = await submitDailyScore(account.id, mode, day, result, points, proof);
         if (alive) setStatus(r === 'error' ? 'error' : 'saved');
       }
       const board = tab === 'day' ? await fetchDailyLeaderboard(mode, day) : await fetchWeeklyLeaderboard(mode, day);
@@ -45,6 +46,8 @@ export function DailyLeaderboard({ mode, day, testing, version = 0 }: { mode: Da
     return () => {
       alive = false;
     };
+    // `proof` is rebuilt every render; the result it belongs to is keyed by mode, day and version.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, mode, day, testing, tab, version]);
 
   if (!onlineEnabled || testing) return null;
@@ -105,7 +108,7 @@ export function DailyLeaderboard({ mode, day, testing, version = 0 }: { mode: Da
           {rows.slice(0, 10).map((r, i) => (
             <li key={r.userId} className={i === myIndex ? 'is-me' : undefined}>
               <span className="dlb-rank">{i + 1}</span>
-              <span className="dlb-name">{r.nickname}</span>
+              <span className="dlb-name">{r.nickname}{r.verified ? <span className="dlb-ok" title="Checked by the server"> ✓</span> : null}</span>
               <span className="dlb-score">{r.points.toFixed(1)}{r.days !== undefined ? <small> · {r.days}d</small> : null}</span>
             </li>
           ))}

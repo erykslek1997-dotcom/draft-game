@@ -1,0 +1,28 @@
+name: Check the daily leaderboard
+
+# 2026-11-11: re-runs every new daily score through the engine (scripts/verifyDaily.ts) and drops
+# false ones. Needs two repository secrets: SUPABASE_URL (https://<project>.supabase.co) and
+# SUPABASE_SECRET_KEY (Supabase → Settings → API Keys → secret). Without them it does nothing.
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/verifyDaily.ts
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
