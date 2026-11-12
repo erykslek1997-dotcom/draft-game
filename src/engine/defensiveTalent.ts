@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000 };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1' };
 let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
 function dbpmPoolsFor(position: string) {
   if (!dbpmPools) {
@@ -749,7 +749,7 @@ function withDbpmSource(span: PlayerSpan, boxLadder: number): number {
   if (DBPM_SOURCE.share <= 0) return boxLadder;
   const real = realSpan(span);
   if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return boxLadder;
-  if (realDefenseExcessDetail(span)?.hasTrackingCoverage) return boxLadder;
+  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return boxLadder;
   const pool = dbpmPoolsFor(functionalPosition(span));
   if (!pool || pool.dbpm.length < 50) return boxLadder;
   const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
