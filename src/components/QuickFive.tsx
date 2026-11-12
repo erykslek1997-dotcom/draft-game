@@ -1137,26 +1137,20 @@ function QuickResults({
           </div>
         </div>
       </div>
-      {tourneyGate && (
-        <section>
-          <H3 note={`${TEAM_COUNT - ranked.filter((r) => r.team.gm || r.team.isHuman).length} CPU teams below`}>The room</H3>
-          <table className="stand">
-            <tbody>
-              {ranked.map((r, i) =>
-                r.team.gm || r.team.isHuman ? (
-                  <tr key={r.team.id} className={r.team.isHuman ? 'you' : undefined}>
-                    <td className="rk">{i + 1}</td>
-                    <td className="tmc">
-                      <b>{r.team.isHuman ? 'You' : r.team.gm}</b> <span className="mp-note">{r.team.name}</span>
-                    </td>
-                    <td className="sc">{r.score.composite}</td>
-                  </tr>
-                ) : null,
-              )}
-            </tbody>
-          </table>
-        </section>
-      )}
+      {/* A room's players and their fives as the draft's cards (playtest 2026-11-12: "spójniej"). */}
+      {tourneyGate &&
+        ranked.map((r, i) =>
+          r.team.gm && !r.team.isHuman ? (
+            <FiveSlots
+              key={r.team.id}
+              title={`${ordinal(i + 1)} · ${r.team.gm}`}
+              note={`${r.score.composite} · ${r.team.name}`}
+              lineup={r.lineup as Partial<Record<Position, PlayerSpan>>}
+              emptyLabel={() => ' '}
+              compact
+            />
+          ) : null,
+        )}
       <section>
         <H3 note={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)} caps`}>Your five</H3>
         <div className="five-row">
