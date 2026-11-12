@@ -1429,3 +1429,4 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 @media (max-width: 560px) { .m2-stats { grid-template-columns: repeat(3, 1fr); } }
 .yrun-lv { margin-top: 8px; }
 .yrun-lv b { font-size: 13px; }
+.m2-pick-row { display: flex; align-items: center; gap: 16px; }

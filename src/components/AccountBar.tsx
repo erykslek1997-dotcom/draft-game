@@ -53,7 +53,10 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
           <p>This is how you show up on the leaderboards. You can change it later.</p>
           <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" autoFocus />
           {errorText && <span className="m2-acct-err">{errorText}</span>}
-          <button type="submit" className="m2-acct-go">Save →</button>
+          <span className="m2-pick-row">
+            <button type="submit" className="m2-acct-go">Save →</button>
+            <button type="button" className="lk-inline" onClick={() => void signOut()}>Sign out</button>
+          </span>
         </form>
       </Dialog>
     );
