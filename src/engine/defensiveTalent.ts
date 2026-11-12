@@ -711,6 +711,54 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
   return regularSeasonParts(ratingSpan(rawSpan));
 }
 
+/**
+ * 2026-11-12 (the user, Reggie Miller 1993-95 at D-TAL 45 on a DBPM of +0.4 — "+0,4 u guarda to
+ * chyba raczej góra niż dół"; the defense judge, real DRtg against the league, 600 team-seasons:
+ * Reggie's Pacers defended better than the engine said 13 seasons of 13): a window with none of the
+ * real defensive sources (DARKO, RAPTOR, on/off, tracking — they start around 1997) reads its ladder
+ * from the box alone, and a low-event defender with a fine DBPM sinks (Haywoode Workman +0.9, the
+ * 70th percentile of point guards, read 28). Such a window's DBPM (BBRef, 1973-74 on, 2,000+
+ * minutes) joins as a source: its percentile among his position's windows, read on the same box
+ * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
+ * first: +0.4 is above the median at SG, below it at C.
+ */
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000 };
+let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
+function dbpmPoolsFor(position: string) {
+  if (!dbpmPools) {
+    const pools = new Map<string, { dbpm: number[]; ladder: number[] }>();
+    for (const raw of draftPool) {
+      const sp = ratingSpan(raw);
+      const real = realSpan(sp);
+      if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) continue;
+      const pos = functionalPosition(sp);
+      const pool = pools.get(pos) ?? { dbpm: [], ladder: [] };
+      pool.dbpm.push(real.dbpm);
+      pool.ladder.push(ladderPoints(pos, displayDefenseRaw(sp)));
+      pools.set(pos, pool);
+    }
+    for (const pool of pools.values()) {
+      pool.dbpm.sort((a, b) => a - b);
+      pool.ladder.sort((a, b) => a - b);
+    }
+    dbpmPools = pools;
+  }
+  return dbpmPools.get(position);
+}
+function withDbpmSource(span: PlayerSpan, boxLadder: number): number {
+  if (DBPM_SOURCE.share <= 0) return boxLadder;
+  const real = realSpan(span);
+  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return boxLadder;
+  if (realDefenseExcessDetail(span)?.hasTrackingCoverage) return boxLadder;
+  const pool = dbpmPoolsFor(functionalPosition(span));
+  if (!pool || pool.dbpm.length < 50) return boxLadder;
+  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
+  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
+  const pct = (below + same / 2) / pool.dbpm.length;
+  const implied = pool.ladder[Math.min(pool.ladder.length - 1, Math.max(0, Math.round(pct * (pool.ladder.length - 1))))];
+  return boxLadder + (implied - boxLadder) * DBPM_SOURCE.share;
+}
+
 function regularSeasonParts(span: PlayerSpan) {
   const accoladeRate = individualDefenseRate(span);
   const corroborationStrength = Math.min(
@@ -718,7 +766,8 @@ function regularSeasonParts(span: PlayerSpan) {
     accoladeRate + (darkoDefenseBonus(span) / DARKO_CORROBORATION_NORMALIZER) * DARKO_CORROBORATION_WEIGHT,
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
-  const ladder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
+  const boxLadder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
+  const ladder = withDbpmSource(span, boxLadder);
   const base = Math.min(ladder, corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
@@ -741,7 +790,7 @@ function regularSeasonParts(span: PlayerSpan) {
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
   const consensus = withoutConsensus < CONSENSUS_FLOOR_BASE ? consensusPositiveFloor(span) : 0;
   const final = Math.max(0, Math.min(100, Math.round(Math.max(withoutConsensus, consensus))));
-  return { accoladeRate, ladder, base, credited, floors: { ...floors, consensus }, final };
+  return { accoladeRate, boxLadder, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 
 /**
