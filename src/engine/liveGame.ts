@@ -1562,6 +1562,33 @@ function playPrepared(prepared: PreparedGame, seed: string, record: boolean, wea
     line.pf++;
     teamFouls[side][quarter]++;
     if (late) lateFouls[side][quarter]++;
+    // 2026-11-12 (the user, Mini: "Howard fouls out. His minutes go to the bench." — "w Mini nie ma
+    // ławki"; "brak wykluczeń za faule, ale za faul ponad limit technik"): with nobody free to come in
+    // he stays, and each foul from the sixth on gives the other side one technical free throw, taken
+    // by its best free-throw shooter on the floor; play goes on.
+    const onFloor = (schedule[side][Math.min(k, POSSESSIONS - 1)] ?? []).map((c) => c.player);
+    const nobodyFree = rosters[side].players.every((q) => q === p || onFloor.includes(q) || fouledOut[side].has(q));
+    if (line.pf >= FOUL_OUT && nobodyFree) {
+      const o = (1 - side) as GameSide;
+      const shooters = (schedule[o][Math.min(k, POSSESSIONS - 1)] ?? []).map((c) => c.player);
+      const shooter = [...(shooters.length ? shooters : rosters[o].players)].sort((a, b) => b.span.box.ftPct - a.span.box.ftPct)[0];
+      if (shooter) {
+        const ft = freeThrows(o, shooter, 1);
+        score[o] += ft.made;
+        quarters[o][quarter] += ft.made;
+        const last = moments[moments.length - 1];
+        if (record) {
+          moments.push({
+            left: last ? last.left : gameSeconds,
+            quarter,
+            score: [score[0], score[1]],
+            play: { side: o, text: `${shooter.label} ${ft.made}/1 on the technical (${p.label}'s foul ${line.pf}, no one to come in)`, joker: shooter.joker, quiet: false },
+            lines: snapshot(),
+          });
+        }
+      }
+      return;
+    }
     if (line.pf >= FOUL_OUT && !fouledOut[side].has(p)) {
       fouledOut[side].add(p);
       // His remaining minutes go to the bench: whoever is listed at his slot, else anyone free.

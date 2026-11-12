@@ -320,7 +320,16 @@ export default function LiveGameNight({
       for (const side of [0, 1] as const) {
         m.lines[side].forEach((l, k) => {
           const b = prevLines ? prevLines[side][k].pf : 0;
-          if (l.pf >= 6 && b < 6) rows.push({ key: `f${i}-${side}-${k}`, kind: 'q', text: `${maskName(game.labels[side][k])} fouls out. His minutes go to the bench.` });
+          // A five with no bench (Mini) keeps him on the floor: every foul from the sixth gives a technical.
+          if (l.pf >= 6 && b < 6)
+            rows.push({
+              key: `f${i}-${side}-${k}`,
+              kind: 'q',
+              text:
+                game.labels[side].length <= 5
+                  ? `${maskName(game.labels[side][k])} has six fouls. No one to come in: he stays, and each foul from now is a technical.`
+                  : `${maskName(game.labels[side][k])} fouls out. His minutes go to the bench.`,
+            });
           else if (l.pf === 5 && b < 5) rows.push({ key: `f${i}-${side}-${k}`, kind: 'q', text: `${maskName(game.labels[side][k])} picks up his fifth foul.` });
         });
       }
