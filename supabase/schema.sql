@@ -107,6 +107,6 @@ for each row execute function public.daily_scores_keep_pending();
 
 create or replace view public.daily_leaderboard
 with (security_invoker = true) as
-select s.mode, s.day, s.overall, s.place, s.field, s.points, s.draft_points, s.season_points, s.streak_points, s.created_at, s.user_id, s.verified, p.nickname
+select s.mode, s.day, s.overall, s.place, s.field, s.points, s.draft_points, s.season_points, s.streak_points, s.created_at, s.user_id, p.nickname, s.verified
 from public.daily_scores s
 join public.profiles p on p.id = s.user_id;
