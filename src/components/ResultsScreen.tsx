@@ -1058,7 +1058,15 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
           <Kv k="You" v={hero.breakdown.overall} />
         </section>
       )}
-      {daily && <DailyLeaderboard mode={daily.mode} day={daily.day} testing={daily.testing} version={dailySeason ? 1 : 0} />}
+      {daily && (
+        <DailyLeaderboard
+          mode={daily.mode}
+          day={daily.day}
+          testing={daily.testing}
+          version={dailySeason ? 1 : 0}
+          proof={humanRanked?.team.rotation ? { teamName: humanRanked.team.name, picks: history.map((h) => [h.teamId, h.playerId] as [string, string]), roster: humanRanked.team.roster.map((p) => p.id), rotation: humanRanked.team.rotation } : undefined}
+        />
+      )}
       <Actions links={{ ...links, menuPhoneOnly: true }}>
         <Btn onClick={() => setSeasonOpen(true)}>{played ? 'Open the season →' : 'Play the season →'}</Btn>
         <div className="btn2">

@@ -86,3 +86,27 @@ join public.profiles p on p.id = s.user_id
 group by s.mode, date_trunc('week', s.day), s.user_id, p.nickname;
 
 grant select on public.weekly_leaderboard to anon, authenticated;
+
+-- 2026-11-11: the server check (scripts/verifyDaily.ts, hourly in GitHub Actions). The game sends
+-- the draft's proof; only the checker (secret key) may set `verified`.
+alter table public.daily_scores add column if not exists proof jsonb;
+alter table public.daily_scores add column if not exists verified text not null default 'pending';
+
+create or replace function public.daily_scores_keep_pending() returns trigger
+language plpgsql as $$
+begin
+  if coalesce(current_setting('request.jwt.claims', true)::json ->> 'role', '') <> 'service_role' then
+    new.verified := 'pending';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists daily_scores_keep_pending on public.daily_scores;
+create trigger daily_scores_keep_pending before insert or update on public.daily_scores
+for each row execute function public.daily_scores_keep_pending();
+
+create or replace view public.daily_leaderboard
+with (security_invoker = true) as
+select s.mode, s.day, s.overall, s.place, s.field, s.points, s.draft_points, s.season_points, s.streak_points, s.created_at, s.user_id, s.verified, p.nickname
+from public.daily_scores s
+join public.profiles p on p.id = s.user_id;
