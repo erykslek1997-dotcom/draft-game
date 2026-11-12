@@ -1478,3 +1478,21 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .mp-chat form button { font: 700 13px var(--cond); text-transform: uppercase; color: var(--bg); background: var(--gold); border: none; border-radius: 3px; padding: 0 12px; cursor: pointer; }
 .mp-chat form button:disabled { opacity: 0.4; cursor: default; }
 @media (max-width: 640px) { .mp-chat { right: 0; left: 0; bottom: 0; width: 100%; height: 55vh; border-radius: 8px 8px 0 0; } }
+
+/* 2026-11-12: the Duel's two fives, side by side. */
+.duel-cmp { width: 100%; max-width: 760px; border-collapse: collapse; }
+.duel-cmp td { padding: 10px 6px; border-bottom: 1px solid var(--rule); font: 700 18px var(--cond); }
+.duel-cmp td.y { color: var(--ink); }
+.duel-cmp td.r { text-align: right; color: var(--ink2); }
+.duel-cmp td.c { color: var(--gold); font-size: 15px; width: 3.5em; }
+.duel-cmp td.c:nth-child(4) { text-align: right; }
+.duel-cmp td.pos { text-align: center; color: var(--ink3); font-size: 13px; letter-spacing: 0.1em; width: 3em; }
+.duel-go { display: grid; gap: 8px; margin-top: 12px; }
+.mp-dock { display: none; }
+@media (max-width: 640px) {
+  .mp-chat-fab { display: none; }
+  .mp-dock { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: 56px; background: var(--bg); border-top: 1px solid var(--rule2); }
+  .nt .mp-dock button, .mp-dock button { flex: 1; background: none; border: none; color: var(--ink2); font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .mp-dock b { background: #e0645a; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; }
+  body:has(.mp-dock) { padding-bottom: 56px; }
+}

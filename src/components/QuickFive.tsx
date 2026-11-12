@@ -109,6 +109,8 @@ export interface MiniMp {
   peekLine?: string;
   /** Sends what you browse while on the clock. */
   sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
+  /** Duel: the Ready handshake before the game (both ready, or the rival gone). */
+  duelReady?: { mine: boolean; theirs: boolean; theirsAway: boolean; set: () => void };
   /** The tournament, round by round together. */
   tourney?: { gate: number; waiting?: string; onShown: (rounds: number) => void };
   /** Server time the first pick opens, ms: the lottery plays until then. */
@@ -283,6 +285,24 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         links={links}
       />
     );
+  } else if (phase === 'draft' && mp && TEAM_COUNT === 2) {
+    screen = (
+      <DuelBoard
+        state={state}
+        canPick={canPick}
+        onPick={(id) => {
+          buzz();
+          mp.send(state.history.length + 1, id);
+        }}
+        clock={state.complete ? 0 : Math.max(0, Math.ceil((mp.lastPickAt + mp.clockS * 1000 - mp.now()) / 1000))}
+        rival={[...mp.names.entries()].find(([i]) => i !== mp.mySlot)?.[1] ?? 'Rival'}
+        peekLine={mp.peekLine}
+        sendPeek={mp.sendPeek}
+        links={links}
+      />
+    );
+  } else if (phase !== 'draft' && mp && TEAM_COUNT === 2) {
+    screen = <DuelResults state={state} codeOf={codeOf} rival={[...mp.names.entries()].find(([i]) => i !== mp.mySlot)?.[1] ?? 'Rival'} ready={mp.duelReady} links={links} onExit={onExit} />;
   } else if (phase === 'draft') {
     screen = (
       <QuickDraftBoard
@@ -1049,7 +1069,7 @@ function QuickResults({
               </Btn>
             )}
           </>
-        ) : (
+        ) : tourneyGate ? null : (
           <>
             <Btn kind="line" onClick={onNewDraft}>New draft</Btn>
             <div className="btn2">
@@ -1065,7 +1085,7 @@ function QuickResults({
             </Btn>
           </>
         )}
-        {onNextStep && (
+        {onNextStep && !tourneyGate && (
           <Btn kind="line" onClick={onNextStep}>
             Next: All-Time Draft →
           </Btn>
@@ -1117,6 +1137,26 @@ function QuickResults({
           </div>
         </div>
       </div>
+      {tourneyGate && (
+        <section>
+          <H3 note={`${TEAM_COUNT - ranked.filter((r) => r.team.gm || r.team.isHuman).length} CPU teams below`}>The room</H3>
+          <table className="stand">
+            <tbody>
+              {ranked.map((r, i) =>
+                r.team.gm || r.team.isHuman ? (
+                  <tr key={r.team.id} className={r.team.isHuman ? 'you' : undefined}>
+                    <td className="rk">{i + 1}</td>
+                    <td className="tmc">
+                      <b>{r.team.isHuman ? 'You' : r.team.gm}</b> <span className="mp-note">{r.team.name}</span>
+                    </td>
+                    <td className="sc">{r.score.composite}</td>
+                  </tr>
+                ) : null,
+              )}
+            </tbody>
+          </table>
+        </section>
+      )}
       <section>
         <H3 note={`${fmtCaps(capsUsed)} / ${fmtCaps(state.capLimit)} caps`}>Your five</H3>
         <div className="five-row">
@@ -1131,10 +1171,12 @@ function QuickResults({
           <H3 note="yours · the best team">{humanRank === 1 ? 'Why you won' : 'Why you finished here'}</H3>
           {profile(human, true)}
         </section>
-        <section className="voices">
-          <H3>The room</H3>
-          <NightVoices voices={voices} cast={DESK_CAST} fold={5} />
-        </section>
+        {!tourneyGate && (
+          <section className="voices">
+            <H3>The room</H3>
+            <NightVoices voices={voices} cast={DESK_CAST} fold={5} />
+          </section>
+        )}
       </div>
       <section>
         <H3 note="tap a team to see its five">Final standings</H3>
@@ -1180,9 +1222,11 @@ function QuickResults({
           <Btn className="phone-only" onClick={() => setTourney(true)}>
             {TEAM_COUNT === 2 ? '▶ Play the game' : '▶ The tournament'}
           </Btn>
-          <Btn kind="line" className="phone-only" onClick={onNewDraft}>
-            New draft
-          </Btn>
+          {!tourneyGate && (
+            <Btn kind="line" className="phone-only" onClick={onNewDraft}>
+              New draft
+            </Btn>
+          )}
         </>
       )}
       {daily && <EmptyNote>Same players, same order for everyone today.</EmptyNote>}
@@ -1237,4 +1281,269 @@ function teamIdxOf(state: QuickDraftState): number {
 
 function fmtClock(sec: number): string {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+/**
+ * The Duel's draft (2026-11-12, mockups approved by the user): your five against theirs at the top,
+ * the clock, a plain list (no tiers, no Big Board, no caps filter) and the ten picks.
+ */
+function DuelBoard({
+  state,
+  canPick,
+  onPick,
+  clock,
+  rival,
+  peekLine,
+  sendPeek,
+  links,
+}: {
+  state: QuickDraftState;
+  canPick: boolean;
+  onPick: (id: string) => void;
+  clock: number;
+  rival: string;
+  peekLine?: string;
+  sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
+  links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
+}) {
+  const n = state.teams.length;
+  const total = n * QUICK_ROUNDS;
+  const me = state.teams.find((t) => t.isHuman)!;
+  const them = state.teams.find((t) => !t.isHuman)!;
+  const budget = useMemo(() => quickPickBudget(state), [state]);
+  const [on, setOn] = useState<Position | 'ALL'>('ALL');
+  const [search, setSearch] = useState('');
+  useEffect(() => setOn('ALL'), [me.roster.length]);
+  useEffect(() => {
+    if (!sendPeek || !canPick) return;
+    const t = window.setTimeout(() => sendPeek({ tab: on, upTo: null }), 250);
+    return () => window.clearTimeout(t);
+  }, [sendPeek, canPick, on]);
+  useStepScroll(canPick && !state.complete ? `duel-${state.history.length}` : null);
+
+  const available = useMemo(() => allEnrichedOnce.filter((e) => !state.draftedIds.has(e.span.id) && (!state.pool || state.pool.has(e.span.id))), [state.draftedIds, state.pool]);
+  const counts = useMemo(() => {
+    const c = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 } as Record<Position, number>;
+    for (const e of available) c[e.span.primaryPosition] += 1;
+    return c;
+  }, [available]);
+  const meLineup = useMemo(() => bestPrimaryAssignment(me.roster).assignment as Partial<Record<Position, PlayerSpan>>, [me.roster]);
+  const themLineup = useMemo(() => bestPrimaryAssignment(them.roster).assignment as Partial<Record<Position, PlayerSpan>>, [them.roster]);
+  const have = new Set(SLOTS.filter((s) => meLineup[s]));
+  const usedOf = (t: Team) => totalFga(t.roster.map((p) => p.fga));
+  const q = search.toLowerCase();
+  const list = available
+    .filter((e) => on === 'ALL' || e.span.primaryPosition === on)
+    .filter((e) => !q || e.span.playerName.toLowerCase().includes(q))
+    .sort((a, b) => b.tal - a.tal);
+  const firstLegal = canPick ? list.findIndex((e) => isQuickPickLegal(state, e.span.id)) : -1;
+  const rows: NightRow[] = list.map((e, i) => ({
+    key: e.span.id,
+    span: e.span,
+    tier: '',
+    legal: canPick && isQuickPickLegal(state, e.span.id),
+    hot: i === firstLegal,
+    title: !canPick ? `${rival} on the clock` : isQuickPickLegal(state, e.span.id) ? `Draft ${maskName(e.span.playerName)}` : `Too expensive: this pick can cost up to ${budget.maxThisPick}.`,
+  }));
+  const overall = Math.min(state.history.length + 1, total);
+  const byPick = new Map(state.history.map((h) => [h.pickNumber, h] as const));
+  const spanOf = (id: string) => state.teams.flatMap((t) => t.roster).find((p) => p.id === id);
+  const log = Array.from({ length: total }, (_, k) => {
+    const pickNo = k + 1;
+    const round = Math.floor(k / n);
+    const idx = round % 2 === 0 ? k % n : n - 1 - (k % n);
+    const team = state.teams[idx];
+    const h = byPick.get(pickNo);
+    return { pickNo, team, span: h ? spanOf(h.playerId) : undefined };
+  });
+  const picksLog = (
+    <section id="mp-picks">
+      <H3 note={`${state.history.length} of ${total}`}>The draft</H3>
+      <table className="log">
+        <tbody>
+          {log.map((r) => (
+            <tr key={r.pickNo} className={`${r.team.isHuman ? 'y' : 'a'}${r.pickNo === overall && !state.complete ? ' latest' : ''}`}>
+              <td className="n">{r.pickNo}</td>
+              <td className="w">{r.team.isHuman ? 'You' : rival}</td>
+              <td className="p">{r.span ? `${maskName(r.span.playerName)}, ${r.span.primaryPosition}` : r.pickNo === overall && !state.complete ? 'on the clock…' : ''}</td>
+              <td className="c">{r.span ? fmtCaps(r.span.fga) : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+  const clockText = fmtClock(clock);
+  return (
+    <NightGame
+      aside={
+        <>
+          <Mast title="Duel" sub={`Pick ${overall} of ${total} · cap ${fmtCaps(state.capLimit)}`} />
+          <Tally you={fmtCaps(state.capLimit - usedOf(me))} mid={clockText} ai={`${state.history.length}/${total}`} youK="Caps left" midK={canPick ? 'Your clock' : `${rival}’s clock`} aiK="Picks" />
+          {picksLog}
+          <Actions links={links} />
+        </>
+      }
+    >
+      <FiveSlots title="You" note={`${fmtCaps(usedOf(me))} / ${fmtCaps(state.capLimit)} caps`} lineup={meLineup} sel={on === 'ALL' ? null : on} onSlot={(p) => setOn(p)} emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)} compact />
+      <FiveSlots title={rival} note={`${fmtCaps(usedOf(them))} / ${fmtCaps(state.capLimit)} caps`} lineup={themLineup} emptyLabel={() => ' '} compact />
+      {canPick ? (
+        <Prompt eb={`On the clock · Pick ${overall} · ${clockText}`} title="Your pick" now className="ph-keep">
+          Up to <b>{fmtCaps(budget.maxThisPick)} caps</b> on this one and still fill the five.
+        </Prompt>
+      ) : state.complete ? (
+        <Prompt eb="Draft over" title="The fives are in" />
+      ) : (
+        <Prompt eb={`On the clock · Pick ${overall} · ${clockText}`} title={`${rival} is picking`}>
+          {peekLine ? <span className="mp-peek">{peekLine}</span> : 'The list stays open while they think.'}
+        </Prompt>
+      )}
+      <section id="mp-list">
+        <PosTabs counts={counts} have={have} on={on} onPick={setOn} search={search} onSearch={setSearch} />
+        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} />
+      </section>
+      <div className="phone-only">{picksLog}</div>
+    </NightGame>
+  );
+}
+
+/**
+ * The Duel after the draft: the two fives side by side, the engine's lean, and Ready — the game
+ * starts on both screens once both are ready (or at once if the rival has left).
+ */
+function DuelResults({
+  state,
+  codeOf,
+  rival,
+  ready,
+  links,
+  onExit,
+}: {
+  state: QuickDraftState;
+  codeOf: (t: Team) => string;
+  rival: string;
+  ready?: { mine: boolean; theirs: boolean; theirsAway: boolean; set: () => void };
+  links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
+  onExit: () => void;
+}) {
+  const teams = useMemo(
+    () =>
+      state.teams
+        .map((team) => {
+          const finalized = finalizeQuickRotation(team);
+          const lineup: Lineup = {};
+          for (const [slot, assignments] of Object.entries(finalized.rotation!.slots) as [Position, { playerId: string }[]][]) {
+            const playerId = assignments[0]?.playerId;
+            if (playerId) lineup[slot] = finalized.roster.find((p) => p.id === playerId);
+          }
+          return { team: finalized, score: scoreLineup(lineup), lineup };
+        })
+        .sort((a, b) => b.score.composite - a.score.composite),
+    [state.teams],
+  );
+  const seeded = teams.map((t) => t.team);
+  const g = useMemo(() => duelGame(seeded, String(state.seed)), [seeded, state.seed]);
+  const me = teams.find((t) => t.team.isHuman)!;
+  const them = teams.find((t) => !t.team.isHuman)!;
+  const favoured = g.margin >= 0 ? seeded[0] : seeded[1];
+  const lean = Math.abs(g.margin).toFixed(1);
+  const go = Boolean(ready ? ready.mine && (ready.theirs || ready.theirsAway) : false);
+  const [playing, setPlaying] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  useEffect(() => {
+    if (!go || playing) return;
+    setCountdown(3);
+    const t = window.setInterval(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [go, playing]);
+  useEffect(() => {
+    if (countdown !== null && countdown <= 0) {
+      setCountdown(null);
+      setPlaying(true);
+    }
+  }, [countdown]);
+
+  if (playing) {
+    const game = playMiniGame(seeded, g);
+    const [a, b] = seeded;
+    const nick = (t: Team) => (t.isHuman ? 'You' : rival);
+    if (game)
+      return (
+        <LiveGameNight
+          game={game}
+          variant="full"
+          sides={{ names: [a.name, b.name], short: [nick(a), nick(b)], codes: [codeOf(a), codeOf(b)], you: b.isHuman ? 1 : 0 }}
+          mast={{ title: 'Duel', sub: `Final · ${game.final[0] > game.final[1] ? nick(a) : nick(b)} win`, liveSub: 'Live · one game decides it', preSub: 'Tip-off' }}
+          autoStart
+          pregame={{ eb: 'Duel · tonight', now: true, title: `You vs ${rival}`, line: 'Your five against theirs. One game.' }}
+          links={{ onMenu: links.onMenu }}
+          done={
+            <Btn kind="line" onClick={onExit}>
+              Main menu
+            </Btn>
+          }
+        />
+      );
+  }
+
+  const status = !ready
+    ? null
+    : countdown !== null
+      ? `Tip-off in ${countdown}…`
+      : ready.mine
+        ? ready.theirsAway
+          ? `${rival} left: the game starts now.`
+          : `You’re ready · ${rival}: waiting…`
+        : ready.theirs
+          ? `${rival} is ready.`
+          : `${rival}: not ready yet.`;
+  const readyBtn = ready && (
+    <Btn onClick={ready.set} disabled={ready.mine}>
+      {ready.mine ? 'Ready ✓' : ready.theirsAway ? '▶ Play the game' : 'Ready'}
+    </Btn>
+  );
+  return (
+    <NightGame
+      aside={
+        <>
+          <Mast title="Duel" sub={`The fives · cap ${fmtCaps(state.capLimit)}`} />
+          <Tally you={me.score.composite} mid="vs" ai={them.score.composite} youK="You" midK=" " aiK={rival} plain />
+          <Actions links={{ ...links, menuPhoneOnly: true }}>
+            {readyBtn}
+            <Btn kind="line" onClick={onExit}>
+              Main menu
+            </Btn>
+          </Actions>
+        </>
+      }
+    >
+      <Prompt eb="Duel · the fives" title={`Engine favours ${favoured.isHuman ? 'you' : rival} by ${lean}`}>
+        {status ?? 'One game decides it.'}
+      </Prompt>
+      <section>
+        <H3 note={`${fmtCaps(totalFga(me.team.roster.map((p) => p.fga)))} vs ${fmtCaps(totalFga(them.team.roster.map((p) => p.fga)))} caps`}>You · {rival}</H3>
+        <table className="duel-cmp">
+          <tbody>
+            {STARTER_SLOTS.map((slot) => {
+              const x = me.lineup[slot];
+              const y = them.lineup[slot];
+              return (
+                <tr key={slot}>
+                  <td className="y">{x ? maskName(x.playerName) : '—'}</td>
+                  <td className="c">{x ? fmtCaps(x.fga) : ''}</td>
+                  <td className="pos">{slot}</td>
+                  <td className="c">{y ? fmtCaps(y.fga) : ''}</td>
+                  <td className="r">{y ? maskName(y.playerName) : '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+      <div className="phone-only duel-go">
+        {readyBtn}
+        {status && <p className="mp-note">{status}</p>}
+      </div>
+    </NightGame>
+  );
 }
