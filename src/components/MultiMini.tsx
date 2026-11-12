@@ -24,6 +24,8 @@ import { TEAM_COUNT } from '../engine/positions';
 import { QUICK_ROUNDS } from '../engine/quickDraft';
 
 const NICK_KEY = 'draftverse.mp.nick';
+/** The draft lottery everyone watches after the start; the first pick opens after it. */
+const LOTTERY_MS = 20_000;
 
 function savedNick(): string {
   try {
@@ -122,27 +124,31 @@ export default function MultiMini({ initialCode, onExit }: { initialCode?: strin
           className="mp-form"
           onSubmit={(e) => {
             e.preventDefault();
-            void enter(code.trim() ? code.trim().toUpperCase() : null);
+            // Enter only ever joins: making a room takes its own click (playtest 2026-11-12, rooms made by accident).
+            if (code.trim().length === 5) void enter(code.trim().toUpperCase());
           }}
         >
           <label>
             <span>Your name in the room</span>
             <input value={nick} maxLength={24} onChange={(e) => setNick(e.target.value)} placeholder="Name" />
           </label>
-          <div className="mp-row">
-            <Btn disabled={busy || cleanNick.length < 2} onClick={() => void enter(null)}>
-              {busy && !code ? 'Making a room…' : 'Make a room'}
-            </Btn>
-          </div>
           <label>
-            <span>Or join with a code</span>
+            <span>{initialCode ? 'Room from your link' : 'Join a friend’s room'}</span>
             <span className="mp-row">
-              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABCDE" className="mp-code" />
-              <Btn kind="line" disabled={busy || cleanNick.length < 2 || code.trim().length !== 5} onClick={() => void enter(code.trim().toUpperCase())}>
-                {busy && code ? 'Joining…' : 'Join'}
+              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE" className="mp-code" readOnly={Boolean(initialCode)} />
+              <Btn disabled={busy || cleanNick.length < 2 || code.trim().length !== 5} onClick={() => void enter(code.trim().toUpperCase())}>
+                {busy ? 'Joining…' : 'Join'}
               </Btn>
             </span>
           </label>
+          {!initialCode && (
+            <div className="mp-make">
+              <span>No code? Start your own room and send the link.</span>
+              <Btn kind="line" disabled={busy || cleanNick.length < 2} onClick={() => void enter(null)}>
+                {busy && !code ? 'Making a room…' : 'Make a new room'}
+              </Btn>
+            </div>
+          )}
           {cleanNick.length < 2 && <p className="mp-note">Pick a name first (2 letters or more).</p>}
           {error && <p className="mp-err">{MP_ERROR_TEXT[error]}</p>}
         </form>
@@ -174,6 +180,7 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
     // The leader sends the CPU's picks: the first player still here, by when they joined.
     const leader = members.find((m) => m.user_id === me || here(m.last_seen))?.user_id === me;
     const last = picks[picks.length - 1];
+    const startsAt = Date.parse(room.started_at ?? new Date().toISOString()) + LOTTERY_MS;
     return {
       roomId,
       seed: room.seed,
@@ -181,7 +188,8 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
       names,
       here: herePlayers,
       picks: picks.map((p) => p.player_id),
-      lastPickAt: Date.parse(last?.made_at ?? room.started_at ?? new Date().toISOString()),
+      lastPickAt: last ? Date.parse(last.made_at) : startsAt,
+      startsAt,
       clockS: room.clock_s,
       now: live.now,
       leader,

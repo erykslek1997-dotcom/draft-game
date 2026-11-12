@@ -101,6 +101,8 @@ export interface MiniMp {
   lastPickAt: number;
   clockS: number;
   now: () => number;
+  /** Server time the first pick opens, ms: the lottery plays until then. */
+  startsAt: number;
   /** This screen sends the CPU's picks first; the others step in a few seconds later. */
   leader: boolean;
   send: (pickNo: number, playerId: string) => void;
@@ -141,8 +143,12 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
   const [state, setState] = useState<QuickDraftState>(() =>
     mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
   );
-  // A room's draft starts at once: the order was drawn when the host started it.
-  const [phase, setPhase] = useState<Phase>(mp ? 'draft' : daily ? 'day' : 'lottery');
+  // A room's draft opens on the lottery (the order the host's start drew), then the first pick.
+  const [phase, setPhase] = useState<Phase>(mp ? (mp.picks.length === 0 && mp.now() < mp.startsAt ? 'lottery' : 'draft') : daily ? 'day' : 'lottery');
+  const mpLotteryOver = mp ? mp.now() >= mp.startsAt || mp.picks.length > 0 : false;
+  useEffect(() => {
+    if (mpLotteryOver && phase === 'lottery') setPhase('draft');
+  }, [mpLotteryOver, phase]);
   const mpPicks = mp?.picks;
   useEffect(() => {
     if (mpPicks && mpPicks.length > state.history.length) setState((s) => replayPicks(s, mpPicks));
@@ -197,6 +203,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     if (!mpTiming || !mpSend || phase !== 'draft' || state.complete) return;
     const pickNo = state.history.length + 1;
     let wait: number;
+    const opensIn = mp ? mp.startsAt - mpTiming.now : 0;
     if (mpTiming.mine) wait = mpTiming.ends - mpTiming.now;
     else if (!mpTiming.owned || !mpTiming.here) wait = cpuPickDelay(state.history.length, TEAM_COUNT) + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
     else wait = mpTiming.ends - mpTiming.now + 1000 + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
@@ -204,7 +211,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
       const next = resolveQuickAutoPick(state);
       const pick = next?.history[next.history.length - 1];
       if (pick) mpSend(pickNo, pick.playerId);
-    }, Math.max(0, wait));
+    }, Math.max(0, wait, pickNo === 1 ? opensIn : 0));
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mpKey, phase, state, mpSend]);
@@ -258,7 +265,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
           ['Each round', '1 starter'],
           ['Order', 'Snake'],
           ['Players', 'Peak years'],
-          ['Rivals', `${TEAM_COUNT - 1} CPU GMs`],
+          ['Rivals', mp ? `${mp.names.size - 1} friends · ${TEAM_COUNT - mp.names.size} CPU` : `${TEAM_COUNT - 1} CPU GMs`],
           ['Graded', `After pick ${TEAM_COUNT * QUICK_ROUNDS}`],
         ]}
         onDone={() => setPhase('draft')}
