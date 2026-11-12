@@ -1430,3 +1430,25 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .yrun-lv { margin-top: 8px; }
 .yrun-lv b { font-size: 13px; }
 .m2-pick-row { display: flex; align-items: center; gap: 16px; }
+
+/* 2026-11-12: free names offered when yours is taken. */
+.m2-acct-ideas { display: flex; flex-wrap: wrap; gap: 8px; }
+.nt .m2-acct-ideas button, .m2-acct-ideas button { font: 700 13px var(--cond); color: var(--ink); background: none; border: 1px dashed var(--rule2); border-radius: 999px; padding: 4px 12px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+
+/* 2026-11-12: Mini Draft with friends — the entry form and the lobby. */
+.mp-form { display: grid; gap: 16px; max-width: 520px; margin-top: 8px; }
+.mp-form label { display: grid; gap: 6px; }
+.mp-form label > span:first-child { font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); }
+.mp-form input { font: 700 20px var(--cond); padding: 8px 12px; border: 1px solid var(--rule2); border-radius: 3px; background: none; color: var(--ink); min-width: 0; }
+.mp-form input.mp-code { width: 7.5em; text-transform: uppercase; letter-spacing: 0.2em; }
+.mp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mp-note { margin: 0; color: var(--ink3); font-size: 14px; }
+.mp-err { margin: 0; color: #e0645a; font-size: 14px; }
+.mp-link { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 20px; }
+.mp-link code { font: 13px ui-monospace, monospace; color: var(--ink2); padding: 6px 10px; border: 1px solid var(--rule); border-radius: 3px; overflow-wrap: anywhere; max-width: 100%; }
+.mp-players { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 2px; }
+.mp-players li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.mp-players b { font: 700 18px var(--cond); color: var(--ink); }
+.mp-players span { color: var(--ink3); font-size: 13px; }
+.mp-players li.away { opacity: 0.45; }
+.mp-busy { position: sticky; top: 0; z-index: 5; padding: 6px 16px; font-size: 13px; text-align: center; background: var(--gold); color: var(--bg); }

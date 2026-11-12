@@ -23,6 +23,8 @@ import { DAILY_REPLAY_FOR_TESTING, localDayKey } from './components/dailyProgres
 import type { DailyDraftDay, DailyDraftMode } from './dailyDraftDay';
 import { getLoadStatus, loadGameModule, prefetchGameData, subscribeLoadStatus, type LoadStatus } from './gameLoader';
 import { aiWorkerClient } from './components/aiWorkerClient';
+import { onlineEnabled } from './online/supabase';
+import { roomFromUrl } from './online/multiplayer';
 
 /**
  * 2026-09-11, `player-skeleton` branch: the real Tester Mode / Player Mode split (mode picker,
@@ -60,6 +62,7 @@ function loadGameShell() {
 const GameShell = lazy(loadGameShell);
 const BestFive = lazy(() => loadGameModule(() => import('./components/BestFive')));
 const QuickFive = lazy(() => loadGameModule(() => import('./components/QuickFive')));
+const MultiMini = lazy(() => loadGameModule(() => import('./components/MultiMini')));
 const LiveTestBench = lazy(() => loadGameModule(() => import('./components/LiveTestBench')));
 
 function useLoadStatus(): LoadStatus {
@@ -68,7 +71,7 @@ function useLoadStatus(): LoadStatus {
   return loadStatus;
 }
 
-type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest';
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest' | 'multi';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
  * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
@@ -174,8 +177,10 @@ function App() {
   // 2026-09-27: a Mini Draft / Roulette "Challenge a friend" link opens straight on that board.
   const [modeChallenge] = useState<ModeChallenge | null>(() => takeModeChallengeFromUrl());
   const [dailyOffset, setDailyOffset] = useState(0);
+  // 2026-11-12: a room's link (?room=CODE), or a refresh during a room's draft, opens the room.
+  const [roomCode] = useState(() => (onlineEnabled ? roomFromUrl() : null));
   const [view, setView] = useState<View>(() =>
-    modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
+    roomCode ? 'multi' : modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
   );
   // Today's Mini daily when it was opened from its strip; null for a regular Mini Draft.
   const [miniDaily, setMiniDaily] = useState<DailyDraftDay | null>(null);
@@ -296,6 +301,7 @@ function App() {
           dataStatus={<IntroDataStatus />}
           stepDone={(m) => stepDone(m)}
           onLiveTest={LIVE_TEST_BENCH_FOR_TESTING ? () => setView('livetest') : undefined}
+          onFriends={onlineEnabled ? () => setView('multi') : undefined}
           confirm={
             confirmNewDraft && savedDraft ? (
               <NightConfirm
@@ -389,6 +395,12 @@ function App() {
       {view === 'livetest' && (
         <Suspense fallback={<LoadingPanel />}>
           <LiveTestBench onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'multi' && (
+        <Suspense fallback={<LoadingPanel />}>
+          <MultiMini initialCode={roomCode ?? undefined} onExit={() => setView('intro')} />
         </Suspense>
       )}
 

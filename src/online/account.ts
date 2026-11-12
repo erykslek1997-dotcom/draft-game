@@ -32,6 +32,8 @@ function defaultNickname(session: Session): string {
 /** Reads the player's profile; on first sign-in there is none yet and the player picks a name. */
 async function loadAccount(session: Session): Promise<Account | null> {
   if (!supabase) return null;
+  // A guest in a multiplayer room (anonymous sign-in) has no account: no name, no boards.
+  if (session.user.is_anonymous) return null;
   const id = session.user.id;
   // 2026-11-12: a session can outlive its account (deleted in the dashboard): ask the server, and if
   // the user is gone, sign out instead of asking a ghost for a name (a softlock in the playtest).
@@ -55,7 +57,20 @@ export async function setNickname(id: string, nickname: string): Promise<Nicknam
   const { data: same } = await supabase.from('profiles').select('id').ilike('nickname', clean.replace(/[\\%_]/g, '\\$&')).neq('id', id).limit(1);
   if (same && same.length) return 'taken';
   const { error } = await supabase.from('profiles').upsert({ id, nickname: clean });
+  // 23505: the database's unique index caught a name taken a moment ago.
+  if (error?.code === '23505') return 'taken';
   return error ? 'error' : 'ok';
+}
+
+/** Three free names close to a taken one ("Ann" → "Ann2", "Ann_7", "TheAnn"), for one tap. */
+export async function suggestNicknames(taken: string): Promise<string[]> {
+  if (!supabase) return [];
+  const base = taken.trim().replace(/\s+/g, ' ').slice(0, 20);
+  const n = () => 2 + Math.floor(Math.random() * 98);
+  const candidates = [...new Set([`${base}${n()}`, `${base}_${n()}`, `The${base.replace(/ /g, '')}`.slice(0, 24), `${base}${n()}`, `${base}.${n()}`, `${base}${n()}${n()}`])];
+  const { data } = await supabase.from('profiles').select('nickname').in('nickname', candidates);
+  const used = new Set((data ?? []).map((r) => String(r.nickname).toLowerCase()));
+  return candidates.filter((c) => c.length >= 2 && !used.has(c.toLowerCase())).slice(0, 3);
 }
 
 /** The signed-in player, kept in sync with Supabase's session (undefined while loading). */
