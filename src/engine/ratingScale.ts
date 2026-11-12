@@ -9,6 +9,7 @@ import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { astPctForSpan } from './ballHandling';
 import { modernBox } from './modernBox';
 import { estimatedMinutesPerGame } from './minutesPerGame';
+import { naturalPosition } from './naturalPosition';
 
 /**
  * 2026-11-04, the user ("lepszy niż 89% i tylko 73, no to dziwnie wygląda"; "jedna skala atak +
@@ -168,7 +169,7 @@ export const defenseRatingGrade = (span: PlayerSpan): Grade => ratingGrade(defen
 
 /**
  * 2026-11-12 (the user: "atak, obrona i shooting trochę mało, biorąc pod uwagę, ile tu mamy"): two
- * more scouting grades on the card's scale — a percentile among the rotation windows at his position
+ * more scouting grades on the card's scale — a percentile among the rotation windows at his card's position
  * (TAL 55+), the median at 60, the same upper anchors and letters as Offense and Defense.
  *  - Playmaking: his AST% (BBRef; before 1973-74 read from assists a 36 minutes) — the number the
  *    engine's ball-handling reads.
@@ -176,6 +177,11 @@ export const defenseRatingGrade = (span: PlayerSpan): Grade => ratingGrade(defen
  *    taken out) — the glass the live game plays.
  */
 type Metric = 'playmaking' | 'rebounding';
+/** 2026-11-12 (the user: "LeBron z D- to tak se" — Miami's small ball lists his 2012-14 at PF): the
+ * position the card shows (`naturalPosition`, its first half) sets the peers, so the letter reads
+ * against the position printed beside it (LeBron 2012-14 among SFs: B-, not D- among PFs). 576 of
+ * 10,962 windows differ from their window's own position. */
+const cardPosition = (span: PlayerSpan): string => naturalPosition(span.playerName).split('/')[0];
 const metricValue = (span: PlayerSpan, metric: Metric): number => {
   if (metric === 'playmaking') return astPctForSpan(span);
   const m = modernBox(span);
@@ -193,13 +199,13 @@ function metricRating(span: PlayerSpan, metric: Metric): number {
     for (const p of draftPool) {
       if (effectiveTalent(p) < ROTATION_TAL) continue;
       for (const m of ['playmaking', 'rebounding'] as const) {
-        const k = `${p.primaryPosition}|${m}`;
+        const k = `${cardPosition(p)}|${m}`;
         metricPools.set(k, [...(metricPools.get(k) ?? []), metricValue(p, m)]);
       }
     }
     for (const list of metricPools.values()) list.sort((a, b) => a - b);
   }
-  const value = Math.round(ratingAt(percentileOf(metricPools.get(`${span.primaryPosition}|${metric}`) ?? [], metricValue(span, metric)), METRIC_ANCHORS));
+  const value = Math.round(ratingAt(percentileOf(metricPools.get(`${cardPosition(span)}|${metric}`) ?? [], metricValue(span, metric)), METRIC_ANCHORS));
   metricCache.set(key, value);
   return value;
 }
