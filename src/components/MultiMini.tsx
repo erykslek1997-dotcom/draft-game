@@ -23,7 +23,7 @@ import {
   type ChatLine,
   type MpError,
 } from '../online/multiplayer';
-import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt } from '../night/ui';
+import { Actions, Btn, H3, Kv, Mast, NightGame, PhoneDock, Prompt, RoomDockContext } from '../night/ui';
 import { copyLink } from './shareSave';
 import { TEAM_COUNT } from '../engine/positions';
 import { QUICK_ROUNDS } from '../engine/quickDraft';
@@ -241,6 +241,14 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
   const here = (lastSeen: string) => live.now() - Date.parse(lastSeen) < AWAY_MS;
 
   const mine = members.find((m) => m.user_id === me);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [seen, setSeen] = useState(0);
+  const others = live.chat.filter((l) => l.user !== me).length;
+  useEffect(() => {
+    if (chatOpen) setSeen(others);
+  }, [chatOpen, others]);
+  const unread = Math.max(0, others - seen);
+  const dock = useMemo(() => ({ unread, openChat: () => setChatOpen(true) }), [unread]);
   const chatBox = (
     <RoomChat
       lines={live.chat}
@@ -255,6 +263,9 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
         ]
       }
       onSend={live.sendChat}
+      open={chatOpen}
+      setOpen={setChatOpen}
+      unread={unread}
     />
   );
   const mp: MiniMp | null = useMemo(() => {
@@ -314,18 +325,18 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
 
   if (mp) {
     return (
-      <>
+      <RoomDockContext.Provider value={dock}>
         {!live.live && <div className="mp-busy">Live link busy (server full): the draft updates every few seconds.</div>}
         <QuickFive mp={mp} onExit={onExit} />
         {chatBox}
-      </>
+      </RoomDockContext.Provider>
     );
   }
 
   const link = roomLink(code);
   const gone = room === null && members.length === 0;
   return (
-    <>
+    <RoomDockContext.Provider value={dock}>
       {chatBox}
       <NightGame
         aside={
@@ -398,53 +409,59 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
             )}
           </>
         )}
+        <PhoneDock
+          tabs={[
+            { label: 'Room', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+            ...(isHost && room?.status === 'lobby'
+              ? [
+                  {
+                    label: starting ? 'Starting…' : 'Start',
+                    go: true,
+                    onClick: () => {
+                      setStarting(true);
+                      void startRoom(roomId).then(() => setStarting(false));
+                    },
+                  },
+                ]
+              : []),
+            { label: 'Leave', onClick: onExit },
+          ]}
+        />
       </NightGame>
-    </>
+    </RoomDockContext.Provider>
   );
 }
 
-/** The room's chat (2026-11-12): a bubble in the corner that opens into the conversation. */
-function RoomChat({ lines, me, nameOf, colorOf, onSend }: { lines: ChatLine[]; me: string; nameOf: (user: string) => string; colorOf: (user: string) => string; onSend: (text: string) => boolean }) {
-  const [open, setOpen] = useState(false);
+/** The room's chat (2026-11-12): a bubble in the corner (the Chat tab of the phone's bar) that opens into the conversation. */
+function RoomChat({
+  lines,
+  me,
+  nameOf,
+  colorOf,
+  onSend,
+  open,
+  setOpen,
+  unread,
+}: {
+  lines: ChatLine[];
+  me: string;
+  nameOf: (user: string) => string;
+  colorOf: (user: string) => string;
+  onSend: (text: string) => boolean;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  unread: number;
+}) {
   const [text, setText] = useState('');
-  const [seen, setSeen] = useState(0);
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
-    if (open) setSeen(lines.length);
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [open, lines.length]);
-  const unread = Math.max(0, lines.filter((l) => l.user !== me).length - lines.slice(0, seen).filter((l) => l.user !== me).length);
-  const jump = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
   if (!open)
     return (
-      <>
-        <button type="button" className="mp-chat-fab" onClick={() => setOpen(true)} aria-label="Open the room chat">
-          Chat{unread > 0 && <b>{unread}</b>}
-        </button>
-        {/* Phones: a dock at the bottom (mockup approved 2026-11-12) instead of the floating bubble. */}
-        <nav className="mp-dock" aria-label="Room">
-          <button type="button" onClick={() => jump('mp-list')}>
-            Players
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // The Duel has its pick log on the page; the Mini opens its draft board.
-              if (document.getElementById('mp-picks')) jump('mp-picks');
-              else window.dispatchEvent(new Event('draftverse:board'));
-            }}
-          >
-            Board
-          </button>
-          <button type="button" onClick={() => setOpen(true)}>
-            Chat{unread > 0 && <b>{unread}</b>}
-          </button>
-        </nav>
-      </>
+      <button type="button" className="mp-chat-fab" onClick={() => setOpen(true)} aria-label="Open the room chat">
+        Chat{unread > 0 && <b>{unread}</b>}
+      </button>
     );
   return (
     <section className="mp-chat" aria-label="Room chat">

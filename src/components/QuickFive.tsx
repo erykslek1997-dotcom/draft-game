@@ -66,6 +66,8 @@ import {
   dayLabel,
   fmtCaps,
   useStepScroll,
+  PhoneDock,
+  scrollToSection,
 } from '../night/ui';
 import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
 import { BoardGrid } from '../night/alltime';
@@ -639,9 +641,13 @@ function QuickDraftBoard({
     return (
       <NightGame aside={aside(<Btn onClick={() => onBoard(false)}>{canPick ? 'Back to your pick' : 'Back to the draft'}</Btn>)}>
         <BoardGrid teams={state.teams} rounds={QUICK_ROUNDS} picks={picksMap} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} windows={[[0, QUICK_ROUNDS]]} onHide={() => onBoard(false)} gmOf={gmOf ? (t) => gmOf(state.teams.indexOf(t)) : undefined} />
-        <Btn className="phone-only" onClick={() => onBoard(false)}>
-          {canPick ? 'Back to your pick' : 'Back to the draft'}
-        </Btn>
+        <PhoneDock
+          tabs={[
+            { label: canPick ? 'Your pick' : 'Players', go: canPick, onClick: () => onBoard(false) },
+            { label: 'Board', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+            ...(gmOf ? [] : [{ label: 'Menu', onClick: links.onMenu }]),
+          ]}
+        />
       </NightGame>
     );
   }
@@ -712,7 +718,7 @@ function QuickDraftBoard({
           {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'} The list stays open while they think.
         </Prompt>
       )}
-      <section>
+      <section id="mp-list">
         {canPick && lowRimPressure(humanStarters) && (
           <Notice>
             <b>Low rim pressure.</b> Nobody in your five attacks the basket yet. Look for a slasher or a big who finishes inside.
@@ -746,12 +752,14 @@ function QuickDraftBoard({
           )}
         </div>
       </section>
-      {/* In a room the phone's dock opens the board (playtest 2026-11-12: the button mid-list looked off). */}
-      {!gmOf && (
-        <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
-          Draft board
-        </Btn>
-      )}
+      {/* The phone's bottom bar (2026-11-12) instead of the board button mid-list. */}
+      <PhoneDock
+        tabs={[
+          { label: canPick ? 'Your pick' : 'Players', on: true, onClick: () => scrollToSection('mp-list') },
+          { label: 'Board', onClick: () => onBoard(true) },
+          ...(gmOf ? [] : [{ label: 'Menu', onClick: links.onMenu }]),
+        ]}
+      />
     </NightGame>
   );
 }
@@ -1181,7 +1189,7 @@ function QuickResults({
           </section>
         )}
       </div>
-      <section>
+      <section id="q-stand">
         <H3 note="tap a team to see its five">Final standings</H3>
         <table className="stand">
           <tbody>
@@ -1221,10 +1229,6 @@ function QuickResults({
         </Btn>
       ) : (
         <>
-          {/* The phone hides the aside's buttons: the tournament (or the Duel's game) needs its own. */}
-          <Btn className="phone-only" onClick={() => setTourney(true)}>
-            {TEAM_COUNT === 2 ? '▶ Play the game' : '▶ The tournament'}
-          </Btn>
           {!tourneyGate && (
             <Btn kind="line" className="phone-only" onClick={onNewDraft}>
               New draft
@@ -1234,6 +1238,13 @@ function QuickResults({
       )}
       {daily && <EmptyNote>Same players, same order for everyone today.</EmptyNote>}
       {daily && <DailyLeaderboard mode="mini" day={daily.day} testing={daily.testing} />}
+      <PhoneDock
+        tabs={[
+          { label: 'Result', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+          { label: 'Standings', onClick: () => scrollToSection('q-stand') },
+          { label: '▶ Tournament', go: true, onClick: () => setTourney(true) },
+        ]}
+      />
     </NightGame>
   );
 }
@@ -1406,6 +1417,12 @@ function DuelBoard({
         <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} />
       </section>
       <div className="phone-only">{picksLog}</div>
+      <PhoneDock
+        tabs={[
+          { label: canPick ? 'Your pick' : 'Players', on: true, go: canPick, onClick: () => scrollToSection('mp-list') },
+          { label: `Picks ${state.history.length}/${total}`, onClick: () => scrollToSection('mp-picks') },
+        ]}
+      />
     </NightGame>
   );
 }
@@ -1526,10 +1543,13 @@ function DuelResults({
       {/* The same five cards as the draft screen (playtest 2026-11-12: "mini karty, spójniej"). */}
       <FiveSlots title="You" note={`${me.score.composite} · ${fmtCaps(totalFga(me.team.roster.map((p) => p.fga)))} caps`} lineup={me.lineup as Partial<Record<Position, PlayerSpan>>} emptyLabel={() => ' '} compact />
       <FiveSlots title={rival} note={`${them.score.composite} · ${fmtCaps(totalFga(them.team.roster.map((p) => p.fga)))} caps`} lineup={them.lineup as Partial<Record<Position, PlayerSpan>>} emptyLabel={() => ' '} compact />
-      <div className="phone-only duel-go">
-        {readyBtn}
-        {status && <p className="mp-note">{status}</p>}
-      </div>
+      <div className="phone-only duel-go">{status && <p className="mp-note">{status}</p>}</div>
+      <PhoneDock
+        tabs={[
+          { label: 'The fives', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+          ...(ready ? [{ label: ready.mine ? 'Ready ✓' : ready.theirsAway ? '▶ Play' : 'Ready', go: !ready.mine, onClick: ready.set }] : []),
+        ]}
+      />
     </NightGame>
   );
 }

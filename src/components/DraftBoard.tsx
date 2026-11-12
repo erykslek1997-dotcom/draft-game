@@ -39,7 +39,7 @@ import { BOMB_MIN_MINUTES } from '../engine/dailyBomb';
 import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
-import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
+import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, PhoneDock, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
 import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -1385,19 +1385,15 @@ export default function DraftBoard({
         {main}
         {rotation}
         {!teamYears && (
-          <div className="btn2 phone-only">
-            {/* the season button shows once it can be pressed (playtest 1: a dead button took the room) */}
-            {(state.complete || canSubmit) && (
-              <Btn disabled={!canSubmit} onClick={() => submitRef.current?.()}>
-                Play the season
-              </Btn>
-            )}
-            {!state.complete && (
-              <Btn kind="line" onClick={() => setActiveTab('draft')}>
-                Back to the draft
-              </Btn>
-            )}
-          </div>
+          // The phone's bottom bar (2026-11-12): the season button shows once it can be pressed
+          // (playtest 1: a dead button took the room).
+          <PhoneDock
+            tabs={[
+              ...(!state.complete ? [{ label: 'Draft', onClick: () => setActiveTab('draft') }] : []),
+              { label: `Team ${humanTeam.roster.length}/${ROSTER_SIZE}`, on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+              ...(state.complete || canSubmit ? [{ label: '▶ Season', go: true, onClick: () => submitRef.current?.() }] : []),
+            ]}
+          />
         )}
       </NightGame>
       </FaceContext.Provider>
@@ -1665,20 +1661,15 @@ export default function DraftBoard({
       {main}
       {rotation}
       {!state.complete && !yearsGroup && (
-        // one bar of short labels: Board · Team · Desk (playtest 2026-10-22: three buttons in one row)
-        <div className={cx('btn2 phone-only', youOnClock && callsLeft > 0 && 'n3')}>
-          <Btn kind="line" onClick={() => setBoardShown((v) => !v)}>
-            {boardShown ? 'Hide board' : 'Board'}
-          </Btn>
-          <Btn kind="line" onClick={() => setActiveTab('team')}>
-            Team {humanTeam.roster.length}/{ROSTER_SIZE}
-          </Btn>
-          {youOnClock && callsLeft > 0 && (
-            <Btn kind="line" onClick={() => setCallSheetOpen(true)}>
-              Desk · {callsLeft}
-            </Btn>
-          )}
-        </div>
+        // Board · Team · Desk (playtest 2026-10-22), now the phone's bottom bar (2026-11-12).
+        <PhoneDock
+          tabs={[
+            { label: youOnClock ? 'Your pick' : 'Draft', on: !boardShown, go: youOnClock && !boardShown, onClick: () => (boardShown ? setBoardShown(false) : window.scrollTo({ top: 0, behavior: 'smooth' })) },
+            { label: 'Board', on: boardShown, onClick: () => setBoardShown((v) => !v) },
+            { label: `Team ${humanTeam.roster.length}/${ROSTER_SIZE}`, onClick: () => setActiveTab('team') },
+            ...(youOnClock && callsLeft > 0 ? [{ label: `Desk · ${callsLeft}`, onClick: () => setCallSheetOpen(true) }] : []),
+          ]}
+        />
       )}
     </NightGame>
     </FaceContext.Provider>
