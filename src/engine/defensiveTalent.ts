@@ -772,7 +772,7 @@ function careerShrunkDbpm(span: PlayerSpan, own: number): number {
 }
 /** Measurement knob (default off): a window with no DBPM (before 1973-74) reads the player's career
  * DBPM from his 1974+ windows, `share` of the way, never more than `cap` points. */
-const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3), short: envVar('DT_BRIDGE_SHORT') === '1' };
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
 /** The bridged window's DBPM: his 1974+ windows, each by its minutes and halved every `halfLife`
  * years between the two windows' middles (0: the plain career mean), so a long career's last
  * seasons do not speak for its first (Kareem 1971-73 reads his 1972-74 2.5, not the career's 1.6
@@ -805,10 +805,11 @@ let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = nul
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
   const real = realSpan(span);
-  // A window short of its own DBPM minutes (Unseld 1972-74, 1,727 minutes injured: +1.7 unread, D-TAL
-  // 28 between 46 and 58) reads the bridge too, its own DBPM weighed in at distance 0.
-  const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes;
-  const noOwn = real?.dbpm == null || (ownShort && DBPM_BRIDGE.short);
+  // A window across 1973-74 whose DBPM covers too few minutes (Unseld 1972-74: only 1973-74 has one,
+  // 1,727 minutes — +1.7 unread, D-TAL 28 between 46 and 58) reads the bridge too, its own DBPM
+  // weighed in at distance 0. Not a short window after 1974 (a bench player's few minutes stay unread).
+  const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes && spanEndYears(span.spanLabel)[0] < 1974;
+  const noOwn = real?.dbpm == null || ownShort;
   const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
