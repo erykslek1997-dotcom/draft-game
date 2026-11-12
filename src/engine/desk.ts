@@ -799,7 +799,7 @@ export function buildRivalDesk({ strengths, concerns, style, rank, seed, third, 
 /** Mini's panel: the five-man score has no insight list, so the weakest axis and the softest
  * defender go to their experts, around the roster's own flavour. */
 const AXIS_EXPERT: Record<string, ExpertId> = { Talent: 'lex', Offense: 'prab', Defense: 'shyman', Spacing: 'sosini', Fit: 'onoffsky' };
-export function buildMiniDesk({ team, rank, fieldSize, weakest, weakReason, weakLink, tip, seed }: { team: Team; rank: number; fieldSize: number; weakest: { label: string; value: number }; weakReason: string; weakLink: string | null; tip?: string; seed: number }): DeskLine[] {
+export function buildMiniDesk({ team, rank, fieldSize, weakest, weakReason, weakLink, tip, seed, strongest, ledger }: { team: Team; rank: number; fieldSize: number; weakest: { label: string; value: number; place?: number }; weakReason: string; weakLink: string | null; tip?: string; seed: number; strongest?: { label: string; value: number; place: number }; ledger?: { best?: string; worst?: string } }): DeskLine[] {
   const rng = mulberry32(mixSeed(seed, 0xde5e));
   const read = readRoster(team);
   const tier = rank === 1 ? 'won' : rank <= 3 ? 'podium' : rank <= Math.ceil(fieldSize / 2) ? 'middle' : 'bottom';
@@ -809,12 +809,24 @@ export function buildMiniDesk({ team, rank, fieldSize, weakest, weakReason, weak
   const pos = flavour.find((t) => t.score > 0);
   if (pos) { lines.push(...(beefFor(pos, read, mulberry32(mixSeed(seed, 0xbeef)), new Set()) ?? [pos.line])); used.add(pos.who); }
   const axisWho = AXIS_EXPERT[weakest.label] ?? 'onoffsky';
-  const axisMsg = `${rank <= 3 ? 'The one thing a rival could attack' : 'Your weakest area'} is ${weakest.label} (${Math.round(weakest.value)}). ${weakReason}`;
+  // 2026-11-12 (TODO 17): the number with its place in the field, as on the All-Time desk.
+  const at = (place?: number) => (place ? `, ${ordinal(place)} of ${fieldSize}` : '');
+  const axisMsg = `${rank <= 3 ? 'The one thing a rival could attack' : 'Your weakest area'} is ${weakest.label} (${Math.round(weakest.value)}${at(weakest.place)}). ${weakReason}`;
   lines.push({ who: axisWho, kind: 'concern', text: voiced(rng, axisWho, 'concern', axisMsg) });
   used.add(axisWho);
+  const bestWho = strongest ? AXIS_EXPERT[strongest.label] ?? 'onoffsky' : undefined;
+  if (strongest && bestWho && !used.has(bestWho) && strongest.place <= Math.ceil(fieldSize / 2)) {
+    lines.push({ who: bestWho, kind: 'praise', text: `Give them this: ${strongest.label} ${Math.round(strongest.value)}${at(strongest.place)}.` });
+    used.add(bestWho);
+  }
+  if ((ledger?.best || ledger?.worst) && !used.has('natalie')) {
+    const parts = [ledger.best && `Best money spent: ${ledger.best}.`, ledger.worst && `Worst: ${ledger.worst}.`].filter(Boolean).join(' ');
+    lines.push({ who: 'natalie', kind: ledger.best ? 'praise' : 'concern', text: `the receipts. ${parts}` });
+    used.add('natalie');
+  }
   if (weakLink && !used.has('shyman')) lines.push({ who: 'shyman', kind: 'concern', text: `${weakLink} is the softest spot. An opponent will attack him every possession. *covers his eyes*` });
   const neg = flavour.find((t) => t.score < 0 && !used.has(t.who));
-  if (neg && lines.length < 5) lines.push(neg.line);
+  if (neg && lines.length < 6) lines.push(neg.line);
   if (moonbatOnAir(seed)) lines.push(...moonbatBit(read, mulberry32(mixSeed(seed, 0x30bb)), rank).slice(0, 4));
   lines.push({
     who: 'host',

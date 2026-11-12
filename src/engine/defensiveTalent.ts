@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -732,16 +732,95 @@ const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, e
  * Measured (r, real SRS / game / real DRtg odd years): off 0.8382 / 0.8029 / 0.713; on the ladder
  * 0.8438 / 0.8150 / 0.735; on the finished scale 0.8470 / 0.8200 / 0.743; every window (tracking era
  * too) 0.8571 / 0.8134 — the game, the one judge blind to real team defense, wants pre-tracking
- * windows only. 2,473 of 10,962 windows move (1,625 up, 848 down, mean 10.6): low-event stoppers
+ * windows only.
+ * 2026-11-12, the user's review ("Magic czy Stockton na pewno za mocny efekt… McAdoo 30 to poziom
+ * kapcia… Shaq, Mourning, Kidd dziwne się wylosowało"): three quarters of the way, never more than
+ * `cap` (15) points, and the window's DBPM half way to the player's career DBPM (Kidd 1994-96's 0.1
+ * against 1.3-2.6 elsewhere). Magic 1980-82 64 → 77, Stockton 1986-88 73 → 85, McAdoo 1973-75
+ * 65 → 50, Kidd 1994-96 58 → 57, Unseld 1976-78 29 → 44. Judges 0.8382 / 0.8029 → 0.8424 / 0.8056
+ * (the full source: 0.8470 / 0.8200, with those extremes). Earlier, at full share: 2,473 of 10,962
+ * windows moved (1,625 up, 848 down, mean 10.6): low-event stoppers
  * up (Chris Ford 1972-74 23 → 85, Charles Jones, Foots Walker), scorers who didn't defend down
  * (McAdoo 1973-75 65 → 30, Wilkins, Mullin, Gervin).
  */
+/** 2026-11-12 (the user on Kidd 1994-96, Mourning 1992-94, Shaq 1994-96 — "dziwne się wylosowało"):
+ * one early window's DBPM (Kidd 0.1 against 1.3-2.6 for the rest of his career) is noise a career
+ * settles; the window's DBPM moves `DBPM_SOURCE.career` of the way to his minutes-weighted career
+ * DBPM. A player poor at it throughout (McAdoo, about 0 every window) stays where he is. */
+const careerDbpm = new Map<string, { dbpm: number; minutes: number } | null>();
+function careerDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | null {
+  const key = normalizePlayerName(span.playerName);
+  let career = careerDbpm.get(key);
+  if (career === undefined) {
+    let sum = 0, minutes = 0;
+    for (const p of draftPool) {
+      if (normalizePlayerName(p.playerName) !== key) continue;
+      const r = realSpan(p);
+      if (r?.dbpm == null || !r.minutes) continue;
+      sum += r.dbpm * r.minutes;
+      minutes += r.minutes;
+    }
+    career = minutes > 0 ? { dbpm: sum / minutes, minutes } : null;
+    careerDbpm.set(key, career);
+  }
+  return career;
+}
+function careerShrunkDbpm(span: PlayerSpan, own: number): number {
+  if (DBPM_SOURCE.career <= 0) return own;
+  const career = careerDbpmOf(span);
+  return career === null ? own : own + (career.dbpm - own) * DBPM_SOURCE.career;
+}
+/** 2026-11-12 (the user: "co możemy jakkolwiek policzyć z dostępnych danych przed 1976"; on by his
+ * review): a window with no DBPM (before 1973-74) reads the player's DBPM from his 1974+ windows,
+ * `share` of the way, never more than `cap` points; windows with All-Defense / DPOY keep theirs.
+ * Judge `scripts/auditPartialRosters.ts` (D-TAL against real team DRtg, carded minutes only):
+ * 1951-62 0.470 → 0.531, 1963-73 0.644 → 0.667, both in even and odd years; real SRS 0.8460 →
+ * 0.8463, game 0.8069 → 0.8070. Cap 25 read the judges a little better (0.554, game 0.8118) but
+ * put Oscar's prime at 32-42; the sources call his defense neutral, not poor (Thinking Basketball:
+ * "fairly neutral", "a question mark"), so 15 (Oscar 39-52, Unseld 45-47, Bellamy −15). */
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0.75), cap: Number(envVar('DT_BRIDGE_CAP') ?? 15), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
+/** The bridged window's DBPM: his 1974+ windows, each by its minutes and halved every `halfLife`
+ * years between the two windows' middles (0: the plain career mean), so a long career's last
+ * seasons do not speak for its first (Kareem 1971-73 reads his 1972-74 2.5, not the career's 1.6
+ * pulled down by his age-38-42 seasons). The distance only weighs his windows against each other:
+ * a player with one 1974+ window (Oscar, Bellamy) reads it whatever the gap; `minutes` stays the real
+ * minutes behind it, for `minMinutes`. */
+const bridgeDbpm = new Map<PlayerSpan, { dbpm: number; minutes: number } | null>();
+function bridgedDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | null {
+  if (DBPM_BRIDGE.halfLife <= 0) return careerDbpmOf(span);
+  let hit = bridgeDbpm.get(span);
+  if (hit !== undefined) return hit;
+  const mid = (label: string) => { const ys = spanEndYears(label); return (ys[0] + ys[ys.length - 1]) / 2; };
+  const at = mid(span.spanLabel);
+  const key = normalizePlayerName(span.playerName);
+  let sum = 0, weight = 0, minutes = 0;
+  for (const p of draftPool) {
+    if (normalizePlayerName(p.playerName) !== key) continue;
+    const r = realSpan(p);
+    if (r?.dbpm == null || !r.minutes) continue;
+    const w = r.minutes * 0.5 ** (Math.abs(mid(p.spanLabel) - at) / DBPM_BRIDGE.halfLife);
+    sum += r.dbpm * w;
+    weight += w;
+    minutes += r.minutes;
+  }
+  hit = weight > 0 ? { dbpm: sum / weight, minutes } : null;
+  bridgeDbpm.set(span, hit);
+  return hit;
+}
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
   const real = realSpan(span);
-  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
-  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  // A window across 1973-74 whose DBPM covers too few minutes (Unseld 1972-74: only 1973-74 has one,
+  // 1,727 minutes — +1.7 unread, D-TAL 28 between 46 and 58) reads the bridge too, its own DBPM
+  // weighed in at distance 0. Not a short window after 1974 (a bench player's few minutes stay unread).
+  const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes && spanEndYears(span.spanLabel)[0] < 1974;
+  const noOwn = real?.dbpm == null || ownShort;
+  const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
+  if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
+    if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
+    if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  } else if (ownShort && !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
   // overrule (2026-11-12, testDefensiveHuntability's elite shell).
@@ -767,11 +846,17 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   }
   const pool = dbpmFinalPools.get(functionalPosition(span));
   if (!pool || pool.dbpm.length < 50) return measured;
-  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
-  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
+  const dbpm = bridged ? bridged.dbpm : careerShrunkDbpm(span, real!.dbpm!);
+  const below = pool.dbpm.filter((v) => v < dbpm).length;
+  const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
   const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
-  return measured + (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  if (bridged) {
+    const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
+    return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
+  }
+  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
 }
 let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
 function dbpmPoolsFor(position: string) {

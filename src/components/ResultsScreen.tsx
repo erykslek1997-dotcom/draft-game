@@ -55,13 +55,13 @@ import { dailyPoints, medianOf } from '../online/points';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
-import { isBombMasked, maskText } from './bombMask';
+import { maskText } from './bombMask';
+import { deskLedger } from './deskLedger';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
 import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, PhoneDock, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
-import { displayTierForSpan, effectiveTalent } from '../engine/grades';
-import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
+import { effectiveTalent } from '../engine/grades';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -465,29 +465,6 @@ function deskReceipts(b: ScoreBreakdown, field: ScoreBreakdown[]): Partial<Recor
   };
 }
 
-/** The capologist's books (TODO 17: "trafione okazje cenowe"): what the whole draft paid for each
- * level of talent (one straight line, caps on talent, over every drafted player), and the roster's
- * best and worst buy in caps against that going rate — each only past `LEDGER_MARGIN` caps. */
-const LEDGER_MARGIN = 3;
-function deskLedger(team: Team, all: Team[]): { best?: string; worst?: string } {
-  const pts = all.flatMap((t) => t.roster).map((p) => ({ x: effectiveTalent(p), y: p.fga }));
-  if (pts.length < 10) return {};
-  const mx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
-  const my = pts.reduce((a, p) => a + p.y, 0) / pts.length;
-  const sxx = pts.reduce((a, p) => a + (p.x - mx) ** 2, 0);
-  const slope = sxx > 0 ? pts.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0) / sxx : 0;
-  const rate = (p: PlayerSpan) => Math.max(0.5, my + slope * (effectiveTalent(p) - mx));
-  const rows = team.roster
-    .filter((p) => !isBombMasked(p.playerName))
-    .map((p) => ({ p, over: p.fga - rate(p) }))
-    .sort((a, b) => a.over - b.over);
-  const say = (p: PlayerSpan) =>
-    `${lastName(p.playerName)} ${p.spanLabel}, ${displayTierForSpan(tierContextFor(p))} for ${fmtCaps(p.fga)} caps (the going rate: ${fmtCaps(rate(p))})`;
-  const best = rows[0] && rows[0].over <= -LEDGER_MARGIN ? say(rows[0].p) : undefined;
-  const last = rows[rows.length - 1];
-  const worst = last && last !== rows[0] && last.over >= LEDGER_MARGIN ? say(last.p) : undefined;
-  return { best, worst };
-}
 
 /** Your report's Draft Desk voices. The tone follows the final place (2026-09-24, user-reported
  * live: "wygrałem, czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list
