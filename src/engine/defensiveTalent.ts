@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0.5) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -817,7 +817,10 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes && spanEndYears(span.spanLabel)[0] < 1974;
   const noOwn = real?.dbpm == null || ownShort;
   const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
-  // The tracking era (real defensive sources, from ~1997) reads DBPM at `trackingShare` (0 = not at all).
+  // The tracking era (real defensive sources, from ~1997) reads DBPM at `trackingShare` (2026-11-12,
+  // the user on Siakam 2022-25 at D-TAL 22-24 on a DBPM of −0.4 to −0.6: the PF box ladder alone,
+  // no real source lifting him). Measured with the tier bands on the label scale: real SRS 0.8478
+  // → 0.8514, game 0.8149 → 0.8171, real DRtg 0.748 → 0.767 at 0.5 (0.25: 0.8507 / 0.8154 / 0.761).
   let tracked = false;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
