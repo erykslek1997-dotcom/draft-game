@@ -1452,3 +1452,6 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .mp-players span { color: var(--ink3); font-size: 13px; }
 .mp-players li.away { opacity: 0.45; }
 .mp-busy { position: sticky; top: 0; z-index: 5; padding: 6px 16px; font-size: 13px; text-align: center; background: var(--gold); color: var(--bg); }
+.mp-make { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.mp-make > span { color: var(--ink3); font-size: 14px; }
+.mp-form .mp-row .btn, .mp-form .mp-row button { width: auto; flex: 0 0 auto; }
