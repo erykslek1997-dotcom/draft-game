@@ -13,7 +13,7 @@ import {
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
 } from './spacing';
-import { rimPressureTeam } from './rimPressure';
+import { rimPressure, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
@@ -1211,9 +1211,35 @@ function restSpacesForCenter(starterAssignments: ReturnType<typeof primaryStarte
   const rest = others.reduce((sum, { player }) => sum + teamSpacingValue(player), 0) / others.length;
   return Math.max(0, Math.min(1, (rest - C_SPACING_COVER_START) / (C_SPACING_REST_FLOOR + 10 - C_SPACING_COVER_START)));
 }
+/**
+ * 2026-11-12 (the user: "AD i Shaq nie rzucają, ale oboje są zbyt mocni pod koszem, żeby to robiło
+ * większą różnicę — zasada powinna dotyczyć gorszych zawodników"): a big a defense must send help
+ * at (rim pressure x scoring load) bends it the way a shooter does, so his minutes in the frontcourt
+ * read up toward `C_SPACING_NEUTRAL` by how dominant he is inside: none below
+ * `INTERIOR_GRAVITY.rimStart` / `.oStart`, full at `.rimFull` / `.oFull` (Shaq 1999-01: full; AD
+ * 2017-19: about a third), times `.scale`. A role big who doesn't shoot still counts as the
+ * non-spacer he is. Measured (r to 4 places, real SRS / game): none 0.8383 / 0.8024, half 0.8382 /
+ * 0.8029, full 0.8382 / 0.8013 — half holds both judges; Conley, Miller, Marion, AD and Shaq read
+ * spacing 52 (47 before), Hayes and Przybilla in their place stay 47.
+ */
+const INTERIOR_GRAVITY = { rimStart: 60, rimFull: 95, oStart: 70, oFull: 90, scale: Number(envVar('INTERIOR_GRAVITY') ?? 0.5) };
+const interiorGravityMemo = new Map<string, number>();
+export function interiorGravity(player: PlayerSpan): number {
+  let hit = interiorGravityMemo.get(player.id);
+  if (hit === undefined) {
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+    const rim = clamp01((rimPressure(player) - INTERIOR_GRAVITY.rimStart) / (INTERIOR_GRAVITY.rimFull - INTERIOR_GRAVITY.rimStart));
+    const load = clamp01((computeOffensiveTalent(player) - INTERIOR_GRAVITY.oStart) / (INTERIOR_GRAVITY.oFull - INTERIOR_GRAVITY.oStart));
+    hit = rim * load;
+    interiorGravityMemo.set(player.id, hit);
+  }
+  return Math.min(1, hit * INTERIOR_GRAVITY.scale);
+}
 function spacingValueAt(player: PlayerSpan, slot: Position, cCover: number): number {
   const value = teamSpacingValue(player);
-  return slot === 'C' ? value + Math.max(0, C_SPACING_NEUTRAL - value) * cCover : value;
+  const inside = slot === 'C' || slot === 'PF' ? interiorGravity(player) : 0;
+  const cover = Math.max(slot === 'C' ? cCover : 0, inside);
+  return value + Math.max(0, C_SPACING_NEUTRAL - value) * cover;
 }
 
 function spacingNonSpacerCeiling(starterAssignments: ReturnType<typeof primaryStarters>, cCovered = 0): number {
