@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import QuickFive, { type MiniMp } from './QuickFive';
 import { careerStats, levelOf } from '../online/career';
 import { levelTitle } from '../online/careerPoints';
@@ -160,7 +160,7 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
           <label>
             <span>{linkCode ? 'Room from your link' : 'Join a friend’s room'}</span>
             <span className="mp-row">
-              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE" className="mp-code" readOnly={Boolean(linkCode)} />
+              <input value={code} maxLength={5} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE" autoComplete="off" className="mp-code" readOnly={Boolean(linkCode)} />
               <Btn disabled={busy || cleanNick.length < 2 || code.trim().length !== 5} onClick={() => void enter(code.trim().toUpperCase())}>
                 {busy ? 'Joining…' : 'Join'}
               </Btn>
@@ -200,7 +200,9 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
       me={me}
       onExit={exit}
       onOver={
-        fromLink
+        // Any finished room you walk into (a link, a refresh, a code the browser filled in from
+        // last time — playtest 2026-11-12) is forgotten, not reopened.
+        fromLink || code
           ? () => {
               // A finished room in the address bar (playtest 2026-11-12): forget it, start fresh.
               rememberRoom(null);
@@ -219,8 +221,11 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
 function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: string; me: string; onExit: () => void; onOver?: () => void }) {
   const live = useRoom(roomId);
   const { room, members, picks } = live;
+  // Only a room that was already over when you walked in: one that ends while you play stays.
+  const firstStatus = useRef<string | null>(null);
+  if (room && firstStatus.current === null) firstStatus.current = room.status;
   useEffect(() => {
-    if (room?.status === 'done' && onOver) onOver();
+    if (firstStatus.current === 'done' && onOver) onOver();
   }, [room?.status, onOver]);
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
