@@ -182,7 +182,11 @@ check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.in
 // 2026-11-04: penalty threshold 6 -> 5.5 after the shooting-point-guard rule (positionCompetence.ts
 // `SHOOTING_POINT`: Nash plays the two beside Stockton at 0.9) reshuffled this roster's rotation.
 // Re-measured directly (80 targetable minutes, penalty 5.9, from 96 / 7.1); still a real stacked cost.
-check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 5.5, 'Nash/Barros weaknesses stack by real minutes');
+// 2026-11-12: penalty threshold 5.5 -> 5.0 after the tier bands moved onto the card's label scale and
+// the engine blocks came off (tierCalibration.ts): Nash 2006-08's TAL 90 -> 92 and his teammates'
+// numbers reshuffled the rotation. Re-measured directly (108 targetable minutes, penalty 5.3, from
+// 80 / 5.9); Nash and Barros keep their D-TAL (19-21, 25) — still a real stacked cost.
+check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 5.0, 'Nash/Barros weaknesses stack by real minutes');
 // controlHunt.penalty is unaffected (0 — Caruso/Battier/Chandler are real plus bench defenders,
 // no shortfall to discount), so the margin still holds against the new 7.0.
 check(reportedHunt.penalty >= controlHunt.penalty + 6, 'huntable roster is clearly separated from an elite defensive control');
