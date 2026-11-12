@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { H3, cx } from '../night/ui';
 import { MetricTable } from './MetricTable';
 import { archetypeDisplayName } from '../engine/championshipArchetype';
+import { spanById } from '../engine/bestFive';
+import { defenseRating, defenseRatingGrade } from '../engine/ratingScale';
 
 interface MetricDef {
   key: string;
@@ -104,12 +106,18 @@ export default function AllMetrics({ values, field, offenseScore, defenseScore, 
           {huntability && huntability.offenders.length > 0 && (
             <p className="empty-note">
               Weakest links:{' '}
-              {huntability.offenders.slice(0, 3).map((o, i) => (
-                <span key={o.playerId}>
-                  {i > 0 && ' · '}
-                  <b>{o.playerName}</b> D-TAL {o.defensiveTalent} ({o.minutes} min)
-                </span>
-              ))}
+              {/* 2026-11-12 (the user: "Reggie na karcie ma C-, a skład jest karany, jakby był najgorszym
+                  śmieciem"): the same defense the card shows (C- · 52), not a second scale beside it;
+                  the engine's D-TAL stays in the hover */}
+              {huntability.offenders.slice(0, 3).map((o, i) => {
+                const span = spanById(o.playerId);
+                return (
+                  <span key={o.playerId} title={`Defensive talent ${Math.round(o.defensiveTalent)} on the engine's scale`}>
+                    {i > 0 && ' · '}
+                    <b>{o.playerName}</b> {span ? `DEF ${defenseRatingGrade(span)} · ${defenseRating(span)}` : `D-TAL ${Math.round(o.defensiveTalent)}`} ({Math.round(o.minutes)} min)
+                  </span>
+                );
+              })}
             </p>
           )}
         </section>
