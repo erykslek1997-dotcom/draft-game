@@ -722,7 +722,46 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1' };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder' };
+/**
+ * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
+ * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
+ * 35th percentile of the D-TAL guards actually get — the floors lift most windows above their ladder.
+ * Read instead on the finished regular-season D-TAL of his position's windows (computed without
+ * this source, so it never reads itself): the 55th percentile is the 55th percentile.
+ */
+let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
+function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
+  if (DBPM_SOURCE.share <= 0) return measured;
+  const real = realSpan(span);
+  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
+  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  if (!dbpmFinalPools) {
+    const pools = new Map<string, { dbpm: number[]; dtal: number[] }>();
+    for (const raw of draftPool) {
+      const sp = ratingSpan(raw);
+      const r = realSpan(sp);
+      if (r?.dbpm == null || r.minutes < DBPM_SOURCE.minMinutes) continue;
+      const pos = functionalPosition(sp);
+      const pool = pools.get(pos) ?? { dbpm: [], dtal: [] };
+      pool.dbpm.push(r.dbpm);
+      pool.dtal.push(regularSeasonParts(sp, false).final);
+      pools.set(pos, pool);
+    }
+    for (const pool of pools.values()) {
+      pool.dbpm.sort((a, b) => a - b);
+      pool.dtal.sort((a, b) => a - b);
+    }
+    dbpmFinalPools = pools;
+  }
+  const pool = dbpmFinalPools.get(functionalPosition(span));
+  if (!pool || pool.dbpm.length < 50) return measured;
+  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
+  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
+  const pct = (below + same / 2) / pool.dbpm.length;
+  const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  return measured + (implied - measured) * DBPM_SOURCE.share;
+}
 let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
 function dbpmPoolsFor(position: string) {
   if (!dbpmPools) {
@@ -759,7 +798,7 @@ function withDbpmSource(span: PlayerSpan, boxLadder: number): number {
   return boxLadder + (implied - boxLadder) * DBPM_SOURCE.share;
 }
 
-function regularSeasonParts(span: PlayerSpan) {
+function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   const accoladeRate = individualDefenseRate(span);
   const corroborationStrength = Math.min(
     1,
@@ -767,7 +806,7 @@ function regularSeasonParts(span: PlayerSpan) {
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
   const boxLadder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
-  const ladder = withDbpmSource(span, boxLadder);
+  const ladder = withDbpm && DBPM_SOURCE.at === 'ladder' ? withDbpmSource(span, boxLadder) : boxLadder;
   const base = Math.min(ladder, corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
@@ -789,7 +828,8 @@ function regularSeasonParts(span: PlayerSpan) {
   // The consensus floor only rescues spans the other paths read as BELOW average; an already
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
   const consensus = withoutConsensus < CONSENSUS_FLOOR_BASE ? consensusPositiveFloor(span) : 0;
-  const final = Math.max(0, Math.min(100, Math.round(Math.max(withoutConsensus, consensus))));
+  const measured = Math.max(0, Math.min(100, Math.max(withoutConsensus, consensus)));
+  const final = Math.round(withDbpm && DBPM_SOURCE.at === 'final' ? withDbpmOnFinal(span, measured) : measured);
   return { accoladeRate, boxLadder, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 
