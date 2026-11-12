@@ -26,6 +26,8 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          # The type check of the whole engine needs more than Node's default heap (seen 2026-11-11).
+          NODE_OPTIONS: --max-old-space-size=6144
           # Online features (Supabase): repository Variables, public by design. Empty = offline build.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}

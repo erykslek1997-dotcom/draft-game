@@ -1,0 +1,42 @@
+name: Back up the database
+
+# 2026-11-11: Supabase's free plan has no automatic backups, so a nightly dump of the game's
+# tables is kept here as a workflow artifact (90 days). Needs one repository secret:
+# SUPABASE_DB_URL — the connection string from Supabase → Settings → Database (URI). Without it the
+# job says so and does nothing. Restore: psql "<connection string>" < backup.sql
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the secret
+        id: check
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then echo "SUPABASE_DB_URL is not set; nothing to back up."; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Install the Postgres client
+        if: steps.check.outputs.skip != '1'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-client-16 || sudo apt-get install -y -q postgresql-client
+      - name: Dump the public schema
+        if: steps.check.outputs.skip != '1'
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          pg_dump "$DB_URL" --schema=public --no-owner --no-privileges --file=backup.sql
+          ls -l backup.sql
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.skip != '1'
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.sql
+          retention-days: 90
