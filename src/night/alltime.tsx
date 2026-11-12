@@ -5,7 +5,7 @@ import { teamLabel } from '../engine/teamNames';
 import { teamsForSpan } from '../engine/spanTeams';
 import { maskName, maskYears } from '../components/bombMask';
 import { LeagueMark, snakePicks } from './league';
-import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, shortName, spanBand } from './ui';
+import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, gradeTone, shortName, spanBand } from './ui';
 
 /**
  * The All-Time Draft's own pieces (mockup `alltime.html`): the full draft board as a grid of
@@ -211,7 +211,18 @@ const TOP_TIERS = new Set(['GOAT', 'Legend', 'MVP']);
 export function StretchTable({ rows }: { rows: StretchRow[] }) {
   return (
     <div className="spans-wrap">
+      {/* 2026-11-12 (the user: "zrób tą tabelkę tak, żeby wszystko było tam równo"): fixed widths,
+          so every row's columns line up whatever the years, team or tier say */}
       <table className="plist spans">
+        <colgroup>
+          <col className="w-y" />
+          <col className="w-t c-hide" />
+          <col className="w-r c-hide" />
+          <col className="w-n" />
+          <col className="w-g c-hide" />
+          <col className="w-c" />
+          <col className="w-a" />
+        </colgroup>
         <thead>
           <tr>
             <th>Years</th>
@@ -221,7 +232,7 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
             <th className="r">
               <span className="cols n3"><span>Pts</span><span>Reb</span><span>Ast</span></span>
             </th>
-            <th className="r c-hide">
+            <th className="g c-hide">
               <span className="cols g4"><span>Off</span><span>Def</span><span>3PT</span><span>Dur</span></span>
             </th>
             <th className="r">Caps</th>
@@ -248,16 +259,15 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
                   <span>{r.span.box.apg.toFixed(1)}</span>
                 </span>
               </td>
-              <td className="n r c-hide">
-                {r.grades ? (
-                  <span className="cols g4">
-                    {r.grades.split(' · ').map((g, i) => (
-                      <span key={i}>{g}</span>
-                    ))}
-                  </span>
-                ) : (
-                  '—'
-                )}
+              <td className="n g c-hide">
+                {/* one letter a column; before a scout, a dash in each ("–" until we press Scout) */}
+                <span className={`cols g4${r.grades ? '' : ' unscouted'}`}>
+                  {(r.grades ? r.grades.split(' · ') : ['–', '–', '–', '–']).map((g, i) => (
+                    <span key={i} className={r.grades ? gradeTone(g) : undefined}>
+                      {g}
+                    </span>
+                  ))}
+                </span>
               </td>
               <td className="cap r">{fmtCaps(r.span.fga)}</td>
               <td className="act r">

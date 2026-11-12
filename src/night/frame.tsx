@@ -21,6 +21,10 @@ export const CapI = () => <i className="capi" aria-hidden />;
 // Caps always carry one decimal, so a column of them lines up ("19.0" next to "22.5"; playtest 2026-10-22).
 export const fmtCaps = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
 
+/** A scouting letter's tone: S and A grades read green, C and below red (the chips, the REPORT column,
+ * a player's stretches all say it the same way). */
+export const gradeTone = (g: string) => (/^[SA]/.test(g) ? 'hi' : /^[CDF]/.test(g) ? 'lo' : undefined);
+
 /* ---------------- page frame ---------------- */
 
 /** The two columns: the aside (masthead, tally, log, actions) and the main stage. An empty aside

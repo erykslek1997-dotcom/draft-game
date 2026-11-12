@@ -6,7 +6,7 @@ import { hadThreePointLine, NOT_YET } from '../components/eraNotes';
 import { cardRoles } from '../components/cardRoles';
 import { maskName, maskYears } from '../components/bombMask';
 export { LeagueMark, NightLottery, leagueColors, snakePicks } from './league';
-import { CapI, H3, NFace, SLOTS, Slot, fmtCaps } from './ui';
+import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, gradeTone } from './ui';
 
 /**
  * The draft pieces the Mini and the All-Time Draft share (mockups `mini.html`, `alltime.html`,
@@ -172,7 +172,7 @@ export function PlayerTable({
         <col className="c-hide c-mid" style={{ width: 58 }} />
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide c-mid" style={{ width: 84 }} />}
+        {at && <col className="c-hide c-mid" style={{ width: 120 }} />}
         {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
@@ -188,8 +188,9 @@ export function PlayerTable({
           {!at && <th className="num c-hide">3PA</th>}
           <th className="num">Caps</th>
           {at && (
-            <th className="c-hide c-mid" style={{ textAlign: 'center' }}>
-              Report
+            <th className="c-hide c-mid g">
+              {/* the scouting letters, one column each (2026-11-12: "A · B- · B" didn't hold its columns) */}
+              <span className="cols g3"><span>Off</span><span>Def</span><span>3PT</span></span>
             </th>
           )}
           {(at || onStar) && <th className="c-hide" />}
@@ -226,7 +227,7 @@ export function PlayerTable({
                 {r.grades && (
                   <span className="lt-chips">
                     {[r.grades.off, r.grades.def, r.grades.tp].map((v, i) => (
-                      <i key={i} className={v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined}>
+                      <i key={i} className={gradeTone(v)}>
                         {v}
                       </i>
                     ))}
@@ -268,16 +269,19 @@ export function PlayerTable({
               {!at && <td className="num c-hide">{hadThreePointLine(s) ? s.box.threePA.toFixed(1) : NOT_YET}</td>}
               <td className={`cap num${r.over ? ' over' : ''}`} title={r.over ? 'More than your next pick can spend' : undefined}>{fmtCaps(s.fga)}</td>
               {at && (
-                <td className="c c-hide c-mid">
-                  {r.grades ? (
-                    <span className="grades">
-                      {r.grades.off} · {r.grades.def} · {r.grades.tp}
-                    </span>
-                  ) : onOpen ? (
-                    <button type="button" className="scout" onClick={() => onOpen(s.playerName)} disabled={scoutsLeft <= 0}>
-                      Scout
-                    </button>
-                  ) : null}
+                <td className="g c-hide c-mid">
+                  {/* a dash in each column until a scout opens the cards (the user, 2026-11-12: "„–” zanim
+                      wciśniemy scouta"); the row opens his window, where the scout is */}
+                  <span
+                    className={`cols g3${r.grades ? '' : ' unscouted'}`}
+                    title={r.grades ? undefined : scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}
+                  >
+                    {(r.grades ? [r.grades.off, r.grades.def, r.grades.tp] : ['–', '–', '–']).map((v, i) => (
+                      <span key={i} className={r.grades ? gradeTone(v) : undefined}>
+                        {v}
+                      </span>
+                    ))}
+                  </span>
                 </td>
               )}
               {(at || onStar) && (
