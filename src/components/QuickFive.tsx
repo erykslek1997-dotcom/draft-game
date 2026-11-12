@@ -25,6 +25,7 @@ import { peakDraftPool } from '../engine/peakDraftPool';
 import { totalFga, TEAM_COUNT as MINI_TEAMS, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
+import { deskLedger } from './deskLedger';
 import { allStarCount } from '../engine/allStarLookup';
 import { displayTierForSpan, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
@@ -858,11 +859,16 @@ function QuickResults({
     return [...WEIGHTED_AXES].sort((a, b) => human.score[a.key] - median(ranked.map((r) => r.score[a.key])) - (human.score[b.key] - median(ranked.map((r) => r.score[b.key]))))[0];
   }, [ranked, human]);
   const nextTip = useMemo(() => (humanRank === 1 ? undefined : nextDraftTip(weakest.label, human.team)), [weakest, human, humanRank]);
+  // 2026-11-12 (TODO 17): the desk's numbers come with a place in the field.
+  const placeOf = (key: (typeof WEIGHTED_AXES)[number]['key']) => 1 + ranked.filter((r) => (r.score[key] as number) > (human.score[key] as number)).length;
+  const strongestAxis = [...WEIGHTED_AXES].filter((a) => a.key !== weakest.key).sort((a, b) => placeOf(a.key) - placeOf(b.key))[0];
   const voices = buildMiniDesk({
     team: human.team,
     rank: humanRank,
     fieldSize: ranked.length,
-    weakest: { label: weakest.label, value: human.score[weakest.key] as number },
+    weakest: { label: weakest.label, value: human.score[weakest.key] as number, place: placeOf(weakest.key) },
+    strongest: strongestAxis ? { label: strongestAxis.label, value: human.score[strongestAxis.key] as number, place: placeOf(strongestAxis.key) } : undefined,
+    ledger: deskLedger(human.team, ranked.map((r) => r.team)),
     weakReason: WEAK_AXIS_REASON[weakest.key](human.score),
     weakLink: human.score.weakLink,
     tip: humanRank > 3 ? nextTip : undefined,
