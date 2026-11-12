@@ -594,7 +594,7 @@ function QuickDraftBoard({
   if (boardOpen) {
     return (
       <NightGame aside={aside(<Btn onClick={() => onBoard(false)}>{canPick ? 'Back to your pick' : 'Back to the draft'}</Btn>)}>
-        <BoardGrid teams={state.teams} rounds={QUICK_ROUNDS} picks={picksMap} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} windows={[[0, QUICK_ROUNDS]]} onHide={() => onBoard(false)} />
+        <BoardGrid teams={state.teams} rounds={QUICK_ROUNDS} picks={picksMap} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} windows={[[0, QUICK_ROUNDS]]} onHide={() => onBoard(false)} gmOf={gmOf ? (t) => gmOf(state.teams.indexOf(t)) : undefined} />
         <Btn className="phone-only" onClick={() => onBoard(false)}>
           {canPick ? 'Back to your pick' : 'Back to the draft'}
         </Btn>
