@@ -953,7 +953,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // 2026-11-12, the career (online/career.ts): one entry per board, the title once the season is won.
   const careerMode = daily?.mode === 'bomb' || bomb ? 'bomb' : 'alltime';
   const careerId = daily ? `${careerMode}:daily:${daily.day}` : `${careerMode}:${draftSeed}`;
-  const careerTitle = humanRanked && seasonState.status === 'done' ? seasonState.playoffs?.championId === humanRanked.team.id : undefined;
+  // The title counts once the season is played, like the daily's season points (2026-11-12).
+  const careerTitle = humanRanked && seasonState.status === 'done' && seasonDone ? seasonState.playoffs?.championId === humanRanked.team.id : undefined;
   useEffect(() => {
     if (!humanRanked || daily?.testing) return;
     recordDraft({ id: careerId, mode: careerMode, daily: !!daily, place: humanRanked.rank, field: ranked.length, overall: humanRanked.breakdown.overall, title: careerTitle });
