@@ -430,8 +430,15 @@ function RoomChat({ lines, me, nameOf, colorOf, onSend }: { lines: ChatLine[]; m
           <button type="button" onClick={() => jump('mp-list')}>
             Players
           </button>
-          <button type="button" onClick={() => jump('mp-picks')}>
-            Picks
+          <button
+            type="button"
+            onClick={() => {
+              // The Duel has its pick log on the page; the Mini opens its draft board.
+              if (document.getElementById('mp-picks')) jump('mp-picks');
+              else window.dispatchEvent(new Event('draftverse:board'));
+            }}
+          >
+            Board
           </button>
           <button type="button" onClick={() => setOpen(true)}>
             Chat{unread > 0 && <b>{unread}</b>}

@@ -174,6 +174,12 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     return () => window.clearInterval(t);
   }, [mp, state.complete]);
   const [boardOpen, setBoardOpen] = useState(false);
+  // The room's dock (MultiMini.tsx) asks for the board with an event.
+  useEffect(() => {
+    const open = () => setBoardOpen(true);
+    window.addEventListener('draftverse:board', open);
+    return () => window.removeEventListener('draftverse:board', open);
+  }, []);
   const [dialog, setDialog] = useState<'settings' | 'howto' | 'leave' | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
   useEffect(() => {
@@ -740,9 +746,12 @@ function QuickDraftBoard({
           )}
         </div>
       </section>
-      <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
-        Draft board
-      </Btn>
+      {/* In a room the phone's dock opens the board (playtest 2026-11-12: the button mid-list looked off). */}
+      {!gmOf && (
+        <Btn kind="line" className="phone-only" onClick={() => onBoard(true)}>
+          Draft board
+        </Btn>
+      )}
     </NightGame>
   );
 }
