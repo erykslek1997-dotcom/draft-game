@@ -1455,3 +1455,6 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .mp-make { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
 .mp-make > span { color: var(--ink3); font-size: 14px; }
 .mp-form .mp-row .btn, .mp-form .mp-row button { width: auto; flex: 0 0 auto; }
+.mp-caps { display: flex; align-items: center; gap: 8px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); }
+.mp-caps b { font: 700 18px var(--cond); color: var(--gold); min-width: 3em; letter-spacing: 0; }
+.mp-caps input[type='range'] { flex: 1; max-width: 320px; accent-color: var(--gold); }

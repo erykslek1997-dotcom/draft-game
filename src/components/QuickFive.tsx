@@ -94,6 +94,7 @@ export interface MiniMp {
   mySlot: number;
   /** 16 for a Mini room, 2 for a Duel. */
   teams: number;
+  cap: number;
   /** Players' names by team index; the rest are CPU GMs. */
   names: Map<number, string>;
   /** Teams whose player is still here; the CPU picks at once for one who left. */
@@ -146,7 +147,7 @@ const CAPS_TOP = 30;
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp }: Props) {
   const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
   const [state, setState] = useState<QuickDraftState>(() =>
-    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
+    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams, mp.cap), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
   );
   const TEAM_COUNT = state.teams.length;
   // A room's draft opens on the lottery (the order the host's start drew), then the first pick.
@@ -1155,9 +1156,15 @@ function QuickResults({
           {dailyCopied ? '✓ Copied' : 'Copy result'}
         </Btn>
       ) : (
-        <Btn className="phone-only" onClick={onNewDraft}>
-          New draft
-        </Btn>
+        <>
+          {/* The phone hides the aside's buttons: the tournament (or the Duel's game) needs its own. */}
+          <Btn className="phone-only" onClick={() => setTourney(true)}>
+            {TEAM_COUNT === 2 ? '▶ Play the game' : '▶ The tournament'}
+          </Btn>
+          <Btn kind="line" className="phone-only" onClick={onNewDraft}>
+            New draft
+          </Btn>
+        </>
       )}
       {daily && <EmptyNote>Same players, same order for everyone today.</EmptyNote>}
       {daily && <DailyLeaderboard mode="mini" day={daily.day} testing={daily.testing} />}
