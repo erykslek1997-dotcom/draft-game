@@ -38,6 +38,7 @@ export function MiniTournamentView({
   onBack,
   onNewDraft,
   onFinished,
+  summary,
   onShare,
   overlay,
 }: {
@@ -54,6 +55,8 @@ export function MiniTournamentView({
   onNewDraft?: () => void;
   /** Called once the whole bracket has been shown. */
   onFinished?: (summary: MiniTournamentSummary) => void;
+  /** 2026-11-12, the run's summary, shown once the final is played. */
+  summary?: ReactNode;
   onShare?: () => void;
   overlay?: ReactNode;
 }) {
@@ -336,6 +339,7 @@ export function MiniTournamentView({
       </section>
       {duel}
       {road}
+      {finished && summary}
       <Actions links={finished ? { ...links, menuPhoneOnly: true } : links}>{buttons}</Actions>
     </>
   );
