@@ -58,7 +58,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
               </span>
             )
           ) : (
-            <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>Sign in with Google →</button>
+            <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>Sign in →</button>
           )}
         </div>
       </section>
