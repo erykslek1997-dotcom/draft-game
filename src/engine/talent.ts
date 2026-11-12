@@ -1571,6 +1571,37 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   return rawSum * flat + offenseTerm * (correction - flat);
 }
 
+/** Diagnostic (2026-11-12, the user on Cade Cunningham): the terms `talentScaled` sums, at the usage
+ * scale `computeTalent` uses, before the soft cap and the later lifts and caps. */
+export function talentTermsForDiagnosis(rawSpan: PlayerSpan): Record<string, number> {
+  const span = ratingSpan(rawSpan);
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
+  const usageScale = usageOffenseScaleTapered(span, baseTal);
+  const { offense, defense } = rawComponents(span, true, usageScale);
+  const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
+  const gateDefense = synergyGateDefense(span, normalizedDefense);
+  return {
+    usageScale,
+    offense,
+    defense,
+    'raw×2.15': (offense * 0.6 + defense * 0.4) * 2.15,
+    synergy: twoWaySynergyBonus(span, normalizedOffense, gateDefense),
+    usagePenalty: -highUsageLowPlaymakingPenalty(span, gateDefense),
+    extremeUsagePenalty: -extremeUsageRatioPenalty(span),
+    hackLiability: -hackLiabilityPenalty(span),
+    hiddenValue: hiddenValueBonus(span),
+    portability: portabilityBonus(span),
+    roleScalability: roleScalabilityBonus(span),
+    playoff: playoffTalentTerm(span),
+    selfCreation: selfCreationTalentBonus(span),
+    shootingAnomaly: shootingAnomalyBonus(span),
+    eliteDefense: eliteDefenseTalBonus(span),
+    scaled: talentScaled(span, usageScale),
+    dtalBridge: dtalBridgeCorrection(span),
+    final: computeTalent(span),
+  };
+}
+
 /**
  * 2026-08-12, G_BLACK_BOX: every named additive/subtractive term in `talentScaled` above, exposed
  * as labeled numbers rather than folded into one opaque total — so `evidenceReport.ts` can build a
