@@ -1399,3 +1399,13 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .pt-more .nsel-b { background: transparent; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 0 2px 1px; font: 700 16px var(--cond); color: var(--ink); white-space: nowrap; }
 .pt-more .nsel-b:hover, .pt-more .nsel.open .nsel-b { border-color: var(--ink); color: var(--ink); }
 .pt-more .nsel-o { font: normal 500 13px var(--sans); padding: 7px 14px; line-height: 1.2; }
+
+/* 2026-11-12, the account line under the masthead (AccountBar menu). */
+.m2-acct { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 10px; padding: 7px 0; border-bottom: 1px solid var(--rule); font: 500 13px var(--sans); color: var(--ink3); }
+.m2-acct .dlb-google { font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+.m2-acct .dlb-google:hover { background: var(--ink); color: var(--bg); }
+.m2-acct .dlb-note { font-style: italic; color: var(--ink3); }
+.m2-acct .dlb-me { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.m2-acct .dlb-me b { font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); }
+.m2-acct .dlb-link { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink2); text-decoration: underline; text-decoration-color: var(--ink4); text-underline-offset: 3px; }
+.m2-acct input { font: inherit; padding: 2px 8px; border: 1px solid var(--rule2); border-radius: 6px; background: none; color: var(--ink); width: 12em; }
