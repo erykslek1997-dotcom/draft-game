@@ -772,7 +772,7 @@ function careerShrunkDbpm(span: PlayerSpan, own: number): number {
 }
 /** Measurement knob (default off): a window with no DBPM (before 1973-74) reads the player's career
  * DBPM from his 1974+ windows, `share` of the way, never more than `cap` points. */
-const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3), short: envVar('DT_BRIDGE_SHORT') === '1' };
 /** The bridged window's DBPM: his 1974+ windows, each by its minutes and halved every `halfLife`
  * years between the two windows' middles (0: the plain career mean), so a long career's last
  * seasons do not speak for its first (Kareem 1971-73 reads his 1972-74 2.5, not the career's 1.6
@@ -805,11 +805,15 @@ let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = nul
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
   const real = realSpan(span);
-  const bridged = real?.dbpm == null && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
+  // A window short of its own DBPM minutes (Unseld 1972-74, 1,727 minutes injured: +1.7 unread, D-TAL
+  // 28 between 46 and 58) reads the bridge too, its own DBPM weighed in at distance 0.
+  const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes;
+  const noOwn = real?.dbpm == null || (ownShort && DBPM_BRIDGE.short);
+  const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
     if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
-  }
+  } else if (ownShort && !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
   // overrule (2026-11-12, testDefensiveHuntability's elite shell).
@@ -835,12 +839,12 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   }
   const pool = dbpmFinalPools.get(functionalPosition(span));
   if (!pool || pool.dbpm.length < 50) return measured;
-  const dbpm = real?.dbpm != null ? careerShrunkDbpm(span, real.dbpm) : bridged!.dbpm;
+  const dbpm = bridged ? bridged.dbpm : careerShrunkDbpm(span, real!.dbpm!);
   const below = pool.dbpm.filter((v) => v < dbpm).length;
   const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
   const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
-  if (real?.dbpm == null) {
+  if (bridged) {
     const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
     return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
   }
