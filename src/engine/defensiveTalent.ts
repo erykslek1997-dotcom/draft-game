@@ -747,9 +747,8 @@ const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000
  * one early window's DBPM (Kidd 0.1 against 1.3-2.6 for the rest of his career) is noise a career
  * settles; the window's DBPM moves `DBPM_SOURCE.career` of the way to his minutes-weighted career
  * DBPM. A player poor at it throughout (McAdoo, about 0 every window) stays where he is. */
-const careerDbpm = new Map<string, number | null>();
-function careerShrunkDbpm(span: PlayerSpan, own: number): number {
-  if (DBPM_SOURCE.career <= 0) return own;
+const careerDbpm = new Map<string, { dbpm: number; minutes: number } | null>();
+function careerDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | null {
   const key = normalizePlayerName(span.playerName);
   let career = careerDbpm.get(key);
   if (career === undefined) {
@@ -761,17 +760,28 @@ function careerShrunkDbpm(span: PlayerSpan, own: number): number {
       sum += r.dbpm * r.minutes;
       minutes += r.minutes;
     }
-    career = minutes > 0 ? sum / minutes : null;
+    career = minutes > 0 ? { dbpm: sum / minutes, minutes } : null;
     careerDbpm.set(key, career);
   }
-  return career === null ? own : own + (career - own) * DBPM_SOURCE.career;
+  return career;
 }
+function careerShrunkDbpm(span: PlayerSpan, own: number): number {
+  if (DBPM_SOURCE.career <= 0) return own;
+  const career = careerDbpmOf(span);
+  return career === null ? own : own + (career.dbpm - own) * DBPM_SOURCE.career;
+}
+/** Measurement knob (default off): a window with no DBPM (before 1973-74) reads the player's career
+ * DBPM from his 1974+ windows, `share` of the way, never more than `cap` points. */
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000) };
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
   const real = realSpan(span);
-  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
-  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  const bridged = real?.dbpm == null && DBPM_BRIDGE.share > 0 ? careerDbpmOf(span) : null;
+  if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
+    if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
+    if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  }
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
   // overrule (2026-11-12, testDefensiveHuntability's elite shell).
@@ -797,11 +807,15 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   }
   const pool = dbpmFinalPools.get(functionalPosition(span));
   if (!pool || pool.dbpm.length < 50) return measured;
-  const dbpm = careerShrunkDbpm(span, real.dbpm);
+  const dbpm = real?.dbpm != null ? careerShrunkDbpm(span, real.dbpm) : bridged!.dbpm;
   const below = pool.dbpm.filter((v) => v < dbpm).length;
   const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
   const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  if (real?.dbpm == null) {
+    const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
+    return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
+  }
   const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
   return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
 }
