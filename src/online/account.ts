@@ -6,6 +6,8 @@ export interface Account {
   id: string;
   /** Public name on the leaderboards (the Google name until the player changes it). */
   nickname: string;
+  /** First sign-in: no profile yet, `nickname` is only the suggestion from Google. */
+  needsName?: boolean;
 }
 
 /** Signs in with Google and comes back to this same page. */
@@ -27,23 +29,26 @@ function defaultNickname(session: Session): string {
   return name.slice(0, 24).padEnd(2, '.');
 }
 
-/** Reads (and on first sign-in creates) the player's profile. */
+/** Reads the player's profile; on first sign-in there is none yet and the player picks a name. */
 async function loadAccount(session: Session): Promise<Account | null> {
   if (!supabase) return null;
   const id = session.user.id;
   const { data } = await supabase.from('profiles').select('nickname').eq('id', id).maybeSingle();
   if (data?.nickname) return { id, nickname: data.nickname as string };
-  const nickname = defaultNickname(session);
-  await supabase.from('profiles').insert({ id, nickname });
-  return { id, nickname };
+  return { id, nickname: defaultNickname(session), needsName: true };
 }
 
-export async function setNickname(id: string, nickname: string): Promise<boolean> {
-  if (!supabase) return false;
-  const clean = nickname.trim().slice(0, 24);
-  if (clean.length < 2) return false;
-  const { error } = await supabase.from('profiles').update({ nickname: clean }).eq('id', id);
-  return !error;
+export type NicknameResult = 'ok' | 'short' | 'taken' | 'error';
+
+/** Saves the name (creating the profile on first sign-in). Names are unique, ignoring case. */
+export async function setNickname(id: string, nickname: string): Promise<NicknameResult> {
+  if (!supabase) return 'error';
+  const clean = nickname.trim().replace(/\s+/g, ' ').slice(0, 24);
+  if (clean.length < 2) return 'short';
+  const { data: same } = await supabase.from('profiles').select('id').ilike('nickname', clean.replace(/[\\%_]/g, '\\$&')).neq('id', id).limit(1);
+  if (same && same.length) return 'taken';
+  const { error } = await supabase.from('profiles').upsert({ id, nickname: clean });
+  return error ? 'error' : 'ok';
 }
 
 /** The signed-in player, kept in sync with Supabase's session (undefined while loading). */
