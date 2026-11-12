@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -817,9 +817,12 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes && spanEndYears(span.spanLabel)[0] < 1974;
   const noOwn = real?.dbpm == null || ownShort;
   const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
+  // The tracking era (real defensive sources, from ~1997) reads DBPM at `trackingShare` (0 = not at all).
+  let tracked = false;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
-    if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+    tracked = !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage === true;
+    if (tracked && DBPM_SOURCE.trackingShare <= 0) return measured;
   } else if (ownShort && !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
@@ -855,7 +858,7 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
     const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
     return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
   }
-  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : tracked ? DBPM_SOURCE.trackingShare : DBPM_SOURCE.share);
   return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
 }
 let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;

@@ -35,7 +35,8 @@ import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from 
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
 import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
 import { envVar } from './env';
-const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') === '1';
+/** See `tierCalibration.ts` ENGINE_BLOCKS_OFF (2026-11-12, on): no grade ceiling, no small-role cap. */
+const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
 
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but

@@ -12,11 +12,15 @@ import { envVar } from './env';
  * 100 (the user: "GOAT 100+"). His other windows are measured from the reviewed one on one shared
  * `windowMeasure`, and never read above his reviewed tier.
  */
-/** Measurement knobs (2026-11-12, the user: "jakby zdjąć te blokady ale nie mergować na stronę i
- * zobaczyć co wyjdzie"): `TIER_BANDS_LABEL=1` puts the bands on the card's label scale (Starter 65,
- * All-star 78, All-NBA 84, MVP 90 — `grades.ts` DISPLAY_TIER_FLOORS; 109 of the 201 reviewed windows
- * read a tier under the user's own call on the old bands); `TIER_TABLE_OFF=1` drops the table. */
-const BANDS_ON_LABELS = envVar('TIER_BANDS_LABEL') === '1';
+/** 2026-11-12 (the user's TAL Board review: Malone, Barkley, Dirk, Westbrook "do MVP", Pierce,
+ * Ewing, Klay, Ray Allen "all-nba", Dumars "all-star" — every one of them already tiered so in this
+ * table): the bands sit on the card's label scale (Starter 65, All-star 78, All-NBA 84, MVP 90 —
+ * `grades.ts` DISPLAY_TIER_FLOORS, set 2026-11-05 for the labels only). On the old bands (MVP 88-95,
+ * All-NBA 80-87, All-star 70-79, Starter 60-69) 109 of the 201 reviewed windows read a tier under
+ * the user's own call and none above. Measured with the engine blocks off (below): real SRS 0.8463 →
+ * 0.8478, game 0.8070 → 0.8149 (bands alone 0.8492 / 0.8042). `TIER_BANDS_LABEL=0` restores the old
+ * bands; `TIER_TABLE_OFF=1` (measurement only) drops the table: 0.8473 / 0.8181. */
+const BANDS_ON_LABELS = envVar('TIER_BANDS_LABEL') !== '0';
 const TABLE_OFF = envVar('TIER_TABLE_OFF') === '1';
 const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = BANDS_ON_LABELS ? {
   GOAT: [104, 105],
@@ -156,7 +160,11 @@ function calibratedUnordered(
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below
  * the 200 who were, so none of them reads above the top of All-star. */
-/** `ENGINE_BLOCKS_OFF=1` (measurement knob): no hold under All-star for players outside the table. */
-export const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') === '1';
+/** 2026-11-12, the user ("jakby zdjąć te blokady … i zobaczyć co wyjdzie"; then "zrób B"): the engine's
+ * own blocks are off — no hold under All-star for players outside the table, no rule-tier ceiling on
+ * the displayed number (`grades.ts`), no low-volume ceiling, no grade ceiling or small-role cap on
+ * TAL (`talent.ts`). The user's own calls (the table, named ceilings, nudges, holds) stay.
+ * `ENGINE_BLOCKS_OFF=0` puts them back. */
+export const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
 export const UNCALIBRATED_DISPLAY_MAX = ENGINE_BLOCKS_OFF ? Infinity : 79;
 export const UNCALIBRATED_TIER_MAX: OverallTier = ENGINE_BLOCKS_OFF ? 'GOAT' : 'All-star';
