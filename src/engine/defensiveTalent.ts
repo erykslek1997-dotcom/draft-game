@@ -722,13 +722,19 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder' };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 1), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder' };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
  * 35th percentile of the D-TAL guards actually get — the floors lift most windows above their ladder.
  * Read instead on the finished regular-season D-TAL of his position's windows (computed without
- * this source, so it never reads itself): the 55th percentile is the 55th percentile.
+ * this source, so it never reads itself): the 55th percentile is the 55th percentile (Reggie 53).
+ * Measured (r, real SRS / game / real DRtg odd years): off 0.8382 / 0.8029 / 0.713; on the ladder
+ * 0.8438 / 0.8150 / 0.735; on the finished scale 0.8470 / 0.8200 / 0.743; every window (tracking era
+ * too) 0.8571 / 0.8134 — the game, the one judge blind to real team defense, wants pre-tracking
+ * windows only. 2,473 of 10,962 windows move (1,625 up, 848 down, mean 10.6): low-event stoppers
+ * up (Chris Ford 1972-74 23 → 85, Charles Jones, Foots Walker), scorers who didn't defend down
+ * (McAdoo 1973-75 65 → 30, Wilkins, Mullin, Gervin).
  */
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
