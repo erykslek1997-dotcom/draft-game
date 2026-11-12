@@ -351,8 +351,8 @@ check(eliteCohesion.eliteShell >= 75, 'reported elite roster completes confirmed
 check(defenseScore(reportedElite) >= 88, 'complete all-time defensive shell reaches the practical Defense ceiling');
 // 2026-11-06: 85 -> 86.05 with the cohesion average over the rotation (the bench counts; the elite
 // shell reads 80, not 100). Re-measured directly.
-// 2026-11-12: 86.05 -> 86.2 with D-TAL's DBPM source for pre-tracking windows: Anfernee Hardaway
-// 1995-97 (bench, no All-Defense) reads 56, not 58; the recognized starters keep theirs. Re-measured.
-check(Math.abs(eliteProjection.defense - 86.2) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
+// (With D-TAL's DBPM source on — DT_DBPM=1, waiting for the user's review — this reads 86.2:
+// Anfernee Hardaway 1995-97 on the bench drops 58 -> 56.)
+check(Math.abs(eliteProjection.defense - 86.05) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');
