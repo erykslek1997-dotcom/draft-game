@@ -883,15 +883,18 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .feed .call.up { border-left-color: var(--green); } .feed .call.dn { border-left-color: var(--red); }
 .feed .ln.k .w { color: var(--ink3); }
 .tabs2 { display: flex; gap: 22px; border-bottom: 1.5px solid var(--rule2); margin-bottom: 8px; }
-.tabs2 > :is(span, button) { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
-.tabs2 > :is(span, button).on { color: var(--ink); border-bottom-color: var(--ink); }
+.tabs2 > span, .tabs2 > button { font: 700 16px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 6px; border-bottom: 2px solid transparent; margin-bottom: -1.5px; }
+/* 2026-11-12 (the user: the live game's active "PLAY-BY-PLAY" tab cream on cream): plain lists, not
+   :is() — the build lowers :is(span, button) to :-webkit-any(), which Safari scores as one class,
+   so this rule outranked the phone tabs' "active = cream chip, dark text" and turned the text cream */
+.tabs2 > span.on, .tabs2 > button.on { color: var(--ink); border-bottom-color: var(--ink); }
 @media (max-width: 600px) { .live-split > .stack { order: -1; } .court { max-width: 240px; } .live-aside .stackb { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); } }
 
 /* live box score by quarter */
 .seg { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 2px 0 10px; }
-.seg > :is(span, button) { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 3px; border-bottom: 2px solid transparent; }
-.seg > :is(span, button).on { color: var(--ink); border-bottom-color: var(--ink); }
-.seg > :is(span, button) small { font: italic 500 12px var(--sans); text-transform: none; letter-spacing: 0; color: var(--red); margin-left: 4px; }
+.seg > span, .seg > button { font: 700 15px var(--cond); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); padding-bottom: 3px; border-bottom: 2px solid transparent; }
+.seg > span.on, .seg > button.on { color: var(--ink); border-bottom-color: var(--ink); }
+.seg > span small, .seg > button small { font: italic 500 12px var(--sans); text-transform: none; letter-spacing: 0; color: var(--red); margin-left: 4px; }
 .seg .gap { flex: 1; }
 .lbx { width: 100%; border-collapse: collapse; }
 .lbx th { padding: 0 6px 6px; font: 700 12px var(--sans); letter-spacing: 0.06em; color: var(--ink3); text-align: right; border-bottom: 1px solid var(--rule); }
