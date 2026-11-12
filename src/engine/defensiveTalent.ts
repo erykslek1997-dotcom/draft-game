@@ -772,12 +772,40 @@ function careerShrunkDbpm(span: PlayerSpan, own: number): number {
 }
 /** Measurement knob (default off): a window with no DBPM (before 1973-74) reads the player's career
  * DBPM from his 1974+ windows, `share` of the way, never more than `cap` points. */
-const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000) };
+const DBPM_BRIDGE = { share: Number(envVar('DT_BRIDGE') ?? 0), cap: Number(envVar('DT_BRIDGE_CAP') ?? 8), minMinutes: Number(envVar('DT_BRIDGE_MIN') ?? 2000), halfLife: Number(envVar('DT_BRIDGE_HL') ?? 3) };
+/** The bridged window's DBPM: his 1974+ windows, each by its minutes and halved every `halfLife`
+ * years between the two windows' middles (0: the plain career mean), so a long career's last
+ * seasons do not speak for its first (Kareem 1971-73 reads his 1972-74 2.5, not the career's 1.6
+ * pulled down by his age-38-42 seasons). The distance only weighs his windows against each other:
+ * a player with one 1974+ window (Oscar, Bellamy) reads it whatever the gap; `minutes` stays the real
+ * minutes behind it, for `minMinutes`. */
+const bridgeDbpm = new Map<PlayerSpan, { dbpm: number; minutes: number } | null>();
+function bridgedDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | null {
+  if (DBPM_BRIDGE.halfLife <= 0) return careerDbpmOf(span);
+  let hit = bridgeDbpm.get(span);
+  if (hit !== undefined) return hit;
+  const mid = (label: string) => { const ys = spanEndYears(label); return (ys[0] + ys[ys.length - 1]) / 2; };
+  const at = mid(span.spanLabel);
+  const key = normalizePlayerName(span.playerName);
+  let sum = 0, weight = 0, minutes = 0;
+  for (const p of draftPool) {
+    if (normalizePlayerName(p.playerName) !== key) continue;
+    const r = realSpan(p);
+    if (r?.dbpm == null || !r.minutes) continue;
+    const w = r.minutes * 0.5 ** (Math.abs(mid(p.spanLabel) - at) / DBPM_BRIDGE.halfLife);
+    sum += r.dbpm * w;
+    weight += w;
+    minutes += r.minutes;
+  }
+  hit = weight > 0 ? { dbpm: sum / weight, minutes } : null;
+  bridgeDbpm.set(span, hit);
+  return hit;
+}
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
   const real = realSpan(span);
-  const bridged = real?.dbpm == null && DBPM_BRIDGE.share > 0 ? careerDbpmOf(span) : null;
+  const bridged = real?.dbpm == null && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
     if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
