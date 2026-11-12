@@ -25,3 +25,24 @@ assert.deepEqual(
 );
 assert.equal(a.history.length, 80);
 console.log('multiplayer replay ok');
+
+// The Duel: two teams, ten picks, a 40-player board, the same on both screens.
+let d1 = createQuickMultiplayerDraft(5, 0, 2);
+let d2 = createQuickMultiplayerDraft(5, 1, 2);
+assert.equal(d1.teams.length, 2);
+assert.equal(d1.pool!.size, 40);
+const duelLog: string[] = [];
+guard = 0;
+while (!d1.complete && guard++ < 20) {
+  const next = resolveQuickAutoPick(d1) as QuickDraftState;
+  const id = next.history[next.history.length - 1].playerId;
+  assert.ok(d1.pool!.has(id), 'picks stay on the board');
+  duelLog.push(id);
+  d1 = applyQuickServerPick(d1, id);
+  d2 = applyQuickServerPick(d2, id);
+}
+assert.ok(d1.complete && d2.complete);
+assert.equal(d1.history.length, 10);
+assert.deepEqual(d1.history.map((h) => h.teamId), ['t0', 't1', 't1', 't0', 't0', 't1', 't1', 't0', 't0', 't1'], 'snake 1-2-2-1');
+assert.deepEqual(d1.history, d2.history);
+console.log('duel replay ok');

@@ -112,6 +112,30 @@ export interface QuickDraftState {
   capLimit: number;
   /** The day's rule in a daily — the human team's only; the CPU drafts from the whole pool. */
   dailyRule?: DailyRule;
+  /** A Duel's small board (2026-11-12): only these players can be drafted. */
+  pool?: Set<string>;
+}
+
+/** The Duel's board: 8 players a position, five strong ones and three cheap ones, from the seed. */
+const DUEL_STRONG = 5;
+const DUEL_CHEAP = 3;
+const DUEL_CHEAP_MAX = 9;
+export function duelPool(seed: number): Set<string> {
+  const rng = mulberry32(mixSeed(seed, 7));
+  const pick = <T,>(list: T[], n: number) => {
+    const copy = [...list];
+    const out: T[] = [];
+    while (out.length < n && copy.length) out.push(copy.splice(Math.floor(rng() * copy.length), 1)[0]);
+    return out;
+  };
+  const ids = new Set<string>();
+  for (const pos of STARTER_SLOTS) {
+    const strong = pick(aiPool.filter((p) => p.primaryPosition === pos), DUEL_STRONG);
+    const names = new Set(strong.map((p) => p.playerName));
+    const cheap = pick(players.filter((p) => p.primaryPosition === pos && p.fga <= DUEL_CHEAP_MAX && !names.has(p.playerName)), DUEL_CHEAP);
+    for (const p of [...strong, ...cheap]) ids.add(p.id);
+  }
+  return ids;
 }
 
 const availableCache = new WeakMap<QuickDraftState, PlayerSpan[]>();
@@ -189,13 +213,14 @@ export function snakeOrderIndex(round: number, pickInRound: number): number {
 }
 
 export function currentTeamIndex(state: QuickDraftState): number {
-  return snakeOrderIndex(state.round, state.pickInRound);
+  const n = state.teams.length;
+  return state.round % 2 === 0 ? state.pickInRound : n - 1 - state.pickInRound;
 }
 
 export function availablePlayers(state: QuickDraftState): PlayerSpan[] {
   let cached = availableCache.get(state);
   if (!cached) {
-    cached = players.filter((p) => !state.draftedIds.has(p.id));
+    cached = players.filter((p) => !state.draftedIds.has(p.id) && (!state.pool || state.pool.has(p.id)));
     availableCache.set(state, cached);
   }
   return cached;
@@ -213,7 +238,7 @@ function getCheapestLookup(state: QuickDraftState): CheapestLookup {
 function advance(state: QuickDraftState): QuickDraftState {
   let { round, pickInRound } = state;
   pickInRound += 1;
-  if (pickInRound >= TEAM_COUNT) {
+  if (pickInRound >= state.teams.length) {
     pickInRound = 0;
     round += 1;
   }
@@ -301,7 +326,7 @@ export function quickPickBudget(state: QuickDraftState): QuickPickBudget {
   if (slotsAfter > 0) {
     const { sorted } = getCheapestLookup(state);
     for (let i = 0; i < slotsAfter && i < sorted.length; i++) reserved += sorted[i].fga;
-    reserved += MARGIN_PER_CONTENDING_TEAM * (TEAM_COUNT - 1) * slotsAfter;
+    reserved += MARGIN_PER_CONTENDING_TEAM * (state.teams.length - 1) * slotsAfter;
   }
   const round1 = (n: number) => Math.round(n * 10) / 10;
   return { capLeft: round1(capLeft), slotsLeft, reserved: round1(reserved), maxThisPick: round1(Math.max(0, capLeft - reserved)) };
@@ -329,7 +354,7 @@ export function makeQuickPick(state: QuickDraftState, playerId: string): QuickDr
   for (const p of siblings) draftedIds.add(p.id);
 
   const teams = state.teams.map((t, i) => (i === teamIdx ? { ...t, roster: [...t.roster, player] } : t));
-  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const pickNumber = state.round * state.teams.length + state.pickInRound + 1;
   const history = [...state.history, { pickNumber, teamId: team.id, playerId: player.id }];
 
   return advance({ ...state, teams, draftedIds, history });
@@ -407,9 +432,9 @@ function resolveAutomatedPick(state: QuickDraftState): QuickDraftState | null {
   }
 
   const currentFgas = team.roster.map((p) => p.fga);
-  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  const pickNumber = state.round * state.teams.length + state.pickInRound + 1;
   const rng = mulberry32(mixSeed(state.seed, pickNumber));
-  const preferred = pickForAi(team.roster, currentFgas, preferredPool, TEAM_COUNT, pickNumber, rng, rulesetFor(state));
+  const preferred = pickForAi(team.roster, currentFgas, preferredPool, state.teams.length, pickNumber, rng, rulesetFor(state));
   const preferredState = makeQuickPick(state, preferred.id);
   if (preferredState !== state) return preferredState;
 
@@ -418,7 +443,7 @@ function resolveAutomatedPick(state: QuickDraftState): QuickDraftState | null {
   const legal = fullAvailable.filter((p) => isQuickPickLegal(state, p.id));
   if (legal.length === 0) return null;
 
-  const fallback = pickForAi(team.roster, currentFgas, legal, TEAM_COUNT, pickNumber, rng, rulesetFor(state));
+  const fallback = pickForAi(team.roster, currentFgas, legal, state.teams.length, pickNumber, rng, rulesetFor(state));
   const fallbackState = makeQuickPick(state, fallback.id);
   if (fallbackState !== state) return fallbackState;
 
@@ -440,7 +465,7 @@ export function resolveQuickAiPickIfNeeded(state: QuickDraftState): QuickDraftSt
 export function autoFinishQuickDraft(state: QuickDraftState): QuickDraftState {
   let s = state;
   let guard = 0;
-  while (!s.complete && guard++ < QUICK_ROUNDS * TEAM_COUNT + 1) {
+  while (!s.complete && guard++ < QUICK_ROUNDS * s.teams.length + 1) {
     const next = resolveAutomatedPick(s);
     if (!next || next === s) break;
     s = next;
@@ -497,8 +522,10 @@ export function applyQuickServerPick(state: QuickDraftState, playerId: string): 
   return resolveAutomatedPick(state) ?? state;
 }
 
-/** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own). */
-export function createQuickMultiplayerDraft(seed: number, mySlot: number): QuickDraftState {
+/** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own).
+ * Two teams make a Duel: the first two seats, on its small board. */
+export function createQuickMultiplayerDraft(seed: number, mySlot: number, teamCount = TEAM_COUNT): QuickDraftState {
   const base = createQuickDraft(undefined, seed);
-  return { ...base, teams: base.teams.map((t, i) => ({ ...t, isHuman: i === mySlot })) };
+  const teams = base.teams.slice(0, teamCount).map((t, i) => ({ ...t, isHuman: i === mySlot, draftSlot: i + 1 }));
+  return { ...base, teams, ...(teamCount === 2 ? { pool: duelPool(seed) } : {}) };
 }

@@ -41,7 +41,7 @@ function savedNick(): string {
  * lobby, then draft live: up to four people, the other teams CPU GMs, a pick clock, and the same
  * tournament for everyone at the end. Guests play too (no account needed).
  */
-export default function MultiMini({ initialCode, onExit }: { initialCode?: string; onExit: () => void }) {
+export default function MultiMini({ initialCode, onExit, duel }: { initialCode?: string; onExit: () => void; /** A Duel room (test mode): 1v1, ten picks. */ duel?: boolean }) {
   const { account } = useAccount();
   const level = useMemo(() => levelOf(careerStats().xp).level, []);
   const [nick, setNick] = useState(savedNick);
@@ -67,7 +67,7 @@ export default function MultiMini({ initialCode, onExit }: { initialCode?: strin
     }
     let joinCode = join;
     if (!joinCode) {
-      const made = await createRoom(cleanNick, level);
+      const made = await createRoom(cleanNick, level, duel);
       if ('error' in made) {
         setBusy(false);
         setError(made.error);
@@ -105,22 +105,28 @@ export default function MultiMini({ initialCode, onExit }: { initialCode?: strin
       <NightGame
         aside={
           <>
-            <Mast title="Play with friends" sub={`Mini Draft · up to ${MAX_PLAYERS} players`} />
+            <Mast title={duel ? 'Duel' : 'Play with friends'} sub={duel ? 'Test mode · one on one' : `Mini Draft · up to ${MAX_PLAYERS} players`} />
             <section>
               <H3>How it works</H3>
-              <Kv k="Players" v={`Up to ${MAX_PLAYERS}`} />
-              <Kv k="Other teams" v="CPU GMs" />
-              <Kv k="Pick clock" v="2 minutes" />
-              <Kv k="Then" v="A tournament" />
+              <Kv k="Players" v={duel ? 'Two' : `Up to ${MAX_PLAYERS}`} />
+              {duel ? <Kv k="Picks" v="Ten, snake" /> : <Kv k="Other teams" v="CPU GMs" />}
+              <Kv k="Pick clock" v={duel ? '45 seconds' : '2 minutes'} />
+              <Kv k="Then" v={duel ? 'One game' : 'A tournament'} />
               <Kv k="Account" v="Not needed" />
             </section>
             <Actions links={{ onMenu: exit }} />
           </>
         }
       >
-        <Prompt eb="Mini Draft · multiplayer" title="Draft against your friends">
-          {TEAM_COUNT} teams, {QUICK_ROUNDS} rounds, the same board for the whole room. Make a room and send the link, or type a friend’s code.
-        </Prompt>
+        {duel ? (
+          <Prompt eb="Duel · test mode" title="One on one">
+            Two GMs, one cap, a board of 40 players. Snake draft, five picks each, then your fives play one game.
+          </Prompt>
+        ) : (
+          <Prompt eb="Mini Draft · multiplayer" title="Draft against your friends">
+            {TEAM_COUNT} teams, {QUICK_ROUNDS} rounds, the same board for the whole room. Make a room and send the link, or type a friend’s code.
+          </Prompt>
+        )}
         <form
           className="mp-form"
           onSubmit={(e) => {
@@ -186,6 +192,7 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
       roomId,
       seed: room.seed,
       mySlot: mine.slot,
+      teams: room.teams ?? 16,
       names,
       here: herePlayers,
       picks: picks.map((p) => p.player_id),
@@ -223,12 +230,12 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
     <NightGame
       aside={
         <>
-          <Mast title="Your room" sub={`Mini Draft · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
+          <Mast title="Your room" sub={`${room?.teams === 2 ? 'Duel' : 'Mini Draft'} · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
           <section>
             <H3>Room</H3>
             <Kv k="Code" v={code} gold />
-            <Kv k="Teams" v={`${TEAM_COUNT} · the rest CPU`} />
-            <Kv k="Pick clock" v={`${Math.round((room?.clock_s ?? 120) / 60)} min`} />
+            <Kv k="Teams" v={room?.teams === 2 ? '2 · one each' : `${TEAM_COUNT} · the rest CPU`} />
+            <Kv k="Pick clock" v={`${room?.clock_s ?? 120} s`} />
           </section>
           <Actions links={{ onMenu: onExit }}>
             <Btn kind="line" onClick={onExit}>

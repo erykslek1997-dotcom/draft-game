@@ -26,6 +26,8 @@ export interface MpRoom {
   max_players: number;
   clock_s: number;
   status: 'lobby' | 'draft' | 'done';
+  /** 16: a Mini; 2: a Duel. */
+  teams: number;
   started_at: string | null;
 }
 export interface MpMember {
@@ -75,10 +77,13 @@ async function ensureSession(): Promise<string | null> {
   return error ? null : (anon.user?.id ?? null);
 }
 
-export async function createRoom(nick: string, level: number): Promise<{ code: string } | { error: MpError }> {
+/** Seconds a Duel pick gets: two players, ten picks, a quick game. */
+export const DUEL_CLOCK_S = 45;
+
+export async function createRoom(nick: string, level: number, duel = false): Promise<{ code: string } | { error: MpError }> {
   if (!supabase || !(await ensureSession())) return { error: 'offline' };
   const seed = Math.floor(Math.random() * 2 ** 31);
-  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: MAX_PLAYERS, p_clock: PICK_CLOCK_S });
+  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16 });
   return error ? { error: errorOf(error.message) } : { code: data as string };
 }
 
@@ -163,7 +168,7 @@ export function useRoom(roomId: string | null): RoomLive {
 
   const loadRoom = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at').eq('id', roomId).maybeSingle();
+    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at,teams').eq('id', roomId).maybeSingle();
     setRoom(data ? ({ ...data, seed: Number(data.seed) } as MpRoom) : null);
   }, [roomId]);
   const loadMembers = useCallback(async () => {
