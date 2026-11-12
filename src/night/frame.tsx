@@ -368,3 +368,44 @@ export function buzz(pattern: number | number[] = 18): void {
     /* no vibration */
   }
 }
+
+/** One tab of the phone's bottom bar. */
+export interface DockTab {
+  label: ReactNode;
+  onClick: () => void;
+  /** The tab you're on. */
+  on?: boolean;
+  /** A count in a red dot (unread chat). */
+  badge?: number;
+  /** The screen's main action, in the game's light button colour. */
+  go?: boolean;
+}
+
+/**
+ * The phone's bottom bar (2026-11-12, the user: "takie menu jak na dole … wszędzie to pasuje"):
+ * the screen's few destinations under the thumb. Phones only; the desktop keeps its aside.
+ */
+/** Inside a multiplayer room: every bottom bar gets the room's Chat tab. */
+export const RoomDockContext = createContext<{ unread: number; openChat: () => void } | null>(null);
+
+export function PhoneDock({ tabs }: { tabs: DockTab[] }) {
+  const room = useContext(RoomDockContext);
+  const all = room ? [...tabs, { label: 'Chat', onClick: room.openChat, badge: room.unread }] : tabs;
+  return (
+    <nav className="ph-dock" aria-label="Screen">
+      {all.map((t, i) => (
+        <button key={i} type="button" className={cx(t.on && 'on', t.go && 'go')} onClick={t.onClick}>
+          {t.label}
+          {t.badge ? <b>{t.badge}</b> : null}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/** Scrolls a section into view, or to the top when the page doesn't have it. */
+export function scrollToSection(id: string): void {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}

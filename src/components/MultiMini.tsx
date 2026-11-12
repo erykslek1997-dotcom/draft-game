@@ -19,9 +19,11 @@ import {
   sendTourney,
   startRoom,
   useRoom,
+  CHAT_MAX,
+  type ChatLine,
   type MpError,
 } from '../online/multiplayer';
-import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt } from '../night/ui';
+import { Actions, Btn, H3, Kv, Mast, NightGame, PhoneDock, Prompt, RoomDockContext } from '../night/ui';
 import { copyLink } from './shareSave';
 import { TEAM_COUNT } from '../engine/positions';
 import { QUICK_ROUNDS } from '../engine/quickDraft';
@@ -239,6 +241,33 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
   const here = (lastSeen: string) => live.now() - Date.parse(lastSeen) < AWAY_MS;
 
   const mine = members.find((m) => m.user_id === me);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [seen, setSeen] = useState(0);
+  const others = live.chat.filter((l) => l.user !== me).length;
+  useEffect(() => {
+    if (chatOpen) setSeen(others);
+  }, [chatOpen, others]);
+  const unread = Math.max(0, others - seen);
+  const dock = useMemo(() => ({ unread, openChat: () => setChatOpen(true) }), [unread]);
+  const chatBox = (
+    <RoomChat
+      lines={live.chat}
+      me={me}
+      nameOf={(u) => members.find((m) => m.user_id === u)?.nickname ?? 'Someone'}
+      colorOf={(u) =>
+        CHAT_COLORS[
+          Math.max(
+            0,
+            members.findIndex((m) => m.user_id === u),
+          ) % CHAT_COLORS.length
+        ]
+      }
+      onSend={live.sendChat}
+      open={chatOpen}
+      setOpen={setChatOpen}
+      unread={unread}
+    />
+  );
   const mp: MiniMp | null = useMemo(() => {
     if (!room || room.status === 'lobby' || !mine || mine.slot === null) return null;
     const names = new Map(members.filter((m) => m.slot !== null).map((m) => [m.slot!, m.nickname] as const));
@@ -262,6 +291,13 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
       now: live.now,
       leader,
       sendPeek: live.sendPeek,
+      duelReady:
+        room.teams === 2
+          ? (() => {
+              const rival = members.find((m) => m.user_id !== me && m.slot !== null);
+              return { mine: live.ready.has(me), theirs: Boolean(rival && live.ready.has(rival.user_id)), theirsAway: !rival || !here(rival.last_seen), set: live.sendReady };
+            })()
+          : undefined,
       peekLine: (() => {
         const p = live.peek;
         const onClock = members.find((m) => m.slot === onClockSlot(room.teams, picks.length));
@@ -274,98 +310,188 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
         const others = members.filter((m) => m.user_id !== me && m.slot !== null && here(m.last_seen));
         const behind = others.filter((m) => m.tourney < Math.min(...others.map((o) => o.tourney)) + 1 && m.tourney === Math.min(...others.map((o) => o.tourney)));
         const gate = others.length ? Math.min(...others.map((o) => o.tourney)) + 1 : 99;
-        return { gate, waiting: behind.map((m) => m.nickname).join(', ') || undefined, onShown: (n: number) => void sendTourney(roomId, n) };
+        return {
+          gate,
+          waiting: behind.map((m) => m.nickname).join(', ') || undefined,
+          onShown: (n: number) => void sendTourney(roomId, n),
+        };
       })(),
       send: (pickNo, playerId) => {
         void sendPick(roomId, pickNo, playerId).then((ok) => ok && live.refresh());
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room, members, picks, mine, me, roomId, live.peek, Math.floor(live.now() / 5000)]);
+  }, [room, members, picks, mine, me, roomId, live.peek, live.ready, Math.floor(live.now() / 5000)]);
 
   if (mp) {
     return (
-      <>
+      <RoomDockContext.Provider value={dock}>
         {!live.live && <div className="mp-busy">Live link busy (server full): the draft updates every few seconds.</div>}
         <QuickFive mp={mp} onExit={onExit} />
-      </>
+        {chatBox}
+      </RoomDockContext.Provider>
     );
   }
 
   const link = roomLink(code);
   const gone = room === null && members.length === 0;
   return (
-    <NightGame
-      aside={
-        <>
-          <Mast title="Your room" sub={`${room?.teams === 2 ? 'Duel' : 'Mini Draft'} · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
-          <section>
-            <H3>Room</H3>
-            <Kv k="Code" v={code} gold />
-            <Kv k="Teams" v={room?.teams === 2 ? '2 · one each' : `${TEAM_COUNT} · the rest CPU`} />
-            <Kv k="Pick clock" v={`${room?.clock_s ?? 120} s`} />
-            <Kv k="Cap" v={(room?.cap ?? 70).toFixed(1)} />
-          </section>
-          <Actions links={{ onMenu: onExit }}>
-            <Btn kind="line" onClick={onExit}>
-              Leave the room
-            </Btn>
-          </Actions>
-        </>
-      }
-    >
-      {gone ? (
-        <Prompt eb="Room closed" title="The host closed this room">
-          Make a new one from the menu.
-        </Prompt>
-      ) : (
-        <>
-          <Prompt eb={`Room ${code}`} title={isHost ? 'Send the link to your friends' : 'Waiting for the host to start'}>
-            {isHost ? 'Start when everyone is in. Empty seats go to CPU GMs.' : 'You’ll draft as soon as the host starts.'}
+    <RoomDockContext.Provider value={dock}>
+      {chatBox}
+      <NightGame
+        aside={
+          <>
+            <Mast title="Your room" sub={`${room?.teams === 2 ? 'Duel' : 'Mini Draft'} · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
+            <section>
+              <H3>Room</H3>
+              <Kv k="Code" v={code} gold />
+              <Kv k="Teams" v={room?.teams === 2 ? '2 · one each' : `${TEAM_COUNT} · the rest CPU`} />
+              <Kv k="Pick clock" v={`${room?.clock_s ?? 120} s`} />
+              <Kv k="Cap" v={(room?.cap ?? 70).toFixed(1)} />
+            </section>
+            <Actions links={{ onMenu: onExit }}>
+              <Btn kind="line" onClick={onExit}>
+                Leave the room
+              </Btn>
+            </Actions>
+          </>
+        }
+      >
+        {gone ? (
+          <Prompt eb="Room closed" title="The host closed this room">
+            Make a new one from the menu.
           </Prompt>
-          <div className="mp-link">
-            <code>{link}</code>
-            <Btn
-              kind="line"
-              onClick={() =>
-                void copyLink(link).then((ok) => {
-                  if (!ok) return;
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 2000);
-                })
-              }
-            >
-              {copied ? 'Copied' : 'Copy link'}
-            </Btn>
-          </div>
-          <section>
-            <H3 note={`${members.length}/${room?.max_players ?? MAX_PLAYERS}`}>Players</H3>
-            <ol className="mp-players">
-              {members.map((m) => (
-                <li key={m.user_id} className={here(m.last_seen) || m.user_id === me ? undefined : 'away'}>
-                  <b>{m.nickname}</b>
-                  <span>
-                    {levelTitle(m.level)} · Lv {m.level}
-                    {m.user_id === room?.host ? ' · host' : ''}
-                    {m.user_id === me ? ' · you' : ''}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
-          {isHost && (
-            <Btn
-              disabled={starting}
-              onClick={() => {
-                setStarting(true);
-                void startRoom(roomId).then(() => setStarting(false));
-              }}
-            >
-              {starting ? 'Starting…' : members.length < 2 ? 'Start anyway' : 'Start the draft'}
-            </Btn>
-          )}
-        </>
-      )}
-    </NightGame>
+        ) : (
+          <>
+            <Prompt eb={`Room ${code}`} title={isHost ? 'Send the link to your friends' : 'Waiting for the host to start'}>
+              {isHost ? 'Start when everyone is in. Empty seats go to CPU GMs.' : 'You’ll draft as soon as the host starts.'}
+            </Prompt>
+            <div className="mp-link">
+              <code>{link}</code>
+              <Btn
+                kind="line"
+                onClick={() =>
+                  void copyLink(link).then((ok) => {
+                    if (!ok) return;
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 2000);
+                  })
+                }
+              >
+                {copied ? 'Copied' : 'Copy link'}
+              </Btn>
+            </div>
+            <section>
+              <H3 note={`${members.length}/${room?.max_players ?? MAX_PLAYERS}`}>Players</H3>
+              <ol className="mp-players">
+                {members.map((m) => (
+                  <li key={m.user_id} className={here(m.last_seen) || m.user_id === me ? undefined : 'away'}>
+                    <b>{m.nickname}</b>
+                    <span>
+                      {levelTitle(m.level)} · Lv {m.level}
+                      {m.user_id === room?.host ? ' · host' : ''}
+                      {m.user_id === me ? ' · you' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+            {isHost && (
+              <Btn
+                disabled={starting}
+                onClick={() => {
+                  setStarting(true);
+                  void startRoom(roomId).then(() => setStarting(false));
+                }}
+              >
+                {starting ? 'Starting…' : members.length < 2 ? 'Start anyway' : 'Start the draft'}
+              </Btn>
+            )}
+          </>
+        )}
+        <PhoneDock
+          tabs={[
+            { label: 'Room', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+            ...(isHost && room?.status === 'lobby'
+              ? [
+                  {
+                    label: starting ? 'Starting…' : 'Start',
+                    go: true,
+                    onClick: () => {
+                      setStarting(true);
+                      void startRoom(roomId).then(() => setStarting(false));
+                    },
+                  },
+                ]
+              : []),
+            { label: 'Leave', onClick: onExit },
+          ]}
+        />
+      </NightGame>
+    </RoomDockContext.Provider>
   );
 }
+
+/** The room's chat (2026-11-12): a bubble in the corner (the Chat tab of the phone's bar) that opens into the conversation. */
+function RoomChat({
+  lines,
+  me,
+  nameOf,
+  colorOf,
+  onSend,
+  open,
+  setOpen,
+  unread,
+}: {
+  lines: ChatLine[];
+  me: string;
+  nameOf: (user: string) => string;
+  colorOf: (user: string) => string;
+  onSend: (text: string) => boolean;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  unread: number;
+}) {
+  const [text, setText] = useState('');
+  const listRef = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+  }, [open, lines.length]);
+  if (!open)
+    return (
+      <button type="button" className="mp-chat-fab" onClick={() => setOpen(true)} aria-label="Open the room chat">
+        Chat{unread > 0 && <b>{unread}</b>}
+      </button>
+    );
+  return (
+    <section className="mp-chat" aria-label="Room chat">
+      <header>
+        <span>Room chat</span>
+        <button type="button" onClick={() => setOpen(false)} aria-label="Close the chat">
+          ✕
+        </button>
+      </header>
+      <ol ref={listRef}>
+        {lines.length === 0 && <li className="mp-chat-empty">Say hi. Messages aren’t saved.</li>}
+        {lines.map((l) => (
+          <li key={l.id} className={l.user === me ? 'me' : undefined}>
+            <b style={{ color: colorOf(l.user) }}>{l.user === me ? 'You' : nameOf(l.user)}</b> {l.text}
+          </li>
+        ))}
+      </ol>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (onSend(text)) setText('');
+        }}
+      >
+        <input value={text} maxLength={CHAT_MAX} onChange={(e) => setText(e.target.value)} placeholder="Message" autoComplete="off" aria-label="Message" />
+        <button type="submit" disabled={!text.trim()}>
+          Send
+        </button>
+      </form>
+    </section>
+  );
+}
+
+const CHAT_COLORS = ['#e8b04b', '#6fc3df', '#e0645a', '#8fd18a', '#c38be0', '#f0a07a', '#7aa8f0', '#d8d36a'];
