@@ -931,7 +931,9 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
   const consensus = withoutConsensus < CONSENSUS_FLOOR_BASE ? consensusPositiveFloor(span) : 0;
   const measured = Math.max(0, Math.min(100, Math.max(withoutConsensus, consensus)));
-  const final = Math.round(withDbpm && DBPM_SOURCE.at === 'final' ? withDbpmOnFinal(span, measured) : measured);
+  // The DBPM source never reads under the user's own named floor (2026-11-12, Klay 2015-17: the
+  // tracking-era DBPM took his WOWY-backed 60 to 45).
+  const final = Math.round(withDbpm && DBPM_SOURCE.at === 'final' ? Math.max(namedFloor, withDbpmOnFinal(span, measured)) : measured);
   return { accoladeRate, boxLadder, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 
