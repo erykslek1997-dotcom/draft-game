@@ -141,7 +141,6 @@ export function NightMenu({
               <span>{BRAND_TAGLINE}</span>
               <span className="m2-ed">{editionLine()}</span>
             </div>
-            <AccountBar menu onSynced={() => setSynced((n) => n + 1)} />
             <div className="m2-team">
               {franchise && <LeagueMark name={teamName} code={franchiseCode(teamName)} />}
               <span>{franchise ? `${franchise.city} ${franchise.name}` : teamName}</span>
@@ -233,6 +232,7 @@ export function NightMenu({
                 ))}
               </p>
             )}
+            <AccountBar menu onSynced={() => setSynced((n) => n + 1)} />
             {dataStatus}
             <div className="m2-foot">
               <button type="button" onClick={() => setDialog('howto')}>
