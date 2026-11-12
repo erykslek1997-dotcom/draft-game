@@ -1,6 +1,7 @@
 import { normalizePlayerName } from '../data/schema';
 import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
+import { envVar } from './env';
 
 /**
  * 2026-09-27, the user's tier table (`userTierCalibration.ts`) turned into displayed TAL.
@@ -11,7 +12,21 @@ import type { OverallTier } from './grades';
  * 100 (the user: "GOAT 100+"). His other windows are measured from the reviewed one on one shared
  * `windowMeasure`, and never read above his reviewed tier.
  */
-const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
+/** Measurement knobs (2026-11-12, the user: "jakby zdjąć te blokady ale nie mergować na stronę i
+ * zobaczyć co wyjdzie"): `TIER_BANDS_LABEL=1` puts the bands on the card's label scale (Starter 65,
+ * All-star 78, All-NBA 84, MVP 90 — `grades.ts` DISPLAY_TIER_FLOORS; 109 of the 201 reviewed windows
+ * read a tier under the user's own call on the old bands); `TIER_TABLE_OFF=1` drops the table. */
+const BANDS_ON_LABELS = envVar('TIER_BANDS_LABEL') === '1';
+const TABLE_OFF = envVar('TIER_TABLE_OFF') === '1';
+const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = BANDS_ON_LABELS ? {
+  GOAT: [104, 105],
+  'Legend': [96, 99],
+  MVP: [90, 95],
+  'All-NBA': [84, 89],
+  'All-star': [78, 83],
+  Starter: [65, 77],
+  'Sixth Man': [58, 66],
+} : {
   GOAT: [104, 105],
   'Legend': [96, 99],
   MVP: [88, 95],
@@ -87,6 +102,7 @@ export function hasUserWindowOrder(playerName: string): boolean {
 
 /** The table entry for a player, if the user tiered him. */
 export function tierCalibrationFor(playerName: string): CalibrationEntry | undefined {
+  if (TABLE_OFF) return undefined;
   return entries.get(normalizePlayerName(playerName));
 }
 
@@ -140,5 +156,7 @@ function calibratedUnordered(
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below
  * the 200 who were, so none of them reads above the top of All-star. */
-export const UNCALIBRATED_DISPLAY_MAX = 79;
-export const UNCALIBRATED_TIER_MAX: OverallTier = 'All-star';
+/** `ENGINE_BLOCKS_OFF=1` (measurement knob): no hold under All-star for players outside the table. */
+export const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') === '1';
+export const UNCALIBRATED_DISPLAY_MAX = ENGINE_BLOCKS_OFF ? Infinity : 79;
+export const UNCALIBRATED_TIER_MAX: OverallTier = ENGINE_BLOCKS_OFF ? 'GOAT' : 'All-star';

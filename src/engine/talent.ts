@@ -35,6 +35,7 @@ import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from 
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
 import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
 import { envVar } from './env';
+const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') === '1';
 
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but
@@ -2026,7 +2027,7 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const capped = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  const capped = Math.max(0, Math.round(ENGINE_BLOCKS_OFF ? finalTal : applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
   // A smaller role next to a star with efficiency held reads toward the player's own earlier
   // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
   // recursion is one level deep.
@@ -2037,7 +2038,7 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + defenseCreditLift(span, reduced);
   const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span) - oldSchoolPointPenalty(span, credited);
   const resumed = lifted + roleResumeAdjustment(span, lifted);
-  const result = Math.max(0, Math.min(100, Math.round(Math.min(resumed, smallRoleCap(span)))));
+  const result = Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : Math.min(resumed, smallRoleCap(span)))));
   talentCache.set(span.id, result);
   return result;
 }

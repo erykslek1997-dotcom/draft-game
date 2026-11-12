@@ -6,7 +6,7 @@ import { draftPool } from '../data/draftPool';
 import TEAM_CONTEXT from '../data/teamContext.json';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, hasUserWindowOrder, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
+import { calibratedDisplayTalent, ENGINE_BLOCKS_OFF, hasUserWindowOrder, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1246,7 +1246,7 @@ function unsmoothedDisplayTalent(ctx: TierGateContext): number {
   const override = namedDisplayTal(ctx.playerName, ctx.spanLabel);
   if (override !== undefined) return override;
   const cappedTier = ruleTierForSpan(ctx);
-  const raw = Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
+  const raw = ENGINE_BLOCKS_OFF ? Math.round(ctx.tal) : Math.round(applyGradeCeiling(ctx.tal, tierCeiling(cappedTier)));
   // Only when a deliberate raise (a `NAMED_TIER_RAISES` entry, or the sustained real-value floor)
   // is actually what produced this span's displayed tier — every other span (the vast majority)
   // is unaffected. Both would otherwise leave the NUMBER below the badge's own floor, the exact
@@ -1534,6 +1534,7 @@ function roleContextShift(ctx: TierGateContext, tal: number): number {
   return fade * Math.max(-ROLE_CONTEXT.cap, Math.min(ROLE_CONTEXT.cap, raw));
 }
 function lowVolumeCeiling(ctx: TierGateContext): number {
+  if (ENGINE_BLOCKS_OFF) return Infinity;
   return ctx.fga < LOW_VOLUME.fga ? Math.max(ctx.otal, ctx.dtal) + LOW_VOLUME.margin : Infinity;
 }
 
