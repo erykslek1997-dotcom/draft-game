@@ -31,3 +31,6 @@
 .dlb-mine b { font-family: var(--calm-num, ui-monospace, monospace); color: var(--gold, #ffd166); }
 .dlb-mine span, .dlb-score small { color: var(--at-ink-soft, #9fb0c4); font-weight: 500; }
 .dlb-ok { color: var(--good, #6fcf97); font-weight: 700; }
+.acct { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 6px 0 10px; font-size: 13.5px; }
+.acct .dlb-google { margin-left: 0; }
+.acct .dlb-me { margin-left: 0; font-weight: 500; }
