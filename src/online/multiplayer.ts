@@ -191,6 +191,9 @@ export interface RoomLive {
   now: () => number;
   /** Reloads the picks at once (after your own pick). */
   refresh: () => void;
+  /** Duel: who clicked Ready for the game (live, not stored). */
+  ready: Set<string>;
+  sendReady: () => void;
   chat: ChatLine[];
   /** False when the line was too soon after the last one or empty. */
   sendChat: (text: string) => boolean;
@@ -209,6 +212,9 @@ export function useRoom(roomId: string | null): RoomLive {
   const meRef = useRef<string | null>(null);
   const [peek, setPeek] = useState<Peek | null>(null);
   const [chat, setChat] = useState<ChatLine[]>([]);
+  const [ready, setReady] = useState<Set<string>>(new Set());
+  const iAmReady = useRef(false);
+  const echoed = useRef(new Set<string>());
   const lastChat = useRef(0);
   const addLine = useCallback((l: ChatLine) => setChat((old) => (old.some((x) => x.id === l.id) ? old : [...old, l].slice(-CHAT_KEEP))), []);
 
@@ -253,6 +259,16 @@ export function useRoom(roomId: string | null): RoomLive {
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
         const l = payload as ChatLine;
         if (typeof l?.text === 'string' && typeof l.user === 'string') addLine({ id: String(l.id), user: l.user, text: l.text.slice(0, CHAT_MAX), at: Date.now() });
+      })
+      .on('broadcast', { event: 'ready' }, ({ payload }) => {
+        const user = String((payload as { user?: string })?.user ?? '');
+        if (!user) return;
+        setReady((old) => new Set(old).add(user));
+        // Someone who clicked after you (or refreshed) hears that you're ready too.
+        if (iAmReady.current && meRef.current && !echoed.current.has(user)) {
+          echoed.current.add(user);
+          void channelRef.current?.send({ type: 'broadcast', event: 'ready', payload: { user: meRef.current } });
+        }
       })
       .on('broadcast', { event: 'peek' }, ({ payload }) => setPeek({ ...(payload as Peek), at: Date.now() }))
       .subscribe((status) => {
@@ -312,5 +328,11 @@ export function useRoom(roomId: string | null): RoomLive {
     },
     [addLine],
   );
-  return { room, members, picks, live, now, refresh: () => void loadPicks(), peek, sendPeek, chat, sendChat };
+  const sendReady = useCallback(() => {
+    if (!meRef.current) return;
+    iAmReady.current = true;
+    setReady((old) => new Set(old).add(meRef.current!));
+    void channelRef.current?.send({ type: 'broadcast', event: 'ready', payload: { user: meRef.current } });
+  }, []);
+  return { room, members, picks, live, now, refresh: () => void loadPicks(), peek, sendPeek, chat, sendChat, ready, sendReady };
 }
