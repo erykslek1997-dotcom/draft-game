@@ -126,6 +126,11 @@ export function dailyDraftTotals(): { days: number; bestStreak: number } {
   return { days, bestStreak };
 }
 
+/** 2026-11-12: forgets every daily draft here (signing out of the account they belong to). */
+export function clearAllDailyDrafts(): void {
+  write({});
+}
+
 /** Forgets the day's result (testing replays only). */
 export function clearDailyDraftResult(mode: DailyDraftMode, day: string): void {
   const progress = read();

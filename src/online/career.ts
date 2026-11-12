@@ -50,6 +50,11 @@ function writeAll(list: CareerResult[]): void {
   }
 }
 
+/** 2026-11-12: forgets the career here (signing out of the account it belongs to). */
+export function clearCareer(): void {
+  writeAll([]);
+}
+
 export function careerResults(): CareerResult[] {
   return readAll();
 }
