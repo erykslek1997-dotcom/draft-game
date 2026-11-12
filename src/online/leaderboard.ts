@@ -21,9 +21,28 @@ export interface LeaderboardRow {
   days?: number;
 }
 
+/**
+ * 2026-11-12, fewer requests: the same result is sent once per page visit, and a table read in the
+ * last 30 seconds is shown from memory (the server also limits writes, schema.sql `rate_check`).
+ */
+const sent = new Map<string, string>();
+const cache = new Map<string, { at: number; rows: LeaderboardRow[] }>();
+const FRESH_MS = 30_000;
+
+async function cached(key: string, load: () => Promise<LeaderboardRow[] | null>): Promise<LeaderboardRow[] | null> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < FRESH_MS) return hit.rows;
+  const rows = await load();
+  if (rows) cache.set(key, { at: Date.now(), rows });
+  return rows;
+}
+
 /** Sends (or, once the season is played, updates) today's result and its points. */
 export async function submitDailyScore(userId: string, mode: DailyDraftMode, day: string, score: DailyScore, points: PointsBreakdown, proof?: DailyProof): Promise<'saved' | 'error'> {
   if (!supabase) return 'error';
+  const key = `${userId}|${mode}|${day}`;
+  const body = JSON.stringify([score, points]);
+  if (sent.get(key) === body) return 'saved';
   const { error } = await supabase.from('daily_scores').upsert(
     {
       user_id: userId,
@@ -40,11 +59,18 @@ export async function submitDailyScore(userId: string, mode: DailyDraftMode, day
     },
     { onConflict: 'user_id,mode,day' },
   );
-  return error ? 'error' : 'saved';
+  if (error) return 'error';
+  sent.set(key, body);
+  for (const k of cache.keys()) if (k.includes(`|${mode}|`)) cache.delete(k);
+  return 'saved';
 }
 
 /** The day's table: most points first, earlier submission breaking ties. */
 export async function fetchDailyLeaderboard(mode: DailyDraftMode, day: string, limit = 50): Promise<LeaderboardRow[] | null> {
+  return cached(`day|${mode}|${day}`, () => loadDaily(mode, day, limit));
+}
+
+async function loadDaily(mode: DailyDraftMode, day: string, limit: number): Promise<LeaderboardRow[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('daily_leaderboard')
@@ -74,6 +100,10 @@ export function weekOf(day: string): string {
 
 /** This week's table: points summed over the days played. */
 export async function fetchWeeklyLeaderboard(mode: DailyDraftMode, day: string, limit = 50): Promise<LeaderboardRow[] | null> {
+  return cached(`week|${mode}|${weekOf(day)}`, () => loadWeekly(mode, day, limit));
+}
+
+async function loadWeekly(mode: DailyDraftMode, day: string, limit: number): Promise<LeaderboardRow[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('weekly_leaderboard')

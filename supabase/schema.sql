@@ -169,3 +169,75 @@ from (
 ) x
 join public.profiles p on p.id = x.user_id
 group by x.mode, x.week, x.user_id, p.nickname;
+
+-- 2026-11-12: limits on writes, so nobody can flood the server. Every write a player makes is logged
+-- for a day; too many in a window and the write is refused ("rate limit"). The log is private (no
+-- policies: only the functions below, running as the owner, can touch it).
+create table if not exists public.rate_events (
+  user_id uuid not null,
+  kind text not null,
+  at timestamptz not null default now()
+);
+create index if not exists rate_events_lookup on public.rate_events (user_id, kind, at);
+alter table public.rate_events enable row level security;
+
+create or replace function public.rate_check(p_kind text, p_max int, p_window interval) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+begin
+  -- The checker (secret key) and SQL Editor have no user: not limited.
+  if uid is null then return; end if;
+  delete from rate_events where user_id = uid and at < now() - interval '1 day';
+  if (select count(*) from rate_events where user_id = uid and kind = p_kind and at > now() - p_window) >= p_max then
+    raise exception 'rate limit: too many % requests, try again later', p_kind using errcode = 'P0001';
+  end if;
+  insert into rate_events (user_id, kind) values (uid, p_kind);
+end $$;
+
+revoke all on function public.rate_check(text, int, interval) from public, anon, authenticated;
+
+create or replace function public.rate_limit_writes() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_table_name = 'daily_scores' then
+    perform rate_check('score', 20, interval '10 minutes');
+    perform rate_check('score_day', 120, interval '1 day');
+  elsif tg_table_name = 'draft_results' then
+    perform rate_check('draft', 15, interval '10 minutes');
+  elsif tg_table_name = 'profiles' then
+    perform rate_check('profile', 10, interval '1 day');
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists daily_scores_rate on public.daily_scores;
+create trigger daily_scores_rate before insert or update on public.daily_scores
+for each row execute function public.rate_limit_writes();
+
+drop trigger if exists draft_results_rate on public.draft_results;
+create trigger draft_results_rate before insert or update on public.draft_results
+for each row execute function public.rate_limit_writes();
+
+drop trigger if exists profiles_rate on public.profiles;
+create trigger profiles_rate before insert or update on public.profiles
+for each row execute function public.rate_limit_writes();
+
+-- Guests (anonymous sign-in, for multiplayer without an account) play but don't post: only real
+-- accounts write profiles, scores and the career.
+drop policy if exists "own profile insert" on public.profiles;
+create policy "own profile insert" on public.profiles for insert with check (auth.uid() = id and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "own score insert" on public.daily_scores;
+create policy "own score insert" on public.daily_scores for insert with check (
+  auth.uid() = user_id
+  and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
+  and day between (now() at time zone 'utc')::date - 1 and (now() at time zone 'utc')::date + 1
+);
+
+drop policy if exists "own result insert" on public.draft_results;
+create policy "own result insert" on public.draft_results for insert with check (
+  auth.uid() = user_id
+  and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
+  and created_at > now() - interval '1 hour'
+);

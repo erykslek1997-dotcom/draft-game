@@ -88,8 +88,11 @@ export function recordDraft(input: Omit<CareerResult, 'points' | 'xp' | 'at' | '
 }
 
 /** On sign-in: the account's drafts join this browser's, and this browser's unsent recent ones go up. */
+const synced = new Set<string>();
+
 export async function syncCareer(uid: string): Promise<boolean> {
-  if (!supabase) return false;
+  if (!supabase || synced.has(uid)) return false;
+  synced.add(uid);
   const { data, error } = await supabase.from('draft_results').select('id, mode, daily, place, field, overall, won, title, points, xp, created_at').eq('user_id', uid).limit(3000);
   if (error || !data) return false;
   const mine = readAll();

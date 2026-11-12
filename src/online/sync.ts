@@ -6,8 +6,11 @@ import { supabase } from './supabase';
  * 2026-11-11, the account keeps the dailies: every day you posted is on the server, so a new phone or
  * browser gets your history and streak back the moment you sign in.
  */
+const pulled = new Set<string>();
+
 export async function pullDailyHistory(userId: string): Promise<number> {
-  if (!supabase) return 0;
+  if (!supabase || pulled.has(userId)) return 0;
+  pulled.add(userId);
   const { data, error } = await supabase.from('daily_scores').select('mode, day, overall, place, field').eq('user_id', userId).limit(1000);
   if (error || !data) return 0;
   const byMode = new Map<DailyDraftMode, Record<string, DailyDraftResult>>();
