@@ -23,9 +23,50 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account?.id]);
   if (!onlineEnabled || account === undefined) return null;
+  if (menu) {
+    return (
+      <section className="m2-acct" aria-label="Your account">
+        <span className="m2-tl">Your account</span>
+        <div className="m2-acct-box">
+          <div className="m2-acct-who">
+            {editing && account ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void setNickname(account.id, name).then((ok) => {
+                    if (ok) {
+                      setEditing(false);
+                      refresh();
+                    }
+                  });
+                }}
+              >
+                <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" autoFocus />
+                <button type="submit" className="lk-inline">Save</button>
+                <button type="button" className="lk-inline" onClick={() => setEditing(false)}>Cancel</button>
+              </form>
+            ) : (
+              <b>{account ? account.nickname : 'Not signed in'}</b>
+            )}
+            <span>{account ? 'Your dailies and streak are saved to your account.' : 'Post your dailies to the leaderboard and keep your streak on any device.'}</span>
+          </div>
+          {account ? (
+            !editing && (
+              <span className="m2-acct-act">
+                <button type="button" className="lk-inline" onClick={() => { setName(account.nickname); setEditing(true); }}>Rename</button>
+                <button type="button" className="lk-inline" onClick={() => void signOut()}>Sign out</button>
+              </span>
+            )
+          ) : (
+            <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>Sign in with Google →</button>
+          )}
+        </div>
+      </section>
+    );
+  }
   if (!account) {
     return (
-      <div className={menu ? 'm2-acct' : 'acct'}>
+      <div className="acct">
         <button type="button" className="dlb-google" onClick={() => void signInWithGoogle()}>
           Sign in with Google
         </button>
@@ -34,7 +75,7 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
     );
   }
   return (
-    <div className={menu ? 'm2-acct' : 'acct'}>
+    <div className="acct">
       {editing ? (
         <form
           className="dlb-me"
