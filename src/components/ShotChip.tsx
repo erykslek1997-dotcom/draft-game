@@ -1,4 +1,4 @@
-import { nicknameFor } from '../data/nicknames';
+import { initialAndSurname, nicknameIfNeeded } from '../data/nicknames';
 import { useState } from 'react';
 import { isBombMasked, maskName } from './bombMask';
 import { headshotUrl } from '../data/headshots';
@@ -25,14 +25,8 @@ function initials(name: string): string {
  * through untouched. Card buttons still carry the untruncated name in their `title` for hover. */
 export function shortenName(name: string, maxLen = 15): string {
   const masked = maskName(name);
-  if (masked === name) { const nick = nicknameFor(name); if (nick) return nick; }
-  name = masked;
-  if (name.length <= maxLen) return name;
-  const parts = name.split(' ');
-  if (parts.length < 2) return name;
-  const first = parts[0];
-  const rest = parts.slice(1).join(' ');
-  return `${first[0]}. ${rest}`;
+  const regular = masked.length <= maxLen || !masked.includes(' ') ? masked : initialAndSurname(masked);
+  return masked === name ? nicknameIfNeeded(name, regular) : regular;
 }
 
 /** Headshot with a monogram fallback (no image, or the image 404s). Faces come from the shared
