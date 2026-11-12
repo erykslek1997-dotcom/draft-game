@@ -5,7 +5,7 @@ import { teamLabel } from '../engine/teamNames';
 import { teamsForSpan } from '../engine/spanTeams';
 import { maskName, maskYears } from '../components/bombMask';
 import { LeagueMark, snakePicks } from './league';
-import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, gradeTone, shortName, spanBand } from './ui';
+import { CapI, H3, NFace, SLOTS, Slot, TagChips, fmtCaps, gradeTone, shortName, spanBand } from './ui';
 
 /**
  * The All-Time Draft's own pieces (mockup `alltime.html`): the full draft board as a grid of
@@ -199,7 +199,7 @@ export function NineSlots({
 export interface StretchRow {
   span: PlayerSpan;
   tier: string;
-  /** "A · B+" once scouted, else null. */
+  /** "A · B+ · C · B · A-" (OFF · DEF · SHT · PLY · REB) once scouted, else null. */
   grades: string | null;
   peak: boolean;
   /** The years he plays for you now (the Team view). */
@@ -236,7 +236,13 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
               <span className="cols n3"><span>Pts</span><span>Reb</span><span>Ast</span></span>
             </th>
             <th className="g c-hide">
-              <span className="cols g4"><span>Off</span><span>Def</span><span>3PT</span><span>Dur</span></span>
+              <span className="cols g5">
+                <span title="Offense">Off</span>
+                <span title="Defense">Def</span>
+                <span title="Shooting: threes, and the midrange that spaces the floor">Sht</span>
+                <span title="Playmaking">Ply</span>
+                <span title="Rebounding">Reb</span>
+              </span>
             </th>
             <th className="r">Caps</th>
             <th />
@@ -248,6 +254,7 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
               <td className="y">
                 {maskYears(r.span.playerName, r.span.spanLabel)}
                 {r.current ? <small>plays for you now</small> : r.peak && <small>his best years</small>}
+                <TagChips span={r.span} />
               </td>
               <td className="n c-hide">
                 {teamsForSpan(r.span)
@@ -264,8 +271,8 @@ export function StretchTable({ rows }: { rows: StretchRow[] }) {
               </td>
               <td className="n g c-hide">
                 {/* one letter a column; before a scout, a dash in each ("–" until we press Scout) */}
-                <span className={`cols g4${r.grades ? '' : ' unscouted'}`}>
-                  {(r.grades ? r.grades.split(' · ') : ['–', '–', '–', '–']).map((g, i) => (
+                <span className={`cols g5${r.grades ? '' : ' unscouted'}`}>
+                  {(r.grades ? r.grades.split(' · ') : ['–', '–', '–', '–', '–']).map((g, i) => (
                     <span key={i} className={r.grades ? gradeTone(g) : undefined}>
                       {g}
                     </span>

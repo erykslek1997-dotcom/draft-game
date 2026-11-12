@@ -1,7 +1,9 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, computeOffensiveTalent, computeUncappedOffensiveTalent } from './talent';
-import { effectiveTalent, type Grade } from './grades';
+import { effectiveTalent, gradeRank, spacingGrade, type Grade } from './grades';
+import { computeSpacing } from './spacing';
+import { teamSpacingValue } from './midrangeGravity';
 import { realSpan } from './realAdvancedLookup';
 import { eraBaseline, LEAGUE_PACE_BASELINE } from './era';
 import { astPctForSpan } from './ballHandling';
@@ -205,3 +207,16 @@ export const playmakingRating = (span: PlayerSpan): number => metricRating(span,
 export const reboundingRating = (span: PlayerSpan): number => metricRating(span, 'rebounding');
 export const playmakingRatingGrade = (span: PlayerSpan): Grade => ratingGrade(playmakingRating(span));
 export const reboundingRatingGrade = (span: PlayerSpan): Grade => ratingGrade(reboundingRating(span));
+
+/**
+ * 2026-11-12 (the user: "zmień 3PT na shooting"; "wszystko spójne"): the card's Shooting is the
+ * spacing the engine plays — threes, and the midrange that bends a defense (a big's at
+ * `BIG_MIDRANGE_SHARE`) — graded on the spacing letters. The three-point letter keeps its own caps
+ * (accuracy, no threes after the line); the midrange side is read on the same pool, uncapped, and the
+ * better of the two shows (Garnett 2004-06: threes F, the engine's 36 a C).
+ */
+export function shootingGrade(span: PlayerSpan): Grade {
+  const threes = spacingGrade(computeSpacing(span), span);
+  const engine = spacingGrade(teamSpacingValue(span));
+  return gradeRank(engine) > gradeRank(threes) ? engine : threes;
+}

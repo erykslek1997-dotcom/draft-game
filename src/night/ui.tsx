@@ -5,7 +5,7 @@ import { headshotUrl } from '../data/headshots';
 import { teamColors } from '../data/teamColors';
 import { teamsForSpan } from '../engine/spanTeams';
 import { isBombMasked, maskName, maskText, maskYears } from '../components/bombMask';
-import { cardRoles } from '../components/cardRoles';
+import { cardTags, styleRoles } from '../components/cardRoles';
 import { BRAND_MARK } from '../brand';
 import { bandInk } from './color';
 import { CapI, FaceContext, FitName, fmtCaps, cx } from './frame';
@@ -39,6 +39,39 @@ export function fitForms(name: string, forms: (shown: string) => string[]): stri
 export function FitShortName({ name, as }: { name: string; as?: 'span' | 'b' }) {
   return <FitName as={as} forms={fitForms(name, (shown) => [initialAndSurname(shown)])} />;
 }
+
+/** The chips beside a name (`cardTags`): traits, "On-ball", "Max N min" — each whole, never cut. */
+export function TagChips({ span, className }: { span: PlayerSpan; className?: string }) {
+  if (isBombMasked(span.playerName)) return null;
+  const t = cardTags(span);
+  if (!t.traits.length && !t.onBall && t.maxMinutes === null) return null;
+  return (
+    <span className={cx('tagc', className)}>
+      {t.traits.map((x) => (
+        <i key={x} className="tr" title={TRAIT_TIPS[x] ?? x}>
+          {x}
+        </i>
+      ))}
+      {t.onBall && (
+        <i className="ob" title="Holds the ball: two such players in a five cost it offense">
+          On-ball
+        </i>
+      )}
+      {t.maxMinutes !== null && (
+        <i className="mx" title="His durability and real minutes hold him to this many a game">
+          Max {t.maxMinutes} min
+        </i>
+      )}
+    </span>
+  );
+}
+const TRAIT_TIPS: Record<string, string> = {
+  Hustle: 'Hustle: the loose balls, charges and extra effort',
+  Clutch: 'Clutch: better when the game is close and late',
+  Microwave: 'Microwave: scores in bunches off the bench',
+  Glue: 'Glue: makes the players around him better without the ball',
+  Veteran: 'Veteran: a late-career window that steadies a bench',
+};
 
 export function lastName(name: string): string {
   const shown = maskName(name);
@@ -242,7 +275,7 @@ export function NCard({
   jokerBand?: boolean;
 }) {
   const band = spanBand(span);
-  const roles = cardRoles(span);
+  const roles = styleRoles(span);
   const inner = (
     <>
       <div className={cx('top', jokerBand && 'jk')}>

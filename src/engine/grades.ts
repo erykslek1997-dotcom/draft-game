@@ -467,7 +467,7 @@ function overallTier(value: number): OverallTier {
  * single rule again — the reverted session's own transcript is the record of what was tried.
  */
 const GRADE_ORDER: Grade[] = ['F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+', 'S'];
-function gradeRank(g: Grade): number {
+export function gradeRank(g: Grade): number {
   return GRADE_ORDER.indexOf(g);
 }
 function gradeAtLeast(g: Grade, min: Grade): boolean {

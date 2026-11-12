@@ -8,12 +8,14 @@ import { hadThreePointLine } from './eraNotes';
  * what its letter means on the F–S scale. Spacing before the 3-point line (1979-80) shows "—" with
  * its own tip instead of an F the player couldn't have avoided.
  */
-export type GradeKey = 'OFF' | 'DEF' | '3PT' | 'DUR' | 'FIN' | 'POR';
+export type GradeKey = 'OFF' | 'DEF' | 'SHT' | 'PLY' | 'REB' | 'DUR' | 'FIN' | 'POR';
 
 const MEASURES: Record<GradeKey, string> = {
   OFF: 'Offense: scoring, efficiency and playmaking',
   DEF: 'Defense: stopping his man and protecting the team',
-  '3PT': 'Spacing: how far out his shooting pulls defenders',
+  SHT: 'Shooting: how far his threes and midrange pull defenders out',
+  PLY: 'Playmaking: how much of the offense he sets up (assist rate)',
+  REB: 'Rebounding: his share of the glass, for his position and era',
   DUR: 'Durability: how many games he played',
   FIN: 'Finishing: scoring at the rim',
   POR: 'Portability: how well his game fits next to other stars',

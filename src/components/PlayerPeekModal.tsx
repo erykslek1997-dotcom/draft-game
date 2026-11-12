@@ -1,15 +1,14 @@
 import { computeFinishing } from '../engine/finishing';
-import { offenseRatingGrade, defenseRatingGrade } from '../engine/ratingScale';
+import { offenseRatingGrade, defenseRatingGrade, playmakingRatingGrade, reboundingRatingGrade, shootingGrade } from '../engine/ratingScale';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { PlayerSpan } from '../data/schema';
 import { isPickLegal, type DraftState } from '../engine/draft';
-import { computeSpacing } from '../engine/spacing';
 import type { Team } from '../engine/types';
-import { CapI, NFace, fmtCaps } from '../night/ui';
+import { CapI, NFace, TagChips, fmtCaps } from '../night/ui';
 import { NOT_YET, STEALS_BLOCKS_NOTE, THREE_POINT_LINE_NOTE, hadStealsBlocksRecorded, hadThreePointLine } from './eraNotes';
 import { teamsForSpan } from '../engine/spanTeams';
 import { draftPool as fullDraftPool } from '../data/draftPool';
-import { portabilityGrade, spacingGrade, durabilityGrade, finishingGrade, displayTierForSpan, type Grade } from '../engine/grades';
+import { portabilityGrade, durabilityGrade, finishingGrade, displayTierForSpan, type Grade } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { computeDurability } from '../engine/durability';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -62,14 +61,16 @@ function gradeList(span: PlayerSpan): Array<[string, Grade, GradeKey]> {
   return [
     ['Offense', offenseRatingGrade(span), 'OFF'],
     ['Defense', defenseRatingGrade(span), 'DEF'],
-    ['Spacing', spacingGrade(computeSpacing(span), span), '3PT'],
-    ['Portability', portabilityGrade(span), 'POR'],
+    ['Shooting', shootingGrade(span), 'SHT'],
+    ['Playmaking', playmakingRatingGrade(span), 'PLY'],
+    ['Rebounding', reboundingRatingGrade(span), 'REB'],
     ['Finishing', finishingGrade(computeFinishing(span), span), 'FIN'],
     ['Durability', durabilityGrade(computeDurability(span)), 'DUR'],
+    ['Portability', portabilityGrade(span), 'POR'],
   ];
 }
 
-/** The six grades as printed marks: an A in green, a C or lower in red (mockup `#peekScouted`).
+/** The eight grades (2026-11-12: Shooting, Playmaking, Rebounding joined) as printed marks: an A in green, a C or lower in red (mockup `#peekScouted`).
  * 2026-10-28 (mockup `draft-grades-phone.html`): equal tiles, 3×2 on a phone and one row on a
  * desktop; before a scouting report the tiles show "?" so it is clear what the report opens. */
 function Grades({ span, locked = false }: { span: PlayerSpan; locked?: boolean }) {
@@ -204,6 +205,7 @@ export function PlayerPeekModal({
             </div>
             <div className="pk2-grades">
               <Awards span={cardSpan} />
+              <TagChips span={cardSpan} className="pk2-tags" />
               {scouted && <span className="pk2-tier">{tierOf(cardSpan)}</span>}
               {(scouted || !readOnly) && <Grades span={cardSpan} locked={!scouted} />}
             </div>

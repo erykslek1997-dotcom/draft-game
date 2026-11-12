@@ -3,10 +3,10 @@ import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { naturalPosition } from '../engine/naturalPosition';
 import { hadThreePointLine, NOT_YET } from '../components/eraNotes';
-import { cardRoles } from '../components/cardRoles';
+import { styleRoles } from '../components/cardRoles';
 import { maskName, maskYears } from '../components/bombMask';
 export { LeagueMark, NightLottery, leagueColors, snakePicks } from './league';
-import { CapI, H3, NFace, SLOTS, Slot, fmtCaps, gradeTone } from './ui';
+import { CapI, H3, NFace, SLOTS, Slot, TagChips, fmtCaps, gradeTone } from './ui';
 
 /**
  * The draft pieces the Mini and the All-Time Draft share (mockups `mini.html`, `alltime.html`,
@@ -127,8 +127,8 @@ export interface NightRow {
   /** "taken #33" while a just-taken player keeps his place. */
   taken?: string;
   starred?: boolean;
-  /** Scouted grades (All-Time): OFF / DEF / 3PT. */
-  grades?: { off: string; def: string; tp: string };
+  /** Scouted grades (All-Time): OFF / DEF / SHT (shooting) / PLY (playmaking) / REB (rebounding). */
+  grades?: { off: string; def: string; sht: string; ply: string; reb: string };
   /** His other stretches, for the years button (All-Time). */
   spans?: number;
   /** Costs more than your next pick may spend — his caps show in red. */
@@ -172,7 +172,7 @@ export function PlayerTable({
         <col className="c-hide c-mid" style={{ width: 58 }} />
         {!at && <col className="c-hide" style={{ width: 58 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide c-mid" style={{ width: 120 }} />}
+        {at && <col className="c-hide c-mid" style={{ width: 172 }} />}
         {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
         <col style={{ width: 96 }} />
       </colgroup>
@@ -190,7 +190,13 @@ export function PlayerTable({
           {at && (
             <th className="c-hide c-mid g">
               {/* the scouting letters, one column each (2026-11-12: "A · B- · B" didn't hold its columns) */}
-              <span className="cols g3"><span>Off</span><span>Def</span><span>3PT</span></span>
+              <span className="cols g5">
+                <span title="Offense">Off</span>
+                <span title="Defense">Def</span>
+                <span title="Shooting: threes, and the midrange that spaces the floor">Sht</span>
+                <span title="Playmaking">Ply</span>
+                <span title="Rebounding">Reb</span>
+              </span>
             </th>
           )}
           {(at || onStar) && <th className="c-hide" />}
@@ -200,7 +206,7 @@ export function PlayerTable({
       <tbody>
         {rows.map((r) => {
           const s = r.span;
-          const roles = cardRoles(s);
+          const roles = styleRoles(s);
           const name = maskName(s.playerName);
           return (
             <tr
@@ -222,11 +228,13 @@ export function PlayerTable({
                 ) : (
                   <div className="nm">{name}</div>
                 )}
+                {/* 2026-11-12: traits, "On-ball", "Max N min" as chips — never cut with the role line */}
+                <TagChips span={s} />
                 {/* 2026-10-28: on a phone the grade column hides, so a scouted player keeps his three
-                    letters as chips by the name (OFF · DEF · 3PT) */}
+                    letters as chips by the name (OFF · DEF · SHT) */}
                 {r.grades && (
                   <span className="lt-chips">
-                    {[r.grades.off, r.grades.def, r.grades.tp].map((v, i) => (
+                    {[r.grades.off, r.grades.def, r.grades.sht].map((v, i) => (
                       <i key={i} className={gradeTone(v)}>
                         {v}
                       </i>
@@ -273,10 +281,10 @@ export function PlayerTable({
                   {/* a dash in each column until a scout opens the cards (the user, 2026-11-12: "„–” zanim
                       wciśniemy scouta"); the row opens his window, where the scout is */}
                   <span
-                    className={`cols g3${r.grades ? '' : ' unscouted'}`}
+                    className={`cols g5${r.grades ? '' : ' unscouted'}`}
                     title={r.grades ? undefined : scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}
                   >
-                    {(r.grades ? [r.grades.off, r.grades.def, r.grades.tp] : ['–', '–', '–']).map((v, i) => (
+                    {(r.grades ? [r.grades.off, r.grades.def, r.grades.sht, r.grades.ply, r.grades.reb] : ['–', '–', '–', '–', '–']).map((v, i) => (
                       <span key={i} className={r.grades ? gradeTone(v) : undefined}>
                         {v}
                       </span>
