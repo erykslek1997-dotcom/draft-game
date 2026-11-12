@@ -9,7 +9,7 @@ import './DailyLeaderboard.css';
  * dailies' history and streak brought back from the server (`onSynced` lets the menu re-read them).
  * Renders nothing in an offline build.
  */
-export function AccountBar({ onSynced }: { onSynced?: () => void }) {
+export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The newspaper menu's own look (night/alltime.css). */ menu?: boolean }) {
   const { account, refresh } = useAccount();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
@@ -25,16 +25,16 @@ export function AccountBar({ onSynced }: { onSynced?: () => void }) {
   if (!onlineEnabled || account === undefined) return null;
   if (!account) {
     return (
-      <div className="acct">
+      <div className={menu ? 'm2-acct' : 'acct'}>
         <button type="button" className="dlb-google" onClick={() => void signInWithGoogle()}>
           Sign in with Google
         </button>
-        <span className="dlb-note">Leaderboards, and your streak on every device.</span>
+        <span className="dlb-note">to post scores and keep your streak on any device</span>
       </div>
     );
   }
   return (
-    <div className="acct">
+    <div className={menu ? 'm2-acct' : 'acct'}>
       {editing ? (
         <form
           className="dlb-me"
