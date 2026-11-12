@@ -13,6 +13,7 @@ import { preZoneShootingSkill } from './preZoneShooting';
 import starterShareData from '../data/starterShare.json';
 import type { Rotation } from './types';
 import { envVar } from './env';
+import { capBenchMinutes } from './rotation';
 
 /**
  * 2026-11-05, the user's test draft ("każdy ma być na swojej pozycji, oprócz ławkowiczów którzy mogą
@@ -454,9 +455,12 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       .filter((r) => r.playerId !== starterId && r.minutes > 0)
       .map((r) => ({ r, p: roster.find((q) => q.id === r.playerId)! }));
     for (const worse of backups) {
+      // 2026-11-12 (the user, Fort Worth: "dlaczego Hinrich nie gra na SG"): never onto a third
+      // spot — Gerald Wallace, at SF and PF, took Kirk Hinrich's SG minutes and played three.
+      const spotsOf = (id: string) => STARTER_SLOTS.filter((x) => slots[x].some((r) => r.playerId === id && r.minutes > 0));
       const better = roster
         .filter((q) => q.id !== worse.p.id && q.id !== starterId && isRealPositionFit(q, slot) && effectiveTalent(q) - effectiveTalent(worse.p) >= BACKUP_QUALITY.margin)
-        .filter((q) => STARTER_SLOTS.some((x) => slots[x].some((r) => r.playerId === q.id && r.minutes > 0)))
+        .filter((q) => spotsOf(q.id).length > 0 && new Set([...spotsOf(q.id), slot]).size <= 2)
         .sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
       for (const q of better) {
         if (worse.r.minutes <= 0) break;
@@ -572,6 +576,8 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
     }
   }
   for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((r, i) => i === 0 || r.minutes > 0);
+  // The bench under the shortest-playing starter and never past 30 (`benchMinutesCap`).
+  capBenchMinutes(roster, slots);
   return { slots };
 }
 
