@@ -430,6 +430,18 @@ begin
   return now();
 end $$;
 
+-- 2026-11-12: the tournament goes round by round for the whole room: each player's rounds seen.
+alter table public.mp_members add column if not exists tourney int not null default 0 check (tourney between 0 and 10);
+
+create or replace function public.mp_tourney(p_room uuid, p_rounds int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update mp_members set tourney = greatest(tourney, least(p_rounds, 10)), last_seen = now()
+  where room_id = p_room and user_id = auth.uid() and tourney < least(p_rounds, 10);
+end $$;
+revoke all on function public.mp_tourney(uuid, int) from public, anon;
+grant execute on function public.mp_tourney(uuid, int) to authenticated;
+
 revoke all on function public.mp_create(bigint, text, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
   public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid), public.mp_live_players() from public, anon;
 grant execute on function public.mp_create(bigint, text, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
