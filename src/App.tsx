@@ -178,7 +178,7 @@ function App() {
   const [modeChallenge] = useState<ModeChallenge | null>(() => takeModeChallengeFromUrl());
   const [dailyOffset, setDailyOffset] = useState(0);
   // 2026-11-12: a room's link (?room=CODE), or a refresh during a room's draft, opens the room.
-  const [roomCode] = useState(() => (onlineEnabled ? roomFromUrl() : null));
+  const [roomCode, setRoomCode] = useState(() => (onlineEnabled ? roomFromUrl() : null));
   const [view, setView] = useState<View>(() =>
     roomCode ? 'multi' : modeChallenge?.mode === 'mini' ? 'quickfive' : modeChallenge?.mode === 'roulette' ? 'bestfive' : 'intro',
   );
@@ -401,13 +401,26 @@ function App() {
 
       {view === 'duel' && (
         <Suspense fallback={<LoadingPanel />}>
-          <MultiMini duel onExit={() => setView('intro')} />
+          <MultiMini
+            duel
+            onExit={() => {
+              setRoomCode(null);
+              setView('intro');
+            }}
+          />
         </Suspense>
       )}
 
       {view === 'multi' && (
         <Suspense fallback={<LoadingPanel />}>
-          <MultiMini initialCode={roomCode ?? undefined} onExit={() => setView('intro')} />
+          <MultiMini
+            initialCode={roomCode ?? undefined}
+            onExit={() => {
+              // Used once: leaving the room forgets it, so the next "Play with friends" starts fresh.
+              setRoomCode(null);
+              setView('intro');
+            }}
+          />
         </Suspense>
       )}
 
