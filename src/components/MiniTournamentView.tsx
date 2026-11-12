@@ -41,7 +41,15 @@ export function MiniTournamentView({
   summary,
   onShare,
   overlay,
+  gate,
+  waiting,
+  onShown,
 }: {
+  /** Multiplayer: rounds you may reveal so far (the room goes round by round together). */
+  gate?: number;
+  /** Who the room waits for, when the gate holds you. */
+  waiting?: string;
+  onShown?: (rounds: number) => void;
   /** The sixteen teams, best draft grade first: index 0 is the 1 seed. */
   seeded: Team[];
   /** Each team's draft grade, by id. */
@@ -67,7 +75,11 @@ export function MiniTournamentView({
   const out = exitRound(t, you.id);
   // Rounds shown so far: a round is revealed when your game in it is played or simmed, or all at
   // once with "Sim to the end" once you are out.
-  const [shown, setShown] = useState(0);
+  const [shown, setShownRaw] = useState(0);
+  const cap = gate ?? MINI_ROUNDS.length;
+  const setShown = (v: number | ((s: number) => number)) => setShownRaw((s) => Math.min(cap, Math.max(s, typeof v === 'function' ? v(s) : v)));
+  useEffect(() => onShown?.(shown), [shown, onShown]);
+  const held = gate !== undefined && shown >= gate && shown < MINI_ROUNDS.length;
   const [watching, setWatching] = useState<MiniGame | null>(null);
   const [openRound, setOpenRound] = useState<number | null>(null);
   const yourGame = (round: number) => t.rounds[round]?.find((g) => g.teamAId === you.id || g.teamBId === you.id);
@@ -313,6 +325,8 @@ export function MiniTournamentView({
         ← Back to the results
       </button>
     </>
+  ) : held ? (
+    <p className="mp-note">Waiting for {waiting ?? 'the room'} to catch up. The room plays the bracket together.</p>
   ) : alive && next ? (
     <>
       <Btn onClick={() => setWatching(next)}>▶ Play the {MINI_ROUNDS[next.round]}</Btn>

@@ -101,6 +101,8 @@ export interface MiniMp {
   lastPickAt: number;
   clockS: number;
   now: () => number;
+  /** The tournament, round by round together. */
+  tourney?: { gate: number; waiting?: string; onShown: (rounds: number) => void };
   /** Server time the first pick opens, ms: the lottery plays until then. */
   startsAt: number;
   /** This screen sends the CPU's picks first; the others step in a few seconds later. */
@@ -312,6 +314,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         onNewDraft={() => (mp ? onExit() : restart())}
         onRematch={() => (mp ? onExit() : restart(state.seed))}
         careerId={mp ? `mini:mp:${mp.roomId}` : undefined}
+        tourneyGate={mp?.tourney}
         onNextStep={daily ? undefined : onNextStep}
         challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
         daily={daily}
@@ -724,7 +727,9 @@ function QuickResults({
   daily,
   links,
   careerId: fixedCareerId,
+  tourneyGate,
 }: {
+  tourneyGate?: { gate: number; waiting?: string; onShown: (rounds: number) => void };
   careerId?: string;
   state: QuickDraftState;
   codeOf: (t: Team) => string;
@@ -907,6 +912,9 @@ function QuickResults({
         onBack={() => setTourney(false)}
         onNewDraft={daily ? undefined : onNewDraft}
         onFinished={setTourneyResult}
+        gate={tourneyGate?.gate}
+        waiting={tourneyGate?.waiting}
+        onShown={tourneyGate?.onShown}
         summary={
           tourneyResult && (
             <RunSummary

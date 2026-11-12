@@ -35,6 +35,8 @@ export interface MpMember {
   slot: number | null;
   joined_at: string;
   last_seen: string;
+  /** Tournament rounds this player has seen. */
+  tourney: number;
 }
 export interface MpPick {
   pick_no: number;
@@ -102,6 +104,10 @@ export async function sendPick(roomId: string, pickNo: number, playerId: string)
   return !error && data === true;
 }
 
+export async function sendTourney(roomId: string, rounds: number): Promise<void> {
+  await supabase?.rpc('mp_tourney', { p_room: roomId, p_rounds: rounds });
+}
+
 export async function myUserId(): Promise<string | null> {
   if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
@@ -162,7 +168,7 @@ export function useRoom(roomId: string | null): RoomLive {
   }, [roomId]);
   const loadMembers = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen').eq('room_id', roomId).order('joined_at');
+    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen,tourney').eq('room_id', roomId).order('joined_at');
     if (data) setMembers(data as MpMember[]);
   }, [roomId]);
   const loadPicks = useCallback(async () => {

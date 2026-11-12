@@ -14,6 +14,7 @@ import {
   rememberRoom,
   roomLink,
   sendPick,
+  sendTourney,
   startRoom,
   useRoom,
   type MpError,
@@ -193,6 +194,13 @@ function Room({ roomId, code, me, onExit }: { roomId: string; code: string; me: 
       clockS: room.clock_s,
       now: live.now,
       leader,
+      tourney: (() => {
+        // A round opens when everyone still here has seen the one before it.
+        const others = members.filter((m) => m.user_id !== me && m.slot !== null && here(m.last_seen));
+        const behind = others.filter((m) => m.tourney < Math.min(...others.map((o) => o.tourney)) + 1 && m.tourney === Math.min(...others.map((o) => o.tourney)));
+        const gate = others.length ? Math.min(...others.map((o) => o.tourney)) + 1 : 99;
+        return { gate, waiting: behind.map((m) => m.nickname).join(', ') || undefined, onShown: (n: number) => void sendTourney(roomId, n) };
+      })(),
       send: (pickNo, playerId) => {
         void sendPick(roomId, pickNo, playerId).then((ok) => ok && live.refresh());
       },
