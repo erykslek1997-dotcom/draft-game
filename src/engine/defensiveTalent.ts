@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 1), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder' };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 1), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', keepRecognized: envVar('DT_DBPM_REC') !== '0' };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -742,6 +742,10 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const real = realSpan(span);
   if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
   if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+  // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
+  // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
+  // overrule (2026-11-12, testDefensiveHuntability's elite shell).
+  if (DBPM_SOURCE.keepRecognized && individualDefenseRate(span) > 0) return measured;
   if (!dbpmFinalPools) {
     const pools = new Map<string, { dbpm: number[]; dtal: number[] }>();
     for (const raw of draftPool) {
