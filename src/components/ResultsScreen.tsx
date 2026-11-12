@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from '
 import { offenseRating, defenseRating, RATING_MEDIAN } from '../engine/ratingScale';
 import { rankTeams, offenseScoreBreakdown, teamDefensiveTalentScore, calibrateOffenseToDefenseScale, talentOnDefenseScale, type ScoreBreakdown } from '../engine/scoring';
 import { evaluateLeague, type TeamLeagueEvaluation } from '../engine/leagueSimulation';
-import { seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
+import { engineTeamViews, seasonOutlook, seasonSeed, simulateLivePlayoffsAsync, simulateLiveSeasonAsync, type SimProgress } from '../engine/liveSeason';
 import { STARTER_SLOTS } from '../engine/positions';
 import type { Position } from '../data/schema';
 import { allAssignments, primaryStarters, type ResolvedSlotAssignment } from '../engine/rotation';
@@ -649,6 +649,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   // (During local calibration a scoring.ts HMR edit won't refresh this without a hard reload —
   // acceptable; the sim below already had the same property.)
   const ranked = useMemo(() => rankTeams(scoredTeams), [scoredTeams]);
+  // Projected record and zone beside the place (playtest list 15; `seasonOutlook`).
+  const outlook = useMemo(() => seasonOutlook(engineTeamViews(scoredTeams)), [scoredTeams]);
 
   // 2026-09-14, user-reported live: Title Odds used to be a single 500-trial Monte Carlo estimate,
   // chosen specifically because the engine's real 20,000-trial default used to take ~1s and would
@@ -1333,13 +1335,14 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         ))}
       </section>
       <section>
-        <H3 note="series = your chance to beat them in a best-of-7">Final standings</H3>
+        <H3 note="proj = the record the season expects · series = your chance to beat them in a best-of-7">Final standings</H3>
         <table className="stand2 st-at">
           <thead>
             <tr>
               <th>#</th>
               <th />
               <th>Team</th>
+              <th>Proj</th>
               <th>Title</th>
               <th>Series</th>
               <th>Rating</th>
@@ -1354,6 +1357,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
               const mine = humanRanked ? profileRows(humanRanked.breakdown) : [];
               const edgeRows = profileRows(breakdown).map((r, k) => ({ label: r.label, theirs: Math.round(r.value), mine: Math.round(mine[k]?.value ?? 0) }));
               const nick = teamLabel(team).split(' ').slice(-1)[0];
+              const ol = outlook.get(team.id);
               return (
                 <Fragment key={team.id}>
                   <tr className={team.isHuman ? 'you' : 'tap'} onClick={team.isHuman ? undefined : () => setOpenTeam(open ? null : team.id)}>
@@ -1361,7 +1365,11 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <td className="tmc">
                       <LeagueMark name={team.name} code={codeByTeamId.get(team.id) ?? ''} />
                     </td>
-                    <td className="nm">{teamLabel(team)}</td>
+                    <td className="nm">
+                      {teamLabel(team)}
+                      {ol && <i className={`zone z-${ol.zone.toLowerCase()}`}>{ol.zone}</i>}
+                    </td>
+                    <td className="pj">{ol ? `${ol.wins}–${ol.losses}` : '—'}</td>
                     <td>{pct(odds)}</td>
                     <td>{vs ? `${Math.round(vs.seriesWinProb * 100)}%` : '—'}</td>
                     <td>{breakdown.overall}</td>
@@ -1371,7 +1379,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                     <tr className="open">
                       {/* one cell across the table (2026-11-06: the rival's bench minutes were cut on a
                           phone by the empty rank column); the indent is CSS's, desktop only */}
-                      <td colSpan={7} className="open-panel">
+                      <td colSpan={8} className="open-panel">
                         {/* 2026-11-06, the user ("zrób po prostu taki widok jak u gracza"): the rival's
                             roster as your own — each slot's starter with who comes in for him — and
                             who did not play. */}

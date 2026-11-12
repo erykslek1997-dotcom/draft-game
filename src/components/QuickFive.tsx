@@ -787,7 +787,7 @@ function QuickResults({
         title={title}
         links={links}
         onBack={() => setTourney(false)}
-        onNewDraft={onNewDraft}
+        onNewDraft={daily ? undefined : onNewDraft}
         onFinished={setTourneyResult}
         onShare={() => setShareOpen(true)}
         overlay={shareOpen ? <ShareNight d={poster} link={daily ? undefined : modeChallengeLink('mini', state.seed, human.score.composite, teamLabel(human.team))} fileName={teamLabel(human.team)} onClose={() => setShareOpen(false)} /> : undefined}

@@ -1,4 +1,4 @@
-import { nicknameFor } from '../data/nicknames';
+import { nicknameIfNeeded } from '../data/nicknames';
 import { Fragment, createContext, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Team } from '../engine/types';
 import type { PlayerSpan } from '../data/schema';
@@ -83,12 +83,14 @@ const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${
  * turns it round (2026-10-29, the user: "Zrób Giannis A."): "Giannis Antetokounmpo" → "Giannis A.". */
 const LONG_SURNAME = 10;
 const shortName = (name: string) => {
-  const nick = nicknameFor(name);
-  if (nick) return nick;
   const i = name.indexOf(' ');
   if (i < 0) return name;
   const last = name.slice(i + 1);
-  return last.length > LONG_SURNAME ? `${name.slice(0, i)} ${last[0]}.` : `${name[0]}. ${last}`;
+  // The nickname where "G. Antetokounmpo" would not fit (`nicknameIfNeeded`), else the turned-round form.
+  const plain = `${name[0]}. ${last}`;
+  const nick = nicknameIfNeeded(name, plain);
+  if (nick !== plain) return nick;
+  return last.length > LONG_SURNAME ? `${name.slice(0, i)} ${last[0]}.` : plain;
 };
 
 /** A first name that hides on a phone (`.fn`), then the last name. */

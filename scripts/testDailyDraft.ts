@@ -43,7 +43,11 @@ const jordan = span('Michael Jordan', '1990-92');
 const duncan = span('Tim Duncan', '2001-03');
 check(dailyRuleBlocks({ kind: 'team', code: 'LAL', name: 'Lakers' }, kobe, []), 'a Lakers day keeps Kobe from you');
 check(!dailyRuleBlocks({ kind: 'team', code: 'LAL', name: 'Lakers' }, duncan, []), '... and not Duncan');
-check(dailyRuleBlocks({ kind: 'era', decade: 1990 }, jordan, []) && !dailyRuleBlocks({ kind: 'era', decade: 1990 }, duncan, []), 'a no-90s day keeps Jordan 1990-92 from you, not Duncan 2001-03');
+// The era rule reads the career (2026-11-12): Duncan's 2001-03 is out on a no-90s day (he played
+// from 1997-98), Curry's never.
+const curry = span('Stephen Curry', '2015-17');
+check(dailyRuleBlocks({ kind: 'era', decade: 1990 }, jordan, []) && dailyRuleBlocks({ kind: 'era', decade: 1990 }, duncan, []) && !dailyRuleBlocks({ kind: 'era', decade: 1990 }, curry, []), 'a no-90s day keeps Jordan and Duncan 2001-03 from you, not Curry');
+check(dailyRuleBlocks({ kind: 'era', decade: 2000 }, kobe, []) && dailyRuleBlocks({ kind: 'era', decade: 2000 }, span('Kobe Bryant', '2011-13'), []), 'a no-2000s day keeps every Kobe window from you');
 check(isMvpTier(kobe) && isMvpTier(duncan), 'Kobe and Duncan are MVP-tier');
 check(!dailyRuleBlocks({ kind: 'stars', max: 1 }, kobe, []) && dailyRuleBlocks({ kind: 'stars', max: 1 }, kobe, [duncan]), 'one MVP-tier is fine, a second is not');
 
@@ -69,7 +73,8 @@ check(isQuickPickLegal(stars, kobeOther!.id), '... and you can draft him in them
 const hakeemPeak = peakDraftPool.find((s) => s.playerName === 'Hakeem Olajuwon')!;
 const no90s = { ...createQuickDraft(undefined, 4242, { cap: 80, rule: { kind: 'era', decade: 1990 } }) };
 const hakeemOther = quickDailyAlternative({ ...no90s, teams: no90s.teams.map((t, i) => ({ ...t, isHuman: i === 0 })) }, hakeemPeak.id);
-check(hakeemOther !== null && windowEnd(hakeemOther.spanLabel) < 1990, `on a no-90s day, Olajuwon (${hakeemPeak.spanLabel}) is there in his 80s years (${hakeemOther?.spanLabel})`);
+// A decade rule keeps the whole career out (2026-11-12): no 80s Olajuwon on a no-90s day.
+check(hakeemOther === null, `on a no-90s day, Olajuwon is out in every window (${hakeemOther?.spanLabel})`);
 
 // Whole days, every kind of rule: complete, under the cap, your five clean.
 let teams = 0;
@@ -100,7 +105,7 @@ check(isPickLegal({ ...humanFirst, teams: humanFirst.teams.map((t) => ({ ...t, i
 check(dailyAlternative(humanFirst, kobePeak.id) === null, '... in no other years either');
 const atNo90s = createDraft(false, undefined, undefined, 4242, undefined, { day: '2026-10-05', cap: 90, rule: { kind: 'era', decade: 1990 } });
 const hakeemAt = dailyAlternative({ ...atNo90s, teams: atNo90s.teams.map((t, i) => ({ ...t, isHuman: i === 0 })) }, hakeemPeak.id);
-check(hakeemAt !== null && windowEnd(hakeemAt.spanLabel) < 1990, `All-Time: on a no-90s day, Olajuwon is there in his 80s years (${hakeemAt?.spanLabel})`);
+check(hakeemAt === null, `All-Time: on a no-90s day, Olajuwon is out in every window (${hakeemAt?.spanLabel})`);
 
 // Whole All-Time days, one of each rule: complete, every team under the cap (the CPU's spans
 // re-fitted as the game does after the draft), your nine clean of the rule.

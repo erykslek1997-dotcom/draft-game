@@ -77,6 +77,10 @@
 .stand2 td.tmc { text-align: left; width: 40px; }
 .stand2 td.nm { text-align: left; font: 700 18px var(--cond); color: var(--ink); }
 .stand2 td.nm i { font: italic 500 12px var(--sans); color: var(--ink3); margin-left: 6px; }
+.stand2 td.nm i.zone { font: 600 11px var(--sans); font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; }
+.stand2 td.nm i.z-contender { color: var(--gold); }
+.stand2 td.nm i.z-playoffs { color: var(--green); }
+.stand2 td.pj { white-space: nowrap; }
 .stand2 tr.you td { background: var(--surf); color: var(--ink); }
 .stand2 tr.you td.rk { box-shadow: inset 3px 0 0 var(--you); color: var(--you); }
 .stand2 tr.cut td { border-bottom: 1.5px dashed var(--ink3); }

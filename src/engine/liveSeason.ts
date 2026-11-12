@@ -846,3 +846,34 @@ export function playLivePlayoffGame(teams: Team[], series: LivePlayoffSeries, ga
   if (!a || !b || !game) return null;
   return playPairingGame(prepareTeamPairing(a, b, series.margin), game.seed, true);
 }
+
+/**
+ * 2026-11-12 (playtest list 15, the user: Spokane 10th after the draft, first in the season): the
+ * table after the draft promises a place the season can't keep — over 82 games a team's wins land
+ * 4.7 off its projection (a coin's own spread; 4 leagues x 3 seasons), and the Overall order moves
+ * teams up to eight places from the projected-wins order. So beside the place it shows the
+ * projected record and a zone by the season's own lines (top six in, 7-10 play in), the projected
+ * seed from the wins the season projection expects. `contenderWins`: within about one season's
+ * luck of the best projection.
+ */
+export type SeasonZone = 'Contender' | 'Playoffs' | 'Play-in' | 'Lottery';
+const OUTLOOK = { contenderWins: 4, playoffSeeds: 6, playInSeeds: 10 };
+export interface SeasonOutlook {
+  wins: number;
+  losses: number;
+  seed: number;
+  zone: SeasonZone;
+}
+export function seasonOutlook(views: Map<string, EngineTeamView>, games = 82): Map<string, SeasonOutlook> {
+  const order = [...views].sort((x, y) => y[1].expectedWins - x[1].expectedWins);
+  const best = order[0]?.[1].expectedWins ?? 0;
+  return new Map(
+    order.map(([id, v], i) => {
+      const seed = i + 1;
+      const wins = Math.round(v.expectedWins);
+      const zone: SeasonZone =
+        v.expectedWins >= best - OUTLOOK.contenderWins ? 'Contender' : seed <= OUTLOOK.playoffSeeds ? 'Playoffs' : seed <= OUTLOOK.playInSeeds ? 'Play-in' : 'Lottery';
+      return [id, { wins, losses: games - wins, seed, zone }];
+    }),
+  );
+}

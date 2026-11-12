@@ -1,4 +1,4 @@
-import { nicknameFor } from '../data/nicknames';
+import { initialAndSurname, nicknameIfNeeded } from '../data/nicknames';
 import { useContext, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import { headshotUrl } from '../data/headshots';
@@ -23,19 +23,16 @@ export const TAP_TO_SHOW = typeof window !== 'undefined' && window.matchMedia?.(
 
 export function shortName(name: string): string {
   const shown = maskName(name);
-  if (shown === name) { const nick = nicknameFor(name); if (nick) return nick; }
-  const w = shown.split(' ');
-  if (w.length < 2) return shown;
-  return `${w[0][0]}. ${w.slice(1).join(' ')}`;
+  const regular = initialAndSurname(shown);
+  return shown === name ? nicknameIfNeeded(name, regular) : regular;
 }
 
 export function lastName(name: string): string {
   const shown = maskName(name);
-  if (shown === name) { const nick = nicknameFor(name); if (nick) return nick; }
   const w = shown.split(' ');
   // "Otto Porter Jr." is "Porter Jr.", never just "Jr." (playtest 2026-10-23)
-  if (w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1])) return w.slice(-2).join(' ');
-  return w[w.length - 1];
+  const regular = w.length > 2 && /^(Jr\.?|Sr\.?|II|III|IV)$/i.test(w[w.length - 1]) ? w.slice(-2).join(' ') : w[w.length - 1];
+  return shown === name ? nicknameIfNeeded(name, regular) : regular;
 }
 
 function initials(name: string): string {
