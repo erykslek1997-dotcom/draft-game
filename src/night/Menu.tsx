@@ -74,7 +74,10 @@ export function NightMenu({
   stepDone,
   confirm,
   onLiveTest,
+  onFriends,
 }: {
+  /** Mini Draft with friends (online only). */
+  onFriends?: () => void;
   teamName: string;
   onTeamReroll: () => void;
   savedDraft: DraftSaveSummary | null;
@@ -187,6 +190,20 @@ export function NightMenu({
                   </button>
                 </li>
               ))}
+              {onFriends && (
+                <li>
+                  <button type="button" className="m2-row" onClick={onFriends}>
+                    <span className="m2-n">{MODES.length + 1}</span>
+                    <ModeMark id="quickfive" />
+                    <div>
+                      <b>Play with friends</b>
+                      <span>A Mini Draft for up to four. Send a link, draft live.</span>
+                    </div>
+                    <em>15 min</em>
+                    <span className="m2-go">Play →</span>
+                  </button>
+                </li>
+              )}
             </ol>
             <div className="m2-today">
               <span className="m2-tl">Today’s dailies{streak > 0 ? ` · 🔥 ${streak}` : ''}</span>

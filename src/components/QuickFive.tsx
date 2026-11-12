@@ -15,6 +15,9 @@ import {
   quickPickBlockReason,
   quickPickBudget,
   finalizeQuickRotation,
+  applyQuickServerPick,
+  createQuickMultiplayerDraft,
+  resolveQuickAutoPick,
   QUICK_ROUNDS,
   type QuickDraftState,
 } from '../engine/quickDraft';
@@ -78,6 +81,38 @@ interface Props {
   challenge?: ModeChallenge;
   /** Today's daily draft (2026-10-16): its seed, cap and rule. */
   daily?: DailyDraftDay;
+  /** A multiplayer room's draft (2026-11-12): friends' teams, the room's pick log and clock. */
+  mp?: MiniMp;
+}
+
+/** What the Mini Draft needs from a multiplayer room (MultiMini.tsx keeps it up to date). */
+export interface MiniMp {
+  roomId: string;
+  seed: number;
+  /** Your team (its index among the sixteen). */
+  mySlot: number;
+  /** Players' names by team index; the rest are CPU GMs. */
+  names: Map<number, string>;
+  /** Teams whose player is still here; the CPU picks at once for one who left. */
+  here: Set<number>;
+  /** The room's pick log, player ids in order. */
+  picks: string[];
+  /** Server time of the latest pick (or the start), ms. */
+  lastPickAt: number;
+  clockS: number;
+  now: () => number;
+  /** This screen sends the CPU's picks first; the others step in a few seconds later. */
+  leader: boolean;
+  send: (pickNo: number, playerId: string) => void;
+}
+
+/** How long the other screens give the leader before they send a CPU pick themselves, ms. */
+const BACKUP_DELAY_MS = 4000;
+
+function replayPicks(state: QuickDraftState, picks: string[]): QuickDraftState {
+  let s = state;
+  for (let i = s.history.length; i < picks.length && !s.complete; i++) s = applyQuickServerPick(s, picks[i]);
+  return s;
 }
 
 type Phase = 'day' | 'lottery' | 'draft' | 'results';
@@ -101,10 +136,24 @@ const CAPS_TOP = 30;
  * pick-by-pick draft — 5 rounds, starters only, one card per player at his peak — with the same AI
  * as the All-Time Draft. See `quickDraft.ts` for the engine.
  */
-export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily }: Props) {
+export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp }: Props) {
   const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
-  const [state, setState] = useState<QuickDraftState>(() => freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined));
-  const [phase, setPhase] = useState<Phase>(daily ? 'day' : 'lottery');
+  const [state, setState] = useState<QuickDraftState>(() =>
+    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
+  );
+  // A room's draft starts at once: the order was drawn when the host started it.
+  const [phase, setPhase] = useState<Phase>(mp ? 'draft' : daily ? 'day' : 'lottery');
+  const mpPicks = mp?.picks;
+  useEffect(() => {
+    if (mpPicks && mpPicks.length > state.history.length) setState((s) => replayPicks(s, mpPicks));
+  }, [mpPicks, state.history.length]);
+  // The pick clock ticks on screen.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!mp || state.complete) return;
+    const t = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, [mp, state.complete]);
   const [boardOpen, setBoardOpen] = useState(false);
   const [dialog, setDialog] = useState<'settings' | 'howto' | 'leave' | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
@@ -136,7 +185,32 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     if (phase === 'draft' && canPick && !state.complete) buzz([15, 40, 15]);
   }, [phase, canPick, state.complete]);
 
+  // Multiplayer: the room's log is the draft. Your own pick waits for you (the CPU takes it when
+  // your clock runs out); a CPU team's, or a friend's who left or ran out of time, is sent by the
+  // leading screen, by the others a few seconds later if it didn't.
+  const mpSend = mp?.send;
+  const mpTiming = mp ? { mine: teamIdxOf(state) === mp.mySlot, owned: mp.names.has(teamIdxOf(state)), here: mp.here.has(teamIdxOf(state)), leader: mp.leader, ends: mp.lastPickAt + mp.clockS * 1000, now: mp.now() } : null;
+  // The 10-second bucket retries a pick the server turned down (clocks a second apart): waits are
+  // counted from fixed times, so re-arming never delays one.
+  const mpKey = mpTiming ? `${state.history.length}|${mpTiming.here}|${mpTiming.leader}|${mpTiming.ends}|${Math.floor(mpTiming.now / 10_000)}` : null;
   useEffect(() => {
+    if (!mpTiming || !mpSend || phase !== 'draft' || state.complete) return;
+    const pickNo = state.history.length + 1;
+    let wait: number;
+    if (mpTiming.mine) wait = mpTiming.ends - mpTiming.now;
+    else if (!mpTiming.owned || !mpTiming.here) wait = cpuPickDelay(state.history.length, TEAM_COUNT) + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
+    else wait = mpTiming.ends - mpTiming.now + 1000 + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
+    const timer = window.setTimeout(() => {
+      const next = resolveQuickAutoPick(state);
+      const pick = next?.history[next.history.length - 1];
+      if (pick) mpSend(pickNo, pick.playerId);
+    }, Math.max(0, wait));
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mpKey, phase, state, mpSend]);
+
+  useEffect(() => {
+    if (mp) return;
     if (phase !== 'draft' || state.complete || autoFinishing) return;
     if (state.teams[currentTeamIndex(state)].isHuman) return;
     const timer = setTimeout(() => {
@@ -144,7 +218,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
       if (next) setState(next);
     }, rushToMe ? RUSH_PICK_MS : cpuPickDelay(state.history.length, TEAM_COUNT));
     return () => clearTimeout(timer);
-  }, [state, phase, autoFinishing, rushToMe]);
+  }, [state, phase, autoFinishing, rushToMe, mp]);
 
   // The draft ends straight on the results: no rotation step in the Mini.
   useEffect(() => {
@@ -164,7 +238,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     <>
       {dialog === 'settings' && <NightSettings onClose={closeDialog} />}
       {dialog === 'howto' && <NightHowTo lead={`Mini Draft · ${TEAM_COUNT} teams, ${QUICK_ROUNDS} rounds, starters only.`} rules={howToRules(state.capLimit)} onClose={closeDialog} />}
-      {dialog === 'leave' && <NightConfirm title="Leave the draft?" lead="Mini Drafts aren’t saved: leaving ends this one." yes="Back to menu" no="Keep drafting" onYes={onExit} onNo={closeDialog} />}
+      {dialog === 'leave' && <NightConfirm title="Leave the draft?" lead={mp ? 'The room drafts on: the CPU picks for your team. You can come back with the room’s link.' : 'Mini Drafts aren’t saved: leaving ends this one.'} yes="Back to menu" no="Keep drafting" onYes={onExit} onNo={closeDialog} />}
     </>
   );
 
@@ -201,8 +275,13 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         codeOf={codeOf}
         onPick={(id) => {
           buzz();
-          setState((s) => makeQuickPick(s, id));
+          if (mp) mp.send(state.history.length + 1, id);
+          else setState((s) => makeQuickPick(s, id));
         }}
+        clock={mp && !state.complete ? Math.max(0, Math.ceil((mp.lastPickAt + mp.clockS * 1000 - mp.now()) / 1000)) : undefined}
+        clockFor={mp ? (mp.names.has(teamIdx) && mp.here.has(teamIdx)) || teamIdx === mp.mySlot : false}
+        gmOf={mp ? (i) => mp.names.get(i) : undefined}
+        awayOf={mp ? (i) => mp.names.has(i) && !mp.here.has(i) : undefined}
         onAutoFinish={() => {
           setAutoFinishing(true);
           setState((s) => autoFinishQuickDraft(s));
@@ -223,8 +302,9 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         state={state}
         codeOf={codeOf}
         title={title}
-        onNewDraft={() => restart()}
-        onRematch={() => restart(state.seed)}
+        onNewDraft={() => (mp ? onExit() : restart())}
+        onRematch={() => (mp ? onExit() : restart(state.seed))}
+        careerId={mp ? `mini:mp:${mp.roomId}` : undefined}
         onNextStep={daily ? undefined : onNextStep}
         challenge={challenge && Number(challenge.seed) === state.seed ? challenge : undefined}
         daily={daily}
@@ -321,7 +401,17 @@ function QuickDraftBoard({
   daily,
   title,
   links,
+  clock,
+  clockFor,
+  gmOf,
+  awayOf,
 }: {
+  /** Multiplayer: the player running a team (by index), none for a CPU team. */
+  gmOf?: (teamIndex: number) => string | undefined;
+  awayOf?: (teamIndex: number) => boolean;
+  clock?: number;
+  /** The one on the clock is a person (a friend or you), so the clock shows. */
+  clockFor?: boolean;
   state: QuickDraftState;
   canPick: boolean;
   currentTeam: Team;
@@ -464,10 +554,20 @@ function QuickDraftBoard({
       <Kv k="Then" v={myPicks.filter((n) => nextMine && n > nextMine).join(' · ') || '—'} />
     </section>
   );
+  const roomSection = gmOf && (
+    <section>
+      <H3 note="the rest are CPU GMs">In the room</H3>
+      {state.teams.flatMap((t, i) => {
+        const gm = gmOf(i);
+        return gm ? [<Kv key={t.id} k={`${gm}${t.isHuman ? ' (you)' : ''}${awayOf?.(i) ? ' · away' : ''}`} v={codeOf(t)} gold={t.isHuman} />] : [];
+      })}
+    </section>
+  );
   const aside = (actions: ReactNode) => (
     <>
       {asideTop}
       {picksSection}
+      {roomSection}
       {bigBoardSection}
       <PickLog rows={tickerRows.slice(-6)} title="Latest picks" note="around the league" newestFirst />
       <Actions links={links}>{actions}</Actions>
@@ -518,12 +618,12 @@ function QuickDraftBoard({
       <Btn kind="line" onClick={() => onBoard(true)}>
         Show draft board
       </Btn>
-      {!canPick && picksAway !== null && picksAway > 1 && !rushToMe && (
+      {clock === undefined && !canPick && picksAway !== null && picksAway > 1 && !rushToMe && (
         <Btn kind="line" onClick={onRushToMe}>
           Skip to my pick
         </Btn>
       )}
-      {AUTO_FINISH_FOR_TESTING && (
+      {AUTO_FINISH_FOR_TESTING && clock === undefined && (
         <Btn kind="line" disabled={autoFinishing} onClick={onAutoFinish}>
           {autoFinishing ? 'Finishing…' : 'Auto-finish (testing)'}
         </Btn>
@@ -540,12 +640,13 @@ function QuickDraftBoard({
         emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)}
       />
       {canPick ? (
-        <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep">
+        <Prompt eb={`On the clock · Round ${round} · Pick ${overall}${clock !== undefined ? ` · ${fmtClock(clock)}` : ''}`} title="Your pick" now className="ph-keep">
           Up to <b>{fmtCaps(maxPick)} caps</b> on this one and still fill the five.
           {haveList.length > 0 && ` Your ${haveList.length > 1 ? `${haveList.slice(0, -1).join(', ')} and ${haveList[haveList.length - 1]}` : haveList[0]} ${haveList.length === 1 ? 'is' : 'are'} set.`}
         </Prompt>
       ) : (
-        <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
+        <Prompt eb={`On the clock · Pick ${overall}${clock !== undefined && clockFor ? ` · ${fmtClock(clock)}` : ''}`} title={teamLabel(currentTeam)} now>
+          {gmOf && (gmOf(currentTeamIndex(state)) ? <b>{gmOf(currentTeamIndex(state))}{awayOf?.(currentTeamIndex(state)) ? ' (away, the CPU picks)' : ''} is picking. </b> : 'A CPU GM is picking. ')}
           {picksAway === 1 ? 'Your pick is next.' : picksAway ? `Your pick in ${picksAway} picks.` : 'Your five is in.'} The list stays open while they think.
         </Prompt>
       )}
@@ -615,7 +716,9 @@ function QuickResults({
   challenge,
   daily,
   links,
+  careerId: fixedCareerId,
 }: {
+  careerId?: string;
   state: QuickDraftState;
   codeOf: (t: Team) => string;
   title: string;
@@ -652,7 +755,7 @@ function QuickResults({
   const human = ranked[humanRank - 1];
   const best = ranked[0];
   const tier = resultTier(humanRank, TEAM_COUNT);
-  const [careerId] = useState(() => newDraftId('mini'));
+  const [careerId] = useState(() => fixedCareerId ?? newDraftId('mini'));
   useEffect(() => {
     if (!daily?.testing) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite, title: tourneyResult ? tourneyResult.out === null : undefined });
   }, [careerId, daily, humanRank, human.score.composite, tourneyResult]);
@@ -1051,4 +1154,12 @@ function StandRow({
       )}
     </>
   );
+}
+
+function teamIdxOf(state: QuickDraftState): number {
+  return currentTeamIndex(state);
+}
+
+function fmtClock(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }

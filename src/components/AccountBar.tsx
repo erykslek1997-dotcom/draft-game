@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { setNickname, signInWithGoogle, signOut, useAccount, type NicknameResult } from '../online/account';
+import { setNickname, suggestNicknames, signInWithGoogle, signOut, useAccount, type NicknameResult } from '../online/account';
 import { Dialog } from '../night/frame';
 import { onlineEnabled } from '../online/supabase';
 import { pullDailyHistory } from '../online/sync';
@@ -38,10 +38,14 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState<NicknameResult | null>(null);
+  // 2026-11-12: a taken name comes with three free ones to tap.
+  const [ideas, setIdeas] = useState<string[]>([]);
   const save = (onOk: () => void) => {
     if (!account) return;
     void setNickname(account.id, name).then((r) => {
       setError(r === 'ok' ? null : r);
+      setIdeas([]);
+      if (r === 'taken') void suggestNicknames(name).then(setIdeas);
       if (r === 'ok') {
         onOk();
         refresh();
@@ -79,6 +83,15 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
           <p>This is how you show up on the leaderboards. You can change it later.</p>
           <input value={name} maxLength={24} onChange={(e) => setName(e.target.value)} aria-label="Your name on the leaderboards" autoFocus />
           {errorText && <span className="m2-acct-err">{errorText}</span>}
+          {error === 'taken' && ideas.length > 0 && (
+            <span className="m2-acct-ideas">
+              {ideas.map((n) => (
+                <button key={n} type="button" onClick={() => setName(n)}>
+                  {n}
+                </button>
+              ))}
+            </span>
+          )}
           <span className="m2-pick-row">
             <button type="submit" className="m2-acct-go">Save →</button>
             <button type="button" className="lk-inline" onClick={() => void signOut()}>Sign out</button>
@@ -108,6 +121,15 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
               <b>{account ? account.nickname : 'Not signed in'}</b>
             )}
             {editing && errorText && <span className="m2-acct-err">{errorText}</span>}
+            {editing && error === 'taken' && ideas.length > 0 && (
+              <span className="m2-acct-ideas">
+                {ideas.map((n) => (
+                  <button key={n} type="button" onClick={() => setName(n)}>
+                    {n}
+                  </button>
+                ))}
+              </span>
+            )}
             <span>{account ? 'Your dailies and streak are saved to your account.' : 'Post your dailies to the leaderboard and keep your streak on any device.'}</span>
           </div>
           {account ? (

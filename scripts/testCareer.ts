@@ -17,3 +17,10 @@ assert.deepEqual(levelOf(0), { level: 1, into: 0, next: 40 });
 assert.equal(levelOf(40).level, 2);
 assert.equal(levelOf(160).level, 3);
 console.log('career points ok');
+
+import { levelTitle } from '../src/online/careerPoints';
+assert.equal(levelTitle(1), 'Rookie');
+assert.equal(levelTitle(9), 'Scout');
+assert.equal(levelTitle(10), 'GM');
+assert.equal(levelTitle(77), 'Hall of Famer');
+console.log('level titles ok');

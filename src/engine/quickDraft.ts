@@ -477,3 +477,28 @@ export function finalizeQuickRotation(team: Team): Team {
   }
   return { ...team, rotation: { slots } };
 }
+
+/** The CPU's pick for whoever is on the clock, human or not: a player who ran out of time or left
+ * a multiplayer room (2026-11-12). Every screen computes the same pick from the same state. */
+export function resolveQuickAutoPick(state: QuickDraftState): QuickDraftState | null {
+  if (state.complete) return null;
+  return resolveAutomatedPick(state);
+}
+
+/**
+ * A pick that came from the multiplayer room's log. The server checks whose turn it is, not the
+ * caps, so a pick this board can't take (a tampered client) becomes the CPU's pick instead: every
+ * screen replays the same log the same way, so the boards never drift apart.
+ */
+export function applyQuickServerPick(state: QuickDraftState, playerId: string): QuickDraftState {
+  if (state.complete) return state;
+  const next = makeQuickPick(state, playerId);
+  if (next !== state) return next;
+  return resolveAutomatedPick(state) ?? state;
+}
+
+/** A multiplayer board: the room's seed with your team as "the human" (every screen marks its own). */
+export function createQuickMultiplayerDraft(seed: number, mySlot: number): QuickDraftState {
+  const base = createQuickDraft(undefined, seed);
+  return { ...base, teams: base.teams.map((t, i) => ({ ...t, isHuman: i === mySlot })) };
+}

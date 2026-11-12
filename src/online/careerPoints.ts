@@ -39,3 +39,16 @@ export function levelOf(xp: number): { level: number; into: number; next: number
   return { level, into: xp - from, next: to - from };
 }
 
+
+/** The title a level earns (2026-11-12): shown next to your name in rooms and on your card. */
+export const LEVEL_TITLES: [number, string][] = [
+  [50, 'Hall of Famer'],
+  [30, 'Architect'],
+  [20, 'Front Office'],
+  [10, 'GM'],
+  [5, 'Scout'],
+  [1, 'Rookie'],
+];
+export function levelTitle(level: number): string {
+  return LEVEL_TITLES.find(([min]) => level >= min)![1];
+}

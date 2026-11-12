@@ -67,14 +67,6 @@ create policy "own score update" on public.daily_scores for update using (
   and day between (now() at time zone 'utc')::date - 1 and (now() at time zone 'utc')::date + 1
 ) with check (auth.uid() = user_id);
 
--- The leaderboard as the game reads it: score + nickname in one query.
-create or replace view public.daily_leaderboard
-with (security_invoker = true) as
-select s.mode, s.day, s.overall, s.place, s.field, s.points, s.draft_points, s.season_points, s.streak_points, s.created_at, s.user_id, p.nickname
-from public.daily_scores s
-join public.profiles p on p.id = s.user_id;
-
-grant select on public.daily_leaderboard to anon, authenticated;
 
 -- This week's table: points summed per player and mode, Monday to Sunday (UTC).
 create or replace view public.weekly_leaderboard
@@ -105,11 +97,14 @@ drop trigger if exists daily_scores_keep_pending on public.daily_scores;
 create trigger daily_scores_keep_pending before insert or update on public.daily_scores
 for each row execute function public.daily_scores_keep_pending();
 
+-- The leaderboard as the game reads it: score + nickname in one query.
 create or replace view public.daily_leaderboard
 with (security_invoker = true) as
 select s.mode, s.day, s.overall, s.place, s.field, s.points, s.draft_points, s.season_points, s.streak_points, s.created_at, s.user_id, p.nickname, s.verified
 from public.daily_scores s
 join public.profiles p on p.id = s.user_id;
+
+grant select on public.daily_leaderboard to anon, authenticated;
 
 -- 2026-11-12: every finished draft (dailies too) for the account's stats and XP; free drafts (not the
 -- daily) also add a few points to the week's table, minus for the bottom half so grinding weak
@@ -241,3 +236,201 @@ create policy "own result insert" on public.draft_results for insert with check 
   and coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false
   and created_at > now() - interval '1 hour'
 );
+
+-- ============================================================================================
+-- 2026-11-12: unique names and multiplayer (Mini Draft with friends). Safe to run again.
+-- ============================================================================================
+
+-- Names are unique, ignoring case. (If this fails, two profiles already share a name: rename one.)
+create unique index if not exists profiles_nickname_unique on public.profiles (lower(nickname));
+
+-- A room: a Mini Draft board (its seed) that up to max_players people draft together; the other
+-- teams are CPU GMs. The code is what friends type or open as ?room=CODE.
+create table if not exists public.mp_rooms (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique check (code ~ '^[A-Z2-9]{5}$'),
+  host uuid not null references auth.users (id) on delete cascade,
+  seed bigint not null,
+  max_players int not null default 4 check (max_players between 2 and 16),
+  clock_s int not null default 120 check (clock_s between 15 and 600),
+  status text not null default 'lobby' check (status in ('lobby', 'draft', 'done')),
+  started_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.mp_members (
+  room_id uuid not null references public.mp_rooms (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  nickname text not null check (char_length(nickname) between 2 and 24),
+  level int not null default 1 check (level between 1 and 999),
+  slot int check (slot between 0 and 15),
+  joined_at timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  primary key (room_id, user_id)
+);
+
+create table if not exists public.mp_picks (
+  room_id uuid not null references public.mp_rooms (id) on delete cascade,
+  pick_no int not null check (pick_no between 1 and 80),
+  player_id text not null check (char_length(player_id) <= 80),
+  by_user uuid not null,
+  made_at timestamptz not null default now(),
+  primary key (room_id, pick_no)
+);
+
+alter table public.mp_rooms enable row level security;
+alter table public.mp_members enable row level security;
+alter table public.mp_picks enable row level security;
+
+-- Only members see a room; every write goes through the functions below.
+create or replace function public.mp_is_member(p_room uuid) returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (select 1 from mp_members where room_id = p_room and user_id = auth.uid());
+$$;
+
+drop policy if exists "members read rooms" on public.mp_rooms;
+create policy "members read rooms" on public.mp_rooms for select using (public.mp_is_member(id));
+drop policy if exists "members read members" on public.mp_members;
+create policy "members read members" on public.mp_members for select using (public.mp_is_member(room_id));
+drop policy if exists "members read picks" on public.mp_picks;
+create policy "members read picks" on public.mp_picks for select using (public.mp_is_member(room_id));
+
+-- Live updates (Realtime) for picks, members and the room's status.
+do $$ begin
+  alter publication supabase_realtime add table public.mp_picks, public.mp_members, public.mp_rooms;
+exception when duplicate_object then null; end $$;
+
+-- How many people are in live rooms right now (the free plan holds 200 live connections).
+create or replace function public.mp_live_players() returns int
+language sql security definer stable set search_path = public as $$
+  select count(*)::int from mp_members m join mp_rooms r on r.id = m.room_id
+  where r.status <> 'done' and m.last_seen > now() - interval '1 minute';
+$$;
+
+create or replace function public.mp_create(p_seed bigint, p_nick text, p_level int, p_max int default 4, p_clock int default 120) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  v_code text;
+  v_room uuid;
+  i int;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = 'P0001'; end if;
+  perform rate_check('room', 10, interval '1 hour');
+  if mp_live_players() >= 180 then raise exception 'server_full' using errcode = 'P0001'; end if;
+  -- Old rooms go: nobody plays a Mini Draft for a day.
+  delete from mp_rooms where created_at < now() - interval '1 day';
+  for i in 1..20 loop
+    v_code := (select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + floor(random() * 32)::int, 1), '') from generate_series(1, 5));
+    begin
+      insert into mp_rooms (code, host, seed, max_players, clock_s) values (v_code, uid, p_seed, p_max, p_clock) returning id into v_room;
+      exit;
+    exception when unique_violation then v_room := null;
+    end;
+  end loop;
+  if v_room is null then raise exception 'no free code' using errcode = 'P0001'; end if;
+  insert into mp_members (room_id, user_id, nickname, level) values (v_room, uid, left(trim(p_nick), 24), greatest(1, least(999, p_level)));
+  return v_code;
+end $$;
+
+-- Joins by code; joining a room you are already in (a refresh) just says hello again.
+create or replace function public.mp_join(p_code text, p_nick text, p_level int) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  r mp_rooms;
+begin
+  if uid is null then raise exception 'not signed in' using errcode = 'P0001'; end if;
+  select * into r from mp_rooms where code = upper(trim(p_code)) for update;
+  if r.id is null then raise exception 'not_found' using errcode = 'P0001'; end if;
+  if exists (select 1 from mp_members where room_id = r.id and user_id = uid) then
+    update mp_members set last_seen = now() where room_id = r.id and user_id = uid;
+    return r.id;
+  end if;
+  perform rate_check('join', 30, interval '1 hour');
+  if r.status <> 'lobby' then raise exception 'started' using errcode = 'P0001'; end if;
+  if (select count(*) from mp_members where room_id = r.id) >= r.max_players then raise exception 'full' using errcode = 'P0001'; end if;
+  if mp_live_players() >= 180 then raise exception 'server_full' using errcode = 'P0001'; end if;
+  insert into mp_members (room_id, user_id, nickname, level) values (r.id, uid, left(trim(p_nick), 24), greatest(1, least(999, p_level)));
+  return r.id;
+end $$;
+
+create or replace function public.mp_leave(p_room uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r mp_rooms;
+begin
+  select * into r from mp_rooms where id = p_room;
+  if r.id is null then return; end if;
+  -- In the lobby you simply leave (the host's leaving closes the room); once the draft is on,
+  -- your team stays and the CPU drafts for it.
+  if r.status = 'lobby' then
+    if r.host = auth.uid() then delete from mp_rooms where id = p_room;
+    else delete from mp_members where room_id = p_room and user_id = auth.uid();
+    end if;
+  else
+    update mp_members set last_seen = now() - interval '1 hour' where room_id = p_room and user_id = auth.uid();
+  end if;
+end $$;
+
+-- The host starts: every member gets a random team (draft slot) of the sixteen.
+create or replace function public.mp_start(p_room uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  r mp_rooms;
+begin
+  select * into r from mp_rooms where id = p_room for update;
+  if r.id is null or r.host <> auth.uid() then raise exception 'not the host' using errcode = 'P0001'; end if;
+  if r.status <> 'lobby' then return; end if;
+  -- A shuffled list of the sixteen slots, one per member.
+  with slots as (select g as slot, row_number() over (order by random()) as rn from generate_series(0, 15) g),
+       ppl as (select user_id, row_number() over (order by random()) as rn from mp_members where room_id = p_room)
+  update mp_members m set slot = slots.slot from ppl join slots using (rn)
+  where m.room_id = p_room and m.user_id = ppl.user_id;
+  update mp_rooms set status = 'draft', started_at = now() where id = p_room;
+end $$;
+
+-- A pick. Your own team's whenever it's on the clock; a CPU team's (or a team whose player ran out
+-- of time or left) by anyone in the room: the game picks for it the same way on every screen.
+create or replace function public.mp_pick(p_room uuid, p_pick int, p_player text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  r mp_rooms;
+  v_done int;
+  v_slot int;
+  v_owner mp_members;
+  v_since timestamptz;
+begin
+  select * into r from mp_rooms where id = p_room;
+  if r.id is null or r.status <> 'draft' then return false; end if;
+  if not exists (select 1 from mp_members where room_id = p_room and user_id = uid) then raise exception 'not in this room' using errcode = 'P0001'; end if;
+  select count(*), max(made_at) into v_done, v_since from mp_picks where room_id = p_room;
+  if p_pick <> v_done + 1 then return false; end if;
+  -- The snake: 16 teams, rounds alternate direction.
+  v_slot := case when ((p_pick - 1) / 16) % 2 = 0 then (p_pick - 1) % 16 else 15 - (p_pick - 1) % 16 end;
+  select * into v_owner from mp_members where room_id = p_room and slot = v_slot;
+  if v_owner.user_id is not null and v_owner.user_id <> uid
+     and coalesce(v_since, r.started_at) > now() - make_interval(secs => r.clock_s)
+     and v_owner.last_seen > now() - interval '30 seconds' then
+    return false;
+  end if;
+  insert into mp_picks (room_id, pick_no, player_id, by_user) values (p_room, p_pick, p_player, uid)
+  on conflict do nothing;
+  if not found then return false; end if;
+  if p_pick = 80 then update mp_rooms set status = 'done' where id = p_room; end if;
+  return true;
+end $$;
+
+-- "Still here", every few seconds; returns the server's clock so every screen counts the same.
+create or replace function public.mp_ping(p_room uuid) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+begin
+  update mp_members set last_seen = now() where room_id = p_room and user_id = auth.uid();
+  return now();
+end $$;
+
+revoke all on function public.mp_create(bigint, text, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
+  public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid), public.mp_live_players() from public, anon;
+grant execute on function public.mp_create(bigint, text, int, int, int), public.mp_join(text, text, int), public.mp_leave(uuid),
+  public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid) to authenticated;
