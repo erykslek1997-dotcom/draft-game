@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 100), career: Number(envVar('DT_DBPM_CAREER') ?? 0) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -732,7 +732,14 @@ const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0), minMinutes: 2000, e
  * Measured (r, real SRS / game / real DRtg odd years): off 0.8382 / 0.8029 / 0.713; on the ladder
  * 0.8438 / 0.8150 / 0.735; on the finished scale 0.8470 / 0.8200 / 0.743; every window (tracking era
  * too) 0.8571 / 0.8134 — the game, the one judge blind to real team defense, wants pre-tracking
- * windows only. 2,473 of 10,962 windows move (1,625 up, 848 down, mean 10.6): low-event stoppers
+ * windows only.
+ * 2026-11-12, the user's review ("Magic czy Stockton na pewno za mocny efekt… McAdoo 30 to poziom
+ * kapcia… Shaq, Mourning, Kidd dziwne się wylosowało"): three quarters of the way, never more than
+ * `cap` (15) points, and the window's DBPM half way to the player's career DBPM (Kidd 1994-96's 0.1
+ * against 1.3-2.6 elsewhere). Magic 1980-82 64 → 77, Stockton 1986-88 73 → 85, McAdoo 1973-75
+ * 65 → 50, Kidd 1994-96 58 → 57, Unseld 1976-78 29 → 44. Judges 0.8382 / 0.8029 → 0.8424 / 0.8056
+ * (the full source: 0.8470 / 0.8200, with those extremes). Earlier, at full share: 2,473 of 10,962
+ * windows moved (1,625 up, 848 down, mean 10.6): low-event stoppers
  * up (Chris Ford 1972-74 23 → 85, Charles Jones, Foots Walker), scorers who didn't defend down
  * (McAdoo 1973-75 65 → 30, Wilkins, Mullin, Gervin).
  */
