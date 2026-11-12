@@ -22,13 +22,13 @@ import {
   type QuickDraftState,
 } from '../engine/quickDraft';
 import { peakDraftPool } from '../engine/peakDraftPool';
-import { totalFga, TEAM_COUNT, STARTER_SLOTS } from '../engine/positions';
+import { totalFga, TEAM_COUNT as MINI_TEAMS, STARTER_SLOTS } from '../engine/positions';
 import { bestPrimaryAssignment } from '../engine/rotation';
 import { scoreLineup, WEIGHTED_AXES, WEAK_AXIS_REASON, type Lineup, type LineupScore } from '../engine/bestFive';
 import { allStarCount } from '../engine/allStarLookup';
 import { displayTierForSpan, displayTalentForSpan } from '../engine/grades';
 import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
-import { teamCodes, teamLabel } from '../engine/teamNames';
+import { teamCodes, teamLabel, teamNickname } from '../engine/teamNames';
 import { markStepDone } from './pathProgress';
 import { nextDraftTip } from './ResultsScreen';
 import { DESK_CAST, buildMiniDesk } from '../engine/desk';
@@ -38,7 +38,8 @@ import { cpuPickDelay } from './aiSpeed';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { lowRimPressure } from './DraftChrome';
 import { MiniTournamentView, type MiniTournamentSummary } from './MiniTournamentView';
-import { MINI_ROUNDS } from '../engine/miniTournament';
+import { MINI_ROUNDS, duelGame, playMiniGame } from '../engine/miniTournament';
+import LiveGameNight from '../night/LiveGameNight';
 import type { DailyDraftDay } from '../dailyDraftDay';
 import { DailyLeaderboard } from './DailyLeaderboard';
 import { dailyPoints, medianOf } from '../online/points';
@@ -91,6 +92,8 @@ export interface MiniMp {
   seed: number;
   /** Your team (its index among the sixteen). */
   mySlot: number;
+  /** 16 for a Mini room, 2 for a Duel. */
+  teams: number;
   /** Players' names by team index; the rest are CPU GMs. */
   names: Map<number, string>;
   /** Teams whose player is still here; the CPU picks at once for one who left. */
@@ -122,7 +125,7 @@ function replayPicks(state: QuickDraftState, picks: string[]): QuickDraftState {
 type Phase = 'day' | 'lottery' | 'draft' | 'results';
 
 const howToRules = (cap: number): [string, string][] => [
-  ['Draft', `${TEAM_COUNT} teams take turns, ${QUICK_ROUNDS} rounds, one starter each round, no bench. You run one team; the rest are CPU GMs.`],
+  ['Draft', `${MINI_TEAMS} teams take turns, ${QUICK_ROUNDS} rounds, one starter each round, no bench. You run one team; the rest are CPU GMs.`],
   ['Caps', `Every pick costs caps, his shots a game in those years. Your five starters have to fit under ${cap} caps.`],
   ['Peak only', 'No choosing years: every player comes at his best stretch, so each pick is quick.'],
   ['Grading', 'The judge scores your five on talent, offense, defense, spacing and fit right after the last pick, and ranks the field.'],
@@ -143,8 +146,9 @@ const CAPS_TOP = 30;
 export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp }: Props) {
   const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
   const [state, setState] = useState<QuickDraftState>(() =>
-    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
+    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
   );
+  const TEAM_COUNT = state.teams.length;
   // A room's draft opens on the lottery (the order the host's start drew), then the first pick.
   const [phase, setPhase] = useState<Phase>(mp ? (mp.picks.length === 0 && mp.now() < mp.startsAt ? 'lottery' : 'draft') : daily ? 'day' : 'lottery');
   const mpLotteryOver = mp ? mp.now() >= mp.startsAt || mp.picks.length > 0 : false;
@@ -227,7 +231,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
       if (next) setState(next);
     }, rushToMe ? RUSH_PICK_MS : cpuPickDelay(state.history.length, TEAM_COUNT));
     return () => clearTimeout(timer);
-  }, [state, phase, autoFinishing, rushToMe, mp]);
+  }, [state, phase, autoFinishing, rushToMe, mp, TEAM_COUNT]);
 
   // The draft ends straight on the results: no rotation step in the Mini.
   useEffect(() => {
@@ -237,7 +241,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
     if (autoFinishing && state.complete) setAutoFinishing(false);
   }, [autoFinishing, state.complete]);
 
-  const title = daily ? 'Daily Mini Draft' : 'Mini Draft';
+  const title = daily ? 'Daily Mini Draft' : mp?.teams === 2 ? 'Duel' : 'Mini Draft';
   const links = {
     onMenu: () => (phase === 'draft' && !state.complete ? setDialog('leave') : onExit()),
     onHowTo: () => setDialog('howto'),
@@ -334,7 +338,7 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
 function MiniDay({ day, team, title, onStart, links }: { day: DailyDraftDay; team: Team; title: string; onStart: () => void; links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void } }) {
   const slot = team.draftSlot;
   const streak = dailyDraftStreak('mini', day.day);
-  const picks = snakePicks(slot, TEAM_COUNT, QUICK_ROUNDS);
+  const picks = snakePicks(slot, MINI_TEAMS, QUICK_ROUNDS);
   return (
     <NightGame
       aside={
@@ -344,7 +348,7 @@ function MiniDay({ day, team, title, onStart, links }: { day: DailyDraftDay; tea
           <section>
             <H3>Today</H3>
             <Kv k="Streak" v={`${streak} ${streak === 1 ? 'day' : 'days'}`} gold />
-            <Kv k="Teams" v={TEAM_COUNT} />
+            <Kv k="Teams" v={MINI_TEAMS} />
             <Kv k="Tries" v="One" />
             <Kv k="New board in" v={untilTomorrow()} />
           </section>
@@ -370,8 +374,8 @@ function MiniDay({ day, team, title, onStart, links }: { day: DailyDraftDay; tea
         </div>
         <div>
           <span>Teams</span>
-          <b>{TEAM_COUNT}</b>
-          <small>{TEAM_COUNT - 1} CPU GMs, same board</small>
+          <b>{MINI_TEAMS}</b>
+          <small>{MINI_TEAMS - 1} CPU GMs, same board</small>
         </div>
         <div>
           <span>Streak</span>
@@ -438,6 +442,7 @@ function QuickDraftBoard({
   title: string;
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
+  const TEAM_COUNT = state.teams.length;
   const budget = useMemo(() => quickPickBudget(state), [state]);
   // Your Big Board, kept per draft like the All-Time's.
   const bbKey = `draftverse.bigboard.mini.${state.seed}`;
@@ -471,7 +476,7 @@ function QuickDraftBoard({
   const [visible, setVisible] = useState(VISIBLE_STEP);
   useEffect(() => setVisible(VISIBLE_STEP), [on, search, caps]);
 
-  const available = useMemo(() => allEnrichedOnce.filter((e) => !state.draftedIds.has(e.span.id)), [state.draftedIds]);
+  const available = useMemo(() => allEnrichedOnce.filter((e) => !state.draftedIds.has(e.span.id) && (!state.pool || state.pool.has(e.span.id))), [state.draftedIds, state.pool]);
   const counts = useMemo(() => {
     const c = { PG: 0, SG: 0, SF: 0, PF: 0, C: 0 } as Record<Position, number>;
     for (const e of available) c[e.span.primaryPosition] += 1;
@@ -564,9 +569,10 @@ function QuickDraftBoard({
       <Kv k="Then" v={myPicks.filter((n) => nextMine && n > nextMine).join(' · ') || '—'} />
     </section>
   );
+  const gmCount = gmOf ? state.teams.filter((_, i) => gmOf(i)).length : 0;
   const roomSection = gmOf && (
     <section>
-      <H3 note="the rest are CPU GMs">In the room</H3>
+      <H3 note={state.teams.length > gmCount ? 'the rest are CPU GMs' : undefined}>In the room</H3>
       {state.teams.flatMap((t, i) => {
         const gm = gmOf(i);
         return gm ? [<Kv key={t.id} k={`${gm}${t.isHuman ? ' (you)' : ''}${awayOf?.(i) ? ' · away' : ''}`} v={codeOf(t)} gold={t.isHuman} />] : [];
@@ -741,6 +747,7 @@ function QuickResults({
   daily?: DailyDraftDay;
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
 }) {
+  const TEAM_COUNT = state.teams.length;
   useEffect(() => markStepDone('quickfive'), []);
   const [shareOpen, setShareOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -769,8 +776,9 @@ function QuickResults({
   const tier = resultTier(humanRank, TEAM_COUNT);
   const [careerId] = useState(() => fixedCareerId ?? newDraftId('mini'));
   useEffect(() => {
-    if (!daily?.testing) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite, title: tourneyResult ? tourneyResult.out === null : undefined });
-  }, [careerId, daily, humanRank, human.score.composite, tourneyResult]);
+    // The Duel is a test mode: no career entry yet.
+    if (!daily?.testing && TEAM_COUNT !== 2) recordDraft({ id: careerId, mode: 'mini', daily: !!daily, place: humanRank, field: TEAM_COUNT, overall: human.score.composite, title: tourneyResult ? tourneyResult.out === null : undefined });
+  }, [careerId, daily, humanRank, human.score.composite, tourneyResult, TEAM_COUNT]);
   useEffect(() => {
     if (daily && !daily.testing) saveDailyDraftResult('mini', daily.day, { place: humanRank, field: TEAM_COUNT, overall: human.score.composite, median: medianOf(ranked.map((r) => r.score.composite)) });
   }, [daily, humanRank, human.score.composite]);
@@ -900,6 +908,32 @@ function QuickResults({
 
   const dayResult = daily && !daily.testing ? dailyDraftResult('mini', daily.day) : null;
   const dayPts = dayResult ? dailyPoints({ mode: 'mini', ...dayResult, streak: dailyDraftStreak('mini', daily!.day) }).total : null;
+  if (tourney && TEAM_COUNT === 2) {
+    const seeded = ranked.map((r) => r.team);
+    const g = duelGame(seeded, String(state.seed));
+    const game = playMiniGame(seeded, g);
+    const a = seeded[0];
+    const b = seeded[1];
+    if (game) {
+      const nick = (t: Team) => teamNickname(t.name);
+      return (
+        <LiveGameNight
+          game={game}
+          variant="full"
+          sides={{ names: [a.name, b.name], short: [nick(a), nick(b)], codes: [codeOf(a), codeOf(b)], you: b.isHuman ? 1 : 0 }}
+          mast={{ title: 'Duel', sub: `Final · ${game.final[0] > game.final[1] ? nick(a) : nick(b)} win`, liveSub: 'Live · one game decides it', preSub: 'Tip-off' }}
+          autoStart
+          pregame={{ eb: 'Duel · tonight', now: true, title: `${nick(a)} vs ${nick(b)}`, line: 'Your five against theirs. One game.' }}
+          links={{ onMenu: links.onMenu }}
+          done={
+            <Btn kind="line" onClick={() => setTourney(false)}>
+              Back to the results
+            </Btn>
+          }
+        />
+      );
+    }
+  }
   if (tourney) {
     return (
       <MiniTournamentView
@@ -978,7 +1012,7 @@ function QuickResults({
         </>
       )}
       <Actions links={{ ...links, menuPhoneOnly: true }}>
-        <Btn onClick={() => setTourney(true)}>▶ The tournament</Btn>
+        <Btn onClick={() => setTourney(true)}>{TEAM_COUNT === 2 ? '▶ Play the game' : '▶ The tournament'}</Btn>
         {daily ? (
           <>
             <div className="btn2">

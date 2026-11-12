@@ -75,7 +75,10 @@ export function NightMenu({
   confirm,
   onLiveTest,
   onFriends,
+  onDuel,
 }: {
+  /** The Duel, 1v1 (test mode). */
+  onDuel?: () => void;
   /** Mini Draft with friends (online only). */
   onFriends?: () => void;
   teamName: string;
@@ -200,6 +203,20 @@ export function NightMenu({
                       <span>A Mini Draft for up to four. Send a link, draft live.</span>
                     </div>
                     <em>15 min</em>
+                    <span className="m2-go">Play →</span>
+                  </button>
+                </li>
+              )}
+              {onDuel && (
+                <li>
+                  <button type="button" className="m2-row" onClick={onDuel}>
+                    <span className="m2-n">{MODES.length + 2}</span>
+                    <ModeMark id="quickfive" />
+                    <div>
+                      <b>Duel · test</b>
+                      <span>One on one. Ten picks, one cap, one game.</span>
+                    </div>
+                    <em>5 min</em>
                     <span className="m2-go">Play →</span>
                   </button>
                 </li>
