@@ -14,7 +14,7 @@ import { teamCodes, teamLabel } from '../engine/teamNames';
 import { computeOffensiveTalent, computeDefensiveTalent } from '../engine/talent';
 import { fitScore, type FitScoreResult } from '../engine/fit';
 import { defensiveHuntability } from '../engine/defensiveHuntability';
-import { generateRosterInsights, insightContextFor } from '../engine/insights';
+import { generateRosterInsights, insightContextFor, type InsightCategory } from '../engine/insights';
 import { explainMatchup } from '../engine/matchupExplanation';
 import { seasonProfile } from '../engine/seasonProfile';
 import { buildTeamFeatureSnapshot } from '../engine/insightMapper';
@@ -55,12 +55,13 @@ import { dailyPoints, medianOf } from '../online/points';
 import { DAILY_REPLAY_FOR_TESTING } from './dailyProgress';
 import { copyLink } from './shareSave';
 import { BombReveal } from './BombCards';
-import { maskText } from './bombMask';
+import { isBombMasked, maskText } from './bombMask';
 import type { PlayerSpan } from '../data/schema';
 import { CAP_LIMIT } from '../engine/positions';
 import { MetricTable } from './MetricTable';
 import { Actions, Btn, Dialog, H3, Kv, Mast, NightGame, NightVoices, RosterList, Tally, fmtCaps, lastName } from '../night/ui';
-import { effectiveTalent } from '../engine/grades';
+import { displayTierForSpan, effectiveTalent } from '../engine/grades';
+import { tierContextWithSixthMan as tierContextFor } from '../engine/sixthMan';
 import { LeagueMark } from '../night/league';
 import { NightConfirm } from '../night/Dialogs';
 import { ShareNight, type PosterData } from '../night/Share';
@@ -444,6 +445,50 @@ export function nextDraftTip(label: string, team: Team): string | undefined {
  */
 const WEAK_DEFENDER_DTAL: Record<Position, number> = { PG: 49, SG: 43, SF: 47, PF: 58, C: 61 };
 
+/** 2026-11-12 (TODO 17): each finding's number and the team's place in the league, for the Desk
+ * to say after its take ("Spacing 82, 2nd of 16"). */
+function deskReceipts(b: ScoreBreakdown, field: ScoreBreakdown[]): Partial<Record<InsightCategory, string>> {
+  if (field.length < 2) return {};
+  const say = (label: string, key: 'spacingScore' | 'defenseScore' | 'offenseScore' | 'benchDepthScore' | 'fitScore' | 'rotationScore') =>
+    `${label} ${Math.round(b[key])}, ${ordinal(1 + field.filter((x) => x[key] > b[key]).length)} of ${field.length}`;
+  const spacing = say('Spacing', 'spacingScore');
+  const defense = say('Defense', 'defenseScore');
+  const offense = say('Offense', 'offenseScore');
+  const fit = say('Fit', 'fitScore');
+  return {
+    spacing, shooting: spacing,
+    perimeter_defense: defense, rim_protection: defense, defensive_structure: defense, rebounding: defense,
+    creation: offense, usage: offense, off_ball: offense,
+    two_way: `${offense}; ${defense}`,
+    depth: say('Bench', 'benchDepthScore'), rotation: say('Rotation', 'rotationScore'),
+    fit, redundancy: fit, position: fit, cross: fit,
+  };
+}
+
+/** The capologist's books (TODO 17: "trafione okazje cenowe"): what the whole draft paid for each
+ * level of talent (one straight line, caps on talent, over every drafted player), and the roster's
+ * best and worst buy in caps against that going rate — each only past `LEDGER_MARGIN` caps. */
+const LEDGER_MARGIN = 3;
+function deskLedger(team: Team, all: Team[]): { best?: string; worst?: string } {
+  const pts = all.flatMap((t) => t.roster).map((p) => ({ x: effectiveTalent(p), y: p.fga }));
+  if (pts.length < 10) return {};
+  const mx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+  const my = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+  const sxx = pts.reduce((a, p) => a + (p.x - mx) ** 2, 0);
+  const slope = sxx > 0 ? pts.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0) / sxx : 0;
+  const rate = (p: PlayerSpan) => Math.max(0.5, my + slope * (effectiveTalent(p) - mx));
+  const rows = team.roster
+    .filter((p) => !isBombMasked(p.playerName))
+    .map((p) => ({ p, over: p.fga - rate(p) }))
+    .sort((a, b) => a.over - b.over);
+  const say = (p: PlayerSpan) =>
+    `${lastName(p.playerName)} ${p.spanLabel}, ${displayTierForSpan(tierContextFor(p))} for ${fmtCaps(p.fga)} caps (the going rate: ${fmtCaps(rate(p))})`;
+  const best = rows[0] && rows[0].over <= -LEDGER_MARGIN ? say(rows[0].p) : undefined;
+  const last = rows[rows.length - 1];
+  const worst = last && last !== rows[0] && last.over >= LEDGER_MARGIN ? say(last.p) : undefined;
+  return { best, worst };
+}
+
 /** Your report's Draft Desk voices. The tone follows the final place (2026-09-24, user-reported
  * live: "wygrałem, czy jest sens żeby mnie pouczało?" — a champion got a "what held you back" list
  * and a "Next draft:" lecture). 1st: why you won + the one thing a rival could exploit, no advice.
@@ -457,6 +502,8 @@ function yourVoices({
   breakdown,
   fieldMedians,
   seed,
+  field = [],
+  teams = [],
 }: {
   team: Team;
   rank: number;
@@ -464,6 +511,10 @@ function yourVoices({
   breakdown: ScoreBreakdown;
   fieldMedians: Record<string, number>;
   seed: number;
+  /** Every team's breakdown, for the Desk's numbers and places. */
+  field?: ScoreBreakdown[];
+  /** Every roster, for the capologist's books. */
+  teams?: Team[];
 }): DeskLine[] {
   const snapshot = buildTeamFeatureSnapshot(team);
   const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
@@ -490,11 +541,13 @@ function yourVoices({
     style: scoutStyleLine(snapshot, insights.strengths.slice(0, podium ? 3 : 2).map((i) => i.id))?.text,
     tip: !podium && weakestLabel ? nextDraftTip(weakestLabel, team) : undefined,
     seed,
+    receipts: deskReceipts(breakdown, field),
+    ledger: teams.length ? deskLedger(team, teams) : undefined,
   });
 }
 
 /** A rival's panel — the same insight engine, about them: what works, and what can sink them. */
-function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number, seed: number): DeskLine[] {
+function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldSize: number, seed: number, field: ScoreBreakdown[] = []): DeskLine[] {
   const snapshot = buildTeamFeatureSnapshot(team);
   const insights = generateRosterInsights(snapshot, undefined, insightContextFor(breakdown, rank, fieldSize));
   return buildRivalDesk({
@@ -504,6 +557,7 @@ function theirVoices(team: Team, breakdown: ScoreBreakdown, rank: number, fieldS
     rank,
     seed: seed + team.draftSlot,
     third: theirVoice,
+    receipts: deskReceipts(breakdown, field),
   });
 }
 
@@ -846,7 +900,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
   const heroVoices = useMemo(
     () =>
       heroRanked?.team.isHuman
-        ? yourVoices({ team: displayTeam(heroRanked.team), rank: heroRanked.rank, fieldSize: ranked.length, breakdown: heroRanked.breakdown, fieldMedians, seed: draftSeed })
+        ? yourVoices({ team: displayTeam(heroRanked.team), rank: heroRanked.rank, fieldSize: ranked.length, breakdown: heroRanked.breakdown, fieldMedians, seed: draftSeed, field: ranked.map((x) => x.breakdown), teams: ranked.map((x) => x.team) })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [heroRanked, ranked.length, fieldMedians, draftSeed],
@@ -1135,8 +1189,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
                   const r = ranked.find((x) => x.team.id === team.id);
                   if (!r) return [];
                   const lines = team.isHuman
-                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians, seed: draftSeed })
-                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length, draftSeed);
+                    ? yourVoices({ team: displayTeam(team), rank: r.rank, fieldSize: ranked.length, breakdown: r.breakdown, fieldMedians, seed: draftSeed, field: ranked.map((x) => x.breakdown), teams: ranked.map((x) => x.team) })
+                    : theirVoices(displayTeam(team), r.breakdown, r.rank, ranked.length, draftSeed, ranked.map((x) => x.breakdown));
                   return lines.map((l) => ({ who: DESK_CAST[l.who].name, what: l.kind, text: l.text }));
                 },
                 season: seasonState.status === 'done' ? seasonState.season : null,
