@@ -3,8 +3,29 @@ import { setNickname, signInWithGoogle, signOut, useAccount, type NicknameResult
 import { Dialog } from '../night/frame';
 import { onlineEnabled } from '../online/supabase';
 import { pullDailyHistory } from '../online/sync';
-import { careerStats, levelOf, setCareerUser, syncCareer } from '../online/career';
-import { dailyDraftTotals } from './dailyDraftProgress';
+import { careerStats, clearCareer, levelOf, setCareerUser, syncCareer } from '../online/career';
+import { clearAllDailyDrafts, dailyDraftTotals } from './dailyDraftProgress';
+
+/**
+ * 2026-11-12, whose progress this browser holds (the user, signed out: "jestem wylogowany ale no xd").
+ * A guest's games stay here and join the account at the first sign-in; once they belong to an account
+ * they leave with it: signing out (or another account signing in) clears them here, the server keeps them.
+ */
+const OWNER_KEY = 'draftverse.owner.v1';
+function claimProgress(id: string | null): boolean {
+  try {
+    const owner = localStorage.getItem(OWNER_KEY);
+    if (owner && owner !== id) {
+      clearCareer();
+      clearAllDailyDrafts();
+    }
+    if (id) localStorage.setItem(OWNER_KEY, id);
+    else localStorage.removeItem(OWNER_KEY);
+    return Boolean(owner && owner !== id);
+  } catch {
+    return false;
+  }
+}
 import './DailyLeaderboard.css';
 
 /**
@@ -29,7 +50,12 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
   };
   const errorText = error === 'short' ? 'At least 2 characters.' : error === 'taken' ? 'That name is taken. Try another.' : error === 'error' ? 'Couldn’t save. Try again.' : null;
   useEffect(() => {
+    if (account === null && claimProgress(null)) onSynced?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account === null]);
+  useEffect(() => {
     if (!account) return;
+    if (!account.needsName) claimProgress(account.id);
     if (account.needsName) setName(account.nickname);
     let alive = true;
     setCareerUser(account.needsName ? null : account.id);
