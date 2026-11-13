@@ -360,12 +360,15 @@ Przełączniki: `ABL=<składniki fitu>` (scripts/_ablate.ts), `SC_DROP=rotation`
 miejsce na elastyczność i nowe opcje gry. Tydzień 1 zaczął się 2026-10-22, więc tydzień 12 to ok.
 7–13 stycznia 2027.
 
+**2026-11-13, Eryk: silnik (TAL, AI, symulacja) kalibrujemy po trochu w każdym tygodniu** — nie blokuje
+kolejnych tygodni; ważne, żeby pozostałe elementy planu przechodziły zgodnie z rozpiską.
+
 | Tydzień | Zakres |
 |---|---|
 | 1 | ✅ zakończony (wydanie nocne, telefon) |
-| 2 | Listy Eryka 1–3: błędy UI, poprawki TAL, oceny AI |
-| 3 | Listy 2–4: dokończenie TAL i AI, silnik symulacji, panel ekspertów |
-| 4 | Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
+| 2 | 🟡 Listy Eryka 1–3: błędy UI (zrobione), poprawki TAL, oceny AI (w toku, kalibracja co tydzień) |
+| 3 | 🟡 Listy 2–4: dokończenie TAL i AI, silnik symulacji, panel ekspertów (w toku, kalibracja co tydzień) |
+| 4 | ✅ prawie całość (2026-11-13; zostało: „Delete my account”, testy złych inputów). Ponad plan: multiplayer Mini/Duel/All-Time online, chat, kariera/XP, audyt UI. Pierwotnie: Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
 | 5 | Brand, domena (+ przepięcie logowania), „pokonaj wynik znajomego”, wstępne testy na większej grupie |
 | 6 | Strategia SM, testy kont i tabeli przez ludzi, poprawki przed launchem, wyłączenie trybów testowych |
 | 7 | Zapas na poprawki (dawniej launch — przesunięty) |
