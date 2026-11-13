@@ -183,8 +183,16 @@ export function NightMenu({
             <ol className="m2-modes">
               {MODES.map((m, i) => {
                 const online = m.id === 'quickfive' ? onFriends : m.id === 'draft' ? onAllTimeOnline : m.id === 'duel' ? onDuel : undefined;
+                // Today's daily of the mode, right under it (2026-11-13: "obok online przycisk Daily").
+                const dailyMode: DailyDraftMode | null = m.id === 'quickfive' ? 'mini' : m.id === 'draft' ? 'alltime' : null;
+                const dailyDone = m.id === 'bestfive' ? Boolean(drawFive) && !DAILY_REPLAY_FOR_TESTING : dailyMode ? Boolean(dailyDraftResult(dailyMode, today)) && !DAILY_REPLAY_FOR_TESTING : false;
+                const openDaily = m.id === 'bestfive' ? onDailyDrawFive : dailyMode ? () => onDailyDraft(draftDay(dailyMode)) : undefined;
+                const subs = [
+                  ...(openDaily ? [{ key: 'daily', label: dailyDone ? 'Today’s daily ✓' : 'Today’s daily', onClick: dailyDone ? undefined : openDaily }] : []),
+                  ...(online ? [{ key: 'online', label: 'Online', onClick: online }] : []),
+                ];
                 return (
-                  <li key={m.id} className={online ? 'm2-has-online' : undefined}>
+                  <li key={m.id} className={subs.length ? 'm2-has-online' : undefined}>
                     <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
                       <span className="m2-n">{i + 1}</span>
                       <ModeMark id={m.id} />
@@ -198,10 +206,21 @@ export function NightMenu({
                       <em>{m.time}</em>
                       <span className="m2-go">Play →</span>
                     </button>
-                    {online && (
-                      <button type="button" className="m2-online" onClick={online} aria-label={`${m.name} online, with friends`}>
-                        <i aria-hidden /> Online
-                      </button>
+                    {subs.length > 0 && (
+                      <span className="m2-subs">
+                        {subs.map((x, k) => (
+                          <span key={x.key}>
+                            {k > 0 && <span className="m2-sep" aria-hidden> · </span>}
+                            {x.onClick ? (
+                              <button type="button" onClick={x.onClick}>
+                                {x.label}
+                              </button>
+                            ) : (
+                              <em>{x.label}</em>
+                            )}
+                          </span>
+                        ))}
+                      </span>
                     )}
                   </li>
                 );

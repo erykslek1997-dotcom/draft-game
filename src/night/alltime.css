@@ -1537,13 +1537,15 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   body:has(.ph-dock) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 }
 
-/* 2026-11-13 (UI audit): a mode's online version, a small pill beside its row. */
+/* 2026-11-13: a mode's daily and online versions, a quiet line under its name, set like the paper. */
 .nt .m2-modes li.m2-has-online { position: relative; }
-.nt .m2-modes li.m2-has-online .m2-row { padding-bottom: 44px; }
-.nt .m2-online { position: absolute; left: 48px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink2); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
-.nt .m2-online i { width: 7px; height: 7px; border-radius: 50%; background: #5bc27a; box-shadow: 0 0 6px #5bc27a; }
-.nt .m2-online:hover { color: var(--ink); border-color: var(--ink3); }
-@media (max-width: 600px) { .nt .m2-online { left: 40px; } }
+.nt .m2-modes li.m2-has-online .m2-row { padding-bottom: 40px; }
+.nt .m2-subs { position: absolute; left: 48px; bottom: 14px; font: 700 13px var(--cond); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); }
+.nt .m2-subs button { background: none; border: none; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--ink2); cursor: pointer; text-decoration: underline; text-decoration-color: var(--rule2); text-underline-offset: 4px; }
+.nt .m2-subs button:hover { color: var(--ink); text-decoration-color: var(--ink3); }
+.nt .m2-subs em { font-style: normal; color: var(--gold); }
+.nt .m2-sep { color: var(--ink4); }
+@media (max-width: 600px) { .nt .m2-subs { left: 40px; } }
 /* 2026-11-13 (UI audit): chips at the end of the list's meta line, never a line of their own. */
 .plist .mt .tagc-row { margin-left: 8px; flex-wrap: nowrap; overflow: hidden; vertical-align: 1px; }
 @media (max-width: 640px) { .plist .mt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .plist .mt .tagc-row i:nth-child(n + 2) { display: none; } }
