@@ -4,6 +4,7 @@ import { Dialog } from '../night/frame';
 import { onlineEnabled } from '../online/supabase';
 import { pullDailyHistory } from '../online/sync';
 import { careerStats, clearCareer, levelOf, setCareerUser, syncCareer } from '../online/career';
+import { levelTitle } from '../online/careerPoints';
 import { clearAllDailyDrafts, dailyDraftTotals } from './dailyDraftProgress';
 
 /**
@@ -36,6 +37,7 @@ import './DailyLeaderboard.css';
 export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The newspaper menu's own look (night/alltime.css). */ menu?: boolean }) {
   const { account, refresh } = useAccount();
   const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState<NicknameResult | null>(null);
   // 2026-11-12: a taken name comes with three free ones to tap.
@@ -101,13 +103,33 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
     );
   }
   if (menu) {
+    // 2026-11-13 (the new menu): one line — who you are, your level — and one button; the stats and
+    // Rename / Sign out open under it ("Profile →") until the profile page exists.
+    const lv = levelOf(careerStats().xp);
     return (
       <section className="m2-acct" aria-label="Your account">
-        <span className="m2-tl">Your account</span>
-        <div className="m2-acct-box">
+        <div className="m2-acct-box m2-acct-line">
           <div className="m2-acct-who">
-            {editing && account ? (
+            <b>{account ? `${account.nickname} · ${levelTitle(lv.level)}` : 'Not signed in'}</b>
+            <span>
+              Level {lv.level} · {lv.into} / {lv.next} XP
+            </span>
+          </div>
+          {account ? (
+            <button type="button" className="m2-acct-go" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+              {open ? 'Close' : 'Profile →'}
+            </button>
+          ) : (
+            <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>
+              Sign in →
+            </button>
+          )}
+        </div>
+        {account && open && (
+          <div className="m2-acct-more">
+            {editing ? (
               <form
+                className="m2-acct-who"
                 onSubmit={(e) => {
                   e.preventDefault();
                   save(() => setEditing(false));
@@ -118,7 +140,10 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
                 <button type="button" className="lk-inline" onClick={() => setEditing(false)}>Cancel</button>
               </form>
             ) : (
-              <b>{account ? account.nickname : 'Not signed in'}</b>
+              <span className="m2-acct-act">
+                <button type="button" className="lk-inline" onClick={() => { setName(account.nickname); setEditing(true); }}>Rename</button>
+                <button type="button" className="lk-inline" onClick={() => void signOut()}>Sign out</button>
+              </span>
             )}
             {editing && errorText && <span className="m2-acct-err">{errorText}</span>}
             {editing && error === 'taken' && ideas.length > 0 && (
@@ -130,20 +155,9 @@ export function AccountBar({ onSynced, menu }: { onSynced?: () => void; /** The 
                 ))}
               </span>
             )}
-            <span>{account ? 'Your dailies and streak are saved to your account.' : 'Post your dailies to the leaderboard and keep your streak on any device.'}</span>
+            <CareerPanel />
           </div>
-          {account ? (
-            !editing && (
-              <span className="m2-acct-act">
-                <button type="button" className="lk-inline" onClick={() => { setName(account.nickname); setEditing(true); }}>Rename</button>
-                <button type="button" className="lk-inline" onClick={() => void signOut()}>Sign out</button>
-              </span>
-            )
-          ) : (
-            <button type="button" className="m2-acct-go" onClick={() => void signInWithGoogle()}>Sign in →</button>
-          )}
-        </div>
-        <CareerPanel />
+        )}
       </section>
     );
   }
