@@ -250,7 +250,21 @@ export const USER_TIER_REVIEW_2: ReadonlyArray<readonly [name: string, spanLabel
   ['James Harden', '2017-19', 122, 'MVP'],
   ['Dwyane Wade', '2008-10', 117, 'MVP'],
   ['Kawhi Leonard', '2015-17', 132, 'MVP'],
+  // 2026-11-13, the user: "Russella z Wiltem bym zrównał … oboje wysokie All NBA".
+  ['Wilt Chamberlain', '1966-68', 111, 'All-NBA'],
 ];
+
+/**
+ * 2026-11-13, the user's review ("Manu za wysoko … koniec końców to był 6th man", Gobert "w ataku to
+ * tylko lob threat", "Ben Wallace to samo" — "wszyscy mogą być All NBA dolny próg"): the highest TAL
+ * any window of the player shows, on the card's label scale. His other windows climbed past his
+ * reviewed one to the top of the band on raw talent alone.
+ */
+export const USER_TAL_CEILING: Readonly<Record<string, number>> = {
+  'Manu Ginóbili': 84,
+  'Rudy Gobert': 84,
+  'Ben Wallace': 84,
+};
 
 /**
  * Single windows the user tiered on their own, beyond the one reviewed window per player. The

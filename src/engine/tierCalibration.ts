@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_CEILING, USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 import { envVar } from './env';
 
@@ -60,6 +60,7 @@ const entries = new Map<string, CalibrationEntry>(
   [...USER_TIER_CALIBRATION, ...USER_TIER_REVIEW_2].map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
 );
 
+const ceilings = new Map<string, number>(Object.entries(USER_TAL_CEILING).map(([name, top]) => [normalizePlayerName(name), top]));
 const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
 
 /** The bands the nudges were given on (2026-09-27); a nudge keeps its share of the band's width
@@ -134,7 +135,7 @@ export function calibratedDisplayTalent(
 ): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
-  const value = calibratedUnordered(entry, playerName, spanLabel, rawTal, measure, reviewedWindow);
+  const value = Math.min(ceilings.get(normalizePlayerName(playerName)) ?? Infinity, calibratedUnordered(entry, playerName, spanLabel, rawTal, measure, reviewedWindow));
   const order = windowOrders.get(normalizePlayerName(playerName));
   if (!order) return value;
   const top = TIER_BANDS[entry.tier]![1];
