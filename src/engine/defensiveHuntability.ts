@@ -50,7 +50,7 @@ const starterCaliberByPosition: Record<Position, PlayerSpan[]> = Object.fromEntr
  * genuinely weak defenders (which a p40 bar started to do — D1 rank correlation moved the wrong
  * way, and Kyle Korver-tier liabilities began slipping through).
  */
-const HUNTABLE_COHORT_PERCENTILE = 0.45;
+const HUNTABLE_COHORT_PERCENTILE = Number(envVar('HUNT_PCT') ?? 0.45);
 function cohortBar(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length * HUNTABLE_COHORT_PERCENTILE)];
