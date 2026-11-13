@@ -1840,6 +1840,15 @@ czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
 - [ ] **Obrona po 2014 / przechwyty**: Siakam D-TAL 26-27 (2022-25) i 38 (2024-26) przy DBPM −0,4 do −0,7 (przeciętny, nie D); Arenas 51-52 (ryzykant po przechwyty) vs Reggie Miller 18-42. Podejrzenie: drabinka z box score nagradza przechwyty; w erze trackingu DBPM nie wchodzi. Sprawdzić źródła trackingowe Siakama.
 - [ ] **Siakam 2024-26 TAL 80 (All-Star)** przy słabszym O/D niż 2021-23 (69) — pewnie playoffy 2025; sprawdzić.
 - [ ] **Cade Cunningham 2023-26 TAL 76 (Starter)**: All-NBA 3rd 2024-25, lider drużyny z 1. miejsca w konferencji — TAL słabo widzi lidera wygrywającej drużyny (stary pomysł „MVP z bilansem”); sprawdzić regułę „najlepszy gracz drużyny z czołówki”.
+### Przegląd TAL Board, dzień 2 (2026-11-13, Eryk: 12 punktów, „po sprawdzeniu 10:40 wszystko rób”)
+- [x] **Atak według pozycji**: O-TAL vs OBPM (4355 okien) — SG +6,8, PG −3,7 wśród OBPM 4+ (przeliczniki pozycji kotwiczą najlepsze okno każdej pozycji na ~100). Połowa korekty (`OTAL_POS_SHARE` 0,5): real 0,8563 → 0,8560, gra 0,8116 → 0,8094; pełna 0,8018; przycięcie premii za rzut kosztuje grę więcej (0,7904 / 0,7834) — zostają.
+- [x] **Self-creation w O-TAL** (`OTAL_SELF` 1,3; Kirilenko vs George, Kobe): George 82 → 86, Kobe 88 → 91, KJ 81 → 87; ×2,6 kosztuje grę 0,005.
+- [x] **Obrona według pozycji, połowa** (`DTAL_POS_SHARE` 0,5): środkowi +~5 D, skrzydłowi −~3; obrona drużyn 0,768 → 0,770.
+- [x] **Miejsce w paśmie tabeli wg O/D z karty** (`BAND_BY_OD`, bez GOAT/Legend i bez dawnych „+”): Billups 88 > KJ 86, Brown 85, Brunson 84; cele Eryka (`USER_TAL_TARGET`): Magic = Bird = KD = Kobe 97, Russell = Wilt 89; Kirilenko sufit 84.
+- [x] **Mecz gwiazd +20** (było +10: tylko 64 All-Starów vs 72 All-NBA; przy +20 90), **próg minut 28** dla All-Star+ poza tabelą (Robert Williams 77).
+- [x] Pakiet: real 0,8560 → 0,8578, gra 0,8094 → 0,8081, obrona drużyn 0,768 → 0,770.
+- [ ] **Obrona skrzydłowych ery trackingu** (Edwards 54, Bosh 43, Middleton 48): przyczyna — DBPM w erze trackingu (0,5) ściąga ich w dół (Middleton mimo matchupów +2,4), Edwards ścięty sufitem „niepotwierdzonej obrony” (58). Bezpiecznik „DBPM nie ściąga przy dodatnich źródłach realnych” przegrał na wszystkich trzech sędziach (real −0,002, gra −0,004, obrona −0,003) — nie wchodzi; matchupy jako potwierdzenie dają Edwardsowi +1 — nie wchodzi. Do decyzji Eryka: ręcznie (tabela/minima) albo zostawić.
+- [ ] **Giannis** wyżej niż Duncan/Hakeem/Shaq? — decyzja Eryka (dziś 98 vs 97).
 - [ ] **Faule w meczu**: przypisanie faulu kryjącemu, nie wg skłonności (Nash ~4 PF/36 przy realnych ~1,8).
 
 ## Lista z playtestu 2026-11-12 (rano) — do zrobienia po 10:05
