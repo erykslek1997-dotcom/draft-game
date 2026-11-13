@@ -1797,8 +1797,9 @@ const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 // 0.04 of the composite moved from Offense to Defense: that miss 0.63 -> 0.23 (offense-leaning
 // -0.05 -> 0.02), Overall vs real SRS r 0.7725 -> 0.7756, vs the bench leagues' mechanics margin R²
 // 0.559 -> 0.581 (0.06 gave 0.7761 / 0.580). Was .17 / .17.
-const FIT_OFFENSE_WEIGHT = 0.13 / 0.52;
-const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
+const OD_SHIFT = Number(envVar('OD_SHIFT') ?? 0);
+const FIT_OFFENSE_WEIGHT = (0.13 + OD_SHIFT) / 0.52;
+const FIT_DEFENSE_WEIGHT = (0.21 - OD_SHIFT) / 0.52;
 
 /** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
  * renormalising the rest of its half. Unset, nothing changes. */
