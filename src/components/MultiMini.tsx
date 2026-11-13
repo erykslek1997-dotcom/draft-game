@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QuickFive, { type MiniMp } from './QuickFive';
+import GameShell, { type AllTimeMp, type MpFinal } from './GameShell';
 import { careerStats, levelOf } from '../online/career';
 import { levelTitle } from '../online/careerPoints';
 import { useAccount } from '../online/account';
@@ -16,6 +17,9 @@ import {
   rememberRoom,
   roomLink,
   sendPick,
+  sendFinal,
+  ALLTIME_MAX_PLAYERS,
+  type RoomKind,
   sendTourney,
   startRoom,
   useRoom,
@@ -52,7 +56,20 @@ function savedNick(): string {
  * lobby, then draft live: up to four people, the other teams CPU GMs, a pick clock, and the same
  * tournament for everyone at the end. Guests play too (no account needed).
  */
-export default function MultiMini({ initialCode, onExit, duel }: { initialCode?: string; onExit: () => void; /** A Duel room (test mode): 1v1, ten picks. */ duel?: boolean }) {
+export default function MultiMini({
+  initialCode,
+  onExit,
+  duel,
+  allTime,
+}: {
+  initialCode?: string;
+  onExit: () => void;
+  /** A Duel room (test mode): 1v1, ten picks. */
+  duel?: boolean;
+  /** An All-Time room (2026-11-13): up to 8 people, 9 rounds, a season. */
+  allTime?: boolean;
+}) {
+  const kind: RoomKind = duel ? 'duel' : allTime ? 'alltime' : 'mini';
   const { account } = useAccount();
   const level = useMemo(() => levelOf(careerStats().xp).level, []);
   const [nick, setNick] = useState(savedNick);
@@ -84,7 +101,7 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
     }
     let joinCode = join;
     if (!joinCode) {
-      const made = await createRoom(cleanNick, level, duel, cap);
+      const made = await createRoom(cleanNick, level, kind, cap);
       if ('error' in made) {
         setBusy(false);
         setError(made.error);
@@ -125,20 +142,24 @@ export default function MultiMini({ initialCode, onExit, duel }: { initialCode?:
       <NightGame
         aside={
           <>
-            <Mast title={duel ? 'Duel' : 'Play with friends'} sub={duel ? 'Test mode · one on one' : `Mini Draft · up to ${MAX_PLAYERS} players`} />
+            <Mast title={duel ? 'Duel' : allTime ? 'All-Time online' : 'Play with friends'} sub={duel ? 'Test mode · one on one' : allTime ? `All-Time Draft · up to ${ALLTIME_MAX_PLAYERS} players` : `Mini Draft · up to ${MAX_PLAYERS} players`} />
             <section>
               <H3>How it works</H3>
-              <Kv k="Players" v={duel ? 'Two' : `Up to ${MAX_PLAYERS}`} />
+              <Kv k="Players" v={duel ? 'Two' : `Up to ${allTime ? ALLTIME_MAX_PLAYERS : MAX_PLAYERS}`} />
               {duel ? <Kv k="Picks" v="Ten, snake" /> : <Kv k="Other teams" v="CPU GMs" />}
-              <Kv k="Pick clock" v={duel ? '45 seconds' : '2 minutes'} />
-              <Kv k="Then" v={duel ? 'One game' : 'A tournament'} />
+              <Kv k="Pick clock" v={duel ? '45 seconds' : allTime ? '1 minute' : '2 minutes'} />
+              <Kv k="Then" v={duel ? 'One game' : allTime ? 'A season together' : 'A tournament'} />
               <Kv k="Account" v="Not needed" />
             </section>
             <Actions links={{ onMenu: exit }} />
           </>
         }
       >
-        {duel ? (
+        {allTime ? (
+          <Prompt eb="All-Time Draft · online" title="The full draft, with friends">
+            16 teams, 9 rounds, the years you choose. A minute a pick, two minutes after the draft for the rotation, then one season for the whole room. No Desk calls online.
+          </Prompt>
+        ) : duel ? (
           <Prompt eb="Duel · test mode" title="One on one">
             Two GMs, one cap, a board of 40 players. Snake draft, five picks each, then your fives play one game.
           </Prompt>
@@ -323,6 +344,34 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room, members, picks, mine, me, roomId, live.peek, live.ready, Math.floor(live.now() / 5000)]);
 
+  if (mp && room?.rounds === 9) {
+    const finals = new Map(members.filter((m) => m.slot !== null && m.final).map((m) => [m.slot!, m.final as MpFinal] as const));
+    const allTimeMp: AllTimeMp = {
+      roomId: mp.roomId,
+      seed: mp.seed,
+      mySlot: mp.mySlot,
+      names: mp.names,
+      here: mp.here,
+      picks: mp.picks,
+      lastPickAt: mp.lastPickAt,
+      clockS: mp.clockS,
+      now: mp.now,
+      leader: mp.leader,
+      send: mp.send,
+      peekLine: mp.peekLine,
+      sendPeek: mp.sendPeek,
+      finals,
+      sendFinal: (f) => void sendFinal(roomId, f),
+      playoffs: mp.tourney,
+    };
+    return (
+      <RoomDockContext.Provider value={dock}>
+        {!live.live && <div className="mp-busy">Live link busy (server full): the draft updates every few seconds.</div>}
+        <GameShell mode="player" commissionerMode={false} mp={allTimeMp} onExit={onExit} />
+        {chatBox}
+      </RoomDockContext.Provider>
+    );
+  }
   if (mp) {
     return (
       <RoomDockContext.Provider value={dock}>
@@ -341,7 +390,7 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
       <NightGame
         aside={
           <>
-            <Mast title="Your room" sub={`${room?.teams === 2 ? 'Duel' : 'Mini Draft'} · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
+            <Mast title="Your room" sub={`${room?.teams === 2 ? 'Duel' : room?.rounds === 9 ? 'All-Time Draft' : 'Mini Draft'} · ${members.length} of ${room?.max_players ?? MAX_PLAYERS} players`} />
             <section>
               <H3>Room</H3>
               <Kv k="Code" v={code} gold />

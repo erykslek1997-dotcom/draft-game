@@ -71,7 +71,7 @@ function useLoadStatus(): LoadStatus {
   return loadStatus;
 }
 
-type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest' | 'multi' | 'duel';
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest' | 'multi' | 'duel' | 'alltimeOnline';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
  * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
@@ -303,6 +303,7 @@ function App() {
           onLiveTest={LIVE_TEST_BENCH_FOR_TESTING ? () => setView('livetest') : undefined}
           onFriends={onlineEnabled ? () => setView('multi') : undefined}
           onDuel={onlineEnabled ? () => setView('duel') : undefined}
+          onAllTimeOnline={onlineEnabled ? () => setView('alltimeOnline') : undefined}
           confirm={
             confirmNewDraft && savedDraft ? (
               <NightConfirm
@@ -396,6 +397,18 @@ function App() {
       {view === 'livetest' && (
         <Suspense fallback={<LoadingPanel />}>
           <LiveTestBench onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'alltimeOnline' && (
+        <Suspense fallback={<LoadingPanel />}>
+          <MultiMini
+            allTime
+            onExit={() => {
+              setRoomCode(null);
+              setView('intro');
+            }}
+          />
         </Suspense>
       )}
 

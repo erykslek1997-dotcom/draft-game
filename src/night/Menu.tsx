@@ -76,7 +76,10 @@ export function NightMenu({
   onLiveTest,
   onFriends,
   onDuel,
+  onAllTimeOnline,
 }: {
+  /** The All-Time Draft online, up to 8 people (2026-11-13). */
+  onAllTimeOnline?: () => void;
   /** The Duel, 1v1 (test mode). */
   onDuel?: () => void;
   /** Mini Draft with friends (online only). */
@@ -207,10 +210,24 @@ export function NightMenu({
                   </button>
                 </li>
               )}
+              {onAllTimeOnline && (
+                <li>
+                  <button type="button" className="m2-row" onClick={onAllTimeOnline}>
+                    <span className="m2-n">{MODES.length + 2}</span>
+                    <ModeMark id="draft" />
+                    <div>
+                      <b>All-Time online</b>
+                      <span>The full draft for up to eight. Then one season together.</span>
+                    </div>
+                    <em>60 min</em>
+                    <span className="m2-go">Play →</span>
+                  </button>
+                </li>
+              )}
               {onDuel && (
                 <li>
                   <button type="button" className="m2-row" onClick={onDuel}>
-                    <span className="m2-n">{MODES.length + 2}</span>
+                    <span className="m2-n">{MODES.length + 3}</span>
                     <ModeMark id="quickfive" />
                     <div>
                       <b>Duel · test</b>

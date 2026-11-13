@@ -4,6 +4,9 @@ import {
   currentTeamIndex,
   makePick,
   resolveAiPickIfNeeded,
+  applyServerPick,
+  createMultiplayerDraft,
+  resolveAutoPick,
   isHumanRosterImpossible,
   autoFinishDraft,
   draftCapLimit,
@@ -28,7 +31,7 @@ import DraftBoard from './DraftBoard';
 import { AUTO_FINISH_FOR_TESTING } from './testingFlags';
 import { NightLottery } from '../night/league';
 import { teamCodes } from '../engine/teamNames';
-import { Btn, buzz } from '../night/frame';
+import { Btn, H3, Kv, Mast, NightGame, Prompt, buzz } from '../night/frame';
 import ResultsScreen, { type ChallengeChallenger } from './ResultsScreen';
 import type { ShareCardStarter } from './shareCardImage';
 import type { FeedbackEntry } from './FeedbackToggle';
@@ -93,6 +96,59 @@ interface Props {
   /** Today's daily draft (2026-10-16): its seed, cap (every team) and rule (you only). It keeps
    * its own save, so leaving brings you back to the same draft — one try a day. */
   daily?: DailyDraftDay;
+  /** An All-Time room (2026-11-13): the room's log is the draft. */
+  mp?: AllTimeMp;
+}
+
+/** A friend's team after the draft: the years they chose and their rotation. */
+export interface MpFinal {
+  roster: string[];
+  rotation: Rotation;
+}
+
+/** What the All-Time Draft needs from a multiplayer room (MultiMini.tsx keeps it up to date). */
+export interface AllTimeMp {
+  roomId: string;
+  seed: number;
+  mySlot: number;
+  /** Players' names by team index; the rest are CPU GMs. */
+  names: Map<number, string>;
+  /** Teams whose player is still here. */
+  here: Set<number>;
+  /** The room's pick log. */
+  picks: string[];
+  lastPickAt: number;
+  clockS: number;
+  now: () => number;
+  leader: boolean;
+  send: (pickNo: number, playerId: string) => void;
+  peekLine?: string;
+  sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
+  /** Friends' submitted teams, by team index. */
+  finals: Map<number, MpFinal>;
+  sendFinal: (f: MpFinal) => void;
+  /** The playoffs, round by round together. */
+  playoffs?: { gate: number; waiting?: string; onShown: (roundsDone: number) => void };
+}
+
+/** Seconds everyone gets after the draft to set the years and the rotation; then it's automatic. */
+export const ROTATION_WINDOW_S = 120;
+/** How long the other screens give the leader before they send a CPU pick themselves, ms. */
+const BACKUP_DELAY_MS = 4000;
+
+function replayLog(state: DraftState, picks: string[]): DraftState {
+  let s = state;
+  for (let i = s.history.length; i < picks.length && !s.complete; i++) s = applyServerPick(s, picks[i]);
+  return s;
+}
+
+/** A friend's final team on every screen: what they sent, or (out of time) their drafted roster, auto rotation. */
+function friendTeam(t: Team, f: MpFinal | undefined): Team {
+  if (f) {
+    const roster = f.roster.map((id, i) => spanOptionsFor(t.roster[i]?.playerName ?? '').find((o) => o.id === id) ?? t.roster[i]).filter(Boolean) as PlayerSpan[];
+    if (roster.length === t.roster.length) return { ...t, roster, rotation: f.rotation };
+  }
+  return { ...t, rotation: autoAssignRotation(t.roster) };
 }
 
 /**
@@ -237,10 +293,10 @@ function loadDailyDraft(daily: DailyDraftDay) {
   return null;
 }
 
-export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily, studyFirst = false }: Props) {
-  const [resumed] = useState(() => (daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
+export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily, studyFirst = false, mp }: Props) {
+  const [resumed] = useState(() => (mp ? null : daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(() =>
-    maskBombOf(
+    mp ? replayLog(createMultiplayerDraft(mp.seed, mp.mySlot, mp.names), mp.picks) : maskBombOf(
       resumed?.state ??
         (daily
           ? newDailyDraft(daily, humanTeamName)
@@ -277,7 +333,17 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // assignment (see DraftLottery.tsx's own docstring — the randomization itself isn't new, only
   // this reveal step is) runs once, right after Start Draft, before the real board appears.
   // A draft whose lottery already ran on the intro (App.tsx's early lottery) starts on the board.
-  const [phase, setPhase] = useState<Phase>(resumed || preset ? 'draft' : daily ? 'day' : 'lottery');
+  const [phase, setPhase] = useState<Phase>(mp || resumed || preset ? 'draft' : daily ? 'day' : 'lottery');
+  const mpPicks = mp?.picks;
+  useEffect(() => {
+    if (mpPicks && mpPicks.length > draftState.history.length) setDraftState((s) => replayLog(s, mpPicks));
+  }, [mpPicks, draftState.history.length]);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!mp) return;
+    const t = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, [mp]);
   const [finalTeams, setFinalTeams] = useState<Team[] | null>(null);
   // Owned here (not inside DraftBoard) so live in-draft reactions survive the phase transition
   // into ResultsScreen's export — see FeedbackToggle's own docstring for why this replaced the
@@ -328,7 +394,34 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     if (draftState.teams[currentTeamIndex(draftState)].isHuman || draftState.pool !== activeDraftPool) return;
     ai.request(draftState);
   }, [ai, draftState, phase, autoFinishing]);
+  // Online: the room's log is the draft. A CPU team's pick (or a friend's who left or ran out of
+  // time) is sent by the leading screen, the others step in a few seconds later if it didn't;
+  // your own waits for you until your clock runs out.
+  const mpSend = mp?.send;
+  const mpIdx = currentTeamIndex(draftState);
+  const mpTiming = mp
+    ? { mine: mpIdx === mp.mySlot, owned: mp.names.has(mpIdx), here: mp.here.has(mpIdx), leader: mp.leader, ends: mp.lastPickAt + mp.clockS * 1000, now: mp.now() }
+    : null;
+  const mpKey = mpTiming ? `${draftState.history.length}|${mpTiming.here}|${mpTiming.leader}|${mpTiming.ends}|${Math.floor(mpTiming.now / 10_000)}|${aiTick}` : null;
   useEffect(() => {
+    if (!mpTiming || !mpSend || phase !== 'draft' || draftState.complete) return;
+    const pickNo = draftState.history.length + 1;
+    let wait: number;
+    if (mpTiming.mine) wait = mpTiming.ends - mpTiming.now;
+    else if (!mpTiming.owned || !mpTiming.here) wait = cpuPickDelay(draftState.history.length, draftState.teams.length) + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
+    else wait = mpTiming.ends - mpTiming.now + 1000 + (mpTiming.leader ? 0 : BACKUP_DELAY_MS);
+    const timer = window.setTimeout(() => {
+      const planned = !mpTiming.mine && ai.available ? ai.pickFor(draftState) : undefined;
+      const next = planned ? makePick(draftState, planned) : resolveAutoPick(draftState);
+      const pick = next && next !== draftState ? next.history[next.history.length - 1] : undefined;
+      if (pick) mpSend(pickNo, pick.playerId);
+    }, Math.max(0, wait));
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mpKey, phase, draftState, mpSend]);
+
+  useEffect(() => {
+    if (mp) return;
     if (phase !== 'draft' || draftState.complete || draftState.commissionerMode || autoFinishing || studying) return;
     const teamIdx = currentTeamIndex(draftState);
     if (draftState.teams[teamIdx].isHuman) return;
@@ -348,7 +441,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     // `aiTick`: a pick arriving from the worker re-runs this, so the page lays it down at once instead
     // of waiting out `WORKER_GRACE_MS` and drafting unplanned (2026-11-05: every CPU pick waited the
     // full grace and was made on the page — slow, and the structured rosters broke).
-  }, [ai, aiTick, draftState, phase, autoFinishing, studying]);
+  }, [ai, aiTick, draftState, phase, autoFinishing, studying, mp]);
 
   // AUTO-FINISH (testing): resolves the draft in small chunks so the page keeps painting the
   // progress, then submits your team as drafted with an auto-built rotation.
@@ -390,7 +483,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
         return {
           ...s,
           teams: s.teams.map((t) => {
-            if (t.isHuman) return t;
+            // A friend's team waits for what they send (or the clock): see `handleSubmitTeam`.
+            if (t.isHuman || t.gm) return t;
             const ids = rosterIds?.[cpu.indexOf(t)];
             const fromWorker = ids?.map((id, i) => spanOptionsFor(t.roster[i].playerName).find((o) => o.id === id));
             const roster = fromWorker && fromWorker.every(Boolean) ? (fromWorker as PlayerSpan[]) : finalizeAiRoster(t, draftCapLimit(s));
@@ -401,7 +495,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       setAiTeamsFinalized(true);
     };
     // 2026-11-05: the window search (~2 s for fifteen teams) runs in the worker when it can.
-    if (ai.available) void ai.finalize(draftState.teams.filter((t) => !t.isHuman), draftCapLimit(draftState)).then(finish);
+    if (ai.available) void ai.finalize(draftState.teams.filter((t) => !t.isHuman), draftCapLimit(draftState)).then((ids) => finish(ids));
     else finish(null);
     return () => {
       cancelled = true;
@@ -418,15 +512,16 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // 2026-09-24: autosave after every pick (and the post-draft AI finalization) while drafting;
   // a submitted team is finished, so its save is dropped.
   useEffect(() => {
-    if (commissionerMode || daily?.testing) return;
+    if (commissionerMode || daily?.testing || mp) return;
     if (phase === 'results') clearDraftSave(saveSlotFor(draftState));
     else if (phase === 'draft' && draftState.history.length > 0) saveDraft(draftState, challenger);
-  }, [draftState, phase, challenger, commissionerMode, daily]);
+  }, [draftState, phase, challenger, commissionerMode, daily, mp]);
 
   function handlePick(playerId: string) {
     buzz();
     setStudying(false);
-    setDraftState((s) => makePick(s, playerId));
+    if (mp) mp.send(draftState.history.length + 1, playerId);
+    else setDraftState((s) => makePick(s, playerId));
   }
 
   // 2026-09-12, user-reported live ("nadal brak korelacji") — `DraftBoard`'s span dropdown used to
@@ -436,6 +531,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // already verified the swap is safe (never costs more than the span originally drafted, and
   // never busts the real cap given everything else already committed) — this just applies it.
   function handleSwapHumanSpan(playerName: string, newSpanId: string) {
+    // Online the years are set after the draft (every screen must judge each pick the same way).
+    if (mp && !draftState.complete) return;
     const key = normalizePlayerName(playerName);
     const newSpan = spanOptionsFor(playerName).find((s) => s.id === newSpanId);
     if (!newSpan) return;
@@ -456,7 +553,14 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // pair: DraftBoard's Team tab now collects both the human's final spans AND their rotation
   // itself (see that file's own docstring), and hands both back here at once from a single
   // Submit action — this is the only place either ever gets written into `draftState`/`finalTeams`.
+  const [mySubmitted, setMySubmitted] = useState<{ roster: PlayerSpan[]; rotation: Rotation } | null>(null);
   function handleSubmitTeam(roster: PlayerSpan[], rotation: Rotation) {
+    if (mp) {
+      // Online: send it, then the season waits for everyone (or the clock).
+      mp.sendFinal({ roster: roster.map((p) => p.id), rotation });
+      setMySubmitted({ roster, rotation });
+      return;
+    }
     const teams = draftState.teams.map((t) => {
       if (t.isHuman) return { ...t, roster, rotation };
       // Defensive (audit DR-5): the one-shot `aiTeamsFinalized` effect optimizes AI spans and
@@ -471,6 +575,33 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     setFinalTeams(teams);
     setPhase('results');
   }
+
+  // Online: when the draft ends the rotation clock starts; the season opens once every friend has
+  // sent their team, or the clock runs out (then the drafted roster, auto rotation — on every screen).
+  const draftDoneAt = useRef<number | null>(null);
+  if (mp && draftState.complete && draftDoneAt.current === null) draftDoneAt.current = mp.lastPickAt;
+  const rotationLeft = mp && draftDoneAt.current !== null ? Math.max(0, Math.ceil((draftDoneAt.current + ROTATION_WINDOW_S * 1000 - mp.now()) / 1000)) : null;
+  const friendSlots = mp ? [...mp.names.keys()].filter((i) => i !== mp.mySlot) : [];
+  const waitingFor = mp ? friendSlots.filter((i) => !mp.finals.has(i) && mp.here.has(i)).map((i) => mp.names.get(i)!) : [];
+  useEffect(() => {
+    if (!mp || !draftState.complete || !aiTeamsFinalized || phase !== 'draft') return;
+    const human = draftState.teams.find((t) => t.isHuman)!;
+    const timeUp = rotationLeft === 0;
+    if (!mySubmitted && !timeUp) return;
+    if (waitingFor.length > 0 && !timeUp) return;
+    const mine = mySubmitted ?? { roster: human.roster, rotation: autoAssignRotation(human.roster) };
+    if (!mySubmitted) mp.sendFinal({ roster: mine.roster.map((p) => p.id), rotation: mine.rotation });
+    const teams = draftState.teams.map((t, i) => {
+      if (t.isHuman) return { ...t, roster: mine.roster, rotation: mine.rotation };
+      if (t.gm) return friendTeam(t, mp.finals.get(i));
+      if (t.rotation) return t;
+      const optimized = finalizeAiRoster(t, draftCapLimit(draftState));
+      return { ...t, roster: optimized, rotation: aiRotation(optimized) };
+    });
+    setFinalTeams(teams);
+    setPhase('results');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mp, draftState, aiTeamsFinalized, mySubmitted, waitingFor.length, rotationLeft === 0, phase]);
 
   // Deliberately immediate, with no confirmation step: this is a testing convenience for
   // restarting a prototype draft quickly, and a confirm dialog would defeat that purpose.
@@ -565,7 +696,26 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onContinue={() => setDraftState((s) => makeBombPick(s))}
         />
       )}
-      {phase === 'draft' && (
+      {phase === 'draft' && mp && mySubmitted && (
+        <NightGame
+          aside={
+            <>
+              <Mast title="All-Time Draft" sub="Your team is in" />
+              <section>
+                <H3>The room</H3>
+                {friendSlots.map((i) => (
+                  <Kv key={i} k={mp.names.get(i)} v={mp.finals.has(i) ? 'ready ✓' : mp.here.has(i) ? 'setting up…' : 'away · auto'} />
+                ))}
+              </section>
+            </>
+          }
+        >
+          <Prompt eb={`Season tips off in ${Math.floor((rotationLeft ?? 0) / 60)}:${String((rotationLeft ?? 0) % 60).padStart(2, '0')}`} title="Waiting for the room" now>
+            {waitingFor.length ? `${waitingFor.join(', ')} still setting the years and the rotation. Anyone out of time plays as drafted, auto rotation.` : 'Everyone is in.'}
+          </Prompt>
+        </NightGame>
+      )}
+      {phase === 'draft' && !(mp && mySubmitted) && (
         <DraftBoard
           state={draftState}
           onPick={handlePick}
@@ -580,6 +730,17 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           onExit={handleReset}
           studying={studying}
           onStartClock={() => setStudying(false)}
+          online={
+            mp
+              ? {
+                  clock: draftState.complete ? (rotationLeft ?? 0) : Math.max(0, Math.ceil((mp.lastPickAt + mp.clockS * 1000 - mp.now()) / 1000)),
+                  pickerName: mp.names.get(mpIdx),
+                  pickerAway: mp.names.has(mpIdx) && !mp.here.has(mpIdx),
+                  peekLine: mp.peekLine,
+                  sendPeek: mp.sendPeek,
+                }
+              : undefined
+          }
         />
       )}
       {phase === 'results' && finalTeams && (
@@ -593,6 +754,8 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
           pickReasoning={pickReasoning}
           draftSeed={draftState.seed}
           challenger={challenger}
+          online={Boolean(mp)}
+          syncPlayoffs={mp?.playoffs}
           daily={daily}
           bomb={daily?.bomb && draftBombSpan(draftState) ? { span: draftBombSpan(draftState)!, gem: daily.bomb.gem, named: bombNamed, onNamed: () => {
                   // Lifted before the re-render, so this very render shows his name everywhere.

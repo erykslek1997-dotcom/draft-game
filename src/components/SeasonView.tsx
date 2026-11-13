@@ -35,6 +35,7 @@ import { LeagueMark, TeamContext } from '../night/league';
 import { NSelect, Actions, Btn, Dialog, FaceContext, H3, Mast, NFace, NightGame, Prompt, SubNote, Tally, bandStyle, cx } from '../night/ui';
 import { primaryStarters } from '../engine/rotation';
 import { SpanCard } from './PlayerPeekModal';
+import type { SyncPlayoffs } from './ResultsScreen';
 import { ShareNight, type PosterData } from '../night/Share';
 import { AllStarBreak, AllStarDraft, CalendarDay, MonthBreak, SeasonExtras, dateLabel, monthOf, standingsAt, teamGames } from './SeasonCalendar';
 
@@ -469,12 +470,45 @@ export interface SeasonEnd {
   summary?: ReactNode;
 }
 
-export default function SeasonView({ teams, codes, state, onClose, end }: { teams: Team[]; codes: Map<string, string>; state: SeasonState; onClose: () => void; end?: SeasonEnd }) {
+export default function SeasonView({
+  teams,
+  codes,
+  state,
+  onClose,
+  end,
+  sync,
+}: {
+  teams: Team[];
+  codes: Map<string, string>;
+  state: SeasonState;
+  onClose: () => void;
+  end?: SeasonEnd;
+  /** An online room (2026-11-13): the playoffs go round by round for the whole room. */
+  sync?: SyncPlayoffs;
+}) {
   const seed = useMemo(() => seasonSeed(teams), [teams]);
   const [saved] = useState(() => readSeasonProgress(seed));
   const [chapter, setChapter] = useState<Chapter>(saved?.chapter ?? 'calendar');
   const [tab, setTab] = useState<Tab>(saved?.tab ?? 'overview');
-  const [reveal, setReveal] = useState<Reveal>(saved?.reveal ?? { kind: 'none' });
+  const [reveal, setRevealRaw] = useState<Reveal>(saved?.reveal ?? { kind: 'none' });
+  // Online: no round past the room's slowest player (a held step stops at the start of that round).
+  const playoffRounds = state.status === 'done' ? (state.playoffs?.rounds.length ?? 0) : 0;
+  const setReveal = (next: Reveal) => {
+    if (!sync) return setRevealRaw(next);
+    // A round can be played once everyone has finished the one before (reached its start).
+    const want = next.kind === 'all' ? playoffRounds : next.kind === 'live' ? next.round : 0;
+    if (want < sync.gate || (next.kind === 'live' && want === sync.gate && next.game === 0) || next.kind === 'none') return setRevealRaw(next);
+    setRevealRaw({ kind: 'live', round: sync.gate, game: 0 });
+  };
+  const roundsDone = reveal.kind === 'all' ? playoffRounds : reveal.kind === 'live' ? reveal.round : 0;
+  const syncShown = sync?.onShown;
+  useEffect(() => {
+    syncShown?.(roundsDone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundsDone]);
+  const held = Boolean(sync && reveal.kind === 'live' && roundsDone >= sync.gate && roundsDone < playoffRounds);
+  const onHeld = sync?.onHeld;
+  useEffect(() => onHeld?.(held), [held, onHeld]);
   const [day, setDay] = useState(saved?.day ?? 0);
   const [seen, setSeen] = useState<string[]>(saved?.seen ?? []);
   const [noBreaks, setNoBreaks] = useState(saved?.noBreaks ?? false);
