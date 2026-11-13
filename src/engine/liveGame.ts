@@ -626,7 +626,7 @@ const DEFENSE_TUNING = {
  * the ball beyond that (best playmaking of the five: mean 92.8, spread 5.2).
  */
 const OFFENSE_TUNING = {
-  ownTurnovers: 0.6,
+  ownTurnovers: Number(envVar('SIM_OWN_TOV') ?? 0.6),
   handler: 0.09,
 };
 const REF_FIVE_TURNOVERS = 0.1267;
@@ -710,14 +710,14 @@ function handlerZ(off: CourtPlayer[]): number {
  * player also pays his own-shot gap, `setupEdge`) and goes in `LATE_TUNING.penalty` less often.
  */
 const LATE_TUNING = {
-  share: 0.09,
+  share: Number(envVar('SIM_LATE_SHARE') ?? 0.09),
   /** How much of what a player's late shots lose comes back on all of his shots (`courtFor`): his
    * real percentages already hold them. 1 = all of it. */
   giveBack: 1,
   reset: 1.8,
   defense: 0.15,
   handler: 0.15,
-  penalty: 0.06,
+  penalty: Number(envVar('SIM_LATE_PENALTY') ?? 0.06),
   creatorPower: 1.5,
 };
 /**
