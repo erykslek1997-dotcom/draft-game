@@ -359,6 +359,8 @@ check(defenseScore(reportedElite) >= 88, 'complete all-time defensive shell reac
 // shell reads 80, not 100). Re-measured directly.
 // 2026-11-12: 86.05 -> 86.2 with D-TAL's DBPM source (pre-tracking windows, 0.75 of the way, cap 15,
 // career-shrunk): Anfernee Hardaway 1995-97 on the bench reads a little lower. Re-measured.
-check(Math.abs(eliteProjection.defense - 86.2) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
+// 2026-11-13: 86.2 -> 85.9 after the tier bands, the All-Star floor and a lifted card moving O-TAL /
+// D-TAL with it (grades.ts): the shell's bench reads a little more defense. Re-measured.
+check(Math.abs(eliteProjection.defense - 85.9) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');
