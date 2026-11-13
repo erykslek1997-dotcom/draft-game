@@ -185,9 +185,13 @@ check(
 // him at 26 (a real rotation regular now, not a bench specialist) — that's the detector correctly
 // no longer applying to a role that no longer exists in THIS fixture, not a regression. Checks
 // the underlying fact that survives instead: Korver is still a real, named huntability offender.
+// 2026-11-13: the huntable bar is capped at 44 (defensiveHuntability.ts HUNT_BAR_CAP — the user:
+// Miller and Edwards are "w najgorszym wypadku przeciętni obrońcy", hunting starts at C-). Korver
+// 2015-17 reads D-TAL 41, a C- on his card: three under the bar, inside the five-point margin, so he
+// is no longer a named target. Re-measured directly; the check now pins the new rule.
 check(
-  movementCoverage.targetableRotationNames?.includes('Kyle Korver'),
-  'Korver remains a real, named defensive weak link regardless of how his minutes were split',
+  !movementCoverage.targetableRotationNames?.includes('Kyle Korver'),
+  'a C- defender inside the huntable margin (Korver 2015-17, D-TAL 41) is not named a weak link',
 );
 check(
   !movementCoverage.mitigatedSpecialistNames?.includes('Larry Smith'),

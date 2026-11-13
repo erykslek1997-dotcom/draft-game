@@ -986,6 +986,15 @@ const OFFENSIVE_GLASS_SHARE = 0.5;
  * — the raw blend sat at its 100 cap): the raw offense blend's top before the scale, 110. Game judge
  * 0.8043 → 0.8052, real SRS unchanged (130 reads the same). */
 const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
+/**
+ * 2026-11-13, the Offense add-ons taken off one at a time against real teams (`scripts/_offAudit.ts`,
+ * 600 team-seasons): the elite-engine floor (72 raw for any five with a star scorer) was the one that
+ * hurt — it lifted every weak real team with one star onto the same number. Off: team Offense vs real
+ * ORtg 0.657 → 0.730, Overall vs real SRS 0.8577 → 0.8589, game 0.8050 → 0.8059; drafted rosters sit
+ * far above 72 and do not move (Nash beside four defenders reads the same). `ENGINE_FLOOR=1` brings it
+ * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
+ */
+const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -997,7 +1006,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
-  const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
+  const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE)));
   return { ...components, score, raw };
@@ -1056,6 +1065,9 @@ export function teamDefensiveTalentScore(team: Team): number {
  * Defense run. `DEF_OFF=hunt,cohesion,glass,knee` turns parts off for a measurement. */
 const DEF_OFF = new Set((envVar('DEF_OFF') ?? '').split(',').filter(Boolean));
 const DEF_PARTS = { hunt: !DEF_OFF.has('hunt'), cohesion: !DEF_OFF.has('cohesion'), glass: !DEF_OFF.has('glass'), knee: !DEF_OFF.has('knee') };
+/** 2026-11-13, measurement (the user's call pending): the structure bonus's share of Defense. Real SRS /
+ * game / real team DRtg at 1: 0.8577 / 0.8050 / 0.775; 0.5: 0.8582 / 0.8063 / 0.778; 0: 0.8587 / 0.8090 / 0.780. */
+const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 1);
 export function defenseScore(team: Team): number {
   const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
@@ -1068,7 +1080,7 @@ export function defenseScore(team: Team): number {
   const adjusted =
     linearScore -
     (DEF_PARTS.hunt ? defensiveHuntability(team).penalty : 0) +
-    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus : 0);
+    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0);
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
   return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0))));
