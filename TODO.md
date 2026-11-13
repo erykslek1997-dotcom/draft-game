@@ -478,6 +478,18 @@ Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po l
   - **Skrypt NBA.com (tydzień 2/3):** rozszerzyć istniejący `scripts/fetch_nba_stats_browser.js` (konsola przeglądarki na nba.com/stats; Python odpada — stats.nba.com wiesza `requests`), tą samą konstrukcją (`get`, `add`, pauza 800 ms, jeden `nba_stats.json`). Dodać: (4) `leaguedashlineups` (jednostki 5-osobowe, net rating, minuty) i `teamplayeronoffsummary` (on/off graczy) od 2007-08; (5) `leaguehustlestatsplayer` (deflections, contested shots, screen assists, loose balls), `leaguedashptstats` z `Rebounding`, `Possessions`, `SpeedDistance`, `leaguedashptdefend` po strefach — od 2015-16 (część już jest w pliku). **Stan (2026-10-28): napisany `scripts/fetch_nba_stats_extra.js` (osobny plik, drugi zestaw: lineups, on/off, hustle, tracking rebounds/possessions/speed, strefy obrony, clutch; tryb TEST = jeden sezon 2023-24, potem TEST=false na pełne pobranie).** Plan: pisze Claude, Eryk puszcza na jednym sezonie i wkleja pierwsze linie / błąd, poprawka, dopiero wtedy pełne pobranie. Środowisko Claude nie ma dostępu do stats.nba.com (proxy 403), więc nie da się przetestować na miejscu.
   - Przypadek testowy: Lillard 2019-21, Ginóbili 2005-07, Durant 2012-14, Green 2015-17, Gasol 2014-16 (+ Chalmers, O'Neale): O-TAL 81, spacing 86, playmaking 89, mismatch 54, kosz 69, bonusy +9 i +6 → surowe 95 → 85 po skali → −7 zbiórki = 78 (u Eryka w grze 70, słabsze okna).
 
+## Multiplayer (2026-11-12/13) — stan i co dalej
+
+Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rotacja 2 min, playoffy razem, zmiana lat na żywo), chat, podgląd na żywo, dolny pasek na telefonie, unikalne nicki.
+
+| | Punkt | Co konkretnie |
+|---|---|---|
+| 🧪 | Test na żywo All-Time online | Pokój 2+ osób: draft, zmiana lat, okno rotacji, wspólne playoffy. |
+| ⏱️ | Zegar rotacji w zakładce Team | Dziś odliczanie 2 min widać tylko na zakładce draftu. |
+| 🙈 | Wyniki online | Ukryć Challenge (i może Share) w pokojach. |
+| 🏅 | Nagrody za levele + profil | Tytuły na tabelach, ramka logo, karta gracza, odznaki; pasek Home · Profile · Settings w menu. |
+| 📱 | Dolny pasek: reszta | Draw Five, sezon All-Time, turniej Mini. |
+
 ## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
 
 **Skąd gra:** liga „all-time draft” grana przez znajomych od 2019 roku — start 16 osób, szczyt 32, dziś znów 16. Gra wyrosła z kilku lat prawdziwego draftowania, nie z pomysłu na aplikację. To jest historia założycieli i główny wyróżnik.

@@ -503,10 +503,11 @@ begin
   if v_slot is null then return false; end if;
   if not exists (select 1 from mp_rooms where id = p_room and status = 'draft') then return false; end if;
   perform rate_check('swap', 60, interval '10 minutes');
-  -- Only at the board as it stands: a swap made before the latest pick arrived is sent again.
+  -- Logged at the board as it stands now (2026-11-13: no refusals to retry): a pick that slipped
+  -- in first just means the swap goes in after it. Every screen checks it against the cap anyway.
   perform 1 from mp_rooms where id = p_room for update;
-  if p_at <> (select count(*) from mp_picks where room_id = p_room) then return false; end if;
-  insert into mp_swaps (room_id, at_pick, slot, player_name, span_id) values (p_room, p_at, v_slot, p_player, p_span);
+  insert into mp_swaps (room_id, at_pick, slot, player_name, span_id)
+  values (p_room, (select count(*) from mp_picks where room_id = p_room), v_slot, p_player, p_span);
   return true;
 end $$;
 revoke all on function public.mp_swap(uuid, int, text, text) from public, anon;
