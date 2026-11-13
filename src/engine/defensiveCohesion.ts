@@ -392,8 +392,16 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   const threeLayerCore = coreReadiness * (0.5 + resistanceReadiness * 0.5);
   const eliteShellBonus = completeness * MAX_ELITE_SHELL_DEFENSE_BONUS;
   const threeLayerCoreBonus = threeLayerCore * MAX_THREE_LAYER_CORE_DEFENSE_BONUS;
+  // 2026-11-13: the backline partner is the strongest rim anchor playing a DIFFERENT slot from the
+  // first, not simply the second-strongest — a backup center (DeAndre Jordan behind Gobert, after
+  // the centers' D-TAL rose with the position correction) out-ranked Mobley at the 4 and erased
+  // the Mobley + Gobert foundation the check below exists to credit.
+  const backlinePartner =
+    rimProviders.length >= 2
+      ? rimProviders.slice(1).find((entry) => dominantSlotByPlayer.get(entry.player.id) !== dominantSlotByPlayer.get(rimProviders[0].player.id)) ?? null
+      : null;
   const secondRimReadiness = clamp01(
-    ((secondRim?.effectiveStrength ?? 0) - BACKLINE_PROVIDER_START) /
+    ((backlinePartner?.effectiveStrength ?? 0) - BACKLINE_PROVIDER_START) /
       (BACKLINE_PROVIDER_FULL - BACKLINE_PROVIDER_START),
   );
   // A backline FOUNDATION means two rim anchors actually on the floor together — Duncan at the 4,
@@ -401,10 +409,7 @@ export function defensiveCohesion(team: Team): DefensiveCohesionResult {
   // differently but read identically to the strength-only check above: Gobert 26 min + Ben
   // Wallace 22 min, both at the C slot (D1S2 Drużyna 13), was earning the full +18 for a twin
   // tower it never fields. Require the two anchors' dominant slots to differ (one C, one PF).
-  const rimSlotsDiffer =
-    rimProviders.length >= 2 &&
-    dominantSlotByPlayer.get(rimProviders[0].player.id) !==
-      dominantSlotByPlayer.get(rimProviders[1].player.id);
+  const rimSlotsDiffer = backlinePartner !== null;
   // Opponents can still attack the guards, so hunt resistance affects the ceiling; it cannot
   // erase Duncan+Robinson, Mobley+Gobert or Wembanyama+Robinson as a backline foundation.
   const backlineFoundation = rimSlotsDiffer
