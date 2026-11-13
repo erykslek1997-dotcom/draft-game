@@ -141,6 +141,8 @@ export function NightMenu({
       </button>
     );
   };
+  const dailiesDone =
+    (drawFive && !DAILY_REPLAY_FOR_TESTING ? 1 : 0) + (['mini', 'alltime', 'bomb'] as DailyDraftMode[]).filter((m) => !draftDay(m).testing && dailyDraftResult(m, today)).length;
   return (
     <div className="nt">
       <div className="game solo">
@@ -149,7 +151,7 @@ export function NightMenu({
             <div className="m2-mast">
               <b>{BRAND}</b>
               <span>{BRAND_TAGLINE}</span>
-              <span className="m2-ed">{editionLine()}</span>
+              <span className="m2-ed">{streak > 0 ? `${editionLine().split(' · ')[0]} · 🔥 ${streak} day${streak === 1 ? '' : 's'}` : editionLine()}</span>
             </div>
             <div className="m2-team">
               {franchise && <LeagueMark name={teamName} code={franchiseCode(teamName)} />}
@@ -180,17 +182,11 @@ export function NightMenu({
               </div>
             )}
             {/* 2026-11-13 (the UI audit): four modes, each with its online version beside it. */}
+            <span className="m2-tl m2-play">Play</span>
             <ol className="m2-modes">
               {MODES.map((m, i) => {
                 const online = m.id === 'quickfive' ? onFriends : m.id === 'draft' ? onAllTimeOnline : m.id === 'duel' ? onDuel : undefined;
-                // Today's daily of the mode, right under it (2026-11-13: "obok online przycisk Daily").
-                const dailyMode: DailyDraftMode | null = m.id === 'quickfive' ? 'mini' : m.id === 'draft' ? 'alltime' : null;
-                const dailyDone = m.id === 'bestfive' ? Boolean(drawFive) && !DAILY_REPLAY_FOR_TESTING : dailyMode ? Boolean(dailyDraftResult(dailyMode, today)) && !DAILY_REPLAY_FOR_TESTING : false;
-                const openDaily = m.id === 'bestfive' ? onDailyDrawFive : dailyMode ? () => onDailyDraft(draftDay(dailyMode)) : undefined;
-                const subs = [
-                  ...(openDaily ? [{ key: 'daily', label: dailyDone ? 'Today’s daily ✓' : 'Today’s daily', onClick: dailyDone ? undefined : openDaily }] : []),
-                  ...(online ? [{ key: 'online', label: 'Online', onClick: online }] : []),
-                ];
+                const subs = online ? [{ key: 'online', label: 'Play online', onClick: online }] : [];
                 return (
                   <li key={m.id} className={subs.length ? 'm2-has-online' : undefined}>
                     <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
@@ -226,15 +222,16 @@ export function NightMenu({
                 );
               })}
             </ol>
-            <div className="m2-today">
-              <span className="m2-tl">Today’s dailies{streak > 0 ? ` · 🔥 ${streak}` : ''}</span>
+            {/* 2026-11-13 (menu A + the strip from B): the dailies as a strip of four, a status line over each. */}
+            <span className="m2-tl">Today’s dailies · {dailiesDone} of 4</span>
+            <div className="m2-today m2-strip">
               <button type="button" className={`m2-d${drawFive && !DAILY_REPLAY_FOR_TESTING ? ' done' : ''}`} onClick={onDailyDrawFive}>
                 <b>Draw Five</b>
                 <span>{drawFive?.game ? `✓ ${drawFive.game.you > drawFive.game.them ? 'beat' : 'lost to'} the ${drawFive.game.opponent}` : drawFive ? '✓ played' : `vs ${meta.opponent.short}`}</span>
               </button>
               {draftCell('mini', 'Mini')}
               {draftCell('alltime', 'All-Time')}
-              {draftCell('bomb', 'The Bomb')}
+              {draftCell('bomb', 'Bomb')}
             </div>
             {yesterday.length > 0 && (
               <p className="m2-note">

@@ -145,7 +145,18 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
     if (meta) {
       if (!legends) return null;
       const tookJoker = jokers.find((j) => l[j.slot]?.id === j.card.id);
-      return simulateLiveGame(l, legends, expectedMargin(l, fanVoteFive(pool, shotsCap), legends), seedOf, tookJoker?.span.id);
+      const margin = expectedMargin(l, fanVoteFive(pool, shotsCap), legends);
+      // 2026-11-13, the playtest ("ułożyłem najlepszą możliwą piątkę i przegrałem"; Eryk: "zawsze
+      // wygrać"): the best five on the board always wins its game. It's always the favourite
+      // (every day of the last 60: +0.3 to +18.7); when its first replay goes the other way, the
+      // next replay of the same game is played instead, the same on every screen.
+      if (scoreLineup(l).composite >= boardTargets(pool, shotsCap).optimal) {
+        for (let k = 0; k < 40; k++) {
+          const game = simulateLiveGame(l, legends, Math.max(margin, 3), k ? `${seedOf}:best${k}` : seedOf, tookJoker?.span.id);
+          if (game.final[0] > game.final[1]) return game;
+        }
+      }
+      return simulateLiveGame(l, legends, margin, seedOf, tookJoker?.span.id);
     }
     if (!STARTER_SLOTS.every((s) => ai[s])) return null;
     return simulateLiveGame(l, ai, headToHeadMargin(l, ai), seedOf);
