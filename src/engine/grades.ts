@@ -1338,6 +1338,10 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Robert Horry', 70], // was 74; the playoff shots keep him over his twins (39)
     ['Tiago Splitter', 68], // was 71; small cut, RAPTOR liked him (+3.3..4.0)
     ['Tony Allen', 67], // was 69; small cut, RAPTOR defense +3.1..3.6
+    // 2026-11-13, the user: "Hassan Whiteside za dużo" → "Whiteside 70", "Bob Gross z 71" → "Gross 65".
+    ['Hassan Whiteside', 70],
+    ['Bob Gross', 65],
+    ['OG Anunoby', 77], // with his peak target: "OG max startera
   ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
 );
 
@@ -1358,6 +1362,8 @@ const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(
     ['Pau Gasol', 84],
     ['Marc Gasol', 83],
     ['Chris Bosh', 79],
+    // 2026-11-13, the user: "OG Anuboby za nisko" → "OG max startera" (77, the top of Starter).
+    ['OG Anunoby', 77],
   ].map(([name, target]) => [normalizePlayerName(name as string), target as number]),
 );
 const TARGET_FULL_RANGE = 12;
@@ -1411,7 +1417,9 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
   const d = Math.max(1, ctx.dtal - 50);
   const share = o / (o + d);
   if (named) {
-    const delta = displayTalentForSpan(ctx) - smoothedDisplayTalent(ctx);
+    // On the same scale: a tabled player's card reads on the label scale, his engine number on the
+    // old one (2026-11-13: Ray Allen's and Mullin's named ceilings read as a +6 lift, O-TAL 99 / 96).
+    const delta = displayTalentForSpan(ctx) - (tierCalibrationFor(name) ? onLabelScale(smoothedDisplayTalent(ctx)) : smoothedDisplayTalent(ctx));
     return delta === 0 ? { offense: 0, defense: 0 } : { offense: delta * share * NAMED_SHIFT_SCALE, defense: delta * (1 - share) * NAMED_SHIFT_SCALE };
   }
   // A lifted card moves O / D only as far as their blend (60 / 40, as TAL weighs them) still falls

@@ -186,7 +186,9 @@ check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.in
 // the engine blocks came off (tierCalibration.ts): Nash 2006-08's TAL 90 -> 92 and his teammates'
 // numbers reshuffled the rotation. Re-measured directly (108 targetable minutes, penalty 5.3, from
 // 80 / 5.9); Nash and Barros keep their D-TAL (19-21, 25) — still a real stacked cost.
-check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 5.0, 'Nash/Barros weaknesses stack by real minutes');
+// 2026-11-13: 5.0 -> 4.5 after a lifted card started moving O-TAL / D-TAL (grades.ts namedShiftForSpan):
+// the roster's teammates read a little more defense. Re-measured directly (108 minutes, penalty 4.8).
+check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 4.5, 'Nash/Barros weaknesses stack by real minutes');
 // controlHunt.penalty is unaffected (0 — Caruso/Battier/Chandler are real plus bench defenders,
 // no shortfall to discount), so the margin still holds against the new 7.0.
 check(reportedHunt.penalty >= controlHunt.penalty + 6, 'huntable roster is clearly separated from an elite defensive control');
