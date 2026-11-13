@@ -1389,6 +1389,7 @@ function namedPeakLift(playerName: string | undefined, value: number): number {
 /** TAL points of a named adjustment -> O-TAL / D-TAL points: a TAL point is worth about this
  * much on the side it lands on (O-TAL's scale is ~1.3 per TAL-weighted offense point). */
 const NAMED_SHIFT_SCALE = 1.3;
+const LIFT_FOLLOWS_OD = envVar('LIFT_OD') !== '0';
 
 /**
  * How a named adjustment on this window's displayed TAL splits into O-TAL and D-TAL: by where
@@ -1398,14 +1399,31 @@ const NAMED_SHIFT_SCALE = 1.3;
 function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number } {
   const name = span.playerName;
   const key = normalizePlayerName(name);
-  if (!NAMED_PLAYER_DISPLAY_CEILING.has(key) && !NAMED_PLAYER_PEAK_TARGET.has(key)) return { offense: 0, defense: 0 };
+  const named = NAMED_PLAYER_DISPLAY_CEILING.has(key) || NAMED_PLAYER_PEAK_TARGET.has(key);
+  if (!named && !LIFT_FOLLOWS_OD) return { offense: 0, defense: 0 };
   const ctx = tierContextFor(span);
-  const delta = displayTalentForSpan(ctx) - smoothedDisplayTalent(ctx);
-  if (delta === 0) return { offense: 0, defense: 0 };
+  // 2026-11-13 (the user: "dziwnie wygląda jak ktoś ma np 80 a po obu stronach 55/56"): every lift of
+  // the card's number over the engine's own (the user's table, the All-Star floor, a hold) moves
+  // O-TAL / D-TAL with it; a tabled player's engine number is read on the label scale first, so the
+  // scale change itself is no lift. Cuts by the table leave O / D alone (the user wants Kevin
+  // Johnson's offense higher, not lower); named ceilings and peak targets keep both directions.
   const o = Math.max(1, (ctx.otalUncapped ?? ctx.otal) - 50);
   const d = Math.max(1, ctx.dtal - 50);
   const share = o / (o + d);
-  return { offense: delta * share * NAMED_SHIFT_SCALE, defense: delta * (1 - share) * NAMED_SHIFT_SCALE };
+  if (named) {
+    const delta = displayTalentForSpan(ctx) - smoothedDisplayTalent(ctx);
+    return delta === 0 ? { offense: 0, defense: 0 } : { offense: delta * share * NAMED_SHIFT_SCALE, defense: delta * (1 - share) * NAMED_SHIFT_SCALE };
+  }
+  // A lifted card moves O / D only as far as their blend (60 / 40, as TAL weighs them) still falls
+  // short of the card's number — Vin Baker's O 69 already read above his lifted 61 — and both by the
+  // same points.
+  const shown = displayTalentForSpan(ctx);
+  const engine = tierCalibrationFor(name) ? onLabelScale(smoothedDisplayTalent(ctx)) : smoothedDisplayTalent(ctx);
+  if (shown <= engine) return { offense: 0, defense: 0 };
+  const short = shown - (0.6 * (ctx.otalUncapped ?? ctx.otal) + 0.4 * ctx.dtal);
+  if (short <= 0) return { offense: 0, defense: 0 };
+  // Both sides by the same points: on a side split a player with D 17 would need O 107 to read 71.
+  return { offense: short, defense: short };
 }
 registerNamedShift(namedShiftForSpan);
 
@@ -1563,7 +1581,7 @@ function displayTalentUnheld(ctx: TierGateContext): number {
  * 0.8171 → 0.8226, All-star best windows 55 → 145 (one selection: 0.8554 / 0.8244, 235, but one-time
  * picks such as Gatling and Magloire). Bowen and Battier, never All-Stars, stay Starters.
  * `AS_FLOOR=0` turns it off. */
-const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78, maxLift: Number(envVar('AS_MAX_LIFT') ?? Infinity) };
+const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78, maxLift: Number(envVar('AS_MAX_LIFT') ?? 10) };
 
 function legacyDisplayTalent(ctx: TierGateContext): number {
   const smoothed = smoothedDisplayTalent(ctx);
