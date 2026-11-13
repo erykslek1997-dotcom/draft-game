@@ -1576,3 +1576,11 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .m2-acct-line .m2-acct-go { flex: none; }
 .nt .m2-strip { align-items: start; }
 .nt .m2-strip .m2-d { display: flex; flex-direction: column; justify-content: flex-start; align-self: stretch; }
+
+/* 2026-11-13 (playtest: "spacing zassysa"): "Play online" lines up with the mode's name, and the
+   dailies get room above and below like every other section. */
+.nt .m2-subs { left: 102px; }
+@media (max-width: 600px) { .nt .m2-subs { left: 56px; } }
+.nt .m2-strip { margin: 12px 0 8px; }
+.nt .m2-modes + .m2-tl, .nt .m2-modes ~ .m2-tl { display: block; margin-top: 28px; }
+.nt .m2-acct { margin-top: 24px; }
