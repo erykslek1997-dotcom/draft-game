@@ -71,7 +71,7 @@ function useLoadStatus(): LoadStatus {
   return loadStatus;
 }
 
-type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest' | 'multi' | 'duel' | 'alltimeOnline';
+type View = 'intro' | 'game' | 'bestfive' | 'quickfive' | 'daily' | 'livetest' | 'multi' | 'duel' | 'alltimeOnline' | 'duelSolo';
 
 /** Roster-size figure shown in the Draft mode card's own one-line description, kept in sync with
  * `engine/positions.ts`'s real `ROSTER_SIZE` by the standing check in
@@ -96,7 +96,12 @@ const DISPLAY_BENCH_SLOT_COUNT = 4;
  * imported, same reasoning as the `DISPLAY_*` constants above: App.tsx must stay free of any
  * engine import until a mode is actually chosen. Keep these three in sync with their real-mode
  * counterparts if the rules ever change. */
-const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive', { title: string; body: string }[]> = {
+const MODE_HOW_TO_PLAY: Record<'draft' | 'bestfive' | 'quickfive' | 'duel', { title: string; body: string }[]> = {
+  duel: [
+    { title: 'Draft', body: 'You and one rival GM take turns, snake order, five picks each, from a board of 90 players drawn for this Duel.' },
+    { title: 'Caps', body: 'Every pick costs caps. Your five has to fit under the cap; the list marks what this pick can still afford.' },
+    { title: 'The game', body: 'Then your five play theirs: one live game decides it. Online, both of you click Ready and it tips off on both screens.' },
+  ],
   draft: [
     { title: 'Draft', body: `16 teams take turns, ${DISPLAY_ROSTER_SIZE} rounds — one player each round. You control one team; the rest are CPU.` },
     { title: 'Caps', body: `Every pick costs caps — a player's price is how many shots a game he took in those years. Your whole roster has to fit under ${DISPLAY_CAP_LIMIT} caps, so the best player isn't always the pick that fits.` },
@@ -279,7 +284,8 @@ function App() {
             else if (m === 'quickfive') {
               setMiniDaily(null);
               setView('quickfive');
-            } else setView('bestfive');
+            } else if (m === 'duel') setView('duelSolo');
+            else setView('bestfive');
           }}
           onDailyDrawFive={() => setView('daily')}
           onDailyDraft={(day) => {
@@ -299,7 +305,7 @@ function App() {
           onReroll={(m, n) => setDailyReroll((r) => ({ ...r, [m]: n }))}
           howTo={MODE_HOW_TO_PLAY}
           dataStatus={<IntroDataStatus />}
-          stepDone={(m) => stepDone(m)}
+          stepDone={(m) => m !== 'duel' && stepDone(m)}
           onLiveTest={LIVE_TEST_BENCH_FOR_TESTING ? () => setView('livetest') : undefined}
           onFriends={onlineEnabled ? () => setView('multi') : undefined}
           onDuel={onlineEnabled ? () => setView('duel') : undefined}
@@ -397,6 +403,12 @@ function App() {
       {view === 'livetest' && (
         <Suspense fallback={<LoadingPanel />}>
           <LiveTestBench onBack={() => setView('intro')} />
+        </Suspense>
+      )}
+
+      {view === 'duelSolo' && (
+        <Suspense fallback={<LoadingPanel />}>
+          <QuickFive key="duel" duel onExit={() => setView('intro')} />
         </Suspense>
       )}
 

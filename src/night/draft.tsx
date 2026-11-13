@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { naturalPosition } from '../engine/naturalPosition';
@@ -150,8 +150,11 @@ export function PlayerTable({
   onYears,
   onStar,
   scoutsLeft = 0,
+  waiting = false,
 }: {
   rows: NightRow[];
+  /** Someone else is on the clock: the list stays bright, only the Draft buttons go (UI audit 2026-11-13). */
+  waiting?: boolean;
   variant: 'mini' | 'alltime';
   onDraft: (span: PlayerSpan) => void;
   onOpen?: (playerName: string) => void;
@@ -160,6 +163,23 @@ export function PlayerTable({
   scoutsLeft?: number;
 }) {
   const at = variant === 'alltime';
+  // A player just taken stays a moment and fades out (ease-in), so you see who went (UI audit
+  // 2026-11-13). Only for one or two rows leaving at once: a filter change swaps many.
+  const prevRows = useRef<NightRow[]>(rows);
+  const [ghosts, setGhosts] = useState<{ row: NightRow; at: number }[]>([]);
+  const keySig = rows.map((r) => r.key).join('|');
+  useEffect(() => {
+    const keys = new Set(rows.map((r) => r.key));
+    const gone = prevRows.current.flatMap((r, i) => (keys.has(r.key) ? [] : [{ row: r, at: i }]));
+    prevRows.current = rows;
+    if (gone.length === 0 || gone.length > 2) return;
+    setGhosts(gone);
+    const t = window.setTimeout(() => setGhosts([]), 900);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keySig]);
+  const shown: (NightRow & { leaving?: boolean })[] = [...rows];
+  for (const g of ghosts) if (!rows.some((r) => r.key === g.row.key)) shown.splice(Math.min(g.at, shown.length), 0, { ...g.row, leaving: true, legal: false });
   return (
     <table className="plist">
       <colgroup>
@@ -204,14 +224,18 @@ export function PlayerTable({
         </tr>
       </thead>
       <tbody>
-        {rows.map((r) => {
+        {shown.map((r) => {
           const s = r.span;
           const roles = styleRoles(s);
           const name = maskName(s.playerName);
           return (
             <tr
               key={r.key}
-              className={[r.hot && r.legal ? 'hot' : '', !r.legal ? 'no' : '', r.taken ? 'taken' : '', onOpen ? 'clk' : ''].filter(Boolean).join(' ') || undefined}
+              className={
+                [r.leaving ? 'leaving' : '', r.hot && r.legal ? 'hot' : '', !r.legal && !r.leaving ? (waiting ? 'wait' : 'no') : '', r.taken ? 'taken' : '', onOpen ? 'clk' : '']
+                  .filter(Boolean)
+                  .join(' ') || undefined
+              }
               title={r.title}
               // 2026-11-05, the playtest ("muszę wejść w zdjęcie gracza i dopiero wtedy wyskakuje profil"):
               // a tap anywhere on the row opens his profile; the row's own buttons keep their jobs.
@@ -228,8 +252,6 @@ export function PlayerTable({
                 ) : (
                   <div className="nm">{name}</div>
                 )}
-                {/* 2026-11-12: traits, "On-ball", "Max N min" as chips — never cut with the role line */}
-                <TagChips span={s} />
                 {/* 2026-10-28: on a phone the grade column hides, so a scouted player keeps his three
                     letters as chips by the name (OFF · DEF · SHT) */}
                 {r.grades && (
@@ -255,6 +277,8 @@ export function PlayerTable({
                       {s.box.ppg.toFixed(1)}/{s.box.rpg.toFixed(1)}/{s.box.apg.toFixed(1)}
                     </span>
                   </span>
+                  {/* 2026-11-13 (UI audit): the chips ride the meta line, so every row is the same height */}
+                  <TagChips span={s} className="tagc-row" />
                 </div>
               </td>
               {at && (

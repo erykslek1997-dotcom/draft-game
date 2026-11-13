@@ -1536,3 +1536,17 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .ph-dock b { background: #e0645a; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; }
   body:has(.ph-dock) { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 }
+
+/* 2026-11-13 (UI audit): a mode's online version, a small pill beside its row. */
+.nt .m2-modes li.m2-has-online { position: relative; }
+.nt .m2-modes li.m2-has-online .m2-row { padding-bottom: 44px; }
+.nt .m2-online { position: absolute; left: 48px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; font: 700 12px var(--cond); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink2); background: none; border: 1px solid var(--rule2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.nt .m2-online i { width: 7px; height: 7px; border-radius: 50%; background: #5bc27a; box-shadow: 0 0 6px #5bc27a; }
+.nt .m2-online:hover { color: var(--ink); border-color: var(--ink3); }
+@media (max-width: 600px) { .nt .m2-online { left: 40px; } }
+/* 2026-11-13 (UI audit): chips at the end of the list's meta line, never a line of their own. */
+.plist .mt .tagc-row { margin-left: 8px; flex-wrap: nowrap; overflow: hidden; vertical-align: 1px; }
+@media (max-width: 640px) { .plist .mt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .plist .mt .tagc-row i:nth-child(n + 2) { display: none; } }
+/* 2026-11-13 (UI audit): the list's footer as buttons, not a sentence of links. */
+.nt .more.more2 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.nt .more.more2 .btn { width: auto; padding-left: 18px; padding-right: 18px; }

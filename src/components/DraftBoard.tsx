@@ -1042,7 +1042,11 @@ export default function DraftBoard({
   const asideTop = (
     <>
       <Mast title={title} daily={!!dailyTitle} sub={state.complete ? (online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done · set your rotation') : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
-      <Tally you={fmtCaps(humanBudget.capLeft)} mid={fmtCaps(capLimit)} ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
+      <Tally
+        you={fmtCaps(humanBudget.capLeft)}
+        mid={state.complete ? '—' : youOnClock ? 'Now' : humanPicksAway ? `in ${humanPicksAway}` : '—'}
+        midK="Your pick"
+        ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
       <CapBar used={used} cap={capLimit} />
     </>
   );
@@ -1646,35 +1650,33 @@ export default function DraftBoard({
                 setFgaMax(String(hi));
               }}
             />
-            <PlayerTable rows={rows} variant="alltime" onDraft={(sp) => onPick(sp.id)} onOpen={(name) => setPeekPlayer(name)} onYears={(name) => setYearsFor({ name, from: 'draft' })} onStar={toggleBigBoard} scoutsLeft={scoutsLeft} />
-            <div className="more">
-              Showing {shown.length} of {totalMatched.toLocaleString('en-US')} players
+            <PlayerTable rows={rows} variant="alltime" onDraft={(sp) => onPick(sp.id)} onOpen={(name) => setPeekPlayer(name)} onYears={(name) => setYearsFor({ name, from: 'draft' })} onStar={toggleBigBoard} scoutsLeft={scoutsLeft} waiting={!canPick && !state.complete} />
+            {/* 2026-11-13 (UI audit): one clear "Show more" button, the count beside it, scouting on a line of its own. */}
+            <div className="more more2">
+              <span>
+                Showing {shown.length} of {totalMatched.toLocaleString('en-US')}
+                {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
+              </span>
               {visibleCount < groups.length && (
-                <>
-                  {' · '}
-                  <button type="button" className="lk-inline" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
-                    Show 10 more
-                  </button>
-                </>
+                <Btn kind="line" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
+                  Show 10 more
+                </Btn>
               )}
               {visibleCount > DRAFT_VISIBLE_DEFAULT && (
-                <>
-                  {' · '}
-                  <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
-                    Show fewer
-                  </button>
-                </>
+                <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
+                  Show fewer
+                </button>
               )}
-              {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
-              {' · '}
+            </div>
+            <div className="more more2">
               {scoutingNow ? (
                 <b>Scouting this round: every card open until your next pick</b>
               ) : scoutsLeft > 0 ? (
-                <button type="button" className="lk-inline" onClick={() => scoutPlayer()}>
+                <Btn kind="line" onClick={() => scoutPlayer()}>
                   Scout this round · {scoutsLeft} left
-                </button>
+                </Btn>
               ) : (
-                'no scouting rounds left'
+                <span>No scouting rounds left</span>
               )}
             </div>
           </section>
