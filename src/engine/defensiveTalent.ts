@@ -1247,6 +1247,33 @@ function modernRulesDefenseCut(span: PlayerSpan): number {
   return MODERN_RULES_DEFENSE.max * eraGap * lowSteals * heavy * unathletic;
 }
 
+/**
+ * 2026-11-13 (the user on Marc Gasol 2015-17 at 65 between 91 in 2012-14 and 83 in Toronto — "ten
+ * spadek nie powinien wynosić 25 punktów z perspektywy zwykłego fana"): defense is a stable skill,
+ * and the C box ladder swings 18 points on a two-point DRB% change. The window moves `share` of the
+ * way to the player's other windows, each weighed down by half every `halfLife` years between the
+ * windows' middles — replacing the one-season neighbour blend when on.
+ */
+const CAREER_DEFENSE = { share: Number(envVar('DT_CAREER_SHARE') ?? 0), halfLife: Number(envVar('DT_CAREER_HL') ?? 3), upOnly: envVar('DT_CAREER_UP') === '1' };
+const windowsByPlayer = new Map<string, PlayerSpan[]>();
+function careerDefenseAround(span: PlayerSpan): number | undefined {
+  const key = normalizePlayerName(span.playerName);
+  let list = windowsByPlayer.get(key);
+  if (!list) {
+    list = draftPool.filter((p) => normalizePlayerName(p.playerName) === key);
+    windowsByPlayer.set(key, list);
+  }
+  const mid = (label: string) => { const ys = spanEndYears(label); return (ys[0] + ys[ys.length - 1]) / 2; };
+  const at = mid(span.spanLabel);
+  let sum = 0, weight = 0;
+  for (const p of list) {
+    if (p.spanLabel === span.spanLabel) continue;
+    const w = 0.5 ** (Math.abs(mid(p.spanLabel) - at) / CAREER_DEFENSE.halfLife);
+    sum += ownWindowDefense(ratingSpan(p)) * w;
+    weight += w;
+  }
+  return weight > 0 ? sum / weight : undefined;
+}
 function ownWindowDefense(span: PlayerSpan): number {
   return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span), carriedAccoladeFloor(span));
 }
@@ -1269,11 +1296,13 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const cached = shiftedDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const own = ownWindowDefense(span);
+  const career = CAREER_DEFENSE.share > 0 ? careerDefenseAround(span) : undefined;
   const neighbours = neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n)));
+  const smoothed = career === undefined ? blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE) : own + (CAREER_DEFENSE.upOnly ? Math.max(0, career - own) : career - own) * CAREER_DEFENSE.share;
   // 2026-10-10: the hustle defenders' bonus (`hustleDefenders.ts`) goes on last, after the floors
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
-  const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE)))));
+  const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, smoothed))));
   const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
