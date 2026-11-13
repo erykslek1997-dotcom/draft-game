@@ -87,6 +87,8 @@ interface Props {
   daily?: DailyDraftDay;
   /** A multiplayer room's draft (2026-11-12): friends' teams, the room's pick log and clock. */
   mp?: MiniMp;
+  /** The Duel against a CPU GM (2026-11-13, the UI audit: "duel trzeba zrobić na single"). */
+  duel?: boolean;
 }
 
 /** What the Mini Draft needs from a multiplayer room (MultiMini.tsx keeps it up to date). */
@@ -153,14 +155,18 @@ const CAPS_TOP = 30;
  * pick-by-pick draft — 5 rounds, starters only, one card per player at his peak — with the same AI
  * as the All-Time Draft. See `quickDraft.ts` for the engine.
  */
-export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp }: Props) {
+export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge, daily, mp, duel }: Props) {
   const freshDraft = (name?: string, seed?: number) => (daily ? createQuickDraft(name, daily.seed, daily) : createQuickDraft(name, seed));
   const [state, setState] = useState<QuickDraftState>(() =>
-    mp ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams, mp.cap, mp.names), mp.picks) : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
+    mp
+      ? replayPicks(createQuickMultiplayerDraft(mp.seed, mp.mySlot, mp.teams, mp.cap, mp.names), mp.picks)
+      : duel
+        ? newDuel()
+        : freshDraft(humanTeamName, challenge ? Number(challenge.seed) : undefined),
   );
   const TEAM_COUNT = state.teams.length;
   // A room's draft opens on the lottery (the order the host's start drew), then the first pick.
-  const [phase, setPhase] = useState<Phase>(mp ? (mp.picks.length === 0 && mp.now() < mp.startsAt ? 'lottery' : 'draft') : daily ? 'day' : 'lottery');
+  const [phase, setPhase] = useState<Phase>(duel ? 'draft' : mp ? (mp.picks.length === 0 && mp.now() < mp.startsAt ? 'lottery' : 'draft') : daily ? 'day' : 'lottery');
   const mpLotteryOver = mp ? mp.now() >= mp.startsAt || mp.picks.length > 0 : false;
   useEffect(() => {
     if (mpLotteryOver && phase === 'lottery') setPhase('draft');
@@ -292,6 +298,32 @@ export default function QuickFive({ humanTeamName, onExit, onNextStep, challenge
         ]}
         onDone={() => setPhase('draft')}
         links={links}
+      />
+    );
+  } else if (phase === 'draft' && !mp && TEAM_COUNT === 2) {
+    screen = (
+      <DuelBoard
+        state={state}
+        canPick={canPick}
+        onPick={(id) => {
+          buzz();
+          setState((s) => makeQuickPick(s, id));
+        }}
+        rival="CPU"
+        links={links}
+      />
+    );
+  } else if (phase !== 'draft' && !mp && TEAM_COUNT === 2) {
+    screen = (
+      <DuelResults
+        state={state}
+        codeOf={codeOf}
+        rival="CPU"
+        links={links}
+        onExit={onExit} onAgain={() => {
+          setState(newDuel());
+          setPhase('draft');
+        }}
       />
     );
   } else if (phase === 'draft' && mp && TEAM_COUNT === 2) {
@@ -570,7 +602,8 @@ function QuickDraftBoard({
   const asideTop = (
     <>
       <Mast title={title} daily={Boolean(daily)} sub={sub} />
-      <Tally you={fmtCaps(left)} mid={fmtCaps(state.capLimit)} ai={`${round}/${QUICK_ROUNDS}`} youK="Caps left" aiK="Round" />
+      {/* 2026-11-13 (UI audit): the cap sits in the bar below; the tally says when you pick. */}
+      <Tally you={fmtCaps(left)} mid={state.complete ? '—' : canPick ? 'Now' : picksAway ? `in ${picksAway}` : '—'} ai={`${round}/${QUICK_ROUNDS}`} youK="Caps left" midK="Your pick" aiK="Round" />
       <CapBar used={used} cap={state.capLimit} />
       <SubNote>
         {slotsLeft > 0 ? (
@@ -739,7 +772,7 @@ function QuickDraftBoard({
             <b>None of these fit this pick.</b> It can cost up to {fmtCaps(maxPick)} caps.
           </Notice>
         )}
-        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} onStar={toggleStar} />
+        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} onStar={toggleStar} waiting={!canPick} />
         <div className="more">
           Showing {shown.length} of {filtered.length}
           {on !== 'ALL' && ` ${on}`}
@@ -1320,7 +1353,8 @@ function DuelBoard({
   state: QuickDraftState;
   canPick: boolean;
   onPick: (id: string) => void;
-  clock: number;
+  /** Seconds left on the pick (rooms); none against the CPU. */
+  clock?: number;
   rival: string;
   peekLine?: string;
   sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
@@ -1393,13 +1427,21 @@ function DuelBoard({
       </table>
     </section>
   );
-  const clockText = fmtClock(clock);
+  const clockText = clock === undefined ? '' : fmtClock(clock);
+  const clockPart = clock === undefined ? '' : ` · ${clockText}`;
   return (
     <NightGame
       aside={
         <>
           <Mast title="Duel" sub={`Pick ${overall} of ${total} · cap ${fmtCaps(state.capLimit)}`} />
-          <Tally you={fmtCaps(state.capLimit - usedOf(me))} mid={clockText} ai={`${state.history.length}/${total}`} youK="Caps left" midK={canPick ? 'Your clock' : `${rival}’s clock`} aiK="Picks" />
+          <Tally
+            you={fmtCaps(state.capLimit - usedOf(me))}
+            mid={clock === undefined ? fmtCaps(state.capLimit - usedOf(them)) : clockText}
+            ai={`${state.history.length}/${total}`}
+            youK="Caps left"
+            midK={clock === undefined ? `${rival} left` : canPick ? 'Your clock' : `${rival}’s clock`}
+            aiK="Picks"
+          />
           {picksLog}
           <Actions links={links} />
         </>
@@ -1408,19 +1450,19 @@ function DuelBoard({
       <FiveSlots title="You" note={`${fmtCaps(usedOf(me))} / ${fmtCaps(state.capLimit)} caps`} lineup={meLineup} sel={on === 'ALL' ? null : on} onSlot={(p) => setOn(p)} emptyLabel={(p) => (p === on ? `showing ${counts[p]} ▾` : TAP_TO_SHOW)} compact />
       <FiveSlots title={rival} note={`${fmtCaps(usedOf(them))} / ${fmtCaps(state.capLimit)} caps`} lineup={themLineup} emptyLabel={() => ' '} compact />
       {canPick ? (
-        <Prompt eb={`On the clock · Pick ${overall} · ${clockText}`} title="Your pick" now className="ph-keep">
+        <Prompt eb={`On the clock · Pick ${overall}${clockPart}`} title="Your pick" now className="ph-keep">
           Up to <b>{fmtCaps(budget.maxThisPick)} caps</b> on this one and still fill the five.
         </Prompt>
       ) : state.complete ? (
         <Prompt eb="Draft over" title="The fives are in" />
       ) : (
-        <Prompt eb={`On the clock · Pick ${overall} · ${clockText}`} title={`${rival} is picking`}>
+        <Prompt eb={`On the clock · Pick ${overall}${clockPart}`} title={`${rival} is picking`}>
           {peekLine ? <span className="mp-peek">{peekLine}</span> : 'The list stays open while they think.'}
         </Prompt>
       )}
       <section id="mp-list">
         <PosTabs counts={counts} have={have} on={on} onPick={setOn} search={search} onSearch={setSearch} />
-        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} />
+        <PlayerTable rows={rows} variant="mini" onDraft={(span) => onPick(span.id)} waiting={!canPick} />
       </section>
       <div className="phone-only">{picksLog}</div>
       <PhoneDock
@@ -1444,6 +1486,7 @@ function DuelResults({
   ready,
   links,
   onExit,
+  onAgain,
 }: {
   state: QuickDraftState;
   codeOf: (t: Team) => string;
@@ -1451,6 +1494,8 @@ function DuelResults({
   ready?: { mine: boolean; theirs: boolean; theirsAway: boolean; set: () => void };
   links: { onMenu: () => void; onHowTo: () => void; onSettings: () => void };
   onExit: () => void;
+  /** Against the CPU: a new Duel. */
+  onAgain?: () => void;
 }) {
   const teams = useMemo(
     () =>
@@ -1504,9 +1549,13 @@ function DuelResults({
           pregame={{ eb: 'Duel · tonight', now: true, title: `You vs ${rival}`, line: 'Your five against theirs. One game.' }}
           links={{ onMenu: links.onMenu }}
           done={
-            <Btn kind="line" onClick={onExit}>
-              Main menu
-            </Btn>
+            onAgain ? (
+              <Btn onClick={onAgain}>New Duel</Btn>
+            ) : (
+              <Btn kind="line" onClick={onExit}>
+                Main menu
+              </Btn>
+            )
           }
         />
       );
@@ -1523,10 +1572,13 @@ function DuelResults({
         : ready.theirs
           ? `${rival} is ready.`
           : `${rival}: not ready yet.`;
-  const readyBtn = ready && (
+  // Against the CPU there's no one to wait for: the game starts on the click.
+  const readyBtn = ready ? (
     <Btn onClick={ready.set} disabled={ready.mine}>
       {ready.mine ? 'Ready ✓' : ready.theirsAway ? '▶ Play the game' : 'Ready'}
     </Btn>
+  ) : (
+    <Btn onClick={() => setPlaying(true)}>▶ Play the game</Btn>
   );
   return (
     <NightGame
@@ -1536,6 +1588,11 @@ function DuelResults({
           <Tally you={me.score.composite} mid="vs" ai={them.score.composite} youK="You" midK=" " aiK={rival} plain />
           <Actions links={{ ...links, menuPhoneOnly: true }}>
             {readyBtn}
+            {onAgain && (
+              <Btn kind="line" onClick={onAgain}>
+                New Duel
+              </Btn>
+            )}
             <Btn kind="line" onClick={onExit}>
               Main menu
             </Btn>
@@ -1553,9 +1610,15 @@ function DuelResults({
       <PhoneDock
         tabs={[
           { label: 'The fives', on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
-          ...(ready ? [{ label: ready.mine ? 'Ready ✓' : ready.theirsAway ? '▶ Play' : 'Ready', go: !ready.mine, onClick: ready.set }] : []),
+          ready ? { label: ready.mine ? 'Ready ✓' : ready.theirsAway ? '▶ Play' : 'Ready', go: !ready.mine, onClick: ready.set } : { label: '▶ Play the game', go: true, onClick: () => setPlaying(true) },
         ]}
       />
     </NightGame>
   );
+}
+
+/** A Duel against a CPU GM: a fresh board, a random seat. */
+function newDuel(): QuickDraftState {
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  return createQuickMultiplayerDraft(seed, seed % 2, 2, 70);
 }

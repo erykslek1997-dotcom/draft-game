@@ -208,15 +208,24 @@ function CareerPanel() {
         <span className="m2-lv-bar" aria-hidden><i style={{ width: `${Math.round((100 * lv.into) / lv.next)}%` }} /></span>
         <span>{lv.into} / {lv.next} XP</span>
       </div>
-      <dl className="m2-stats">
-        {cells.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="m2-career-note">Free drafts count on the week’s table too: top half adds points, bottom half takes them away.</p>
+      {/* Before the first game the twelve zeros say nothing (UI audit 2026-11-13): one line instead. */}
+      {stats.total === 0 && daily.days === 0 ? (
+        <p className="m2-career-note">Play any mode to start your record: drafts, wins, titles and XP all count here.</p>
+      ) : (
+        <>
+          <dl className="m2-stats">
+            {cells
+              .filter(([, v]) => v !== '0' && v !== '—')
+              .map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+          </dl>
+          <p className="m2-career-note">Free drafts count on the week’s table too: top half adds points, bottom half takes them away.</p>
+        </>
+      )}
     </div>
   );
 }

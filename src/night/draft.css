@@ -311,3 +311,11 @@
    past the screen — the browser widened the page to 432px and the bottom bar fell under the edge.
    An unavailable row's button is taken out instead. */
 .nt .plist tr.no .draft { display: none; }
+
+/* 2026-11-13 (UI audit): while someone else picks the list stays bright, only Draft goes; a player
+   just taken fades out, ease-in, before he leaves the list. */
+.nt .plist tr.wait .draft { visibility: hidden; }
+@keyframes plist-leave { from { opacity: 1; } to { opacity: 0; } }
+.nt .plist tr.leaving td { animation: plist-leave 0.9s ease-in forwards; }
+.nt .plist tr.leaving .draft { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .nt .plist tr.leaving td { animation: none; opacity: 0.3; } }

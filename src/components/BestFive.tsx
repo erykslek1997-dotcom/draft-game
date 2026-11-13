@@ -61,6 +61,8 @@ import {
   shortName,
   spanBand,
   useStepScroll,
+  PhoneDock,
+  scrollToSection,
 } from '../night/ui';
 import LiveGameNight from '../night/LiveGameNight';
 import { NightHowTo, NightSettings } from '../night/Dialogs';
@@ -636,7 +638,7 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
         ) : (
           <OppRow title="AI · Pro" lineup={aiShown} nextPos={aiTurn ? null : activeSlot} newId={aiHidden ? undefined : newAi} />
         )}
-        <section>
+        <section id="d5-five">
           <H3 note={`${filledCount} of 5`}>Your five</H3>
           <div className="slots">
             {STARTER_SLOTS.map((s) => (
@@ -656,9 +658,16 @@ export default function BestFive({ onBack, onNextStep, challenge, daily, testDay
             The {jokerReveal.joker.slot} Joker was <b>{maskName(jokerReveal.joker.span.playerName)}</b> {jokerReveal.joker.span.spanLabel}, {jokerReveal.joker.legend ? 'a legend. He got away.' : 'a scrub. Good dodge.'}
           </p>
         )}
-        {promptEl}
+        <div id="d5-hand">{promptEl}</div>
         {table}
-        {submitBtn('phone-only')}
+        {/* The phone's bottom bar (UI audit 2026-11-13): the hand, your five, and Submit under the thumb. */}
+        <PhoneDock
+          tabs={[
+            { label: 'Cards', on: !complete, onClick: () => scrollToSection('d5-hand') },
+            { label: `Your five ${filledCount}/5`, onClick: () => scrollToSection('d5-five') },
+            { label: complete ? '▶ Submit' : `Submit · ${spotsLeft} to go`, go: complete && !overCap && !aiTurn, onClick: () => complete && !overCap && !aiTurn && submit() },
+          ]}
+        />
       </NightGame>
       {dialogs}
     </>
@@ -982,7 +991,8 @@ function DeckHand({
           </div>
         ),
       )}
-      <div className="deal" aria-live="polite">
+      {/* Once the hand is out, the phone drops the lone deck row (UI audit 2026-11-13). */}
+      <div className={`deal${drawing && shown >= n ? ' dealt' : ''}`} aria-live="polite">
         <div ref={pile}>
           <CardBack />
         </div>

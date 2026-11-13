@@ -11,12 +11,13 @@ import { Btn, Dialog } from './frame';
 import { NightSettings } from './Dialogs';
 import { AccountBar } from '../components/AccountBar';
 
-export type MenuMode = 'bestfive' | 'quickfive' | 'draft';
+export type MenuMode = 'bestfive' | 'quickfive' | 'draft' | 'duel';
 
 const MODES: { id: MenuMode; name: string; line: string; time: string }[] = [
   { id: 'bestfive', name: 'Draw Five', line: 'Five cards. One cap. Beat the AI.', time: '5 min' },
   { id: 'quickfive', name: 'Mini Draft', line: 'Sixteen GMs. Five rounds. No mercy.', time: '8 min' },
   { id: 'draft', name: 'All-Time Draft', line: 'Nine rounds, a season, a ring.', time: '30 min' },
+  { id: 'duel', name: 'Duel', line: 'One on one. Ten picks, one cap, one game.', time: '5 min' },
 ];
 
 /** Each mode's small motif in the menu (playtest 2026-10-22, "brakuje charakteru"; mockup Menu C): a
@@ -31,7 +32,7 @@ function ModeMark({ id }: { id: MenuMode }) {
         <i />
       </span>
     );
-  if (id === 'quickfive')
+  if (id === 'quickfive' || id === 'duel')
     return (
       <span className="m2-mk redball" aria-hidden>
         <i />
@@ -178,66 +179,33 @@ export function NightMenu({
                 </button>
               </div>
             )}
+            {/* 2026-11-13 (the UI audit): four modes, each with its online version beside it. */}
             <ol className="m2-modes">
-              {MODES.map((m, i) => (
-                <li key={m.id}>
-                  <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
-                    <span className="m2-n">{i + 1}</span>
-                    <ModeMark id={m.id} />
-                    <div>
-                      <b>{m.name}</b>
-                      <span>
-                        {m.line}
-                        {stepDone(m.id) && ' ✓'}
-                      </span>
-                    </div>
-                    <em>{m.time}</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              ))}
-              {onFriends && (
-                <li>
-                  <button type="button" className="m2-row" onClick={onFriends}>
-                    <span className="m2-n">{MODES.length + 1}</span>
-                    <ModeMark id="quickfive" />
-                    <div>
-                      <b>Play with friends</b>
-                      <span>A Mini Draft for up to four. Send a link, draft live.</span>
-                    </div>
-                    <em>15 min</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              )}
-              {onAllTimeOnline && (
-                <li>
-                  <button type="button" className="m2-row" onClick={onAllTimeOnline}>
-                    <span className="m2-n">{MODES.length + 2}</span>
-                    <ModeMark id="draft" />
-                    <div>
-                      <b>All-Time online</b>
-                      <span>The full draft for up to eight. Then one season together.</span>
-                    </div>
-                    <em>60 min</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              )}
-              {onDuel && (
-                <li>
-                  <button type="button" className="m2-row" onClick={onDuel}>
-                    <span className="m2-n">{MODES.length + 3}</span>
-                    <ModeMark id="quickfive" />
-                    <div>
-                      <b>Duel · test</b>
-                      <span>One on one. Ten picks, one cap, one game.</span>
-                    </div>
-                    <em>5 min</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              )}
+              {MODES.map((m, i) => {
+                const online = m.id === 'quickfive' ? onFriends : m.id === 'draft' ? onAllTimeOnline : m.id === 'duel' ? onDuel : undefined;
+                return (
+                  <li key={m.id} className={online ? 'm2-has-online' : undefined}>
+                    <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
+                      <span className="m2-n">{i + 1}</span>
+                      <ModeMark id={m.id} />
+                      <div>
+                        <b>{m.name}</b>
+                        <span>
+                          {m.line}
+                          {stepDone(m.id) && ' ✓'}
+                        </span>
+                      </div>
+                      <em>{m.time}</em>
+                      <span className="m2-go">Play →</span>
+                    </button>
+                    {online && (
+                      <button type="button" className="m2-online" onClick={online} aria-label={`${m.name} online, with friends`}>
+                        <i aria-hidden /> Online
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
             <div className="m2-today">
               <span className="m2-tl">Today’s dailies{streak > 0 ? ` · 🔥 ${streak}` : ''}</span>
