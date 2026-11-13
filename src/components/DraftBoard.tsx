@@ -1041,7 +1041,7 @@ export default function DraftBoard({
 
   const asideTop = (
     <>
-      <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+      <Mast title={title} daily={!!dailyTitle} sub={state.complete ? (online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done · set your rotation') : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
       <Tally you={fmtCaps(humanBudget.capLeft)} mid={fmtCaps(capLimit)} ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
       <CapBar used={used} cap={capLimit} />
     </>
@@ -1167,7 +1167,7 @@ export default function DraftBoard({
   if (activeTab === 'team') {
     const aside = (
       <>
-        <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+        <Mast title={title} daily={!!dailyTitle} sub={state.complete ? (online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done · set your rotation') : `Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
         <Tally you={fmtCaps(capLimit - teamCapUsed)} mid={fmtCaps(capLimit)} ai={`${humanTeam.roster.length}/${ROSTER_SIZE}`} youK="Caps left" aiK="Picks" />
         <CapBar used={teamCapUsed} cap={capLimit} />
         <SubNote>
@@ -1176,6 +1176,7 @@ export default function DraftBoard({
         </SubNote>
         <section>
           <H3>Before the season</H3>
+          {online && state.complete && <Kv k="Season in" v={fmtClock(online.clock)} gold />}
           <Kv k="Rotation" v={rotStatus.valid ? 'Set' : 'Not set'} />
           <Kv k="Starters" v={startersSet === STARTER_SLOTS.length ? 'Set' : `${startersSet} of 5`} />
           <Kv k="Years" v="Click to change" />

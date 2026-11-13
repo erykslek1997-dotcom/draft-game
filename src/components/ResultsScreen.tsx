@@ -1142,7 +1142,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch: re
             <Btn kind="line" onClick={copyDailyResult}>
               {dailyCopied ? '✓ Copied' : 'Copy result'}
             </Btn>
-          ) : (
+          ) : online ? null : (
+            // A room's board can't be replayed alone (2026-11-13): no Challenge online.
             <Btn kind="line" onClick={challengeFriend}>
               {linkCopied ? '✓ Copied' : 'Challenge'}
             </Btn>
