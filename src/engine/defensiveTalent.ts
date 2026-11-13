@@ -807,6 +807,42 @@ function bridgedDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | nu
   bridgeDbpm.set(span, hit);
   return hit;
 }
+/** 2026-11-13 (the user: Edwards, Bosh, Middleton, Siakam — "nie da się przez tracking i matchups,
+ * raptor, darko?"): in the tracking era the blended real defensive sources (DARKO,
+ * RAPTOR, on/off, matchups — `realDefenseExcessDetail`) read as a source like DBPM: the window's
+ * percentile among its position's tracked windows, on the finished regular-season D-TAL scale,
+ * mixed with DBPM's reading half way (`TRACK_REAL_SHARE` 0.5). Real SRS 0.8578 → 0.8581, game
+ * 0.8081 → 0.8090, real team DRtg 0.770 → 0.770 (all the way: 0.8559 / 0.8131 / 0.762). Middleton
+ * 2019-21 48 → 53, Bosh 2007-09 43 → 44, Edwards 2023-25 54 → 51. */
+const TRACK_REAL_SHARE = Number(envVar('TRACK_REAL_SHARE') ?? 0.5);
+let realSourcePools: Map<string, { excess: number[]; dtal: number[] }> | null = null;
+function realSourcesImplied(span: PlayerSpan): number | undefined {
+  const own = realDefenseExcessDetail(span)?.blendedExcess;
+  if (own == null) return undefined;
+  if (!realSourcePools) {
+    const pools = new Map<string, { excess: number[]; dtal: number[] }>();
+    for (const raw of draftPool) {
+      const sp = ratingSpan(raw);
+      const d = realDefenseExcessDetail(sp);
+      if (!d?.hasTrackingCoverage || d.blendedExcess == null) continue;
+      const r = realSpan(sp);
+      if (r?.dbpm == null || r.minutes < DBPM_SOURCE.minMinutes) continue;
+      const pos = functionalPosition(sp);
+      const pool = pools.get(pos) ?? { excess: [], dtal: [] };
+      pool.excess.push(d.blendedExcess);
+      pool.dtal.push(regularSeasonParts(sp, false).final);
+      pools.set(pos, pool);
+    }
+    for (const pool of pools.values()) { pool.excess.sort((a, b) => a - b); pool.dtal.sort((a, b) => a - b); }
+    realSourcePools = pools;
+  }
+  const pool = realSourcePools.get(functionalPosition(span));
+  if (!pool || pool.excess.length < 50) return undefined;
+  const below = pool.excess.filter((v) => v < own).length;
+  const same = pool.excess.filter((v) => v === own).length;
+  const pct = (below + same / 2) / pool.excess.length;
+  return pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+}
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
@@ -856,7 +892,9 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const below = pool.dbpm.filter((v) => v < dbpm).length;
   const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
-  const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  const dbpmImplied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  const realImplied = tracked && TRACK_REAL_SHARE > 0 ? realSourcesImplied(span) : undefined;
+  const implied = realImplied === undefined ? dbpmImplied : dbpmImplied + TRACK_REAL_SHARE * (realImplied - dbpmImplied);
   if (bridged) {
     const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
     return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
