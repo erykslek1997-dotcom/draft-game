@@ -188,7 +188,10 @@ check(reportedFit.inputs.wingCoverageProvider === 'OG Anunoby' && reportedFit.in
 // 80 / 5.9); Nash and Barros keep their D-TAL (19-21, 25) — still a real stacked cost.
 // 2026-11-13: 5.0 -> 4.5 after a lifted card started moving O-TAL / D-TAL (grades.ts namedShiftForSpan):
 // the roster's teammates read a little more defense. Re-measured directly (108 minutes, penalty 4.8).
-check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 4.5, 'Nash/Barros weaknesses stack by real minutes');
+// 2026-11-13, later: 4.5 -> 3.5 after the defense position correction and the tracking-era real
+// sources (defensiveTalent.ts): the roster's rotation shifted (73 targetable minutes, penalty 3.7,
+// re-measured); still a clear stacked weak-link cost against the zero-penalty control.
+check(reportedHunt.targetableMinutes >= 40 && reportedHunt.penalty >= 3.5, 'Nash/Barros weaknesses stack by real minutes');
 // controlHunt.penalty is unaffected (0 — Caruso/Battier/Chandler are real plus bench defenders,
 // no shortfall to discount), so the margin still holds against the new 7.0.
 check(reportedHunt.penalty >= controlHunt.penalty + 6, 'huntable roster is clearly separated from an elite defensive control');
@@ -361,6 +364,7 @@ check(defenseScore(reportedElite) >= 88, 'complete all-time defensive shell reac
 // career-shrunk): Anfernee Hardaway 1995-97 on the bench reads a little lower. Re-measured.
 // 2026-11-13: 86.2 -> 85.9 after the tier bands, the All-Star floor and a lifted card moving O-TAL /
 // D-TAL with it (grades.ts): the shell's bench reads a little more defense. Re-measured.
-check(Math.abs(eliteProjection.defense - 85.9) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
+// 2026-11-13, later: 85.9 -> 86.2 with the defense position correction (wings −~3 D). Re-measured.
+check(Math.abs(eliteProjection.defense - 86.2) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');
