@@ -982,6 +982,8 @@ const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
  * the two can never drift apart. */
 /** Share of the offensive-glass points the Offense score keeps (attack audit: negative in the game's mechanics, ~0 in real fives). */
 const OFFENSIVE_GLASS_SHARE = 0.5;
+/** Measurement (2026-11-13, Nash's ceiling): the raw offense blend's top before the scale (100 = as shipped). */
+const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 100);
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -991,7 +993,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
+  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
   const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
