@@ -6,7 +6,7 @@ import { draftPool } from '../data/draftPool';
 import TEAM_CONTEXT from '../data/teamContext.json';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { registerNamedShift } from './namedShift';
-import { calibratedDisplayTalent, ENGINE_BLOCKS_OFF, hasUserWindowOrder, labelTierTop, onLabelScale, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
+import { calibratedDisplayTalent, ENGINE_BLOCKS_OFF, hasUserWindowOrder, labelTierTop, onLabelScale, tabledPlayersByTier, tierBand as calibrationBand, userTalCeiling, userTalTarget, tierCalibrationFor, UNCALIBRATED_DISPLAY_MAX, UNCALIBRATED_TIER_MAX, windowMeasure } from './tierCalibration';
 import {
   computeTalent,
   computeOffensiveTalentBase,
@@ -1472,6 +1472,12 @@ export function formatTal(value: number): string {
 }
 
 export function displayTalentForSpan(ctx: TierGateContext): number {
+  const value = displayTalentCompressed(ctx);
+  // The user's own placement stays the player's top after the star-window compression (2026-11-13).
+  const place = ctx.playerName && tierCalibrationFor(ctx.playerName) ? bandPlace(ctx.playerName) : undefined;
+  return place === undefined ? value : Math.min(place, value);
+}
+function displayTalentCompressed(ctx: TierGateContext): number {
   const value = displayTalentUncompressed(ctx);
   if (!ctx.playerName || value < STAR_WINDOWS.peakFrom - STAR_WINDOWS.within) return value;
   // The user's own window order (LeBron 2012-14 > 2011-13 > 2016-18 ...) is not compressed into ties.
@@ -1521,7 +1527,7 @@ function displayTalentUncompressed(ctx: TierGateContext): number {
   // over it either (Ostertag's 66 was coming back as 72 through the defensive-big premium).
   // The user's hold binds after the premium too (2026-11-12: Battier 77 + 3-and-D read 78, All-star).
   const premium = held + threeAndDPremium(ctx, held);
-  return Math.min(namedPlayerCeiling(ctx.playerName), hold ? Math.min(premium, labelTierTop(hold) ?? Infinity) : premium);
+  return Math.min(namedPlayerCeiling(ctx.playerName), minutesCeiling(ctx), hold ? Math.min(premium, labelTierTop(hold) ?? Infinity) : premium);
 }
 
 /**
@@ -1568,6 +1574,14 @@ function roleContextShift(ctx: TierGateContext, tal: number): number {
   const raw = ROLE_CONTEXT.perMinute * (ctx.minutes - expectedMinutes(tal)) + ROLE_CONTEXT.perSrs * ctx.teamSrs;
   return fade * Math.max(-ROLE_CONTEXT.cap, Math.min(ROLE_CONTEXT.cap, raw));
 }
+/** 2026-11-13 (the user: "Robert Williams grał około 25 minut na mecz, czy tacy gracze powinni mieć
+ * all star talent"): outside the user's table, a window under `MIN_ALLSTAR_MPG` minutes a game reads
+ * at most the top of Starter (77). 0 = off. */
+const MIN_ALLSTAR_MPG = Number(envVar('MIN_ALLSTAR_MPG') ?? 28);
+function minutesCeiling(ctx: TierGateContext): number {
+  if (MIN_ALLSTAR_MPG <= 0 || !ctx.playerName || ctx.minutes === undefined || ctx.minutes >= MIN_ALLSTAR_MPG) return Infinity;
+  return tierCalibrationFor(ctx.playerName) ? Infinity : 77;
+}
 function lowVolumeCeiling(ctx: TierGateContext): number {
   if (ENGINE_BLOCKS_OFF) return Infinity;
   return ctx.fga < LOW_VOLUME.fga ? Math.max(ctx.otal, ctx.dtal) + LOW_VOLUME.margin : Infinity;
@@ -1580,7 +1594,7 @@ function displayTalentUnheld(ctx: TierGateContext): number {
   if (ctx.playerName && ctx.rawTal !== undefined && tierCalibrationFor(ctx.playerName)) {
     const name = ctx.playerName;
     const calibrated = calibratedDisplayTalent(name, ctx.spanLabel, ctx.rawTal, windowMeasure(legacy, ctx.rawTal), () => reviewedWindow(name));
-    if (calibrated !== undefined) return calibrated;
+    if (calibrated !== undefined) return withBandOffset(name, ctx.spanLabel, calibrated);
   }
   if (!ctx.playerName) return legacy;
   const held = Math.min(UNCALIBRATED_DISPLAY_MAX, legacy);
@@ -1592,7 +1606,63 @@ function displayTalentUnheld(ctx: TierGateContext): number {
  * 0.8171 → 0.8226, All-star best windows 55 → 145 (one selection: 0.8554 / 0.8244, 235, but one-time
  * picks such as Gatling and Magloire). Bowen and Battier, never All-Stars, stay Starters.
  * `AS_FLOOR=0` turns it off. */
-const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78, maxLift: Number(envVar('AS_MAX_LIFT') ?? 10) };
+// 2026-11-13: lifts at most `maxLift` (the user: Johnny Green 33 → 78 "gruba przesada"); 20, not 10,
+// keeps the pyramid (All-star best windows 64 at 10, 90 at 20 against 72 All-NBA; real 0.8572 → 0.8578,
+// game 0.8089 → 0.8081).
+const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78, maxLift: Number(envVar('AS_MAX_LIFT') ?? 20) };
+
+/**
+ * 2026-11-13 (the user's TAL Board review: Kevin Johnson O 81 / D 40 above Billups O 82 / D 80, Jaylen
+ * Brown 84 on O 74 / D 49 — "tam gdzie poszła ręczna korekta trzeba dostosować"): inside the band of
+ * the user's tier a tabled player stands by his card's own O-TAL / D-TAL blend (0.6 / 0.4, as TAL
+ * weighs them) among the tier's tabled players, plus his nudge — not by raw TAL. All his windows move
+ * by the same points. The user's own number (`USER_TAL_TARGET`: Magic = Bird, KD = Kobe, Russell 89)
+ * wins over the placement. `BAND_BY_OD=0` turns the placement off (targets stay).
+ */
+// Measured with the rest of 2026-11-13's package: real 0.8571 → 0.8572, game 0.8077 → 0.8089.
+const BAND_BY_OD = envVar('BAND_BY_OD') !== '0';
+const bandPlaceCache = new Map<string, number | null>();
+const tierBlendRange = new Map<OverallTier, [number, number]>();
+function reviewedSpanOf(name: string): PlayerSpan | undefined {
+  const entry = tierCalibrationFor(name);
+  const key = normalizePlayerName(name);
+  return entry && draftPool.find((p) => normalizePlayerName(p.playerName) === key && p.spanLabel === entry.spanLabel);
+}
+const odBlend = (ctx: TierGateContext) => 0.6 * ctx.otal + 0.4 * ctx.dtal;
+/** The player's number inside his band: the user's own (`USER_TAL_TARGET`) or his O / D blend's place. */
+function bandPlace(name: string): number | undefined {
+  const key = normalizePlayerName(name);
+  const hit = bandPlaceCache.get(key);
+  if (hit !== undefined) return hit ?? undefined;
+  let place: number | null = null;
+  const entry = tierCalibrationFor(name);
+  const target = userTalTarget(name);
+  const span = reviewedSpanOf(name);
+  const band = entry && calibrationBand(entry.tier);
+  if (target !== undefined) place = target;
+  // GOAT and Legend keep the user's own order (LeBron's windows, Curry, Jokić), and the placement
+  // replaces the raw-TAL ordering the old nudges corrected, so it reads without them.
+  else if (BAND_BY_OD && entry && span && band && entry.tier !== 'GOAT' && entry.tier !== 'Legend' && !hasUserWindowOrder(name)) {
+    let range = tierBlendRange.get(entry.tier);
+    if (!range) {
+      const blends = (tabledPlayersByTier().get(entry.tier) ?? []).map((n) => reviewedSpanOf(n)).filter((p): p is PlayerSpan => !!p).map((p) => odBlend(tierContextFor(p)));
+      range = [Math.min(...blends), Math.max(...blends)];
+      tierBlendRange.set(entry.tier, range);
+    }
+    const [lo, hi] = band;
+    const share = range[1] > range[0] ? (odBlend(tierContextFor(span)) - range[0]) / (range[1] - range[0]) : 1;
+    place = Math.max(lo, Math.min(hi, Math.round(lo + share * (hi - lo))));
+  }
+  bandPlaceCache.set(key, place);
+  return place ?? undefined;
+}
+/** The reviewed window reads the place; every other window of the player reads at most that. */
+function withBandOffset(name: string, spanLabel: string | undefined, value: number): number {
+  const place = bandPlace(name);
+  if (place === undefined) return value;
+  const placed = spanLabel === tierCalibrationFor(name)?.spanLabel ? place : Math.min(value, place);
+  return Math.min(userTalCeiling(name), placed);
+}
 
 function legacyDisplayTalent(ctx: TierGateContext): number {
   const smoothed = smoothedDisplayTalent(ctx);

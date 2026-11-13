@@ -2377,6 +2377,11 @@ const offensiveTalentCache = new Map<string, number>();
  * correction with them halved 0.7904, off 0.7834), so they stay. `OTAL_POS_SHARE`, default 0.5. */
 const OTAL_POSITION_FIT: Record<string, readonly [number, number]> = { PG: [1.0378, 0.996], SG: [0.906, 2.153], SF: [0.9302, 4.588], PF: [0.939, 3.935], C: [1.1362, -9.004] };
 const OTAL_POSITION_SHARE = Number(envVar('OTAL_POS_SHARE') ?? 0.5);
+/** 2026-11-13 (the user on Kirilenko vs George: "niski wolumen … PG wysoki wolumen, więcej
+ * samokreacji"; Kobe "trzyma wysoką podłogę ofensywy"): TAL's self-creation bonus reaches O-TAL too,
+ * ×1.3 (O-TAL points per TAL point). Real SRS 0.8560 → 0.8565, game 0.8094 → 0.8087 (×2.6: 0.8559 /
+ * 0.8048). `OTAL_SELF=0` turns it off. */
+const OTAL_SELF_CREATION = Number(envVar('OTAL_SELF') ?? 1.3);
 function onPositionNeutralOffense(position: string, value: number): number {
   const [a, b] = OTAL_POSITION_FIT[position] ?? [1, 0];
   return value + OTAL_POSITION_SHARE * (a * value + b - value);
@@ -2389,7 +2394,7 @@ export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalentBase))));
   offensiveTalentCache.set(span.id, result);
   return result;
@@ -2419,7 +2424,7 @@ export function computeUncappedOffensiveTalentBase(rawSpan: PlayerSpan): number 
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalentBase)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;

@@ -264,6 +264,22 @@ export const USER_TAL_CEILING: Readonly<Record<string, number>> = {
   'Manu Ginóbili': 84,
   'Rudy Gobert': 84,
   'Ben Wallace': 84,
+  // 2026-11-13, the user: "Kirilenko na 99% przeszacowany … 46% fg jako PF, na niskim wolumenie".
+  'Andrei Kirilenko': 84,
+};
+
+/**
+ * 2026-11-13, the user: "Magica i Birda bym zrównał", "KD i Kobe bym zrównał", and Russell beside Wilt
+ * ("oboje wysokie All NBA"): the TAL the player's reviewed window reads; his other windows keep their
+ * distance to it. Wins over the placement inside the band.
+ */
+export const USER_TAL_TARGET: Readonly<Record<string, number>> = {
+  'Magic Johnson': 97,
+  'Larry Bird': 97,
+  'Kevin Durant': 97,
+  'Kobe Bryant': 97,
+  'Bill Russell': 89,
+  'Wilt Chamberlain': 89,
 };
 
 /**

@@ -1216,6 +1216,16 @@ function ownWindowDefense(span: PlayerSpan): number {
 /** The D-TAL everything else reads: the base plus its share of a named TAL adjustment
  * (`namedShift.ts`), with the neighbouring-season corrections above. */
 const shiftedDefensiveTalentCache = new Map<string, number>();
+/** 2026-11-13 (the user: "wyrównanie obrony najpierw"): each position's D-TAL moves half way onto the
+ * pool's D-TAL-to-DBPM line (α·D + β fitted per position, 4,331 windows of 4,000+ minutes) — centers
+ * read under their DBPM (−3.9, −7.5 at the top). Real team DRtg judge 0.768 → 0.770 (full: 0.771),
+ * real SRS 0.8560 → 0.8567, game 0.8094 → 0.8080 (full 0.8046). `DTAL_POS_SHARE`, default 0.5. */
+const DTAL_POSITION_FIT: Record<string, readonly [number, number]> = { PG: [0.9555, 2.189], SG: [0.9705, -0.793], SF: [0.9166, 2.577], PF: [0.918, 3.337], C: [1.1123, -1.993] };
+const DTAL_POSITION_SHARE = Number(envVar('DTAL_POS_SHARE') ?? 0.5);
+function onPositionNeutralDefense(position: string, value: number): number {
+  const [a, b] = DTAL_POSITION_FIT[position] ?? [1, 0];
+  return value + DTAL_POSITION_SHARE * (a * value + b - value);
+}
 export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = shiftedDefensiveTalentCache.get(span.id);
@@ -1225,7 +1235,7 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // 2026-10-10: the hustle defenders' bonus (`hustleDefenders.ts`) goes on last, after the floors
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
-  const blended = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
+  const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE)))));
   const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;

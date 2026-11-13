@@ -1,5 +1,5 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TAL_CEILING, USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_CEILING, USER_TAL_NUDGE, USER_TAL_TARGET, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
 import { envVar } from './env';
 
@@ -69,7 +69,7 @@ const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name
 const NUDGE_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
   'Legend': [96, 99], MVP: [88, 95], 'All-NBA': [80, 87], 'All-star': [70, 79], Starter: [60, 69], 'Sixth Man': [58, 66],
 };
-function nudgeFor(playerName: string, tier: OverallTier): number {
+export function nudgeFor(playerName: string, tier: OverallTier): number {
   const nudge = nudges.get(normalizePlayerName(playerName)) ?? 0;
   const [lo, hi] = TIER_BANDS[tier] ?? [0, 0];
   const [olo, ohi] = NUDGE_BANDS[tier] ?? [lo, hi];
@@ -199,3 +199,23 @@ export function labelTierTop(tier: OverallTier): number | undefined {
 export const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
 export const UNCALIBRATED_DISPLAY_MAX = ENGINE_BLOCKS_OFF ? Infinity : 79;
 export const UNCALIBRATED_TIER_MAX: OverallTier = ENGINE_BLOCKS_OFF ? 'GOAT' : 'All-star';
+
+const targets = new Map<string, number>(Object.entries(USER_TAL_TARGET).map(([name, tal]) => [normalizePlayerName(name), tal]));
+/** The user's own number for a player's reviewed window (`USER_TAL_TARGET`), if any. */
+export function userTalTarget(playerName: string): number | undefined {
+  return targets.get(normalizePlayerName(playerName));
+}
+/** The user's ceiling for every window of a player (`USER_TAL_CEILING`), if any. */
+export function userTalCeiling(playerName: string): number {
+  return ceilings.get(normalizePlayerName(playerName)) ?? Infinity;
+}
+/** A tier's TAL band. */
+export function tierBand(tier: OverallTier): readonly [number, number] | undefined {
+  return TIER_BANDS[tier];
+}
+/** Every tabled player's name, by his tier (for placing a player among his tier's peers). */
+export function tabledPlayersByTier(): Map<OverallTier, string[]> {
+  const out = new Map<OverallTier, string[]>();
+  for (const [name, entry] of entries) out.set(entry.tier, [...(out.get(entry.tier) ?? []), name]);
+  return out;
+}
