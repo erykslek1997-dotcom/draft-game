@@ -73,3 +73,19 @@ export function madeAllNbaInSpan(playerName: string, spanLabel: string): boolean
   if (years.length === 0) return false;
   return years.some((y) => set.has(y)) || set.has(years[0] - 1);
 }
+
+/** name -> best All-NBA team ever made (1 = First Team), career-wide. */
+const bestTeamByName = new Map<string, number>();
+for (const s of allNbaData as AllNbaSeason[]) {
+  const endYear = parseInt(s.season.slice(0, 4), 10) + 1;
+  s.tiers.forEach((tier, i) => {
+    for (const n of tier) {
+      const k = resolveSourceName(normalizeAwardName(n), endYear);
+      bestTeamByName.set(k, Math.min(bestTeamByName.get(k) ?? Infinity, i + 1));
+    }
+  });
+}
+/** The best All-NBA team (1, 2 or 3) the player ever made; undefined if never All-NBA. */
+export function bestAllNbaTeam(playerName: string): number | undefined {
+  return bestTeamByName.get(normalizeAwardName(playerName));
+}

@@ -29,7 +29,7 @@ import { envVar } from './env';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffTalentTerm } from './playoffImpact';
 import { realValueTierFloor } from './realValueFloor';
-import { madeAllNbaInSpan } from './allNbaLookup';
+import { bestAllNbaTeam, madeAllNbaInSpan } from './allNbaLookup';
 import { playoffBpm2ForSpan } from './playoffBpm2Lookup';
 import calibrationAnchors from '../data/calibrationAnchors.json';
 import { RIM_BONUS_TIER_HOLDS } from '../data/rimBonusTierHolds';
@@ -1475,7 +1475,23 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   const value = displayTalentCompressed(ctx);
   // The user's own placement stays the player's top after the star-window compression (2026-11-13).
   const place = ctx.playerName && tierCalibrationFor(ctx.playerName) ? bandPlace(ctx.playerName) : undefined;
-  return place === undefined ? value : Math.min(place, value);
+  return allNbaTeamGate(ctx.playerName, place === undefined ? value : Math.min(place, value));
+}
+
+/**
+ * 2026-11-13, the user ("Butler nigdy nie zrobił All NBA 1st a dostał taki tag, Paul George zrobił i go
+ * nie dostał"; awards are "potwierdzenie, a nie boost"): inside the All-NBA band the sub-tier must be
+ * confirmed by the career — First Team (88-89) needs a real First Team, Second Team (86-87) a First or
+ * Second Team, anyone else reads at most Third Team (85). It only ever lowers the number, by at most
+ * two points, and never touches MVP and above or anyone below the band: an award lifts nobody.
+ */
+export const ALL_NBA_SUBTIER_TOP = { first: 89, second: 87, third: 85 } as const;
+const ALL_NBA_BAND = { from: 84, to: 90 };
+function allNbaTeamGate(playerName: string | undefined, value: number): number {
+  if (!playerName || value < ALL_NBA_BAND.from || value >= ALL_NBA_BAND.to) return value;
+  const best = bestAllNbaTeam(playerName);
+  const top = best === 1 ? ALL_NBA_SUBTIER_TOP.first : best === 2 ? ALL_NBA_SUBTIER_TOP.second : ALL_NBA_SUBTIER_TOP.third;
+  return Math.min(value, top);
 }
 function displayTalentCompressed(ctx: TierGateContext): number {
   const value = displayTalentUncompressed(ctx);
