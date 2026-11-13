@@ -30,6 +30,8 @@ export interface MpRoom {
   teams: number;
   /** Caps for a team's five. */
   cap: number;
+  /** 5: a Mini or Duel; 9: the All-Time Draft. */
+  rounds: number;
   started_at: string | null;
 }
 export interface MpMember {
@@ -39,6 +41,8 @@ export interface MpMember {
   slot: number | null;
   joined_at: string;
   last_seen: string;
+  /** All-Time: the team they sent after the draft (years + rotation). */
+  final?: { roster: string[]; rotation: unknown } | null;
   /** Tournament rounds this player has seen. */
   tourney: number;
 }
@@ -90,10 +94,21 @@ export const DUEL_CLOCK_S = 45;
 export const ROOM_CAP_MIN = 60;
 export const ROOM_CAP_MAX = 90;
 
-export async function createRoom(nick: string, level: number, duel = false, cap = 70): Promise<{ code: string } | { error: MpError }> {
+/** The All-Time Draft online (2026-11-13): up to 8 people, a minute a pick. */
+export const ALLTIME_MAX_PLAYERS = 8;
+export const ALLTIME_CLOCK_S = 60;
+export type RoomKind = 'mini' | 'duel' | 'alltime';
+
+export async function sendFinal(roomId: string, final: { roster: string[]; rotation: unknown }): Promise<void> {
+  await supabase?.rpc('mp_final', { p_room: roomId, p_final: final });
+}
+
+export async function createRoom(nick: string, level: number, kind: RoomKind = 'mini', cap = 70): Promise<{ code: string } | { error: MpError }> {
+  const duel = kind === 'duel';
+  const allTime = kind === 'alltime';
   if (!supabase || !(await ensureSession())) return { error: 'offline' };
   const seed = Math.floor(Math.random() * 2 ** 31);
-  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: cap });
+  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : allTime ? ALLTIME_MAX_PLAYERS : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : allTime ? ALLTIME_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: allTime ? 100.9 : cap, p_rounds: allTime ? 9 : 5 });
   return error ? { error: errorOf(error.message) } : { code: data as string };
 }
 
@@ -220,12 +235,12 @@ export function useRoom(roomId: string | null): RoomLive {
 
   const loadRoom = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at,teams,cap').eq('id', roomId).maybeSingle();
+    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at,teams,cap,rounds').eq('id', roomId).maybeSingle();
     setRoom(data ? ({ ...data, seed: Number(data.seed), cap: Number(data.cap ?? 70) } as MpRoom) : null);
   }, [roomId]);
   const loadMembers = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen,tourney').eq('room_id', roomId).order('joined_at');
+    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen,tourney,final').eq('room_id', roomId).order('joined_at');
     if (data) setMembers(data as MpMember[]);
   }, [roomId]);
   const loadPicks = useCallback(async () => {

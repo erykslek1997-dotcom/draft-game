@@ -783,3 +783,37 @@ export function resolveAiPickIfNeeded(state: DraftState): DraftState | null {
   if (team.isHuman) return null;
   return resolveAutomatedPick(state);
 }
+
+/** An All-Time room's board (2026-11-13): the room's seed, your team as "the human". */
+export function createMultiplayerDraft(seed: number, mySlot: number, gms?: Map<number, string>): DraftState {
+  const base = createDraft(false, players, undefined, seed);
+  return { ...base, teams: base.teams.map((t, i) => ({ ...t, isHuman: i === mySlot, ...(i !== mySlot && gms?.get(i) ? { gm: gms.get(i) } : {}) })) };
+}
+
+/**
+ * A pick from an All-Time room's log. The CPU's picks are made on one screen (its plan memory is
+ * that screen's own), so every screen just lays down what the log says. A pick this board can't
+ * take legally still goes in if the player is free (screens may disagree on a cap lookahead edge);
+ * a player already gone becomes the cheapest one left — the same on every screen.
+ */
+export function applyServerPick(state: DraftState, playerId: string): DraftState {
+  if (state.complete) return state;
+  const legal = makePick(state, playerId);
+  if (legal !== state) return legal;
+  const free = playersById.get(playerId);
+  const player = free && !state.draftedIds.has(playerId) ? free : [...availablePlayers(state)].sort((a, b) => a.fga - b.fga || a.id.localeCompare(b.id))[0];
+  if (!player) return state;
+  const teamIdx = currentTeamIndex(state);
+  const team = state.teams[teamIdx];
+  const draftedIds = new Set(state.draftedIds);
+  for (const p of spansByNormalizedName.get(normalizePlayerName(player.playerName)) ?? [player]) draftedIds.add(p.id);
+  const teams = state.teams.map((t, i) => (i === teamIdx ? { ...t, roster: [...t.roster, player] } : t));
+  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  return advance({ ...state, teams, draftedIds, history: [...state.history, { pickNumber, teamId: team.id, playerId: player.id }] });
+}
+
+/** The CPU's pick for whoever is on the clock, human or not (a player out of time, or gone). */
+export function resolveAutoPick(state: DraftState): DraftState | null {
+  if (state.complete) return null;
+  return resolveAutomatedPick(state);
+}
