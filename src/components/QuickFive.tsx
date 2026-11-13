@@ -70,7 +70,7 @@ import {
   PhoneDock,
   scrollToSection,
 } from '../night/ui';
-import { CapsBar, FiveSlots, LeagueMark, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
+import { CapsBar, FiveSlots, LeagueMark, LoadMore, NightLottery, Notice, PickLog, PlayerTable, PosTabs, snakePicks, type NightRow, type TickerRow } from '../night/draft';
 import { BoardGrid } from '../night/alltime';
 import { cardRoles } from './cardRoles';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
@@ -776,14 +776,7 @@ function QuickDraftBoard({
         <div className="more">
           Showing {shown.length} of {filtered.length}
           {on !== 'ALL' && ` ${on}`}
-          {visible < filtered.length && (
-            <>
-              {' · '}
-              <button type="button" className="lk-inline" onClick={() => setVisible((v) => v + VISIBLE_STEP * 2)}>
-                See more
-              </button>
-            </>
-          )}
+          <LoadMore active={visible < filtered.length} onMore={() => setVisible((v) => v + VISIBLE_STEP * 2)} />
         </div>
       </section>
       {/* The phone's bottom bar (2026-11-12) instead of the board button mid-list. */}
