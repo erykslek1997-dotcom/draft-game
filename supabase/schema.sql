@@ -417,7 +417,7 @@ declare
   v_owner mp_members;
   v_since timestamptz;
 begin
-  select * into r from mp_rooms where id = p_room;
+  select * into r from mp_rooms where id = p_room for update;
   if r.id is null or r.status <> 'draft' then return false; end if;
   if not exists (select 1 from mp_members where room_id = p_room and user_id = uid) then raise exception 'not in this room' using errcode = 'P0001'; end if;
   select count(*), max(made_at) into v_done, v_since from mp_picks where room_id = p_room;
@@ -474,3 +474,40 @@ begin
 end $$;
 revoke all on function public.mp_final(uuid, jsonb) from public, anon;
 grant execute on function public.mp_final(uuid, jsonb) to authenticated;
+
+-- 2026-11-13: years changed live in an All-Time room. A swap is logged with the number of picks
+-- in when it was made; every screen replays it at that point, so the boards stay the same.
+create table if not exists public.mp_swaps (
+  id bigserial primary key,
+  room_id uuid not null references public.mp_rooms (id) on delete cascade,
+  at_pick int not null check (at_pick between 0 and 144),
+  slot int not null check (slot between 0 and 15),
+  player_name text not null check (char_length(player_name) <= 80),
+  span_id text not null check (char_length(span_id) <= 80),
+  made_at timestamptz not null default now()
+);
+create index if not exists mp_swaps_room on public.mp_swaps (room_id, id);
+alter table public.mp_swaps enable row level security;
+drop policy if exists "members read swaps" on public.mp_swaps;
+create policy "members read swaps" on public.mp_swaps for select using (public.mp_is_member(room_id));
+do $$ begin
+  alter publication supabase_realtime add table public.mp_swaps;
+exception when duplicate_object then null; end $$;
+
+create or replace function public.mp_swap(p_room uuid, p_at int, p_player text, p_span text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_slot int;
+begin
+  select slot into v_slot from mp_members where room_id = p_room and user_id = auth.uid();
+  if v_slot is null then return false; end if;
+  if not exists (select 1 from mp_rooms where id = p_room and status = 'draft') then return false; end if;
+  perform rate_check('swap', 60, interval '10 minutes');
+  -- Only at the board as it stands: a swap made before the latest pick arrived is sent again.
+  perform 1 from mp_rooms where id = p_room for update;
+  if p_at <> (select count(*) from mp_picks where room_id = p_room) then return false; end if;
+  insert into mp_swaps (room_id, at_pick, slot, player_name, span_id) values (p_room, p_at, v_slot, p_player, p_span);
+  return true;
+end $$;
+revoke all on function public.mp_swap(uuid, int, text, text) from public, anon;
+grant execute on function public.mp_swap(uuid, int, text, text) to authenticated;
