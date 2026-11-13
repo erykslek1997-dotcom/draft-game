@@ -5,6 +5,9 @@ import {
   makePick,
   resolveAiPickIfNeeded,
   applyServerPick,
+  applySwap,
+  replayRoom,
+  type ServerSwap,
   createMultiplayerDraft,
   resolveAutoPick,
   isHumanRosterImpossible,
@@ -117,6 +120,9 @@ export interface AllTimeMp {
   here: Set<number>;
   /** The room's pick log. */
   picks: string[];
+  /** Years swapped live, with where in the log each went in. */
+  swaps: (ServerSwap & { id: number })[];
+  sendSwap: (atPick: number, playerName: string, spanId: string) => void;
   lastPickAt: number;
   clockS: number;
   now: () => number;
@@ -136,11 +142,6 @@ export const ROTATION_WINDOW_S = 120;
 /** How long the other screens give the leader before they send a CPU pick themselves, ms. */
 const BACKUP_DELAY_MS = 4000;
 
-function replayLog(state: DraftState, picks: string[]): DraftState {
-  let s = state;
-  for (let i = s.history.length; i < picks.length && !s.complete; i++) s = applyServerPick(s, picks[i]);
-  return s;
-}
 
 /** A friend's final team on every screen: what they sent, or (out of time) their drafted roster, auto rotation. */
 function friendTeam(t: Team, f: MpFinal | undefined): Team {
@@ -296,7 +297,7 @@ function loadDailyDraft(daily: DailyDraftDay) {
 export default function GameShell({ mode, commissionerMode, humanTeamName, onExit, resume = false, preset, daily, studyFirst = false, mp }: Props) {
   const [resumed] = useState(() => (mp ? null : daily ? loadDailyDraft(daily) : resume && !commissionerMode ? loadDraft() : null));
   const [draftState, setDraftState] = useState<DraftState>(() =>
-    mp ? replayLog(createMultiplayerDraft(mp.seed, mp.mySlot, mp.names), mp.picks) : maskBombOf(
+    mp ? replayRoom(createMultiplayerDraft(mp.seed, mp.mySlot, mp.names), mp.picks, mp.swaps) : maskBombOf(
       resumed?.state ??
         (daily
           ? newDailyDraft(daily, humanTeamName)
@@ -335,9 +336,36 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // A draft whose lottery already ran on the intro (App.tsx's early lottery) starts on the board.
   const [phase, setPhase] = useState<Phase>(mp || resumed || preset ? 'draft' : daily ? 'day' : 'lottery');
   const mpPicks = mp?.picks;
+  const mpSwaps = mp?.swaps;
+  // Swaps already on this board (by id). A swap goes in where the log says: normally right now
+  // (the server takes one only at the board as it stands); one that arrives after later picks
+  // rebuilds the board from the start.
+  const appliedSwaps = useRef<Set<number>>(new Set(mp?.swaps.map((x) => x.id) ?? []));
   useEffect(() => {
-    if (mpPicks && mpPicks.length > draftState.history.length) setDraftState((s) => replayLog(s, mpPicks));
-  }, [mpPicks, draftState.history.length]);
+    if (!mp || !mpPicks || !mpSwaps) return;
+    const fresh = mpSwaps.filter((x) => !appliedSwaps.current.has(x.id));
+    const late = fresh.some((x) => x.atPick < draftState.history.length);
+    if (late) {
+      for (const x of mpSwaps) appliedSwaps.current.add(x.id);
+      setDraftState(replayRoom(createMultiplayerDraft(mp.seed, mp.mySlot, mp.names), mpPicks, mpSwaps));
+      return;
+    }
+    if (fresh.length === 0 && mpPicks.length <= draftState.history.length) return;
+    setDraftState((s) => {
+      let next = s;
+      for (let i = next.history.length; i <= mpPicks.length; i++) {
+        for (const x of mpSwaps) {
+          if (x.atPick === i && !appliedSwaps.current.has(x.id)) {
+            appliedSwaps.current.add(x.id);
+            next = applySwap(next, x);
+          }
+        }
+        if (i < mpPicks.length && !next.complete) next = applyServerPick(next, mpPicks[i]);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mpPicks, mpSwaps, draftState.history.length]);
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!mp) return;
@@ -531,8 +559,11 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
   // already verified the swap is safe (never costs more than the span originally drafted, and
   // never busts the real cap given everything else already committed) — this just applies it.
   function handleSwapHumanSpan(playerName: string, newSpanId: string) {
-    // Online the years are set after the draft (every screen must judge each pick the same way).
-    if (mp && !draftState.complete) return;
+    // Online the swap goes through the room's log, so every screen judges the next picks the same way.
+    if (mp && !draftState.complete) {
+      mp.sendSwap(draftState.history.length, playerName, newSpanId);
+      return;
+    }
     const key = normalizePlayerName(playerName);
     const newSpan = spanOptionsFor(playerName).find((s) => s.id === newSpanId);
     if (!newSpan) return;

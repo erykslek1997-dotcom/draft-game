@@ -18,6 +18,7 @@ import {
   roomLink,
   sendPick,
   sendFinal,
+  sendSwap,
   ALLTIME_MAX_PLAYERS,
   type RoomKind,
   sendTourney,
@@ -353,6 +354,10 @@ function Room({ roomId, code, me, onExit, onOver }: { roomId: string; code: stri
       names: mp.names,
       here: mp.here,
       picks: mp.picks,
+      swaps: live.swaps.map((x) => ({ id: x.id, atPick: x.at_pick, slot: x.slot, playerName: x.player_name, spanId: x.span_id })),
+      sendSwap: (atPick, playerName, spanId) => {
+        void sendSwap(roomId, atPick, playerName, spanId).then((ok) => ok && live.refresh());
+      },
       lastPickAt: mp.lastPickAt,
       clockS: mp.clockS,
       now: mp.now,

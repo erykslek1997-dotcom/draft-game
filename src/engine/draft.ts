@@ -817,3 +817,44 @@ export function resolveAutoPick(state: DraftState): DraftState | null {
   if (state.complete) return null;
   return resolveAutomatedPick(state);
 }
+
+/** A swap of a drafted player's years from an All-Time room's log (2026-11-13: years change live). */
+export interface ServerSwap {
+  /** Applied once this many picks are in (before the next one). */
+  atPick: number;
+  slot: number;
+  playerName: string;
+  spanId: string;
+}
+
+/**
+ * A team swaps one drafted player's years — only to years no dearer than those drafted, and only
+ * if the roster still fits under the cap (the solo game's rule). Anything else changes nothing,
+ * the same on every screen.
+ */
+export function applySwap(state: DraftState, swap: ServerSwap): DraftState {
+  const team = state.teams[swap.slot];
+  if (!team) return state;
+  const key = normalizePlayerName(swap.playerName);
+  const at = team.roster.findIndex((p) => normalizePlayerName(p.playerName) === key);
+  if (at < 0) return state;
+  const next = (spansByNormalizedName.get(key) ?? []).find((p) => p.id === swap.spanId);
+  const drafted = state.history.find((h) => h.teamId === team.id && normalizePlayerName(playersById.get(h.playerId)?.playerName ?? '') === key);
+  const draftedFga = drafted ? (playersById.get(drafted.playerId)?.fga ?? 0) : team.roster[at].fga;
+  if (!next || next.fga > draftedFga) return state;
+  const roster = team.roster.map((p, i) => (i === at ? next : p));
+  if (totalFga(roster.map((p) => p.fga)) > draftCapLimit(state)) return state;
+  return { ...state, teams: state.teams.map((t, i) => (i === swap.slot ? { ...t, roster } : t)) };
+}
+
+/** The room's whole log on a fresh board: the swaps go in where they were made. */
+export function replayRoom(base: DraftState, picks: string[], swaps: ServerSwap[]): DraftState {
+  let s = base;
+  const byPick = [...swaps].sort((a, b) => a.atPick - b.atPick);
+  let k = 0;
+  for (let i = 0; i <= picks.length; i++) {
+    while (k < byPick.length && byPick[k].atPick === i) s = applySwap(s, byPick[k++]);
+    if (i < picks.length && !s.complete) s = applyServerPick(s, picks[i]);
+  }
+  return s;
+}
