@@ -1422,8 +1422,11 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
   if (shown <= engine) return { offense: 0, defense: 0 };
   const short = shown - (0.6 * (ctx.otalUncapped ?? ctx.otal) + 0.4 * ctx.dtal);
   if (short <= 0) return { offense: 0, defense: 0 };
-  // Both sides by the same points: on a side split a player with D 17 would need O 107 to read 71.
-  return { offense: short, defense: short };
+  // Both sides by the same points (on a side split a player with D 17 would need O 107 to read 71),
+  // and never more than the lift itself: a star's O / D blend sits under his TAL by nature (Curry,
+  // Ray Allen), so the full shortfall moved every tabled star's defense (game judge 0.8112 → 0.7952).
+  const move = Math.min(short, shown - engine);
+  return { offense: move, defense: move };
 }
 registerNamedShift(namedShiftForSpan);
 
