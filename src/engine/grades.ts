@@ -1555,7 +1555,7 @@ function displayTalentUnheld(ctx: TierGateContext): number {
   }
   if (!ctx.playerName) return legacy;
   const held = Math.min(UNCALIBRATED_DISPLAY_MAX, legacy);
-  return ALL_STAR_FLOOR.selections > 0 && ctx.spanLabel && allStarSelectionsIn(ctx.playerName, spanEndYears(ctx.spanLabel)) >= ALL_STAR_FLOOR.selections ? Math.max(held, ALL_STAR_FLOOR.tal) : held;
+  return ALL_STAR_FLOOR.selections > 0 && ctx.spanLabel && allStarSelectionsIn(ctx.playerName, spanEndYears(ctx.spanLabel)) >= ALL_STAR_FLOOR.selections ? Math.max(held, Math.min(ALL_STAR_FLOOR.tal, held + ALL_STAR_FLOOR.maxLift)) : held;
 }
 /** 2026-11-12 (the user: "Lepszy sygnał tego, kto jest All-Starem, to sam mecz gwiazd … spróbuj tych
  * one time i 2x", then "rób próg 2"): a window outside the table with at least `selections` All-Star
@@ -1563,7 +1563,7 @@ function displayTalentUnheld(ctx: TierGateContext): number {
  * 0.8171 → 0.8226, All-star best windows 55 → 145 (one selection: 0.8554 / 0.8244, 235, but one-time
  * picks such as Gatling and Magloire). Bowen and Battier, never All-Stars, stay Starters.
  * `AS_FLOOR=0` turns it off. */
-const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78 };
+const ALL_STAR_FLOOR = { selections: Number(envVar('AS_FLOOR') ?? 2), tal: 78, maxLift: Number(envVar('AS_MAX_LIFT') ?? Infinity) };
 
 function legacyDisplayTalent(ctx: TierGateContext): number {
   const smoothed = smoothedDisplayTalent(ctx);
