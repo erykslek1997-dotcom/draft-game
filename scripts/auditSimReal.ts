@@ -118,6 +118,19 @@ console.log(`SIM defense vs real DRtg r ${corr(kept.map((x) => x.simD), kept.map
 const sd = (v: number[]) => Math.sqrt(mean(v.map((x) => (x - mean(v)) ** 2)));
 const slope = corr(kept.map((x) => x.sim), y) * sd(y) / sd(kept.map((x) => x.sim));
 console.log(`${slope.toFixed(2)} real SRS per sim margin point; sim spread ${sd(kept.map((x) => x.sim)).toFixed(2)} vs real ${sd(y).toFixed(2)}`);
+{
+  // How the sim splits its margin: each side's spread against the real side's, and the weights real
+  // SRS puts on the sim's two halves (least squares, SRS ~ a·simO + b·simD).
+  const so = kept.map((x) => x.simO), sdd = kept.map((x) => x.simD);
+  const ro = kept.map((x) => x.ortg), rd = kept.map((x) => x.drtg);
+  console.log(`spread: sim offense ${sd(so).toFixed(2)} vs real ORtg ${sd(ro).toFixed(2)} (×${(sd(so) / sd(ro)).toFixed(2)}); sim defense ${sd(sdd).toFixed(2)} vs real DRtg ${sd(rd).toFixed(2)} (×${(sd(sdd) / sd(rd)).toFixed(2)})`);
+  const a11 = so.reduce((t, v) => t + v * v, 0), a12 = so.reduce((t, v, i) => t + v * sdd[i], 0), a22 = sdd.reduce((t, v) => t + v * v, 0);
+  const b1 = so.reduce((t, v, i) => t + v * y[i], 0), b2 = sdd.reduce((t, v, i) => t + v * y[i], 0);
+  const det = a11 * a22 - a12 * a12;
+  const wO = (b1 * a22 - b2 * a12) / det, wD = (a11 * b2 - a12 * b1) / det;
+  const fitted = so.map((v, i) => wO * v + wD * sdd[i]);
+  console.log(`real SRS ~ ${wO.toFixed(3)}·simO + ${wD.toFixed(3)}·simD (r ${corr(fitted, y).toFixed(4)}; the sim itself weighs them 1 : 1 → wants offense ×${(wO / wD).toFixed(2)} of defense)`);
+}
 const res = (x: Row) => x.srs - slope * x.sim;
 
 const groupBy = (label: string, key: (x: Row) => string) => {
