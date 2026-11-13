@@ -982,8 +982,10 @@ const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
  * the two can never drift apart. */
 /** Share of the offensive-glass points the Offense score keeps (attack audit: negative in the game's mechanics, ~0 in real fives). */
 const OFFENSIVE_GLASS_SHARE = 0.5;
-/** Measurement (2026-11-13, Nash's ceiling): the raw offense blend's top before the scale (100 = as shipped). */
-const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 100);
+/** 2026-11-13 (Nash's ceiling: beside Kobe, Dirk and Shaq, Nash, Lillard and Jrue all read Offense 91
+ * — the raw blend sat at its 100 cap): the raw offense blend's top before the scale, 110. Game judge
+ * 0.8043 → 0.8052, real SRS unchanged (130 reads the same). */
+const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =

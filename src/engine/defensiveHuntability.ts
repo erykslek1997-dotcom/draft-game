@@ -136,7 +136,12 @@ function rimProtectorBar(player: PlayerSpan): number | null {
 
 /** Night session (the user: "hunting / weak link od poziomu C-, żeby gracz nie brał kogoś średniego i
  * był za to karany"): `HUNT_BAR_CAP` caps the huntable bar (D-TAL; C- starts at 39). Unset, no cap. */
-const HUNT_BAR_CAP = Number(envVar('HUNT_BAR_CAP') ?? Infinity);
+// 2026-11-13 (the user: Miller and Edwards "w najgorszym wypadku przeciętni obrońcy którzy nie
+// przechylają skali"): on at 44. Real team DRtg judge 0.770 → 0.775, real SRS 0.8569 → 0.8577, game
+// 0.8043 → 0.8042 (39: 0.776 / 0.8578 / 0.7992; 47: 0.774 / 0.8575 / 0.8064). It mostly lowers the
+// big men's bars (C 78, PF 61 → 44): a center at 70 is not who real offenses hunt. A position-scaled
+// bar (the cohort's 30th / 35th percentile) read worse on all three.
+const HUNT_BAR_CAP = Number(envVar('HUNT_BAR_CAP') ?? 44);
 function averageDtalFor(player: PlayerSpan): number {
   return Math.min(HUNT_BAR_CAP, averageDtalForUncapped(player));
 }
