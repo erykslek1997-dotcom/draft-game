@@ -121,7 +121,8 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Manu Ginóbili', '2004-06', 80, 'All-NBA'],
   ['Tyrese Haliburton', '2022-24', 80, 'All-NBA'],
   ['Pascal Siakam', '2024-26', 80, 'All-NBA'],
-  ['Dikembe Mutombo', '1996-98', 79, 'All-NBA'],
+  // 2026-11-13, the user: "Mutombo trochę niżej niż Gobert" (Gobert 84) — All-star, 83.
+  ['Dikembe Mutombo', '1996-98', 79, 'All-star'],
   ['Marc Gasol', '2015-17', 79, 'All-NBA'],
   ['Al Horford', '2014-16', 79, 'All-NBA'],
   // All-star
@@ -280,6 +281,10 @@ export const USER_TAL_TARGET: Readonly<Record<string, number>> = {
   'Kobe Bryant': 97,
   'Bill Russell': 89,
   'Wilt Chamberlain': 89,
+  // 2026-11-13, the user's sub-tier review: McHale (one All-NBA, First Team 1987) reads Third Team,
+  // not above Moses; Mutombo a point under Gobert's 84.
+  'Kevin McHale': 85,
+  'Dikembe Mutombo': 83,
 };
 
 /**
