@@ -36,7 +36,7 @@ import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
 import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, PhoneDock, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
-import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
+import { CapsBar, LoadMore, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
 
@@ -1657,11 +1657,8 @@ export default function DraftBoard({
                 Showing {shown.length} of {totalMatched.toLocaleString('en-US')}
                 {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
               </span>
-              {visibleCount < groups.length && (
-                <Btn kind="line" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
-                  Show 10 more
-                </Btn>
-              )}
+              {/* Scrolling to the end loads the next ten (2026-11-13: "płynny scroll"). */}
+              <LoadMore active={visibleCount < groups.length} onMore={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))} />
               {visibleCount > DRAFT_VISIBLE_DEFAULT && (
                 <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
                   Show fewer

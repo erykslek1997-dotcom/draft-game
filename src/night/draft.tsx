@@ -425,3 +425,21 @@ export function FiveSlots({
     </section>
   );
 }
+
+/**
+ * 2026-11-13, the playtest ("płynny scroll przy przeglądaniu graczy"): the list grows as you
+ * scroll — this sentinel at its end asks for more once it comes near the screen.
+ */
+export function LoadMore({ onMore, active }: { onMore: () => void; active: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const more = useRef(onMore);
+  more.current = onMore;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !active || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && more.current(), { rootMargin: '400px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [active]);
+  return <div ref={ref} className="load-more" aria-hidden />;
+}

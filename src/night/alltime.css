@@ -1584,3 +1584,7 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .m2-strip { margin: 12px 0 8px; }
 .nt .m2-modes + .m2-tl, .nt .m2-modes ~ .m2-tl { display: block; margin-top: 28px; }
 .nt .m2-acct { margin-top: 24px; }
+
+/* 2026-11-13: the board's rounds in one scrolling window (about four rounds tall), not two pages. */
+.nt .bg-rows { max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
+@media (max-width: 600px) { .nt .bg-rows { max-height: 360px; } }
