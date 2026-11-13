@@ -161,3 +161,46 @@ export function leagueFtRateForSpan(span: PlayerSpan): number {
   if (years.length === 0) return 0.29;
   return years.reduce((sum, y) => sum + (LEAGUE_FT_RATE_BY_END_YEAR.get(y) ?? 0.29), 0) / years.length;
 }
+
+/**
+ * 2026-11-13, the user (Oladipo 2017-19 — "ciężko się go ocenia w skali all-time kiedy zagrał zdrowe
+ * półtora sezonu"; "jeśli zagrał mniej niż np 50 spotkań w jednym z dwóch sezonów"): the seasons of a
+ * window the player played under 50 of 82 games — scaled to the season's own length (the 1999
+ * lockout's 50 games make it 30), the length being the most games at least five players reached.
+ */
+export const SHORT_SEASON_SHARE = 50 / 82;
+let gamesByNameYear: Map<string, Map<number, number>> | null = null;
+let seasonLength: Map<number, number> | null = null;
+function buildGames(): void {
+  gamesByNameYear = new Map();
+  for (const r of boxRates) {
+    const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
+    const key = resolveSourceName(r.name, endYear);
+    let m = gamesByNameYear.get(key);
+    if (!m) gamesByNameYear.set(key, (m = new Map()));
+    m.set(endYear, Math.max(m.get(endYear) ?? 0, r.g));
+  }
+  const counts = new Map<number, Map<number, number>>();
+  for (const m of gamesByNameYear.values())
+    for (const [y, g] of m) {
+      let c = counts.get(y);
+      if (!c) counts.set(y, (c = new Map()));
+      c.set(g, (c.get(g) ?? 0) + 1);
+    }
+  seasonLength = new Map();
+  for (const [y, c] of counts) {
+    const reached = [...c].filter(([, n]) => n >= 5).map(([g]) => g);
+    if (reached.length) seasonLength.set(y, Math.max(...reached));
+  }
+}
+/** Season end years of the window the player missed most of (see `SHORT_SEASON_SHARE`). */
+export function shortSeasonsIn(playerName: string, spanLabel: string): number[] {
+  if (!gamesByNameYear) buildGames();
+  const games = gamesByNameYear!.get(normalizePlayerName(playerName));
+  if (!games) return [];
+  return spanEndYears(spanLabel).filter((y) => {
+    const g = games.get(y);
+    const length = seasonLength!.get(y);
+    return g !== undefined && length !== undefined && g < SHORT_SEASON_SHARE * length;
+  });
+}

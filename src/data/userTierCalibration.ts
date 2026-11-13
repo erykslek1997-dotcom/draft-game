@@ -108,7 +108,8 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Mark Price', '1988-90', 84, 'All-NBA'],
   ['Derrick Rose', '2010-12', 84, 'All-NBA'],
   ['Carmelo Anthony', '2012-14', 83, 'All-NBA'],
-  ['Jaylen Brown', '2020-22', 83, 'All-NBA'],
+  // 2026-11-13, the user's sub-tier review ("Brown nie"): All-star, not All-NBA.
+  ['Jaylen Brown', '2020-22', 83, 'All-star'],
   ['Eddie Jones', '1997-99', 83, 'All-NBA'],
   ['Kyle Lowry', '2016-18', 83, 'All-NBA'],
   ['Kevin McHale', '1986-88', 83, 'All-NBA'],

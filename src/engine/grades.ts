@@ -25,6 +25,7 @@ import { computeFinishing, namedFinishingS } from './finishing';
 import { computeDurability } from './durability';
 import { spanEndYears } from './era';
 import { allStarSelectionsIn } from './allStarLookup';
+import { shortSeasonsIn } from './boxRatesLookup';
 import { envVar } from './env';
 import { TAYLOR_VALIDATED_NAMES } from './taylorValidatedNames';
 import { playoffTalentTerm } from './playoffImpact';
@@ -1334,7 +1335,8 @@ const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
     ['Caldwell Jones', 62], // was 68; twins 37, RAPTOR overall -1.3..-0.1
     ['Mark Eaton', 69], // was 73; two DPOYs keep him a high starter
     ['Michael Cooper', 69], // was 73; DPOY 1987, sixth man
-    ['Raja Bell', 69], // was 76; twins 50, RAPTOR overall +0.5..1.7
+    // 2026-11-13, the user: "Raja Bella bym dał trochę wyżej, imo nie jest o 8 gorszy od Bowena" (76) — 69 → 73.
+    ['Raja Bell', 73], // was 76; twins 50, RAPTOR overall +0.5..1.7
     ['Robert Horry', 70], // was 74; the playoff shots keep him over his twins (39)
     ['Tiago Splitter', 68], // was 71; small cut, RAPTOR liked him (+3.3..4.0)
     ['Tony Allen', 67], // was 69; small cut, RAPTOR defense +3.1..3.6
@@ -1475,7 +1477,21 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   const value = displayTalentCompressed(ctx);
   // The user's own placement stays the player's top after the star-window compression (2026-11-13).
   const place = ctx.playerName && tierCalibrationFor(ctx.playerName) ? bandPlace(ctx.playerName) : undefined;
-  return allNbaTeamGate(ctx.playerName, place === undefined ? value : Math.min(place, value));
+  const placed = place === undefined ? value : Math.min(place, value);
+  return allNbaTeamGate(ctx.playerName, shortSeasonCap(ctx.playerName, ctx.spanLabel, placed));
+}
+
+/**
+ * 2026-11-13, the user (Oladipo 2017-19, "zdrowe półtora sezonu"; "mniej niż np 50 spotkań w jednym
+ * z dwóch sezonów" → "jeden tier niżej"): a window holding a season the player mostly missed
+ * (`shortSeasonsIn`) reads at most the top of the label tier below its own — All-star and up only.
+ * Best windows moved: Wembanyama 2024-26 93 → 89, Oladipo 2017-19 85 → 83, Kirilenko 2003-05 84 → 83.
+ */
+const SHORT_SEASON_FROM = Number(envVar('SHORT_FROM') ?? 78);
+function shortSeasonCap(playerName: string | undefined, spanLabel: string | undefined, value: number): number {
+  if (!playerName || !spanLabel || value < SHORT_SEASON_FROM || shortSeasonsIn(playerName, spanLabel).length === 0) return value;
+  const floor = value >= 100 ? 100 : Math.max(...DISPLAY_TIER_FLOORS.filter(([f]) => f <= value).map(([f]) => f));
+  return Math.min(value, floor - 1);
 }
 
 /**
