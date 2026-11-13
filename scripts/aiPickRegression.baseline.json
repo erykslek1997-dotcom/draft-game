@@ -270,7 +270,7 @@
       "jalen williams",
       "damian lillard",
       "peja stojakovic",
-      "anthony edwards",
+      "vince carter",
       "shawn marion",
       "oscar robertson",
       "kristaps porzingis",
@@ -338,7 +338,7 @@
       "jalen williams",
       "damian lillard",
       "peja stojakovic",
-      "anthony edwards",
+      "vince carter",
       "shawn marion",
       "oscar robertson",
       "kristaps porzingis",
@@ -354,7 +354,7 @@
       "rudy gobert",
       "shane battier",
       "karl-anthony towns",
-      "danny green",
+      "chris mullin",
       "chauncey billups"
     ],
     "expectedPickId": "mobleev01-2025-2026",
@@ -639,7 +639,7 @@
       "shane battier",
       "jason kidd",
       "bruce bowen",
-      "chris mullin"
+      "og anunoby"
     ],
     "expectedPickId": "carter-99-01",
     "expectedPickLabel": "Vince Carter | 1999-01"
@@ -707,10 +707,10 @@
       "shane battier",
       "jason kidd",
       "bruce bowen",
-      "chris mullin",
+      "og anunoby",
       "vince carter",
       "wilt chamberlain",
-      "khris middleton",
+      "chris mullin",
       "manu ginobili",
       "hersey hawkins",
       "jrue holiday",
@@ -833,8 +833,8 @@
       "andrei kirilenko",
       "luka doncic"
     ],
-    "expectedPickId": "lillada01-2019-2020",
-    "expectedPickLabel": "Damian Lillard | 2018-20"
+    "expectedPickId": "paulch01-cw-2016-2017",
+    "expectedPickLabel": "Chris Paul | 2015-17"
   },
   {
     "seed": 123456,
@@ -1070,7 +1070,7 @@
       "jrue holiday",
       "peja stojakovic",
       "danny green",
-      "rasheed wallace",
+      "khris middleton",
       "mark price",
       "chauncey billups",
       "derrick white",
