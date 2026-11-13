@@ -731,7 +731,7 @@ const LATE_TUNING = {
  * create, ~0 for a creator, and no general gain for giving the ball up.
  */
 const STAR_TUNING = {
-  usageCostMax: 0.15,
+  usageCostMax: Number(envVar('SIM_USAGE_COST') ?? 0.15),
   usageCostMin: 0,
   creatorShare: 0.6,
 };
@@ -758,7 +758,7 @@ const SCALE_TUNING = {
  * points per 1.0 of its players' real usage added up, against the drafted fives' `ref`, so the
  * league's shooting stays where it was and only the differences between fives move.
  */
-const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
+const OVERLOAD_TUNING = { perOverload: Number(envVar('SIM_OVERLOAD') ?? 0.05), ref: 1.14 };
 function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
   const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
@@ -770,7 +770,7 @@ function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
  * threes) is 70% of the usual for the best scorers (O-TAL 100), rising to the full cut at 85 and
  * below (the user: "70% ok"). A bad defense helps everyone alike.
  */
-const STAR_RESIST = { share: 0.3, from: 85, to: 100 };
+const STAR_RESIST = { share: Number(envVar('SIM_STAR_RESIST') ?? 0.3), from: 85, to: 100 };
 const starCache = new WeakMap<PlayerSpan, number>();
 function defenseResist(span: PlayerSpan): number {
   let r = starCache.get(span);

@@ -25,6 +25,12 @@ import { scoreTeam } from '../src/engine/scoring';
 import { mechanicsMargin, mechanicsPer100 } from '../src/engine/liveGame';
 import { computeTalent } from '../src/engine/talent';
 import type { Team } from '../src/engine/types';
+import { computeOffensiveTalent } from '../src/engine/talent';
+import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { computeSpacing } from '../src/engine/spacing';
+import { ballShare } from '../src/engine/ballHandling';
+import { rimPressure } from '../src/engine/rimPressure';
+import { realSpan } from '../src/engine/realAdvancedLookup';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const TOP = Number(args.top ?? 8);
@@ -156,6 +162,20 @@ function ridge(resid: (x: Row) => number, title: string) {
   order.slice(0, 15).forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
   console.log(`${title} — sim UNDERRATES:`);
   order.slice(-15).reverse().forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
+  const spansOf = new Map<string, PlayerSpan[]>();
+  for (const x of kept) for (const sp of x.spans) spansOf.set(sp.playerName, [...(spansOf.get(sp.playerName) ?? []), sp]);
+  const feat: Record<string, (sp: PlayerSpan) => number | null> = {
+    'O-TAL': (sp) => computeOffensiveTalent(sp), 'D-TAL': (sp) => computeDefensiveTalent(sp),
+    'USG%': (sp) => realSpan(sp)?.usg ?? null, 'AST%': (sp) => realSpan(sp)?.ast ?? null, 'TS%': (sp) => realSpan(sp)?.ts ?? null,
+    'TOV%': (sp) => realSpan(sp)?.tov ?? null, 'ORB%': (sp) => realSpan(sp)?.orb ?? null, OBPM: (sp) => realSpan(sp)?.obpm ?? null, DBPM: (sp) => realSpan(sp)?.dbpm ?? null,
+    'FGA (caps)': (sp) => sp.fga, '3PA/g': (sp) => sp.box.threePA ?? 0, spacing: (sp) => computeSpacing(sp), 'ball share': (sp) => ballShare(sp), 'rim pressure': (sp) => rimPressure(sp),
+  };
+  const line: string[] = [];
+  for (const [k, f] of Object.entries(feat)) {
+    const pts = order.map((pl) => ({ v: pl.v, x: mean(spansOf.get(pl.nm)!.map(f).filter((z): z is number => z !== null && Number.isFinite(z))) })).filter((q) => Number.isFinite(q.x));
+    line.push(`${k} ${corr(pts.map((q) => q.x), pts.map((q) => q.v)).toFixed(2)}`);
+  }
+  console.log(`  residual follows (r, + = sim underrates players high in it): ${line.join(' | ')}`);
 }
 ridge(res, 'Whole game (SRS)');
 const slopeO = corr(kept.map((x) => x.simO), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.simO));
