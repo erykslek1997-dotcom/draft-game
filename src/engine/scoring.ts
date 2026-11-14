@@ -1077,7 +1077,8 @@ const positionWeightedDefense = (p: PlayerSpan) => {
   if (!w || DEFENSE_POSITION_SHARE === 0) return d;
   const ys = spanEndYears(p.spanLabel);
   const year = ys.length ? ys[Math.floor(ys.length / 2)] : 2001;
-  const t = Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
+  // `DEF_POS_ERA=0`: the modern weights in every era (the user: the rim protector matters most in both).
+  const t = envVar('DEF_POS_ERA') === '0' ? 1 : Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
   return 50 + (1 + DEFENSE_POSITION_SHARE * (w[0] + (w[1] - w[0]) * t - 1)) * (d - 50);
 };
 export function teamDefensiveTalentScore(team: Team): number {
