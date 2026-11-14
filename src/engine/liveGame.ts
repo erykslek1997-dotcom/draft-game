@@ -1189,7 +1189,11 @@ const ANCHOR_TUNING = {
   /** FG points per unit of three-point attempt rate above the drafted average. */
   tpaRate: 0.02,
   /** Opponent FG points taken away per point of D-TAL above the drafted average. */
-  dtal: 0.0018 * Number(envVar('SIM_A_DTAL') ?? 1),
+  // 2026-11-14: ×1.5 — on real rosters (`scripts/auditSimReal.ts`) the mechanics' defense read too
+  // little of D-TAL: sim vs real SRS 0.8204 → 0.8283, sim defense vs real DRtg 0.803 → 0.809, and the
+  // game judge (Overall vs the mechanics) 0.8079 → 0.8161. Dropping the scorer terms (`pts36`, `two`)
+  // read real offense better (0.717 → 0.749) but took the game judge to 0.770 — not shipped.
+  dtal: 0.0018 * Number(envVar('SIM_A_DTAL') ?? 1.5),
 };
 /** The drafted rotations' minute-weighted averages (60 AI drafts), so the anchor moves a five
  * against the others and leaves the league's shooting where it was. */
