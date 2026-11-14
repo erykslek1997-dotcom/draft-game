@@ -1851,6 +1851,32 @@ czyli przeciętnie), Maxey/Parker/Vince/Ray ręczne korekty wbrew OBPM?
 - [ ] **Giannis** wyżej niż Duncan/Hakeem/Shaq? — decyzja Eryka (dziś 98 vs 97).
 - [ ] **Faule w meczu**: przypisanie faulu kryjącemu, nie wg skłonności (Nash ~4 PF/36 przy realnych ~1,8).
 
+### Pod-tiery, hunting, atak i trzeci sędzia (2026-11-13 po południu i noc 13/14) — NA GAŁĘZI, nie na stronie
+
+Sędziowie na końcu nocy: real 0,8589 / gra 0,8059 / obrona drużyn (real DRtg) 0,775 / atak drużyny vs real ORtg 0,730 (rano 13.11: 0,8581 / 0,8090 / 0,770 / 0,657). `test:fast` zielony na `31a592b`.
+
+**Weszło (domyślne w kodzie):**
+- [x] Naprawka backline: partner pod koszem = najlepszy rim protector z INNEJ pozycji (Gobert C + Mobley PF, nie rezerwowy C). Koszt: gra −0,0034.
+- [x] Bramka All-NBA: pod-tier 1st (88-89) wymaga realnego 1st team w karierze, 2nd (86-87) 1st/2nd, reszta max 85. Tylko w dół (15 graczy, 1-2 pkt). Nagrody = potwierdzenie, nie boost (Eryk).
+- [x] Okno z sezonem < 50/82 meczów (skalowane do długości sezonu) czyta się tier niżej, od All-star w górę (Wemby 93 → 89, Oladipo 85 → 83, Kirilenko 84 → 83).
+- [x] Tabela: McHale 85, Mutombo 83 (All-star, pod Gobertem), Jaylen Brown All-star, Raja Bell 73.
+- [x] Próg „huntable” max 44 (`HUNT_BAR_CAP`): Miller / Edwards / Korver C- nie są nazywani słabym ogniwem; Nash, Ray Allen dalej tak. Obrona drużyn 0,770 → 0,775. Próg skalowany do pozycji (30./35. percentyl) wypadł gorzej.
+- [x] Sufit surowego ataku 100 → 110 (`OFF_RAW_TOP`).
+- [x] Podłoga „elitarnego silnika ataku” (72) WYŁĄCZONA (`ENGINE_FLOOR=1` przywraca): atak drużyny vs real ORtg 0,657 → 0,730; składy z draftu bez zmian.
+- [x] `deskSegments` używa nazwisk studia („Van Lier”, nie „Lier”).
+- [x] Trzeci sędzia `scripts/auditSimReal.ts`: prawdziwe składy grają między sobą w mechanice gry, wynik vs real SRS / ORtg / DRtg, reszty po zawodnikach.
+
+**Zmierzone, DO DECYZJI Eryka (pokrętła w kodzie, domyślnie bez zmian):**
+- [ ] Bonus za strukturę obrony w Defense (`DEF_COH`, 1 = dziś): 0 daje real 0,8587 / gra 0,8090 / obrona 0,780 (wszyscy w górę); 0,5: 0,8582 / 0,8063 / 0,778. Mechanika Eryka — decyzja projektowa.
+- [ ] Kotwica w symulacji (`SIM_A_PTS`, `SIM_A_TWO`, `SIM_A_DTAL`; tylko w kopii roboczej, nie w repo): bez kar za punkty/36 i 2P% + obrona ×1,5 → symulacja vs real SRS 0,820 → 0,837 (atak 0,717 → 0,747), ale sędzia gry (Overall vs symulacja) 0,806 → 0,789. Kotwica była strojona pod Overall, nie pod rzeczywistość.
+- [ ] Korekta z wyników prawdziwych drużyn (reszty ridge po zawodnikach): trzyma się na sezonach, których nie widziała — atak 0,722 → 0,755, obrona 0,726 → 0,738, SRS 0,851 → 0,854 (`scripts/_realCorr.ts`, lokalny). Dane po nazwiskach (Miller +0,70 DRtg/sezon, Jrue −0,66, Nash +0,97 ORtg) — do decyzji, czy i jak wpiąć.
+- [ ] Pod-tiery i znaczek All-Defensive w UI gry (artefakt gotowy; D-TAL ≥ 85 i TAL ≥ 65, 91 graczy).
+- [ ] Skala Defense czytelna dla gracza: miejsce w lidze / „poziom NBA” obok liczby (78 = mediana draftu all-time, w NBA czołówka).
+
+**Odrzucone pomiarem:** Starter hold 72 (wycofany na rzecz pod-tierów); wygładzanie D-TAL po karierze (gra −0,007); waga z obrony do ataku w Overall (gra −0,002 / −0,009); OFF_MIX (real w górę, gra w dół); skala progu huntable po pozycji; SIM_STAR_RESIST / SIM_OVERLOAD / SIM_USAGE_COST / SIM_LATE_* / SIM_OWN_TOV (±0,002 — na prawdziwych składach te mechanizmy się znoszą).
+
+**Ustalenia z trzeciego sędziego:** symulacja vs real SRS 0,821 (Overall 0,865); rozrzut w symulacji 2,7× realnego (atak 2,5×, obrona 2,0×); symulacja zaniża atak strzelców z wysokim OBPM/USG (Kobe, Westbrook, Dirk, Lillard) i zawyża ich obronę; zawyża atak pass-first bez rzutu (Kidd, Rondo). Realna obrona drużyn idzie za średnią D-TAL całej rotacji ważoną minutami (0,812), nie za najlepszym ani najsłabszym. Nash: na 116 składach AI −1,7 Overall vs Jrue (bije go w 16); jego realne drużyny silnik przewiduje trafnie w SRS, atak +0,97 ORtg/sezon ponad wzór.
+
 ## Lista z playtestu 2026-11-12 (rano) — do zrobienia po 10:05
 
 1. [x] **Ucięte „g” w nazwisku na karcie składu** („George”) — telefon: `.slot .nm` ma `overflow: hidden` i w kolumnie flex kurczy się o ~1 px (zmierzone: wysokość 18,9 px, treść 20 px), więc ogonki liter (g, j, p, y) giną. Poprawka: `flex-shrink: 0` i zapas na ogonki, sprawdzić na telefonie i desktopie. **Zrobione:** to był desktop (wysokość linii 1,05 → 18,9 px przy 20 px tekstu); teraz 1,2 i `flex-shrink: 0` (desktop i telefon).
