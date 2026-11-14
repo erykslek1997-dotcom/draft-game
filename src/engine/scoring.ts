@@ -1,3 +1,4 @@
+import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
@@ -1064,11 +1065,20 @@ export function offenseScore(team: Team): number {
  * center about 1 worse. Each player's D-TAL counts around 50 by his position's weight, `DEF_POS_W` of the
  * way from 1.
  */
-const DEFENSE_POSITION_WEIGHT: Record<string, number> = { PG: 0.58, SG: 0.95, SF: 0.8, PF: 1.05, C: 1.6 };
+/** By the window's era, on the point guard – center axis only (the other positions' weights are noise):
+ * real team-seasons put a point guard's D-TAL point at 1.19 of the average before 1995 and 0.75 since
+ * 2008, a center's at 0.88 and 1.20 (the user: before the modern game one on-ball defender mattered
+ * more; with switching it is the rim). Linear through 1 around 2001. */
+const DEFENSE_ERA_WEIGHT = { PG: [1.19, 0.75], C: [0.88, 1.2] } as Record<string, [number, number]>;
 const DEFENSE_POSITION_SHARE = Number(envVar('DEF_POS_W') ?? 0);
 const positionWeightedDefense = (p: PlayerSpan) => {
   const d = computeDefensiveTalent(p);
-  return 50 + (1 + DEFENSE_POSITION_SHARE * ((DEFENSE_POSITION_WEIGHT[p.primaryPosition] ?? 1) - 1)) * (d - 50);
+  const w = DEFENSE_ERA_WEIGHT[p.primaryPosition];
+  if (!w || DEFENSE_POSITION_SHARE === 0) return d;
+  const ys = spanEndYears(p.spanLabel);
+  const year = ys.length ? ys[Math.floor(ys.length / 2)] : 2001;
+  const t = Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
+  return 50 + (1 + DEFENSE_POSITION_SHARE * (w[0] + (w[1] - w[0]) * t - 1)) * (d - 50);
 };
 export function teamDefensiveTalentScore(team: Team): number {
   return rescaleToFullRange(
