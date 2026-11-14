@@ -1181,15 +1181,15 @@ const ANCHOR_TUNING = {
   otal: 0.0016,
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
-  two: -0.0025,
+  two: -0.0025 * Number(envVar('SIM_A_TWO') ?? 1),
   /** FG points per point scored per 36 above the drafted average. */
-  pts36: -0.0031,
+  pts36: -0.0031 * Number(envVar('SIM_A_PTS') ?? 1),
   /** FG points per rebound per 36 above the drafted average. */
   reb36: 0.0034,
   /** FG points per unit of three-point attempt rate above the drafted average. */
   tpaRate: 0.02,
   /** Opponent FG points taken away per point of D-TAL above the drafted average. */
-  dtal: 0.0018,
+  dtal: 0.0018 * Number(envVar('SIM_A_DTAL') ?? 1),
 };
 /** The drafted rotations' minute-weighted averages (60 AI drafts), so the anchor moves a five
  * against the others and leaves the league's shooting where it was. */

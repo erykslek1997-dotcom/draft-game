@@ -231,7 +231,7 @@ const MAX_HUNTABILITY_PENALTY = 20;
 const ANCHOR_DTAL_GATE = 88;
 const ANCHOR_DTAL_FULL = 100;
 const ANCHOR_MINUTES_FOR_FULL = 30;
-const MAX_ANCHOR_DAMPENING = 0.35;
+const MAX_ANCHOR_DAMPENING = Number(envVar('HUNT_ANCHOR') ?? 0.35);
 /**
  * 2026-10-28, step 6.1 (the user: Nash beside Kawhi, Howard and Bell reads Defense 69 — "the weak
  * defender pays twice"): an elite perimeter stopper covers too, not only a rim protector. Real
