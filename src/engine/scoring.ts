@@ -1,3 +1,4 @@
+import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
@@ -1008,7 +1009,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
   const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
-  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE)));
+  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
 }
 
@@ -1067,7 +1068,8 @@ const DEF_OFF = new Set((envVar('DEF_OFF') ?? '').split(',').filter(Boolean));
 const DEF_PARTS = { hunt: !DEF_OFF.has('hunt'), cohesion: !DEF_OFF.has('cohesion'), glass: !DEF_OFF.has('glass'), knee: !DEF_OFF.has('knee') };
 /** 2026-11-13, measurement (the user's call pending): the structure bonus's share of Defense. Real SRS /
  * game / real team DRtg at 1: 0.8577 / 0.8050 / 0.775; 0.5: 0.8582 / 0.8063 / 0.778; 0: 0.8587 / 0.8090 / 0.780. */
-const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 1);
+// 2026-11-14, the user ("to co poprawia wprowadzamy"): off.
+const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 0);
 export function defenseScore(team: Team): number {
   const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
@@ -1083,7 +1085,7 @@ export function defenseScore(team: Team): number {
     (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0);
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
-  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0))));
+  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'))));
 }
 
 /**
