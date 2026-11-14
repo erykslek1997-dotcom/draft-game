@@ -1,6 +1,6 @@
 import type { PlayerSpan } from '../data/schema';
 import { computeDefensiveTalent } from './defensiveTalent';
-import type { DeskLine, ExpertId, RosterRead } from './desk';
+import { surname, type DeskLine, type ExpertId, type RosterRead } from './desk';
 import { effectiveTalent } from './grades';
 
 /**
@@ -11,7 +11,8 @@ import { effectiveTalent } from './grades';
  * Answers are `seg` lines: not takes (a segment never counts as an expert opening on air).
  */
 type Pick = { who: ExpertId; p: PlayerSpan; line: string };
-const sur = (p: PlayerSpan) => p.playerName.split(' ').slice(-1)[0];
+// The desk's own surname (particles kept: "Van Lier", not "Lier"; suffixes dropped; nicknames).
+const sur = (p: PlayerSpan) => surname(p);
 const one = (v: number) => v.toFixed(1);
 const by = <T>(xs: T[], f: (x: T) => number) => [...xs].sort((a, b) => f(b) - f(a))[0];
 const pick = <T>(rng: () => number, xs: T[]): T => xs[Math.floor(rng() * xs.length)];

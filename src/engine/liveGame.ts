@@ -626,7 +626,7 @@ const DEFENSE_TUNING = {
  * the ball beyond that (best playmaking of the five: mean 92.8, spread 5.2).
  */
 const OFFENSE_TUNING = {
-  ownTurnovers: 0.6,
+  ownTurnovers: Number(envVar('SIM_OWN_TOV') ?? 0.6),
   handler: 0.09,
 };
 const REF_FIVE_TURNOVERS = 0.1267;
@@ -710,14 +710,14 @@ function handlerZ(off: CourtPlayer[]): number {
  * player also pays his own-shot gap, `setupEdge`) and goes in `LATE_TUNING.penalty` less often.
  */
 const LATE_TUNING = {
-  share: 0.09,
+  share: Number(envVar('SIM_LATE_SHARE') ?? 0.09),
   /** How much of what a player's late shots lose comes back on all of his shots (`courtFor`): his
    * real percentages already hold them. 1 = all of it. */
   giveBack: 1,
   reset: 1.8,
   defense: 0.15,
   handler: 0.15,
-  penalty: 0.06,
+  penalty: Number(envVar('SIM_LATE_PENALTY') ?? 0.06),
   creatorPower: 1.5,
 };
 /**
@@ -731,7 +731,7 @@ const LATE_TUNING = {
  * create, ~0 for a creator, and no general gain for giving the ball up.
  */
 const STAR_TUNING = {
-  usageCostMax: 0.15,
+  usageCostMax: Number(envVar('SIM_USAGE_COST') ?? 0.15),
   usageCostMin: 0,
   creatorShare: 0.6,
 };
@@ -758,7 +758,7 @@ const SCALE_TUNING = {
  * points per 1.0 of its players' real usage added up, against the drafted fives' `ref`, so the
  * league's shooting stays where it was and only the differences between fives move.
  */
-const OVERLOAD_TUNING = { perOverload: 0.05, ref: 1.14 };
+const OVERLOAD_TUNING = { perOverload: Number(envVar('SIM_OVERLOAD') ?? 0.05), ref: 1.14 };
 function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
   const shooter = Math.max(0, Math.min(1, (teamSpacingValue(span) - 35) / 25));
   const creator = Math.min(1, ownShare / STAR_TUNING.creatorShare);
@@ -770,7 +770,7 @@ function usageGiveUpScale(span: PlayerSpan, ownShare: number): number {
  * threes) is 70% of the usual for the best scorers (O-TAL 100), rising to the full cut at 85 and
  * below (the user: "70% ok"). A bad defense helps everyone alike.
  */
-const STAR_RESIST = { share: 0.3, from: 85, to: 100 };
+const STAR_RESIST = { share: Number(envVar('SIM_STAR_RESIST') ?? 0.3), from: 85, to: 100 };
 const starCache = new WeakMap<PlayerSpan, number>();
 function defenseResist(span: PlayerSpan): number {
   let r = starCache.get(span);
@@ -1181,15 +1181,19 @@ const ANCHOR_TUNING = {
   otal: 0.0016,
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
-  two: -0.0025,
+  two: -0.0025 * Number(envVar('SIM_A_TWO') ?? 1),
   /** FG points per point scored per 36 above the drafted average. */
-  pts36: -0.0031,
+  pts36: -0.0031 * Number(envVar('SIM_A_PTS') ?? 1),
   /** FG points per rebound per 36 above the drafted average. */
   reb36: 0.0034,
   /** FG points per unit of three-point attempt rate above the drafted average. */
   tpaRate: 0.02,
   /** Opponent FG points taken away per point of D-TAL above the drafted average. */
-  dtal: 0.0018,
+  // 2026-11-14: ×1.5 — on real rosters (`scripts/auditSimReal.ts`) the mechanics' defense read too
+  // little of D-TAL: sim vs real SRS 0.8204 → 0.8283, sim defense vs real DRtg 0.803 → 0.809, and the
+  // game judge (Overall vs the mechanics) 0.8079 → 0.8161. Dropping the scorer terms (`pts36`, `two`)
+  // read real offense better (0.717 → 0.749) but took the game judge to 0.770 — not shipped.
+  dtal: 0.0018 * Number(envVar('SIM_A_DTAL') ?? 1.5),
 };
 /** The drafted rotations' minute-weighted averages (60 AI drafts), so the anchor moves a five
  * against the others and leaves the league's shooting where it was. */

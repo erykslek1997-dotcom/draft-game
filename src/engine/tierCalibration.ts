@@ -1,6 +1,7 @@
 import { normalizePlayerName } from '../data/schema';
-import { USER_TAL_NUDGE, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
+import { USER_TAL_CEILING, USER_TAL_NUDGE, USER_TAL_TARGET, USER_TIER_CALIBRATION, USER_TIER_REVIEW_2, USER_WINDOW_ORDER, USER_WINDOW_TIERS } from '../data/userTierCalibration';
 import type { OverallTier } from './grades';
+import { envVar } from './env';
 
 /**
  * 2026-09-27, the user's tier table (`userTierCalibration.ts`) turned into displayed TAL.
@@ -11,7 +12,24 @@ import type { OverallTier } from './grades';
  * 100 (the user: "GOAT 100+"). His other windows are measured from the reviewed one on one shared
  * `windowMeasure`, and never read above his reviewed tier.
  */
-const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
+/** 2026-11-12 (the user's TAL Board review: Malone, Barkley, Dirk, Westbrook "do MVP", Pierce,
+ * Ewing, Klay, Ray Allen "all-nba", Dumars "all-star" — every one of them already tiered so in this
+ * table): the bands sit on the card's label scale (Starter 65, All-star 78, All-NBA 84, MVP 90 —
+ * `grades.ts` DISPLAY_TIER_FLOORS, set 2026-11-05 for the labels only). On the old bands (MVP 88-95,
+ * All-NBA 80-87, All-star 70-79, Starter 60-69) 109 of the 201 reviewed windows read a tier under
+ * the user's own call and none above. Measured with the engine blocks off (below): real SRS 0.8463 →
+ * 0.8478, game 0.8070 → 0.8149 (bands alone 0.8492 / 0.8042). `TIER_BANDS_LABEL=0` restores the old
+ * bands. Measured without the table at all: 0.8473 / 0.8181 (the table is the user's call, kept). */
+const BANDS_ON_LABELS = envVar('TIER_BANDS_LABEL') !== '0';
+const TIER_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = BANDS_ON_LABELS ? {
+  GOAT: [104, 105],
+  'Legend': [96, 99],
+  MVP: [90, 95],
+  'All-NBA': [84, 89],
+  'All-star': [78, 83],
+  Starter: [65, 77],
+  'Sixth Man': [58, 66],
+} : {
   GOAT: [104, 105],
   'Legend': [96, 99],
   MVP: [88, 95],
@@ -42,12 +60,26 @@ const entries = new Map<string, CalibrationEntry>(
   [...USER_TIER_CALIBRATION, ...USER_TIER_REVIEW_2].map(([name, spanLabel, rawAtReview, tier]) => [normalizePlayerName(name), { spanLabel, rawAtReview, tier }]),
 );
 
+const ceilings = new Map<string, number>(Object.entries(USER_TAL_CEILING).map(([name, top]) => [normalizePlayerName(name), top]));
 const nudges = new Map<string, number>(Object.entries(USER_TAL_NUDGE).map(([name, nudge]) => [normalizePlayerName(name), nudge]));
+
+/** The bands the nudges were given on (2026-09-27); a nudge keeps its share of the band's width
+ * (2026-11-12, the user: "cyferki są takie że to jest blisko legend albo mvp" — Eddie Jones's +3 put
+ * him at 88 in a 84-89 band that is 6 points wide, not 8). */
+const NUDGE_BANDS: Partial<Record<OverallTier, readonly [number, number]>> = {
+  'Legend': [96, 99], MVP: [88, 95], 'All-NBA': [80, 87], 'All-star': [70, 79], Starter: [60, 69], 'Sixth Man': [58, 66],
+};
+export function nudgeFor(playerName: string, tier: OverallTier): number {
+  const nudge = nudges.get(normalizePlayerName(playerName)) ?? 0;
+  const [lo, hi] = TIER_BANDS[tier] ?? [0, 0];
+  const [olo, ohi] = NUDGE_BANDS[tier] ?? [lo, hi];
+  return ohi > olo ? (nudge * (hi - lo)) / (ohi - olo) : nudge;
+}
 
 /** The reviewed window's TAL: its place in the tier's band plus the user's nudge, kept in the band. */
 function reviewedTalent(playerName: string, tier: OverallTier, raw: number, keepInBand = true): number {
   const [lo, hi] = TIER_BANDS[tier]!;
-  const value = placeInBand(tier, raw, keepInBand) + (nudges.get(normalizePlayerName(playerName)) ?? 0);
+  const value = placeInBand(tier, raw, keepInBand) + nudgeFor(playerName, tier);
   return keepInBand ? Math.max(lo, Math.min(hi, value)) : value;
 }
 
@@ -103,7 +135,7 @@ export function calibratedDisplayTalent(
 ): number | undefined {
   const entry = tierCalibrationFor(playerName);
   if (!entry) return undefined;
-  const value = calibratedUnordered(entry, playerName, spanLabel, rawTal, measure, reviewedWindow);
+  const value = Math.min(ceilings.get(normalizePlayerName(playerName)) ?? Infinity, calibratedUnordered(entry, playerName, spanLabel, rawTal, measure, reviewedWindow));
   const order = windowOrders.get(normalizePlayerName(playerName));
   if (!order) return value;
   const top = TIER_BANDS[entry.tier]![1];
@@ -140,5 +172,50 @@ function calibratedUnordered(
 
 /** Highest TAL a player outside the table can show: everyone the user left untiered sits below
  * the 200 who were, so none of them reads above the top of All-star. */
-export const UNCALIBRATED_DISPLAY_MAX = 79;
-export const UNCALIBRATED_TIER_MAX: OverallTier = 'All-star';
+/** 2026-11-12 (the user: "przelicz korekty na nową skalę"): a number the user named on the old
+ * bands (a named ceiling such as Arenas 84 "mid All-NBA", Edwards 87 "top of All-NBA") read on the
+ * label scale — the same piecewise map the bands moved by (60 → 65, 70 → 78, 80 → 84, 88 → 90). */
+const OLD_TO_LABEL: ReadonlyArray<readonly [number, number]> = [[0, 0], [45, 45], [60, 65], [70, 78], [80, 84], [88, 90], [96, 96], [200, 200]];
+export function onLabelScale(value: number): number {
+  if (!BANDS_ON_LABELS) return value;
+  for (let i = 1; i < OLD_TO_LABEL.length; i++) {
+    const [a, b] = OLD_TO_LABEL[i - 1];
+    const [c, d] = OLD_TO_LABEL[i];
+    if (value <= c) return Math.round(b + ((value - a) * (d - b)) / (c - a));
+  }
+  return value;
+}
+/** The top of a tier on the card's label scale (a named hold keeps its tier, not the old number). */
+const LABEL_TIER_TOP: Partial<Record<OverallTier, number>> = { 'Role Player': 64, Starter: 77, 'All-star': 83, 'All-NBA': 89, MVP: 95, Legend: 99 };
+export function labelTierTop(tier: OverallTier): number | undefined {
+  return BANDS_ON_LABELS ? LABEL_TIER_TOP[tier] : undefined;
+}
+
+/** 2026-11-12, the user ("jakby zdjąć te blokady … i zobaczyć co wyjdzie"; then "zrób B"): the engine's
+ * own blocks are off — no hold under All-star for players outside the table, no rule-tier ceiling on
+ * the displayed number (`grades.ts`), no low-volume ceiling, no grade ceiling or small-role cap on
+ * TAL (`talent.ts`). The user's own calls (the table, named ceilings, nudges, holds) stay.
+ * `ENGINE_BLOCKS_OFF=0` puts them back. */
+export const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
+export const UNCALIBRATED_DISPLAY_MAX = ENGINE_BLOCKS_OFF ? Infinity : 79;
+export const UNCALIBRATED_TIER_MAX: OverallTier = ENGINE_BLOCKS_OFF ? 'GOAT' : 'All-star';
+
+const targets = new Map<string, number>(Object.entries(USER_TAL_TARGET).map(([name, tal]) => [normalizePlayerName(name), tal]));
+/** The user's own number for a player's reviewed window (`USER_TAL_TARGET`), if any. */
+export function userTalTarget(playerName: string): number | undefined {
+  return targets.get(normalizePlayerName(playerName));
+}
+/** The user's ceiling for every window of a player (`USER_TAL_CEILING`), if any. */
+export function userTalCeiling(playerName: string): number {
+  return ceilings.get(normalizePlayerName(playerName)) ?? Infinity;
+}
+/** A tier's TAL band. */
+export function tierBand(tier: OverallTier): readonly [number, number] | undefined {
+  return TIER_BANDS[tier];
+}
+/** Every tabled player's name, by his tier (for placing a player among his tier's peers). */
+export function tabledPlayersByTier(): Map<OverallTier, string[]> {
+  const out = new Map<OverallTier, string[]>();
+  for (const [name, entry] of entries) out.set(entry.tier, [...(out.get(entry.tier) ?? []), name]);
+  return out;
+}

@@ -722,7 +722,7 @@ export function defensiveTalentTrace(rawSpan: PlayerSpan) {
  * ladder at that percentile, and the ladder moves `DBPM_SOURCE.share` of the way there. Position
  * first: +0.4 is above the median at SG, below it at C.
  */
-const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, everyWindow: envVar('DT_DBPM_ALL') === '1', at: (envVar('DT_DBPM_AT') ?? 'final') as 'final' | 'ladder', recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5) };
+const DBPM_SOURCE = { share: Number(envVar('DT_DBPM') ?? 0.75), minMinutes: 2000, recognizedShare: Number(envVar('DT_DBPM_REC') ?? 0), cap: Number(envVar('DT_DBPM_CAP') ?? 15), career: Number(envVar('DT_DBPM_CAREER') ?? 0.5), trackingShare: Number(envVar('DT_DBPM_TRACK') ?? 0.5) };
 /**
  * 2026-11-12, later (the user: "czy +0,4 = 56 to prawidłowe stosowanie"): the DBPM percentile read on
  * the box ladder put Reggie Miller 1993-95 (+0.4, the 55th percentile of shooting guards) at 50, the
@@ -807,6 +807,42 @@ function bridgedDbpmOf(span: PlayerSpan): { dbpm: number; minutes: number } | nu
   bridgeDbpm.set(span, hit);
   return hit;
 }
+/** 2026-11-13 (the user: Edwards, Bosh, Middleton, Siakam — "nie da się przez tracking i matchups,
+ * raptor, darko?"): in the tracking era the blended real defensive sources (DARKO,
+ * RAPTOR, on/off, matchups — `realDefenseExcessDetail`) read as a source like DBPM: the window's
+ * percentile among its position's tracked windows, on the finished regular-season D-TAL scale,
+ * mixed with DBPM's reading half way (`TRACK_REAL_SHARE` 0.5). Real SRS 0.8578 → 0.8581, game
+ * 0.8081 → 0.8090, real team DRtg 0.770 → 0.770 (all the way: 0.8559 / 0.8131 / 0.762). Middleton
+ * 2019-21 48 → 53, Bosh 2007-09 43 → 44, Edwards 2023-25 54 → 51. */
+const TRACK_REAL_SHARE = Number(envVar('TRACK_REAL_SHARE') ?? 0.5);
+let realSourcePools: Map<string, { excess: number[]; dtal: number[] }> | null = null;
+function realSourcesImplied(span: PlayerSpan): number | undefined {
+  const own = realDefenseExcessDetail(span)?.blendedExcess;
+  if (own == null) return undefined;
+  if (!realSourcePools) {
+    const pools = new Map<string, { excess: number[]; dtal: number[] }>();
+    for (const raw of draftPool) {
+      const sp = ratingSpan(raw);
+      const d = realDefenseExcessDetail(sp);
+      if (!d?.hasTrackingCoverage || d.blendedExcess == null) continue;
+      const r = realSpan(sp);
+      if (r?.dbpm == null || r.minutes < DBPM_SOURCE.minMinutes) continue;
+      const pos = functionalPosition(sp);
+      const pool = pools.get(pos) ?? { excess: [], dtal: [] };
+      pool.excess.push(d.blendedExcess);
+      pool.dtal.push(regularSeasonParts(sp, false).final);
+      pools.set(pos, pool);
+    }
+    for (const pool of pools.values()) { pool.excess.sort((a, b) => a - b); pool.dtal.sort((a, b) => a - b); }
+    realSourcePools = pools;
+  }
+  const pool = realSourcePools.get(functionalPosition(span));
+  if (!pool || pool.excess.length < 50) return undefined;
+  const below = pool.excess.filter((v) => v < own).length;
+  const same = pool.excess.filter((v) => v === own).length;
+  const pct = (below + same / 2) / pool.excess.length;
+  return pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+}
 let dbpmFinalPools: Map<string, { dbpm: number[]; dtal: number[] }> | null = null;
 function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   if (DBPM_SOURCE.share <= 0) return measured;
@@ -817,10 +853,16 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const ownShort = real?.dbpm != null && real.minutes < DBPM_SOURCE.minMinutes && spanEndYears(span.spanLabel)[0] < 1974;
   const noOwn = real?.dbpm == null || ownShort;
   const bridged = noOwn && DBPM_BRIDGE.share > 0 ? bridgedDbpmOf(span) : null;
+  // The tracking era (real defensive sources, from ~1997) reads DBPM at `trackingShare` (2026-11-12,
+  // the user on Siakam 2022-25 at D-TAL 22-24 on a DBPM of −0.4 to −0.6: the PF box ladder alone,
+  // no real source lifting him). Measured with the tier bands on the label scale: real SRS 0.8478
+  // → 0.8514, game 0.8149 → 0.8171, real DRtg 0.748 → 0.767 at 0.5 (0.25: 0.8507 / 0.8154 / 0.761).
+  let tracked = false;
   if (!bridged || bridged.minutes < DBPM_BRIDGE.minMinutes) {
     if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return measured;
-    if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
-  } else if (ownShort && !DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
+    tracked = realDefenseExcessDetail(span)?.hasTrackingCoverage === true;
+    if (tracked && DBPM_SOURCE.trackingShare <= 0) return measured;
+  } else if (ownShort && realDefenseExcessDetail(span)?.hasTrackingCoverage) return measured;
   // All-Defense / DPOY are real defensive evidence too, and the stronger one: a recognized window
   // keeps its reading (Pippen 1992-94 stays 95, not DBPM's 88) — the source fills a gap, it does not
   // overrule (2026-11-12, testDefensiveHuntability's elite shell).
@@ -850,48 +892,15 @@ function withDbpmOnFinal(span: PlayerSpan, measured: number): number {
   const below = pool.dbpm.filter((v) => v < dbpm).length;
   const same = pool.dbpm.filter((v) => v === dbpm).length;
   const pct = (below + same / 2) / pool.dbpm.length;
-  const implied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  const dbpmImplied = pool.dtal[Math.min(pool.dtal.length - 1, Math.max(0, Math.round(pct * (pool.dtal.length - 1))))];
+  const realImplied = tracked && TRACK_REAL_SHARE > 0 ? realSourcesImplied(span) : undefined;
+  const implied = realImplied === undefined ? dbpmImplied : dbpmImplied + TRACK_REAL_SHARE * (realImplied - dbpmImplied);
   if (bridged) {
     const movedB = (implied - measured) * (recognized ? 0 : DBPM_BRIDGE.share);
     return measured + Math.max(-DBPM_BRIDGE.cap, Math.min(DBPM_BRIDGE.cap, movedB));
   }
-  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : DBPM_SOURCE.share);
+  const moved = (implied - measured) * (recognized ? DBPM_SOURCE.recognizedShare : tracked ? DBPM_SOURCE.trackingShare : DBPM_SOURCE.share);
   return measured + Math.max(-DBPM_SOURCE.cap, Math.min(DBPM_SOURCE.cap, moved));
-}
-let dbpmPools: Map<string, { dbpm: number[]; ladder: number[] }> | null = null;
-function dbpmPoolsFor(position: string) {
-  if (!dbpmPools) {
-    const pools = new Map<string, { dbpm: number[]; ladder: number[] }>();
-    for (const raw of draftPool) {
-      const sp = ratingSpan(raw);
-      const real = realSpan(sp);
-      if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) continue;
-      const pos = functionalPosition(sp);
-      const pool = pools.get(pos) ?? { dbpm: [], ladder: [] };
-      pool.dbpm.push(real.dbpm);
-      pool.ladder.push(ladderPoints(pos, displayDefenseRaw(sp)));
-      pools.set(pos, pool);
-    }
-    for (const pool of pools.values()) {
-      pool.dbpm.sort((a, b) => a - b);
-      pool.ladder.sort((a, b) => a - b);
-    }
-    dbpmPools = pools;
-  }
-  return dbpmPools.get(position);
-}
-function withDbpmSource(span: PlayerSpan, boxLadder: number): number {
-  if (DBPM_SOURCE.share <= 0) return boxLadder;
-  const real = realSpan(span);
-  if (real?.dbpm == null || real.minutes < DBPM_SOURCE.minMinutes) return boxLadder;
-  if (!DBPM_SOURCE.everyWindow && realDefenseExcessDetail(span)?.hasTrackingCoverage) return boxLadder;
-  const pool = dbpmPoolsFor(functionalPosition(span));
-  if (!pool || pool.dbpm.length < 50) return boxLadder;
-  const below = pool.dbpm.filter((v) => v < real.dbpm!).length;
-  const same = pool.dbpm.filter((v) => v === real.dbpm).length;
-  const pct = (below + same / 2) / pool.dbpm.length;
-  const implied = pool.ladder[Math.min(pool.ladder.length - 1, Math.max(0, Math.round(pct * (pool.ladder.length - 1))))];
-  return boxLadder + (implied - boxLadder) * DBPM_SOURCE.share;
 }
 
 function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
@@ -902,7 +911,7 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   );
   const corroborationCeiling = UNCORROBORATED_CEILING + (100 - UNCORROBORATED_CEILING) * corroborationStrength;
   const boxLadder = ladderPoints(functionalPosition(span), displayDefenseRaw(span));
-  const ladder = withDbpm && DBPM_SOURCE.at === 'ladder' ? withDbpmSource(span, boxLadder) : boxLadder;
+  const ladder = boxLadder;
   const base = Math.min(ladder, corroborationCeiling);
   const credited = Math.min(
     recognitionCeiling(span, accoladeRate),
@@ -925,7 +934,9 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   // average-or-better defender is left alone, so it can't nudge a star over a tier threshold.
   const consensus = withoutConsensus < CONSENSUS_FLOOR_BASE ? consensusPositiveFloor(span) : 0;
   const measured = Math.max(0, Math.min(100, Math.max(withoutConsensus, consensus)));
-  const final = Math.round(withDbpm && DBPM_SOURCE.at === 'final' ? withDbpmOnFinal(span, measured) : measured);
+  // The DBPM source never reads under the user's own named floor (2026-11-12, Klay 2015-17: the
+  // tracking-era DBPM took his WOWY-backed 60 to 45).
+  const final = Math.round(withDbpm ? Math.max(namedFloor, withDbpmOnFinal(span, measured)) : measured);
   return { accoladeRate, boxLadder, ladder, base, credited, floors: { ...floors, consensus }, final };
 }
 
@@ -1236,6 +1247,33 @@ function modernRulesDefenseCut(span: PlayerSpan): number {
   return MODERN_RULES_DEFENSE.max * eraGap * lowSteals * heavy * unathletic;
 }
 
+/**
+ * 2026-11-13 (the user on Marc Gasol 2015-17 at 65 between 91 in 2012-14 and 83 in Toronto — "ten
+ * spadek nie powinien wynosić 25 punktów z perspektywy zwykłego fana"): defense is a stable skill,
+ * and the C box ladder swings 18 points on a two-point DRB% change. The window moves `share` of the
+ * way to the player's other windows, each weighed down by half every `halfLife` years between the
+ * windows' middles — replacing the one-season neighbour blend when on.
+ */
+const CAREER_DEFENSE = { share: Number(envVar('DT_CAREER_SHARE') ?? 0), halfLife: Number(envVar('DT_CAREER_HL') ?? 3), upOnly: envVar('DT_CAREER_UP') === '1' };
+const windowsByPlayer = new Map<string, PlayerSpan[]>();
+function careerDefenseAround(span: PlayerSpan): number | undefined {
+  const key = normalizePlayerName(span.playerName);
+  let list = windowsByPlayer.get(key);
+  if (!list) {
+    list = draftPool.filter((p) => normalizePlayerName(p.playerName) === key);
+    windowsByPlayer.set(key, list);
+  }
+  const mid = (label: string) => { const ys = spanEndYears(label); return (ys[0] + ys[ys.length - 1]) / 2; };
+  const at = mid(span.spanLabel);
+  let sum = 0, weight = 0;
+  for (const p of list) {
+    if (p.spanLabel === span.spanLabel) continue;
+    const w = 0.5 ** (Math.abs(mid(p.spanLabel) - at) / CAREER_DEFENSE.halfLife);
+    sum += ownWindowDefense(ratingSpan(p)) * w;
+    weight += w;
+  }
+  return weight > 0 ? sum / weight : undefined;
+}
 function ownWindowDefense(span: PlayerSpan): number {
   return Math.max(computeDefensiveTalentBase(span) + namedShiftFor(span).defense, neighbourAwareFloor(span), carriedAccoladeFloor(span));
 }
@@ -1243,16 +1281,28 @@ function ownWindowDefense(span: PlayerSpan): number {
 /** The D-TAL everything else reads: the base plus its share of a named TAL adjustment
  * (`namedShift.ts`), with the neighbouring-season corrections above. */
 const shiftedDefensiveTalentCache = new Map<string, number>();
+/** 2026-11-13 (the user: "wyrównanie obrony najpierw"): each position's D-TAL moves half way onto the
+ * pool's D-TAL-to-DBPM line (α·D + β fitted per position, 4,331 windows of 4,000+ minutes) — centers
+ * read under their DBPM (−3.9, −7.5 at the top). Real team DRtg judge 0.768 → 0.770 (full: 0.771),
+ * real SRS 0.8560 → 0.8567, game 0.8094 → 0.8080 (full 0.8046). `DTAL_POS_SHARE`, default 0.5. */
+const DTAL_POSITION_FIT: Record<string, readonly [number, number]> = { PG: [0.9555, 2.189], SG: [0.9705, -0.793], SF: [0.9166, 2.577], PF: [0.918, 3.337], C: [1.1123, -1.993] };
+const DTAL_POSITION_SHARE = Number(envVar('DTAL_POS_SHARE') ?? 0.5);
+function onPositionNeutralDefense(position: string, value: number): number {
+  const [a, b] = DTAL_POSITION_FIT[position] ?? [1, 0];
+  return value + DTAL_POSITION_SHARE * (a * value + b - value);
+}
 export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = shiftedDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const own = ownWindowDefense(span);
+  const career = CAREER_DEFENSE.share > 0 ? careerDefenseAround(span) : undefined;
   const neighbours = neighbourWindowsFor(span).map((n) => ownWindowDefense(ratingSpan(n)));
+  const smoothed = career === undefined ? blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE) : own + (CAREER_DEFENSE.upOnly ? Math.max(0, career - own) : career - own) * CAREER_DEFENSE.share;
   // 2026-10-10: the hustle defenders' bonus (`hustleDefenders.ts`) goes on last, after the floors
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
-  const blended = Math.max(0, Math.min(100, Math.round(blendWithNeighbours(own, neighbours, NEIGHBOUR_WINDOW_SHARE))));
+  const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, smoothed))));
   const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;

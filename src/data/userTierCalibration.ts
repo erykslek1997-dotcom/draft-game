@@ -108,7 +108,8 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Mark Price', '1988-90', 84, 'All-NBA'],
   ['Derrick Rose', '2010-12', 84, 'All-NBA'],
   ['Carmelo Anthony', '2012-14', 83, 'All-NBA'],
-  ['Jaylen Brown', '2020-22', 83, 'All-NBA'],
+  // 2026-11-13, the user's sub-tier review ("Brown nie"): All-star, not All-NBA.
+  ['Jaylen Brown', '2020-22', 83, 'All-star'],
   ['Eddie Jones', '1997-99', 83, 'All-NBA'],
   ['Kyle Lowry', '2016-18', 83, 'All-NBA'],
   ['Kevin McHale', '1986-88', 83, 'All-NBA'],
@@ -121,7 +122,8 @@ export const USER_TIER_CALIBRATION: ReadonlyArray<readonly [name: string, spanLa
   ['Manu Ginóbili', '2004-06', 80, 'All-NBA'],
   ['Tyrese Haliburton', '2022-24', 80, 'All-NBA'],
   ['Pascal Siakam', '2024-26', 80, 'All-NBA'],
-  ['Dikembe Mutombo', '1996-98', 79, 'All-NBA'],
+  // 2026-11-13, the user: "Mutombo trochę niżej niż Gobert" (Gobert 84) — All-star, 83.
+  ['Dikembe Mutombo', '1996-98', 79, 'All-star'],
   ['Marc Gasol', '2015-17', 79, 'All-NBA'],
   ['Al Horford', '2014-16', 79, 'All-NBA'],
   // All-star
@@ -245,7 +247,46 @@ export const USER_TIER_REVIEW_2: ReadonlyArray<readonly [name: string, spanLabel
   ['Domantas Sabonis', '2022-24', 92, 'Starter'],
   ['Zach LaVine', '2020-22', 88, 'Starter'],
   ['Ron Harper', '1988-90', 81, 'Starter'],
+  // 2026-11-12, the user's TAL Board review: "Hardena bym przerzucił do MVP", "Dwyane Wade też do MVP",
+  // "Kawhi też". (Eddie Jones to All-star was a slip — "Eddie Jones źle napisałem … wróć go".)
+  ['James Harden', '2017-19', 122, 'MVP'],
+  ['Dwyane Wade', '2008-10', 117, 'MVP'],
+  ['Kawhi Leonard', '2015-17', 132, 'MVP'],
+  // 2026-11-13, the user: "Russella z Wiltem bym zrównał … oboje wysokie All NBA".
+  ['Wilt Chamberlain', '1966-68', 111, 'All-NBA'],
 ];
+
+/**
+ * 2026-11-13, the user's review ("Manu za wysoko … koniec końców to był 6th man", Gobert "w ataku to
+ * tylko lob threat", "Ben Wallace to samo" — "wszyscy mogą być All NBA dolny próg"): the highest TAL
+ * any window of the player shows, on the card's label scale. His other windows climbed past his
+ * reviewed one to the top of the band on raw talent alone.
+ */
+export const USER_TAL_CEILING: Readonly<Record<string, number>> = {
+  'Manu Ginóbili': 84,
+  'Rudy Gobert': 84,
+  'Ben Wallace': 84,
+  // 2026-11-13, the user: "Kirilenko na 99% przeszacowany … 46% fg jako PF, na niskim wolumenie".
+  'Andrei Kirilenko': 84,
+};
+
+/**
+ * 2026-11-13, the user: "Magica i Birda bym zrównał", "KD i Kobe bym zrównał", and Russell beside Wilt
+ * ("oboje wysokie All NBA"): the TAL the player's reviewed window reads; his other windows keep their
+ * distance to it. Wins over the placement inside the band.
+ */
+export const USER_TAL_TARGET: Readonly<Record<string, number>> = {
+  'Magic Johnson': 97,
+  'Larry Bird': 97,
+  'Kevin Durant': 97,
+  'Kobe Bryant': 97,
+  'Bill Russell': 89,
+  'Wilt Chamberlain': 89,
+  // 2026-11-13, the user's sub-tier review: McHale (one All-NBA, First Team 1987) reads Third Team,
+  // not above Moses; Mutombo a point under Gobert's 84.
+  'Kevin McHale': 85,
+  'Dikembe Mutombo': 83,
+};
 
 /**
  * Single windows the user tiered on their own, beyond the one reviewed window per player. The

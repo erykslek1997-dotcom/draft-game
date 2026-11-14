@@ -35,6 +35,8 @@ import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from 
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
 import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
 import { envVar } from './env';
+/** See `tierCalibration.ts` ENGINE_BLOCKS_OFF (2026-11-12, on): no grade ceiling, no small-role cap. */
+const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
 
 export { computeDefensiveImpact };
 // D-TAL lives in its own file now (it has its own calibration — see defensiveTalent.ts), but
@@ -1570,6 +1572,37 @@ function talentScaled(span: PlayerSpan, usageScale: number, includeEliteDefenseB
   return rawSum * flat + offenseTerm * (correction - flat);
 }
 
+/** Diagnostic (2026-11-12, the user on Cade Cunningham): the terms `talentScaled` sums, at the usage
+ * scale `computeTalent` uses, before the soft cap and the later lifts and caps. */
+export function talentTermsForDiagnosis(rawSpan: PlayerSpan): Record<string, number> {
+  const span = ratingSpan(rawSpan);
+  const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(talentScaled(span, 1.0)))));
+  const usageScale = usageOffenseScaleTapered(span, baseTal);
+  const { offense, defense } = rawComponents(span, true, usageScale);
+  const { normalizedOffense, normalizedDefense } = normalizedComponents(span, offense, defense);
+  const gateDefense = synergyGateDefense(span, normalizedDefense);
+  return {
+    usageScale,
+    offense,
+    defense,
+    'raw×2.15': (offense * 0.6 + defense * 0.4) * 2.15,
+    synergy: twoWaySynergyBonus(span, normalizedOffense, gateDefense),
+    usagePenalty: -highUsageLowPlaymakingPenalty(span, gateDefense),
+    extremeUsagePenalty: -extremeUsageRatioPenalty(span),
+    hackLiability: -hackLiabilityPenalty(span),
+    hiddenValue: hiddenValueBonus(span),
+    portability: portabilityBonus(span),
+    roleScalability: roleScalabilityBonus(span),
+    playoff: playoffTalentTerm(span),
+    selfCreation: selfCreationTalentBonus(span),
+    shootingAnomaly: shootingAnomalyBonus(span),
+    eliteDefense: eliteDefenseTalBonus(span),
+    scaled: talentScaled(span, usageScale),
+    dtalBridge: dtalBridgeCorrection(span),
+    final: computeTalent(span),
+  };
+}
+
 /**
  * 2026-08-12, G_BLACK_BOX: every named additive/subtractive term in `talentScaled` above, exposed
  * as labeled numbers rather than folded into one opaque total — so `evidenceReport.ts` can build a
@@ -2026,7 +2059,7 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
   const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const capped = Math.max(0, Math.round(applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  const capped = Math.max(0, Math.round(ENGINE_BLOCKS_OFF ? finalTal : applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
   // A smaller role next to a star with efficiency held reads toward the player's own earlier
   // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
   // recursion is one level deep.
@@ -2037,7 +2070,7 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + defenseCreditLift(span, reduced);
   const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span) - oldSchoolPointPenalty(span, credited);
   const resumed = lifted + roleResumeAdjustment(span, lifted);
-  const result = Math.max(0, Math.min(100, Math.round(Math.min(resumed, smallRoleCap(span)))));
+  const result = Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : Math.min(resumed, smallRoleCap(span)))));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2333,6 +2366,26 @@ const DEFENSE_TAL_SCALE_BY_POSITION: Record<Position, number> = {
 const offensiveTalentCache = new Map<string, number>();
 
 /** O-TAL before any named adjustment (see `computeDefensiveTalentBase`). */
+/** 2026-11-13 (the user: "Allen, Mullin i Drexler w tym gronie to gruba przesada", Kevin Johnson's
+ * and Brunson's offense too low; "czyli pozycja SG jest liczona dość łaskawie"): O-TAL against real
+ * OBPM (4,355 windows, 4,000+ minutes) runs position-biased — the per-position scales above anchor
+ * each position's best-ever window at ~100, so among OBPM 4+ shooting guards read +6.8 over the
+ * pool's line and point guards −3.7 (SF +1.9, PF +2.3, C −0.7). Each position's O-TAL moves
+ * `share` of the way onto the pool's line (α·O + β fitted per position). Measured (real SRS /
+ * game): off 0.8563 / 0.8116, half 0.8560 / 0.8094, full 0.8560 / 0.8018 — the game reads the
+ * guards' shooting, and cutting the shooting premiums (gravity, three-level) costs it more (full
+ * correction with them halved 0.7904, off 0.7834), so they stay. `OTAL_POS_SHARE`, default 0.5. */
+const OTAL_POSITION_FIT: Record<string, readonly [number, number]> = { PG: [1.0378, 0.996], SG: [0.906, 2.153], SF: [0.9302, 4.588], PF: [0.939, 3.935], C: [1.1362, -9.004] };
+const OTAL_POSITION_SHARE = Number(envVar('OTAL_POS_SHARE') ?? 0.5);
+/** 2026-11-13 (the user on Kirilenko vs George: "niski wolumen … PG wysoki wolumen, więcej
+ * samokreacji"; Kobe "trzyma wysoką podłogę ofensywy"): TAL's self-creation bonus reaches O-TAL too,
+ * ×1.3 (O-TAL points per TAL point). Real SRS 0.8560 → 0.8565, game 0.8094 → 0.8087 (×2.6: 0.8559 /
+ * 0.8048). `OTAL_SELF=0` turns it off. */
+const OTAL_SELF_CREATION = Number(envVar('OTAL_SELF') ?? 1.3);
+function onPositionNeutralOffense(position: string, value: number): number {
+  const [a, b] = OTAL_POSITION_FIT[position] ?? [1, 0];
+  return value + OTAL_POSITION_SHARE * (a * value + b - value);
+}
 export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = offensiveTalentCache.get(span.id);
@@ -2341,7 +2394,7 @@ export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalentBase))));
   offensiveTalentCache.set(span.id, result);
   return result;
@@ -2371,7 +2424,7 @@ export function computeUncappedOffensiveTalentBase(rawSpan: PlayerSpan): number 
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = offense * scale + intercept + playoffImpactForSpan(span).offense;
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalentBase)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;

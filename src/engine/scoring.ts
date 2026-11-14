@@ -1,3 +1,5 @@
+import { spanEndYears } from './era';
+import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
@@ -982,6 +984,19 @@ const WEAK_OFFENSIVE_NON_CENTER_OTAL_CEILING = 55;
  * the two can never drift apart. */
 /** Share of the offensive-glass points the Offense score keeps (attack audit: negative in the game's mechanics, ~0 in real fives). */
 const OFFENSIVE_GLASS_SHARE = 0.5;
+/** 2026-11-13 (Nash's ceiling: beside Kobe, Dirk and Shaq, Nash, Lillard and Jrue all read Offense 91
+ * — the raw blend sat at its 100 cap): the raw offense blend's top before the scale, 110. Game judge
+ * 0.8043 → 0.8052, real SRS unchanged (130 reads the same). */
+const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
+/**
+ * 2026-11-13, the Offense add-ons taken off one at a time against real teams (`scripts/_offAudit.ts`,
+ * 600 team-seasons): the elite-engine floor (72 raw for any five with a star scorer) was the one that
+ * hurt — it lifted every weak real team with one star onto the same number. Off: team Offense vs real
+ * ORtg 0.657 → 0.730, Overall vs real SRS 0.8577 → 0.8589, game 0.8050 → 0.8059; drafted rosters sit
+ * far above 72 and do not move (Nash beside four defenders reads the same). `ENGINE_FLOOR=1` brings it
+ * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
+ */
+const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -991,11 +1006,11 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const blended = Math.max(0, Math.min(100, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
+  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
-  const raw = Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team));
+  const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
-  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE)));
+  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
 }
 
@@ -1041,9 +1056,34 @@ export function offenseScore(team: Team): number {
 
 /** The team's minutes-weighted D-TAL on the Defense score's own 0-100 scale, before the
  * huntability penalty, cohesion bonus and knee — the defense mirror of the O-TAL bar. */
+/**
+ * 2026-11-14 (the user: "mocny obrońca na PG boostuje za dużo… najbardziej wartościowi dla obrony są rim
+ * protectors"): real five-man units (`scripts/_fives.ts`, 668 units of 200+ minutes since 2007-08, real
+ * DRtg against the league) put very different weights on a D-TAL point by position — a center's is worth
+ * about 1.6 of the average, a point guard's 0.58 (stable at 100 / 200 / 400 minutes). Fives with an elite
+ * center defended 1.6-1.8 points better than their mean D-TAL said, fives with an elite guard and no such
+ * center about 1 worse. Each player's D-TAL counts around 50 by his position's weight, `DEF_POS_W` of the
+ * way from 1.
+ */
+/** By the window's era, on the point guard – center axis only (the other positions' weights are noise):
+ * real team-seasons put a point guard's D-TAL point at 1.19 of the average before 1995 and 0.75 since
+ * 2008, a center's at 0.88 and 1.20 (the user: before the modern game one on-ball defender mattered
+ * more; with switching it is the rim). Linear through 1 around 2001. */
+const DEFENSE_ERA_WEIGHT = { PG: [1.19, 0.75], C: [0.88, 1.2] } as Record<string, [number, number]>;
+const DEFENSE_POSITION_SHARE = Number(envVar('DEF_POS_W') ?? 0);
+const positionWeightedDefense = (p: PlayerSpan) => {
+  const d = computeDefensiveTalent(p);
+  const w = DEFENSE_ERA_WEIGHT[p.primaryPosition];
+  if (!w || DEFENSE_POSITION_SHARE === 0) return d;
+  const ys = spanEndYears(p.spanLabel);
+  const year = ys.length ? ys[Math.floor(ys.length / 2)] : 2001;
+  // `DEF_POS_ERA=0`: the modern weights in every era (the user: the rim protector matters most in both).
+  const t = envVar('DEF_POS_ERA') === '0' ? 1 : Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
+  return 50 + (1 + DEFENSE_POSITION_SHARE * (w[0] + (w[1] - w[0]) * t - 1)) * (d - 50);
+};
 export function teamDefensiveTalentScore(team: Team): number {
   return rescaleToFullRange(
-    benchBoostedWeightedAverage(team, (p) => computeDefensiveTalent(p), true, BENCH_WEIGHT_DEFENSE),
+    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE),
     DEFENSE_SCORE_ANCHORS,
   );
 }
@@ -1052,6 +1092,10 @@ export function teamDefensiveTalentScore(team: Team): number {
  * Defense run. `DEF_OFF=hunt,cohesion,glass,knee` turns parts off for a measurement. */
 const DEF_OFF = new Set((envVar('DEF_OFF') ?? '').split(',').filter(Boolean));
 const DEF_PARTS = { hunt: !DEF_OFF.has('hunt'), cohesion: !DEF_OFF.has('cohesion'), glass: !DEF_OFF.has('glass'), knee: !DEF_OFF.has('knee') };
+/** 2026-11-13, measurement (the user's call pending): the structure bonus's share of Defense. Real SRS /
+ * game / real team DRtg at 1: 0.8577 / 0.8050 / 0.775; 0.5: 0.8582 / 0.8063 / 0.778; 0: 0.8587 / 0.8090 / 0.780. */
+// 2026-11-14, the user ("to co poprawia wprowadzamy"): off.
+const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 0);
 export function defenseScore(team: Team): number {
   const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
@@ -1064,10 +1108,10 @@ export function defenseScore(team: Team): number {
   const adjusted =
     linearScore -
     (DEF_PARTS.hunt ? defensiveHuntability(team).penalty : 0) +
-    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus : 0);
+    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0);
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
-  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0))));
+  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'))));
 }
 
 /**
@@ -1797,8 +1841,9 @@ const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
 // 0.04 of the composite moved from Offense to Defense: that miss 0.63 -> 0.23 (offense-leaning
 // -0.05 -> 0.02), Overall vs real SRS r 0.7725 -> 0.7756, vs the bench leagues' mechanics margin R²
 // 0.559 -> 0.581 (0.06 gave 0.7761 / 0.580). Was .17 / .17.
-const FIT_OFFENSE_WEIGHT = 0.13 / 0.52;
-const FIT_DEFENSE_WEIGHT = 0.21 / 0.52;
+const OD_SHIFT = Number(envVar('OD_SHIFT') ?? 0);
+const FIT_OFFENSE_WEIGHT = (0.13 + OD_SHIFT) / 0.52;
+const FIT_DEFENSE_WEIGHT = (0.21 - OD_SHIFT) / 0.52;
 
 /** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
  * renormalising the rest of its half. Unset, nothing changes. */
