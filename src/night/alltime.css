@@ -1586,5 +1586,16 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .m2-acct { margin-top: 24px; }
 
 /* 2026-11-13: the board's rounds in one scrolling window (about four rounds tall), not two pages. */
-.nt .bg-rows { max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
+.nt .bg-rows { position: relative; min-width: 100%; width: max-content; overflow-x: hidden; max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
 @media (max-width: 600px) { .nt .bg-rows { max-height: 360px; } }
+
+/* 2026-11-14 (the phone: "board by można ścisnąć"): the position rides the face's corner, cells shrink,
+   a round nobody has reached yet is a short strip of numbers. */
+@media (max-width: 600px) {
+  .nt .bg-cell { height: auto; min-height: 30px; }
+  .nt .bg-cell.filled, .nt .bg-cell.clock { height: 50px; position: relative; }
+  .nt .bg-cell.filled small { position: absolute; top: 2px; left: 2px; font: 700 10px var(--cond); background: var(--cink); color: var(--card); padding: 0 3px; border-radius: 2px; letter-spacing: 0.04em; }
+  .nt .bg-cell.filled b { font-size: 12px; }
+  .nt .bg-cell.clock small { font-size: 11px; }
+  .nt .bg-cell.clock b { font-size: 14px; }
+}
