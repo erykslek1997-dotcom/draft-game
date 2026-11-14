@@ -1055,9 +1055,24 @@ export function offenseScore(team: Team): number {
 
 /** The team's minutes-weighted D-TAL on the Defense score's own 0-100 scale, before the
  * huntability penalty, cohesion bonus and knee — the defense mirror of the O-TAL bar. */
+/**
+ * 2026-11-14 (the user: "mocny obrońca na PG boostuje za dużo… najbardziej wartościowi dla obrony są rim
+ * protectors"): real five-man units (`scripts/_fives.ts`, 668 units of 200+ minutes since 2007-08, real
+ * DRtg against the league) put very different weights on a D-TAL point by position — a center's is worth
+ * about 1.6 of the average, a point guard's 0.58 (stable at 100 / 200 / 400 minutes). Fives with an elite
+ * center defended 1.6-1.8 points better than their mean D-TAL said, fives with an elite guard and no such
+ * center about 1 worse. Each player's D-TAL counts around 50 by his position's weight, `DEF_POS_W` of the
+ * way from 1.
+ */
+const DEFENSE_POSITION_WEIGHT: Record<string, number> = { PG: 0.58, SG: 0.95, SF: 0.8, PF: 1.05, C: 1.6 };
+const DEFENSE_POSITION_SHARE = Number(envVar('DEF_POS_W') ?? 0);
+const positionWeightedDefense = (p: PlayerSpan) => {
+  const d = computeDefensiveTalent(p);
+  return 50 + (1 + DEFENSE_POSITION_SHARE * ((DEFENSE_POSITION_WEIGHT[p.primaryPosition] ?? 1) - 1)) * (d - 50);
+};
 export function teamDefensiveTalentScore(team: Team): number {
   return rescaleToFullRange(
-    benchBoostedWeightedAverage(team, (p) => computeDefensiveTalent(p), true, BENCH_WEIGHT_DEFENSE),
+    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE),
     DEFENSE_SCORE_ANCHORS,
   );
 }
