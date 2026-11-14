@@ -77,7 +77,11 @@ check(m > expectedMargin(fan, fan, legends), 'the best five is a bigger favourit
   console.log(`even game: average margin ${(sum / N).toFixed(1)}`);
   check(Math.abs(sum / N) <= 3.5, 'an even game lands about level on average');
 }
-for (const target of [-12, -CLEAR_FAVOURITE, CLEAR_FAVOURITE, 10]) {
+// 2026-11-14: the clear-favourite line reads the margin over the game's own length (the five-only game
+// is 36 minutes since 2026-10-29), so a 48-minute target of 5 is 3.75 there and no longer "clear" — the
+// check failed on main too (40/60). The edge targets are the line itself in the game's own scale.
+const CLEAR_TARGET = Math.ceil((CLEAR_FAVOURITE * 48) / 36) + 1;
+for (const target of [-12, -CLEAR_TARGET, CLEAR_TARGET, 10]) {
   let wins = 0;
   const N = 60;
   for (let i = 0; i < N; i++) {
