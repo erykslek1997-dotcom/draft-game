@@ -783,3 +783,78 @@ export function resolveAiPickIfNeeded(state: DraftState): DraftState | null {
   if (team.isHuman) return null;
   return resolveAutomatedPick(state);
 }
+
+/** An All-Time room's board (2026-11-13): the room's seed, your team as "the human". */
+export function createMultiplayerDraft(seed: number, mySlot: number, gms?: Map<number, string>): DraftState {
+  const base = createDraft(false, players, undefined, seed);
+  return { ...base, teams: base.teams.map((t, i) => ({ ...t, isHuman: i === mySlot, ...(i !== mySlot && gms?.get(i) ? { gm: gms.get(i) } : {}) })) };
+}
+
+/**
+ * A pick from an All-Time room's log. The CPU's picks are made on one screen (its plan memory is
+ * that screen's own), so every screen just lays down what the log says. A pick this board can't
+ * take legally still goes in if the player is free (screens may disagree on a cap lookahead edge);
+ * a player already gone becomes the cheapest one left — the same on every screen.
+ */
+export function applyServerPick(state: DraftState, playerId: string): DraftState {
+  if (state.complete) return state;
+  const legal = makePick(state, playerId);
+  if (legal !== state) return legal;
+  const free = playersById.get(playerId);
+  const player = free && !state.draftedIds.has(playerId) ? free : [...availablePlayers(state)].sort((a, b) => a.fga - b.fga || a.id.localeCompare(b.id))[0];
+  if (!player) return state;
+  const teamIdx = currentTeamIndex(state);
+  const team = state.teams[teamIdx];
+  const draftedIds = new Set(state.draftedIds);
+  for (const p of spansByNormalizedName.get(normalizePlayerName(player.playerName)) ?? [player]) draftedIds.add(p.id);
+  const teams = state.teams.map((t, i) => (i === teamIdx ? { ...t, roster: [...t.roster, player] } : t));
+  const pickNumber = state.round * TEAM_COUNT + state.pickInRound + 1;
+  return advance({ ...state, teams, draftedIds, history: [...state.history, { pickNumber, teamId: team.id, playerId: player.id }] });
+}
+
+/** The CPU's pick for whoever is on the clock, human or not (a player out of time, or gone). */
+export function resolveAutoPick(state: DraftState): DraftState | null {
+  if (state.complete) return null;
+  return resolveAutomatedPick(state);
+}
+
+/** A swap of a drafted player's years from an All-Time room's log (2026-11-13: years change live). */
+export interface ServerSwap {
+  /** Applied once this many picks are in (before the next one). */
+  atPick: number;
+  slot: number;
+  playerName: string;
+  spanId: string;
+}
+
+/**
+ * A team swaps one drafted player's years — only to years no dearer than those drafted, and only
+ * if the roster still fits under the cap (the solo game's rule). Anything else changes nothing,
+ * the same on every screen.
+ */
+export function applySwap(state: DraftState, swap: ServerSwap): DraftState {
+  const team = state.teams[swap.slot];
+  if (!team) return state;
+  const key = normalizePlayerName(swap.playerName);
+  const at = team.roster.findIndex((p) => normalizePlayerName(p.playerName) === key);
+  if (at < 0) return state;
+  const next = (spansByNormalizedName.get(key) ?? []).find((p) => p.id === swap.spanId);
+  const drafted = state.history.find((h) => h.teamId === team.id && normalizePlayerName(playersById.get(h.playerId)?.playerName ?? '') === key);
+  const draftedFga = drafted ? (playersById.get(drafted.playerId)?.fga ?? 0) : team.roster[at].fga;
+  if (!next || next.fga > draftedFga) return state;
+  const roster = team.roster.map((p, i) => (i === at ? next : p));
+  if (totalFga(roster.map((p) => p.fga)) > draftCapLimit(state)) return state;
+  return { ...state, teams: state.teams.map((t, i) => (i === swap.slot ? { ...t, roster } : t)) };
+}
+
+/** The room's whole log on a fresh board: the swaps go in where they were made. */
+export function replayRoom(base: DraftState, picks: string[], swaps: ServerSwap[]): DraftState {
+  let s = base;
+  const byPick = [...swaps].sort((a, b) => a.atPick - b.atPick);
+  let k = 0;
+  for (let i = 0; i <= picks.length; i++) {
+    while (k < byPick.length && byPick[k].atPick === i) s = applySwap(s, byPick[k++]);
+    if (i < picks.length && !s.complete) s = applyServerPick(s, picks[i]);
+  }
+  return s;
+}

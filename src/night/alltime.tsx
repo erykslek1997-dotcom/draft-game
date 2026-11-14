@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlayerSpan, Position } from '../data/schema';
 import type { Team } from '../engine/types';
 import { teamLabel } from '../engine/teamNames';
@@ -14,10 +14,9 @@ import { CapI, H3, NFace, SLOTS, Slot, TagChips, fmtCaps, gradeTone, shortName, 
 
 /* ------------------------------ the board ------------------------------ */
 
-const WINDOWS: Array<[number, number]> = [
-  [0, 4],
-  [4, 9],
-];
+// 2026-11-13, the playtest ("płynny scroll zamiast przełącznika 1–4 / 5–9"): every round in one
+// window that scrolls, kept on the round being drafted.
+const WINDOWS: Array<[number, number]> = [[0, 9]];
 
 /** The draft board (mockup `#board`): the sixteen teams across in draft order, four rounds at a
  * time, a face in every pick made, the pick on the clock in red, your column marked. */
@@ -53,6 +52,13 @@ export function BoardGrid({
   const [from, to] = windows[w];
   const other = windows.length > 1 ? windows[1 - w] : null;
   const cols = { '--cols': order.length } as CSSProperties;
+  const rowsRef = useRef<HTMLDivElement>(null);
+  // The round on the clock slides into view (one round above it stays in sight).
+  useEffect(() => {
+    const box = rowsRef.current;
+    const row = box?.querySelector<HTMLElement>(`[data-r="${Math.max(0, round - 1)}"]`);
+    if (box && row) box.scrollTo({ top: row.offsetTop - box.offsetTop, behavior: 'smooth' });
+  }, [round]);
   return (
     <section className="bgrid">
       <h3>
@@ -87,8 +93,9 @@ export function BoardGrid({
             </span>
           ))}
         </div>
+        <div className="bg-rows" ref={rowsRef}>
         {Array.from({ length: Math.min(to, rounds) - from }, (_, k) => from + k).map((r) => (
-          <div key={r} className="bg-row" style={cols}>
+          <div key={r} className="bg-row" style={cols} data-r={r}>
             <span className="bg-rl">
               R{r + 1}
               <i>{r % 2 ? '←' : '→'}</i>
@@ -119,6 +126,7 @@ export function BoardGrid({
             })}
           </div>
         ))}
+        </div>
       </div>
     </section>
   );

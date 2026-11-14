@@ -312,8 +312,15 @@ alter table public.mp_rooms add column if not exists teams int not null default 
 alter table public.mp_rooms add column if not exists cap numeric not null default 70 check (cap between 40 and 120);
 drop function if exists public.mp_create(bigint, text, int, int, int);
 drop function if exists public.mp_create(bigint, text, int, int, int, int);
+drop function if exists public.mp_create(bigint, text, int, int, int, int, numeric);
+-- 2026-11-13: the All-Time Draft online (16 teams, 9 rounds, up to 8 people).
+alter table public.mp_rooms add column if not exists rounds int not null default 5 check (rounds in (5, 9));
+alter table public.mp_picks drop constraint if exists mp_picks_pick_no_check;
+alter table public.mp_picks add constraint mp_picks_pick_no_check check (pick_no between 1 and 144);
+-- A player's final roster (spans) and rotation after the draft, for the shared season.
+alter table public.mp_members add column if not exists final jsonb check (final is null or octet_length(final::text) < 8000);
 
-create or replace function public.mp_create(p_seed bigint, p_nick text, p_level int, p_max int default 4, p_clock int default 120, p_teams int default 16, p_cap numeric default 70) returns text
+create or replace function public.mp_create(p_seed bigint, p_nick text, p_level int, p_max int default 4, p_clock int default 120, p_teams int default 16, p_cap numeric default 70, p_rounds int default 5) returns text
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -329,8 +336,9 @@ begin
   for i in 1..20 loop
     v_code := (select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + floor(random() * 32)::int, 1), '') from generate_series(1, 5));
     begin
-      insert into mp_rooms (code, host, seed, max_players, clock_s, teams, cap)
-      values (v_code, uid, p_seed, case when p_teams = 2 then 2 else p_max end, p_clock, case when p_teams = 2 then 2 else 16 end, p_cap) returning id into v_room;
+      insert into mp_rooms (code, host, seed, max_players, clock_s, teams, cap, rounds)
+      values (v_code, uid, p_seed, case when p_teams = 2 then 2 else least(p_max, 8) end, p_clock, case when p_teams = 2 then 2 else 16 end, p_cap,
+              case when p_rounds = 9 and p_teams = 16 then 9 else 5 end) returning id into v_room;
       exit;
     exception when unique_violation then v_room := null;
     end;
@@ -409,11 +417,11 @@ declare
   v_owner mp_members;
   v_since timestamptz;
 begin
-  select * into r from mp_rooms where id = p_room;
+  select * into r from mp_rooms where id = p_room for update;
   if r.id is null or r.status <> 'draft' then return false; end if;
   if not exists (select 1 from mp_members where room_id = p_room and user_id = uid) then raise exception 'not in this room' using errcode = 'P0001'; end if;
   select count(*), max(made_at) into v_done, v_since from mp_picks where room_id = p_room;
-  if p_pick <> v_done + 1 or p_pick > r.teams * 5 then return false; end if;
+  if p_pick <> v_done + 1 or p_pick > r.teams * r.rounds then return false; end if;
   -- The snake: rounds alternate direction.
   v_slot := case when ((p_pick - 1) / r.teams) % 2 = 0 then (p_pick - 1) % r.teams else r.teams - 1 - (p_pick - 1) % r.teams end;
   select * into v_owner from mp_members where room_id = p_room and slot = v_slot;
@@ -425,7 +433,7 @@ begin
   insert into mp_picks (room_id, pick_no, player_id, by_user) values (p_room, p_pick, p_player, uid)
   on conflict do nothing;
   if not found then return false; end if;
-  if p_pick = r.teams * 5 then update mp_rooms set status = 'done' where id = p_room; end if;
+  if p_pick = r.teams * r.rounds then update mp_rooms set status = 'done' where id = p_room; end if;
   return true;
 end $$;
 
@@ -449,7 +457,58 @@ end $$;
 revoke all on function public.mp_tourney(uuid, int) from public, anon;
 grant execute on function public.mp_tourney(uuid, int) to authenticated;
 
-revoke all on function public.mp_create(bigint, text, int, int, int, int, numeric), public.mp_join(text, text, int), public.mp_leave(uuid),
+revoke all on function public.mp_create(bigint, text, int, int, int, int, numeric, int), public.mp_join(text, text, int), public.mp_leave(uuid),
   public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid), public.mp_live_players() from public, anon;
-grant execute on function public.mp_create(bigint, text, int, int, int, int, numeric), public.mp_join(text, text, int), public.mp_leave(uuid),
+grant execute on function public.mp_create(bigint, text, int, int, int, int, numeric, int), public.mp_join(text, text, int), public.mp_leave(uuid),
   public.mp_start(uuid), public.mp_pick(uuid, int, text), public.mp_ping(uuid) to authenticated;
+
+-- 2026-11-13: your final roster and rotation after an All-Time room's draft (everyone's season
+-- needs everyone's five). Only your own row, only once the draft is over.
+create or replace function public.mp_final(p_room uuid, p_final jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if octet_length(p_final::text) >= 8000 then raise exception 'too big' using errcode = 'P0001'; end if;
+  update mp_members m set final = p_final, last_seen = now()
+  from mp_rooms r
+  where m.room_id = p_room and m.user_id = auth.uid() and r.id = p_room and r.status = 'done';
+end $$;
+revoke all on function public.mp_final(uuid, jsonb) from public, anon;
+grant execute on function public.mp_final(uuid, jsonb) to authenticated;
+
+-- 2026-11-13: years changed live in an All-Time room. A swap is logged with the number of picks
+-- in when it was made; every screen replays it at that point, so the boards stay the same.
+create table if not exists public.mp_swaps (
+  id bigserial primary key,
+  room_id uuid not null references public.mp_rooms (id) on delete cascade,
+  at_pick int not null check (at_pick between 0 and 144),
+  slot int not null check (slot between 0 and 15),
+  player_name text not null check (char_length(player_name) <= 80),
+  span_id text not null check (char_length(span_id) <= 80),
+  made_at timestamptz not null default now()
+);
+create index if not exists mp_swaps_room on public.mp_swaps (room_id, id);
+alter table public.mp_swaps enable row level security;
+drop policy if exists "members read swaps" on public.mp_swaps;
+create policy "members read swaps" on public.mp_swaps for select using (public.mp_is_member(room_id));
+do $$ begin
+  alter publication supabase_realtime add table public.mp_swaps;
+exception when duplicate_object then null; end $$;
+
+create or replace function public.mp_swap(p_room uuid, p_at int, p_player text, p_span text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_slot int;
+begin
+  select slot into v_slot from mp_members where room_id = p_room and user_id = auth.uid();
+  if v_slot is null then return false; end if;
+  if not exists (select 1 from mp_rooms where id = p_room and status = 'draft') then return false; end if;
+  perform rate_check('swap', 60, interval '10 minutes');
+  -- Logged at the board as it stands now (2026-11-13: no refusals to retry): a pick that slipped
+  -- in first just means the swap goes in after it. Every screen checks it against the cap anyway.
+  perform 1 from mp_rooms where id = p_room for update;
+  insert into mp_swaps (room_id, at_pick, slot, player_name, span_id)
+  values (p_room, (select count(*) from mp_picks where room_id = p_room), v_slot, p_player, p_span);
+  return true;
+end $$;
+revoke all on function public.mp_swap(uuid, int, text, text) from public, anon;
+grant execute on function public.mp_swap(uuid, int, text, text) to authenticated;

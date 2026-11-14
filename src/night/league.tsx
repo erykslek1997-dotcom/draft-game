@@ -10,7 +10,7 @@ import { reducedMotion } from '../settings';
 
 /** How long the drum holds on your ball before the result comes in, ms. */
 const LANDED_HOLD_MS = 2100;
-import { Actions, Btn, H3, Kv, Mast, NightGame, Prompt, Tally, fmtCaps, type NavLinks } from './frame';
+import { Actions, Btn, H3, Kv, Mast, NightGame, PhoneDock, Prompt, Tally, fmtCaps, type NavLinks } from './frame';
 
 /** League team marks and the lottery: light pieces (no player data), so the menu's early lottery
  * can show them before the engine loads. */
@@ -226,34 +226,29 @@ export function NightLottery({
           </section>
         </div>
       )}
-      {done ? (
-        onStudy ? (
-          <div className="btn2 phone-only">
-            <Btn kind="line" onClick={onStudy}>
-              Study the board
-            </Btn>
-            <Btn onClick={onDone}>Start the draft</Btn>
-          </div>
-        ) : (
-          <Btn className="phone-only" onClick={onDone}>
-            Start the draft
-          </Btn>
-        )
-      ) : !started ? (
-        <Btn
-          className="phone-only"
-          onClick={() => {
-            setStarted(true);
-            drumRef.current?.start();
-          }}
-        >
-          Draw the lottery
-        </Btn>
-      ) : (
-        <Btn kind="line" className="phone-only" onClick={() => drumRef.current?.finish()}>
-          Skip
-        </Btn>
-      )}
+      {/* The phone's bottom bar (UI audit 2026-11-13): the lottery's one action under the thumb. */}
+      <PhoneDock
+        tabs={
+          done
+            ? [
+                ...(onStudy ? [{ label: 'Study the board', onClick: onStudy }] : [{ label: 'Menu', onClick: () => links.onMenu?.() }]),
+                { label: '▶ Start the draft', go: true, onClick: onDone },
+              ]
+            : !started
+              ? [
+                  { label: 'Menu', onClick: () => links.onMenu?.() },
+                  {
+                    label: '▶ Draw the lottery',
+                    go: true,
+                    onClick: () => {
+                      setStarted(true);
+                      drumRef.current?.start();
+                    },
+                  },
+                ]
+              : [{ label: 'Skip', onClick: () => drumRef.current?.finish() }]
+        }
+      />
     </NightGame>
   );
 }

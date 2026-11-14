@@ -360,12 +360,15 @@ Przełączniki: `ABL=<składniki fitu>` (scripts/_ablate.ts), `SC_DROP=rotation`
 miejsce na elastyczność i nowe opcje gry. Tydzień 1 zaczął się 2026-10-22, więc tydzień 12 to ok.
 7–13 stycznia 2027.
 
+**2026-11-13, Eryk: silnik (TAL, AI, symulacja) kalibrujemy po trochu w każdym tygodniu** — nie blokuje
+kolejnych tygodni; ważne, żeby pozostałe elementy planu przechodziły zgodnie z rozpiską.
+
 | Tydzień | Zakres |
 |---|---|
 | 1 | ✅ zakończony (wydanie nocne, telefon) |
-| 2 | Listy Eryka 1–3: błędy UI, poprawki TAL, oceny AI |
-| 3 | Listy 2–4: dokończenie TAL i AI, silnik symulacji, panel ekspertów |
-| 4 | Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
+| 2 | 🟡 Listy Eryka 1–3: błędy UI (zrobione), poprawki TAL, oceny AI (w toku, kalibracja co tydzień) |
+| 3 | 🟡 Listy 2–4: dokończenie TAL i AI, silnik symulacji, panel ekspertów (w toku, kalibracja co tydzień) |
+| 4 | ✅ prawie całość (2026-11-13; zostało: „Delete my account”, testy złych inputów). Ponad plan: multiplayer Mini/Duel/All-Time online, chat, kariera/XP, audyt UI. Pierwotnie: Backend (Supabase lub Firebase, bez domeny na start): konta (e-mail / Google), daily na koncie (seria, historia, przeniesienie zapisu z przeglądarki), tabela dzienna z weryfikacją wyniku na serwerze (seed + picki przeliczone silnikiem), jeden wynik na dzień, limity; przegląd bezpieczeństwa |
 | 5 | Brand, domena (+ przepięcie logowania), „pokonaj wynik znajomego”, wstępne testy na większej grupie |
 | 6 | Strategia SM, testy kont i tabeli przez ludzi, poprawki przed launchem, wyłączenie trybów testowych |
 | 7 | Zapas na poprawki (dawniej launch — przesunięty) |
@@ -477,6 +480,18 @@ Zasada tygodni 2–3: z list bierzemy tylko to, co gracz poczuje; reszta „po l
   - **Logika do poprawy — zbiorczo (tydzień 3, kolejność wg wartości):** (1) jedna skala Talent/Offense/Defense + „droga od talentu do wyniku”; (2) kara za polowanie z pokryciem przez core (wing stopper i POA, nie tylko rim); (3) kara za zbiórki w ataku (z-score ucięty na 2,5, max −7) — zmniejszyć lub dać kredyt w obronie; (4) lift z limitem na posiadania i mocniejsza kara za dwóch shot-first; (5) gwiazda wymagająca spacingu + niski spacing (Giannis); (6) ściąganie do średniej wg próby (minuty, próby, rzuty wolne) w D-TAL, spacingu, TS%, playmakingu, rim pressure, zbiórkach; (7) większa waga danych realnych dla skrzydłowych (D-TAL Batum/Dirk); (8) detektory i opisy czytają te same oceny co silnik (playmaking, obrona vs Cohesion); (9) wybór okna przez AI uwzględnia koszt słabszego okna (Conley); (10) jedno narzędzie pomiaru „ocena kontra symulacja sezonu” puszczane przed każdą zmianą wag, żeby ocena nie rozjechała się z grą.
   - **Skrypt NBA.com (tydzień 2/3):** rozszerzyć istniejący `scripts/fetch_nba_stats_browser.js` (konsola przeglądarki na nba.com/stats; Python odpada — stats.nba.com wiesza `requests`), tą samą konstrukcją (`get`, `add`, pauza 800 ms, jeden `nba_stats.json`). Dodać: (4) `leaguedashlineups` (jednostki 5-osobowe, net rating, minuty) i `teamplayeronoffsummary` (on/off graczy) od 2007-08; (5) `leaguehustlestatsplayer` (deflections, contested shots, screen assists, loose balls), `leaguedashptstats` z `Rebounding`, `Possessions`, `SpeedDistance`, `leaguedashptdefend` po strefach — od 2015-16 (część już jest w pliku). **Stan (2026-10-28): napisany `scripts/fetch_nba_stats_extra.js` (osobny plik, drugi zestaw: lineups, on/off, hustle, tracking rebounds/possessions/speed, strefy obrony, clutch; tryb TEST = jeden sezon 2023-24, potem TEST=false na pełne pobranie).** Plan: pisze Claude, Eryk puszcza na jednym sezonie i wkleja pierwsze linie / błąd, poprawka, dopiero wtedy pełne pobranie. Środowisko Claude nie ma dostępu do stats.nba.com (proxy 403), więc nie da się przetestować na miejscu.
   - Przypadek testowy: Lillard 2019-21, Ginóbili 2005-07, Durant 2012-14, Green 2015-17, Gasol 2014-16 (+ Chalmers, O'Neale): O-TAL 81, spacing 86, playmaking 89, mismatch 54, kosz 69, bonusy +9 i +6 → surowe 95 → 85 po skali → −7 zbiórki = 78 (u Eryka w grze 70, słabsze okna).
+
+## Multiplayer (2026-11-12/13) — stan i co dalej
+
+Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rotacja 2 min, playoffy razem, zmiana lat na żywo), chat, podgląd na żywo, dolny pasek na telefonie, unikalne nicki.
+
+| | Punkt | Co konkretnie |
+|---|---|---|
+| 🧪 | Test na żywo All-Time online | Pokój 2+ osób: draft, zmiana lat, okno rotacji, wspólne playoffy. |
+| ⏱️ | Zegar rotacji w zakładce Team | Dziś odliczanie 2 min widać tylko na zakładce draftu. |
+| 🙈 | Wyniki online | Ukryć Challenge (i może Share) w pokojach. |
+| 🏅 | Nagrody za levele + profil | Tytuły na tabelach, ramka logo, karta gracza, odznaki; pasek Home · Profile · Settings w menu. |
+| 📱 | Dolny pasek: reszta | Draw Five, sezon All-Time, turniej Mini. |
 
 ## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
 

@@ -36,7 +36,7 @@ import { PlayerPeekModal } from './PlayerPeekModal';
 import { CallSheet, CallWindow, PhoneChip, WarRoomBanner } from './PhoneDesk';
 import { CALLS_PER_DRAFT, EMPTY_CALL_LOG, callOptions, logCall, placeCall, type CallId, type CallLog, type CallResult } from '../engine/deskCalls';
 import { NSelect, Actions, Btn, CapBar, cx, EmptyNote, FaceContext, H3, Kv, Mast, NFace, NightGame, PhoneDock, Prompt, SubNote, TAP_TO_SHOW, Tally, buzz, fmtCaps, lastName, useStepScroll } from '../night/ui';
-import { CapsBar, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
+import { CapsBar, LoadMore, Notice, PickLog, PlayerTable, PosTabs, type NightRow } from '../night/draft';
 import { BoardGrid, NineSlots, StretchTable } from '../night/alltime';
 import { NightConfirm, NightHowTo, NightSettings } from '../night/Dialogs';
 
@@ -91,6 +91,18 @@ interface Props {
   /** 2026-10-22: "Study the board" off the lottery — the clock is held until `onStartClock`. */
   studying?: boolean;
   onStartClock?: () => void;
+  /** An All-Time room (2026-11-13): the pick clock, who runs which team, the live peek; no Desk. */
+  online?: OnlineDraft;
+}
+
+export interface OnlineDraft {
+  /** Seconds left on the pick on the clock. */
+  clock: number;
+  /** The person on the clock (a friend), shown with the clock; none for a CPU team. */
+  pickerName?: string;
+  pickerAway?: boolean;
+  peekLine?: string;
+  sendPeek?: (p: { tab: string; upTo: number | null; eyeing?: string }) => void;
 }
 
 export const ALL_POSITIONS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -255,6 +267,7 @@ export default function DraftBoard({
   onExit,
   studying = false,
   onStartClock,
+  online,
 }: Props) {
   const showJudgeMetrics = mode === 'developer';
   const [search, setSearch] = useState('');
@@ -262,6 +275,13 @@ export default function DraftBoard({
   // tick the positions the list shows. Until the player touches them, the starter slots already
   // filled are unticked (all shown again once the five is set); a touch makes the choice his.
   const [tab, setTab] = useState<Position | 'ALL' | null>(null);
+  // Online: the room sees what you browse while you're on the clock.
+  useEffect(() => {
+    if (!online?.sendPeek || state.complete || !state.teams[currentTeamIndex(state)].isHuman) return;
+    const t = window.setTimeout(() => online.sendPeek?.({ tab: tab ?? 'ALL', upTo: null }), 250);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, state.history.length]);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [boardSort, setBoardSort] = useState<'best' | 'value' | 'cheapest' | 'priciest'>('best');
   // 2026-09-14, user-reported live ("rzucamy ponad 100 nazwisk na raz, za dużo informacji dla
@@ -1005,7 +1025,8 @@ export default function DraftBoard({
   const spotWord = (n: number) => (n === 1 ? 'one spot' : `${['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][n] ?? n} spots`);
   const lineup = humanAssignment as Partial<Record<Position, PlayerSpan>>;
   const scoutsLeft = SCOUT_REPORTS_PER_DRAFT - scoutRounds.length;
-  const callsLeft = CALLS_PER_DRAFT - callLog.used.length;
+  // Online: no Desk calls (the room plays on equal terms, 2026-11-13).
+  const callsLeft = online ? 0 : CALLS_PER_DRAFT - callLog.used.length;
   const gradeTone = (v: string) => (v === 'S' ? 'top' : v.startsWith('A') ? 'hi' : /^[CDF]/.test(v) ? 'lo' : undefined);
   // 2026-11-12 (the user: "atak, obrona i shooting trochę mało"): Shooting is the engine's spacing
   // (threes and a big's midrange — KG 2004-06 reads C-, not the F of his threes), plus Playmaking
@@ -1020,8 +1041,12 @@ export default function DraftBoard({
 
   const asideTop = (
     <>
-      <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
-      <Tally you={fmtCaps(humanBudget.capLeft)} mid={fmtCaps(capLimit)} ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
+      <Mast title={title} daily={!!dailyTitle} sub={state.complete ? (online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done · set your rotation') : `${dailyTitle ? `${dailyTitle} · ` : ''}Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+      <Tally
+        you={fmtCaps(humanBudget.capLeft)}
+        mid={state.complete ? '—' : youOnClock ? 'Now' : humanPicksAway ? `in ${humanPicksAway}` : '—'}
+        midK="Your pick"
+        ai={`${Math.min(humanTeam.roster.length + (state.complete ? 0 : 1), ROSTER_SIZE)}/${ROSTER_SIZE}`} youK="Caps left" aiK="Round" />
       <CapBar used={used} cap={capLimit} />
     </>
   );
@@ -1146,7 +1171,7 @@ export default function DraftBoard({
   if (activeTab === 'team') {
     const aside = (
       <>
-        <Mast title={title} daily={!!dailyTitle} sub={state.complete ? 'Draft done · set your rotation' : `Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
+        <Mast title={title} daily={!!dailyTitle} sub={state.complete ? (online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done · set your rotation') : `Round ${round} of ${ROUNDS} · pick ${overall} of ${totalPicks}`} />
         <Tally you={fmtCaps(capLimit - teamCapUsed)} mid={fmtCaps(capLimit)} ai={`${humanTeam.roster.length}/${ROSTER_SIZE}`} youK="Caps left" aiK="Picks" />
         <CapBar used={teamCapUsed} cap={capLimit} />
         <SubNote>
@@ -1155,6 +1180,7 @@ export default function DraftBoard({
         </SubNote>
         <section>
           <H3>Before the season</H3>
+          {online && state.complete && <Kv k="Season in" v={fmtClock(online.clock)} gold />}
           <Kv k="Rotation" v={rotStatus.valid ? 'Set' : 'Not set'} />
           <Kv k="Starters" v={startersSet === STARTER_SLOTS.length ? 'Set' : `${startersSet} of 5`} />
           <Kv k="Years" v="Click to change" />
@@ -1450,7 +1476,7 @@ export default function DraftBoard({
             <Btn kind="line" onClick={() => setBoardShown((v) => !v)}>
               {boardShown ? 'Hide draft board' : 'Show draft board'}
             </Btn>
-            <PhoneChip left={callsLeft} live={youOnClock && callsLeft >= 0} onOpen={() => setCallSheetOpen(true)} />
+            {!online && <PhoneChip left={callsLeft} live={youOnClock && callsLeft >= 0} onOpen={() => setCallSheetOpen(true)} />}
             <Btn kind="line" onClick={() => setActiveTab('team')}>
               Team · {humanTeam.roster.length}/{ROSTER_SIZE}
             </Btn>
@@ -1461,7 +1487,7 @@ export default function DraftBoard({
   );
 
   const board = (
-    <BoardGrid teams={state.teams} rounds={ROUNDS} picks={pickSpans} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} onHide={() => setBoardShown(false)} />
+    <BoardGrid teams={state.teams} rounds={ROUNDS} picks={pickSpans} onClock={state.complete ? null : overall} round={state.round} codeOf={codeOf} onHide={() => setBoardShown(false)} gmOf={online ? (t) => t.gm : undefined} />
   );
   const yearsGroup = yearsFor?.from === 'draft' ? (groups.find((g) => g.playerName === yearsFor.name) ?? enrichedGroups.find((g) => g.playerName === yearsFor.name)) : undefined;
 
@@ -1548,11 +1574,11 @@ export default function DraftBoard({
           emptyLabel={(pos) => (pos === on ? `showing ${counts[pos]} ▾` : TAP_TO_SHOW)}
         />
         {state.complete ? (
-          <Prompt eb="Draft done" title="Your nine are in">
+          <Prompt eb={online ? `Draft done · season in ${fmtClock(online.clock)}` : 'Draft done'} title="Your nine are in">
             Set the years and the rotation, then play the season.
           </Prompt>
         ) : youOnClock ? (
-          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}`} title="Your pick" now className="ph-keep yours">
+          <Prompt eb={`On the clock · Round ${round} · Pick ${overall}${online ? ` · ${fmtClock(online.clock)}` : ''}`} title="Your pick" now className="ph-keep yours">
             {/* 2026-10-22, the playtest ("może jednak bez tej podpowiedzi"): no advice on who to take,
                 only the hard limit — what this pick may cost and still leave enough for the rest. */}
             {/* 2026-11-05, the playtest ("dałbym ile mamy caps albo jakoś to zaznaczyć"): what's left, and
@@ -1567,7 +1593,9 @@ export default function DraftBoard({
             {onStartClock && <Btn onClick={onStartClock}>Start the clock</Btn>}
           </div>
         ) : (
-          <Prompt eb={`On the clock · Pick ${overall}`} title={teamLabel(currentTeam)} now>
+          <Prompt eb={`On the clock · Pick ${overall}${online?.pickerName && !online.pickerAway ? ` · ${fmtClock(online.clock)}` : ''}`} title={teamLabel(currentTeam)} now>
+            {online && (online.pickerName ? <b>{online.pickerName}{online.pickerAway ? ' (away, the CPU picks)' : ''} is picking. </b> : 'A CPU GM is picking. ')}
+            {online?.peekLine && <span className="mp-peek">{online.peekLine} </span>}
             {humanPicksAway === 1 ? 'Your pick is next.' : humanPicksAway ? `Your pick in ${humanPicksAway} picks.` : 'Your nine are in.'} The list stays open while they think.
           </Prompt>
         )}
@@ -1622,35 +1650,30 @@ export default function DraftBoard({
                 setFgaMax(String(hi));
               }}
             />
-            <PlayerTable rows={rows} variant="alltime" onDraft={(sp) => onPick(sp.id)} onOpen={(name) => setPeekPlayer(name)} onYears={(name) => setYearsFor({ name, from: 'draft' })} onStar={toggleBigBoard} scoutsLeft={scoutsLeft} />
-            <div className="more">
-              Showing {shown.length} of {totalMatched.toLocaleString('en-US')} players
-              {visibleCount < groups.length && (
-                <>
-                  {' · '}
-                  <button type="button" className="lk-inline" onClick={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))}>
-                    Show 10 more
-                  </button>
-                </>
-              )}
+            <PlayerTable rows={rows} variant="alltime" onDraft={(sp) => onPick(sp.id)} onOpen={(name) => setPeekPlayer(name)} onYears={(name) => setYearsFor({ name, from: 'draft' })} onStar={toggleBigBoard} scoutsLeft={scoutsLeft} waiting={!canPick && !state.complete} />
+            {/* 2026-11-13 (UI audit): one clear "Show more" button, the count beside it, scouting on a line of its own. */}
+            <div className="more more2">
+              <span>
+                Showing {shown.length} of {totalMatched.toLocaleString('en-US')}
+                {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
+              </span>
+              {/* Scrolling to the end loads the next ten (2026-11-13: "płynny scroll"). */}
+              <LoadMore active={visibleCount < groups.length} onMore={() => setVisibleCount((c) => Math.min(groups.length, c + DRAFT_VISIBLE_STEP))} />
               {visibleCount > DRAFT_VISIBLE_DEFAULT && (
-                <>
-                  {' · '}
-                  <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
-                    Show fewer
-                  </button>
-                </>
+                <button type="button" className="lk-inline" onClick={() => setVisibleCount(DRAFT_VISIBLE_DEFAULT)}>
+                  Show fewer
+                </button>
               )}
-              {totalMatched > groups.length && visibleCount >= groups.length && ' · search a name to see the rest'}
-              {' · '}
+            </div>
+            <div className="more more2">
               {scoutingNow ? (
                 <b>Scouting this round: every card open until your next pick</b>
               ) : scoutsLeft > 0 ? (
-                <button type="button" className="lk-inline" onClick={() => scoutPlayer()}>
+                <Btn kind="line" onClick={() => scoutPlayer()}>
                   Scout this round · {scoutsLeft} left
-                </button>
+                </Btn>
               ) : (
-                'no scouting rounds left'
+                <span>No scouting rounds left</span>
               )}
             </div>
           </section>
@@ -1677,4 +1700,8 @@ export default function DraftBoard({
     </NightGame>
     </FaceContext.Provider>
   );
+}
+
+function fmtClock(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(Math.max(0, sec) % 60).padStart(2, '0')}`;
 }

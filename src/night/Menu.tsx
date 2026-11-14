@@ -11,12 +11,13 @@ import { Btn, Dialog } from './frame';
 import { NightSettings } from './Dialogs';
 import { AccountBar } from '../components/AccountBar';
 
-export type MenuMode = 'bestfive' | 'quickfive' | 'draft';
+export type MenuMode = 'bestfive' | 'quickfive' | 'draft' | 'duel';
 
 const MODES: { id: MenuMode; name: string; line: string; time: string }[] = [
   { id: 'bestfive', name: 'Draw Five', line: 'Five cards. One cap. Beat the AI.', time: '5 min' },
   { id: 'quickfive', name: 'Mini Draft', line: 'Sixteen GMs. Five rounds. No mercy.', time: '8 min' },
   { id: 'draft', name: 'All-Time Draft', line: 'Nine rounds, a season, a ring.', time: '30 min' },
+  { id: 'duel', name: 'Duel', line: 'One on one. Ten picks, one cap, one game.', time: '5 min' },
 ];
 
 /** Each mode's small motif in the menu (playtest 2026-10-22, "brakuje charakteru"; mockup Menu C): a
@@ -31,7 +32,7 @@ function ModeMark({ id }: { id: MenuMode }) {
         <i />
       </span>
     );
-  if (id === 'quickfive')
+  if (id === 'quickfive' || id === 'duel')
     return (
       <span className="m2-mk redball" aria-hidden>
         <i />
@@ -76,7 +77,10 @@ export function NightMenu({
   onLiveTest,
   onFriends,
   onDuel,
+  onAllTimeOnline,
 }: {
+  /** The All-Time Draft online, up to 8 people (2026-11-13). */
+  onAllTimeOnline?: () => void;
   /** The Duel, 1v1 (test mode). */
   onDuel?: () => void;
   /** Mini Draft with friends (online only). */
@@ -137,6 +141,8 @@ export function NightMenu({
       </button>
     );
   };
+  const dailiesDone =
+    (drawFive && !DAILY_REPLAY_FOR_TESTING ? 1 : 0) + (['mini', 'alltime', 'bomb'] as DailyDraftMode[]).filter((m) => !draftDay(m).testing && dailyDraftResult(m, today)).length;
   return (
     <div className="nt">
       <div className="game solo">
@@ -145,7 +151,7 @@ export function NightMenu({
             <div className="m2-mast">
               <b>{BRAND}</b>
               <span>{BRAND_TAGLINE}</span>
-              <span className="m2-ed">{editionLine()}</span>
+              <span className="m2-ed">{streak > 0 ? `${editionLine().split(' · ')[0]} · 🔥 ${streak} day${streak === 1 ? '' : 's'}` : editionLine()}</span>
             </div>
             <div className="m2-team">
               {franchise && <LeagueMark name={teamName} code={franchiseCode(teamName)} />}
@@ -175,62 +181,57 @@ export function NightMenu({
                 </button>
               </div>
             )}
+            {/* 2026-11-13 (the UI audit): four modes, each with its online version beside it. */}
+            <span className="m2-tl m2-play">Play</span>
             <ol className="m2-modes">
-              {MODES.map((m, i) => (
-                <li key={m.id}>
-                  <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
-                    <span className="m2-n">{i + 1}</span>
-                    <ModeMark id={m.id} />
-                    <div>
-                      <b>{m.name}</b>
-                      <span>
-                        {m.line}
-                        {stepDone(m.id) && ' ✓'}
+              {MODES.map((m, i) => {
+                const online = m.id === 'quickfive' ? onFriends : m.id === 'draft' ? onAllTimeOnline : m.id === 'duel' ? onDuel : undefined;
+                const subs = online ? [{ key: 'online', label: 'Play online', onClick: online }] : [];
+                return (
+                  <li key={m.id} className={subs.length ? 'm2-has-online' : undefined}>
+                    <button type="button" className="m2-row" onClick={() => onMode(m.id)}>
+                      <span className="m2-n">{i + 1}</span>
+                      <ModeMark id={m.id} />
+                      <div>
+                        <b>{m.name}</b>
+                        <span>
+                          {m.line}
+                          {stepDone(m.id) && ' ✓'}
+                        </span>
+                      </div>
+                      <em>{m.time}</em>
+                      <span className="m2-go">Play →</span>
+                    </button>
+                    {subs.length > 0 && (
+                      <span className="m2-subs">
+                        {subs.map((x, k) => (
+                          <span key={x.key}>
+                            {k > 0 && <span className="m2-sep" aria-hidden> · </span>}
+                            {x.onClick ? (
+                              <button type="button" onClick={x.onClick}>
+                                {x.label}
+                              </button>
+                            ) : (
+                              <em>{x.label}</em>
+                            )}
+                          </span>
+                        ))}
                       </span>
-                    </div>
-                    <em>{m.time}</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              ))}
-              {onFriends && (
-                <li>
-                  <button type="button" className="m2-row" onClick={onFriends}>
-                    <span className="m2-n">{MODES.length + 1}</span>
-                    <ModeMark id="quickfive" />
-                    <div>
-                      <b>Play with friends</b>
-                      <span>A Mini Draft for up to four. Send a link, draft live.</span>
-                    </div>
-                    <em>15 min</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              )}
-              {onDuel && (
-                <li>
-                  <button type="button" className="m2-row" onClick={onDuel}>
-                    <span className="m2-n">{MODES.length + 2}</span>
-                    <ModeMark id="quickfive" />
-                    <div>
-                      <b>Duel · test</b>
-                      <span>One on one. Ten picks, one cap, one game.</span>
-                    </div>
-                    <em>5 min</em>
-                    <span className="m2-go">Play →</span>
-                  </button>
-                </li>
-              )}
+                    )}
+                  </li>
+                );
+              })}
             </ol>
-            <div className="m2-today">
-              <span className="m2-tl">Today’s dailies{streak > 0 ? ` · 🔥 ${streak}` : ''}</span>
+            {/* 2026-11-13 (menu A + the strip from B): the dailies as a strip of four, a status line over each. */}
+            <span className="m2-tl">Today’s dailies · {dailiesDone} of 4</span>
+            <div className="m2-today m2-strip">
               <button type="button" className={`m2-d${drawFive && !DAILY_REPLAY_FOR_TESTING ? ' done' : ''}`} onClick={onDailyDrawFive}>
                 <b>Draw Five</b>
                 <span>{drawFive?.game ? `✓ ${drawFive.game.you > drawFive.game.them ? 'beat' : 'lost to'} the ${drawFive.game.opponent}` : drawFive ? '✓ played' : `vs ${meta.opponent.short}`}</span>
               </button>
               {draftCell('mini', 'Mini')}
               {draftCell('alltime', 'All-Time')}
-              {draftCell('bomb', 'The Bomb')}
+              {draftCell('bomb', 'Bomb')}
             </div>
             {yesterday.length > 0 && (
               <p className="m2-note">

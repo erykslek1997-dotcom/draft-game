@@ -686,3 +686,5 @@
      every slot in a row takes the row's height — the grid stretches them to the tallest card. */
   .nt .slot, .nt .slot.empty, .nt .slot.active, .nt .slots.compact .slot { height: auto; min-height: 104px; align-self: stretch; }
 }
+/* 2026-11-13 (UI audit): the deck row goes once the hand is dealt. */
+@media (max-width: 640px) { .stage > .deal.dealt { display: none; } }

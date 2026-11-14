@@ -103,7 +103,20 @@ const PRECISE_TITLE_ODDS_SIMULATIONS = 20000;
  * assignment, so the bracket can never again disagree with why a player is slotted where he is.
  */
 
+/** An online room's playoffs, round by round together (2026-11-13). */
+export interface SyncPlayoffs {
+  /** Rounds you may finish so far. */
+  gate: number;
+  waiting?: string;
+  onShown: (roundsDone: number) => void;
+  /** Set by the season: whether you're held at the room's slowest round right now. */
+  onHeld?: (held: boolean) => void;
+}
+
 interface Props {
+  syncPlayoffs?: SyncPlayoffs;
+  /** Online: no rematch, the room is over. */
+  online?: boolean;
   teams: Team[];
   /** Full draft history across every team, so each team's card can show its own pick order —
    * the user's own ask: "show team draft history in [results] screen." The live "Show Draft
@@ -645,7 +658,9 @@ function offenseScale(value: number): number {
   return Math.round(calibrateOffenseToDefenseScale(value));
 }
 
-export default function ResultsScreen({ teams, history, onRestart, onRematch, draftSeed, challenger, daily, bomb }: Props) {
+export default function ResultsScreen({ teams, history, onRestart, onRematch: rematchProp, draftSeed, challenger, daily, bomb, syncPlayoffs, online }: Props) {
+  const onRematch = online ? undefined : rematchProp;
+  const [held, setHeld] = useState(false);
   // Step 3 of the menu's learning path is done once a full draft reaches its results.
   useEffect(() => markStepDone('draft'), []);
   // Lookups used inside render loops (matchup opponents, draft-order rows, the bracket tree) —
@@ -1127,7 +1142,8 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
             <Btn kind="line" onClick={copyDailyResult}>
               {dailyCopied ? '✓ Copied' : 'Copy result'}
             </Btn>
-          ) : (
+          ) : online ? null : (
+            // A room's board can't be replayed alone (2026-11-13): no Challenge online.
             <Btn kind="line" onClick={challengeFriend}>
               {linkCopied ? '✓ Copied' : 'Challenge'}
             </Btn>
@@ -1233,7 +1249,12 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch, dr
         />
       );
     }
-    return <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined, summary }} />;
+    return (
+      <>
+        {held && syncPlayoffs && <div className="mp-busy">The room plays the playoffs together: the next round opens when {syncPlayoffs.waiting ?? 'everyone'} has seen this one.</div>}
+        <SeasonView teams={scoredTeams} codes={codeByTeamId} state={seasonState} onClose={() => setSeasonOpen(false)} sync={syncPlayoffs ? { ...syncPlayoffs, onHeld: setHeld } : undefined} end={{ onMenu: onRestart, onNewDraft: !daily && onRematch ? () => onRematch() : undefined, summary }} />
+      </>
+    );
   }
 
   // 2026-10-22, playtest ("brakuje informacji kto wygrał mistrzostwo", "jak damy back to the results

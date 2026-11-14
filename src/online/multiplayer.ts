@@ -30,6 +30,8 @@ export interface MpRoom {
   teams: number;
   /** Caps for a team's five. */
   cap: number;
+  /** 5: a Mini or Duel; 9: the All-Time Draft. */
+  rounds: number;
   started_at: string | null;
 }
 export interface MpMember {
@@ -39,6 +41,8 @@ export interface MpMember {
   slot: number | null;
   joined_at: string;
   last_seen: string;
+  /** All-Time: the team they sent after the draft (years + rotation). */
+  final?: { roster: string[]; rotation: unknown } | null;
   /** Tournament rounds this player has seen. */
   tourney: number;
 }
@@ -90,10 +94,21 @@ export const DUEL_CLOCK_S = 45;
 export const ROOM_CAP_MIN = 60;
 export const ROOM_CAP_MAX = 90;
 
-export async function createRoom(nick: string, level: number, duel = false, cap = 70): Promise<{ code: string } | { error: MpError }> {
+/** The All-Time Draft online (2026-11-13): up to 8 people, a minute a pick. */
+export const ALLTIME_MAX_PLAYERS = 8;
+export const ALLTIME_CLOCK_S = 60;
+export type RoomKind = 'mini' | 'duel' | 'alltime';
+
+export async function sendFinal(roomId: string, final: { roster: string[]; rotation: unknown }): Promise<void> {
+  await supabase?.rpc('mp_final', { p_room: roomId, p_final: final });
+}
+
+export async function createRoom(nick: string, level: number, kind: RoomKind = 'mini', cap = 70): Promise<{ code: string } | { error: MpError }> {
+  const duel = kind === 'duel';
+  const allTime = kind === 'alltime';
   if (!supabase || !(await ensureSession())) return { error: 'offline' };
   const seed = Math.floor(Math.random() * 2 ** 31);
-  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: cap });
+  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : allTime ? ALLTIME_MAX_PLAYERS : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : allTime ? ALLTIME_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: allTime ? 100.9 : cap, p_rounds: allTime ? 9 : 5 });
   return error ? { error: errorOf(error.message) } : { code: data as string };
 }
 
@@ -181,6 +196,21 @@ const CHAT_GAP_MS = 1000;
 /** Lines kept on screen. */
 const CHAT_KEEP = 100;
 
+/** A swap of a drafted player's years (All-Time rooms). */
+export interface MpSwap {
+  id: number;
+  at_pick: number;
+  slot: number;
+  player_name: string;
+  span_id: string;
+}
+
+export async function sendSwap(roomId: string, atPick: number, playerName: string, spanId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc('mp_swap', { p_room: roomId, p_at: atPick, p_player: playerName, p_span: spanId });
+  return !error && data === true;
+}
+
 export interface RoomLive {
   room: MpRoom | null;
   members: MpMember[];
@@ -197,6 +227,7 @@ export interface RoomLive {
   chat: ChatLine[];
   /** False when the line was too soon after the last one or empty. */
   sendChat: (text: string) => boolean;
+  swaps: MpSwap[];
   peek: Peek | null;
   sendPeek: (p: Omit<Peek, 'at' | 'user'>) => void;
 }
@@ -211,6 +242,7 @@ export function useRoom(roomId: string | null): RoomLive {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const meRef = useRef<string | null>(null);
   const [peek, setPeek] = useState<Peek | null>(null);
+  const [swaps, setSwaps] = useState<MpSwap[]>([]);
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [ready, setReady] = useState<Set<string>>(new Set());
   const iAmReady = useRef(false);
@@ -220,13 +252,18 @@ export function useRoom(roomId: string | null): RoomLive {
 
   const loadRoom = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at,teams,cap').eq('id', roomId).maybeSingle();
+    const { data } = await supabase.from('mp_rooms').select('id,code,host,seed,max_players,clock_s,status,started_at,teams,cap,rounds').eq('id', roomId).maybeSingle();
     setRoom(data ? ({ ...data, seed: Number(data.seed), cap: Number(data.cap ?? 70) } as MpRoom) : null);
   }, [roomId]);
   const loadMembers = useCallback(async () => {
     if (!supabase || !roomId) return;
-    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen,tourney').eq('room_id', roomId).order('joined_at');
+    const { data } = await supabase.from('mp_members').select('user_id,nickname,level,slot,joined_at,last_seen,tourney,final').eq('room_id', roomId).order('joined_at');
     if (data) setMembers(data as MpMember[]);
+  }, [roomId]);
+  const loadSwaps = useCallback(async () => {
+    if (!supabase || !roomId) return;
+    const { data } = await supabase.from('mp_swaps').select('id,at_pick,slot,player_name,span_id').eq('room_id', roomId).order('id');
+    if (data) setSwaps((old) => (data.length >= old.length ? (data as MpSwap[]) : old));
   }, [roomId]);
   const loadPicks = useCallback(async () => {
     if (!supabase || !roomId) return;
@@ -240,6 +277,7 @@ export function useRoom(roomId: string | null): RoomLive {
     void loadRoom();
     void loadMembers();
     void loadPicks();
+    void loadSwaps();
     let channel: RealtimeChannel | null = sb
       .channel(`room:${roomId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mp_picks', filter: `room_id=eq.${roomId}` }, (p) => {
@@ -255,6 +293,7 @@ export function useRoom(roomId: string | null): RoomLive {
         });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mp_members', filter: `room_id=eq.${roomId}` }, () => void loadMembers())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mp_swaps', filter: `room_id=eq.${roomId}` }, () => void loadSwaps())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'mp_rooms', filter: `id=eq.${roomId}` }, () => void loadRoom())
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
         const l = payload as ChatLine;
@@ -278,6 +317,7 @@ export function useRoom(roomId: string | null): RoomLive {
           void loadRoom();
           void loadMembers();
           void loadPicks();
+          void loadSwaps();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLive(false);
       });
 
@@ -297,7 +337,7 @@ export function useRoom(roomId: string | null): RoomLive {
       channelRef.current = null;
       channel = null;
     };
-  }, [roomId, loadRoom, loadMembers, loadPicks, addLine]);
+  }, [roomId, loadRoom, loadMembers, loadPicks, loadSwaps, addLine]);
 
   // Polling when the live link is busy.
   useEffect(() => {
@@ -305,9 +345,10 @@ export function useRoom(roomId: string | null): RoomLive {
     const t = window.setInterval(() => {
       void loadPicks();
       void loadRoom();
+      void loadSwaps();
     }, POLL_MS);
     return () => window.clearInterval(t);
-  }, [live, roomId, loadPicks, loadRoom]);
+  }, [live, roomId, loadPicks, loadRoom, loadSwaps]);
 
   const now = useCallback(() => Date.now() + offset.current, []);
   const sendPeek = useCallback((p: Omit<Peek, 'at' | 'user'>) => {
@@ -334,5 +375,5 @@ export function useRoom(roomId: string | null): RoomLive {
     setReady((old) => new Set(old).add(meRef.current!));
     void channelRef.current?.send({ type: 'broadcast', event: 'ready', payload: { user: meRef.current } });
   }, []);
-  return { room, members, picks, live, now, refresh: () => void loadPicks(), peek, sendPeek, chat, sendChat, ready, sendReady };
+  return { room, members, picks, live, now, refresh: () => { void loadPicks(); void loadSwaps(); }, swaps, peek, sendPeek, chat, sendChat, ready, sendReady };
 }
