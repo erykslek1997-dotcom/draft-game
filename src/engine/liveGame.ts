@@ -1,3 +1,4 @@
+import { predatesThreePointLine } from './era';
 import { nicknameFor } from '../data/nicknames';
 import { CLUTCH_TRAIT, GLUE, MICROWAVE, hasTrait } from './traits';
 import shotTendencyData from '../data/shotTendencies.json';
@@ -375,6 +376,35 @@ function pickWeighted<T>(rng: () => number, items: T[], weight: (t: T) => number
     if (x <= 0) return t;
   }
   return items[items.length - 1];
+}
+
+
+/**
+ * 2026-11-18 (the game vs the engine by era: teams of pre-1974 players lost 14.7 offense a 100 trips
+ * against what the engine said, 1974-79 5.5): before 1979-80 there was no three-point line, so West,
+ * Barry or Gervin came into today's game with no threes at all. Such a window takes a modern shooter's
+ * three-point rate and make rate from his free-throw % and position — the line fitted on 2005+ windows
+ * of 6+ FGA (`scripts/_fit3.ts`). `SIM_PRE3=0` = off.
+ */
+const PRE_LINE_THREE: Record<Position, { rate: [number, number]; pct: [number, number] }> = {
+  PG: { rate: [-0.156, 0.616], pct: [0.176, 0.231] },
+  SG: { rate: [-0.145, 0.696], pct: [0.214, 0.196] },
+  SF: { rate: [0.059, 0.397], pct: [0.24, 0.159] },
+  PF: { rate: [-0.391, 0.828], pct: [0.173, 0.241] },
+  C: { rate: [-0.321, 0.583], pct: [0.227, 0.17] },
+};
+const PRE3_ON = envVar('SIM_PRE3') !== '0';
+const gameThreeCache = new WeakMap<PlayerSpan, { rate: number; pct: number }>();
+function gameThree(span: PlayerSpan): { rate: number; pct: number } {
+  let g = gameThreeCache.get(span);
+  if (!g) {
+    const f = PRE_LINE_THREE[span.primaryPosition];
+    g = PRE3_ON && f && predatesThreePointLine(span.spanLabel)
+      ? { rate: Math.max(0, Math.min(0.6, f.rate[0] + f.rate[1] * span.box.ftPct)), pct: Math.max(0.28, Math.min(0.42, f.pct[0] + f.pct[1] * span.box.ftPct)) }
+      : { rate: span.box.threePA / Math.max(1, span.fga), pct: modernBox(span).threePct };
+    gameThreeCache.set(span, g);
+  }
+  return g;
 }
 
 /** His two-point % in today's game (`modernBox.ts`). */
@@ -1246,7 +1276,7 @@ function anchorOf(span: PlayerSpan): { off: number; def: number } {
         t.two * 100 * (twoPointPct(span) - TWO_PCT_BY_POSITION[span.primaryPosition]) +
         t.pts36 * (m.ppg * k - ANCHOR_REF.pts36) +
         t.reb36 * (m.rpg * k - ANCHOR_REF.reb36) +
-        t.tpaRate * (span.box.threePA / Math.max(1, span.fga) - ANCHOR_REF.tpaRate),
+        t.tpaRate * (gameThree(span).rate - ANCHOR_REF.tpaRate),
       def: t.dtal * (computeDefensiveTalent(span) - ANCHOR_REF.dtal),
     };
     anchorCache.set(span, a);
@@ -1304,7 +1334,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const setups = habits.map((h, i) => ({ two: setupHere(h.two * sync, lines[i]), three: setupHere(h.three * sync, lines[i]) }));
     const edges = habits.map(setupEdge);
     const owns = five.map((p, i) => {
-      const r3 = Math.min(0.9, p.span.box.threePA / Math.max(1, p.span.fga));
+      const r3 = Math.min(0.9, gameThree(p.span).rate);
       return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
     });
     const usageCost = owns.map(usageCostScale);
@@ -1328,11 +1358,11 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i] + traitMake[i])),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes + traitMake[i] * THREE_PCT_PER_TS)),
+      threePct: Math.max(0.15, Math.min(0.5, gameThree(player.span).pct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes + traitMake[i] * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
-      threeRate: Math.min(0.9, player.span.box.threePA / Math.max(1, player.span.fga)),
+      threeRate: Math.min(0.9, gameThree(player.span).rate),
       usage: lines[i].usage,
       setup2: setups[i].two,
       setup3: setups[i].three,
