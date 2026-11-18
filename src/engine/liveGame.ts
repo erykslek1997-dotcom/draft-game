@@ -1243,7 +1243,7 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
  */
 const ANCHOR_TUNING = {
   /** FG points per point of O-TAL above the drafted average. */
-  otal: 0.0016,
+  otal: 0.0016 * Number(envVar('SIM_A_OTAL') ?? 1),
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
   two: -0.0025 * Number(envVar('SIM_A_TWO') ?? 1),
