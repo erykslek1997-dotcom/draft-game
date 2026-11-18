@@ -641,8 +641,11 @@ export function interiorStrength(rimPressure: number, rebounding: number, size: 
  * best first, weighs 30/24/18/15/13%; the bench adds its minutes-weighted average at
  * `STAR_OTAL_BENCH_SHARE`.
  */
-const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13];
-const STAR_OTAL_BENCH_SHARE = 0.18;
+/** 2026-11-18 (measuring, the supporting cast: real offense beats both engine and game when the rest of
+ * the top eight is strong): `OFF_STAR_FLAT` blends these weights toward an even 20% each (0 = as is). */
+const OFF_STAR_FLAT = Number(envVar('OFF_STAR_FLAT') ?? 0);
+const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13].map((w) => w + (0.2 - w) * OFF_STAR_FLAT);
+const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
 function starWeightedOffensiveTalent(team: Team): number {
   const starters = primaryStarters(team);
   if (starters.length === 0) return 0;
@@ -809,6 +812,8 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
  * spread with less drift (mean 78.9, teams above 90: 3 -> 14 of 192). Same Billups/White/E. Jones/
  * Pippen shell: Jokic 77 -> 83, Gobert stays 72 (engine floor).
  */
+/** 2026-11-18, measuring: the superstar term's scale (1 = as is). */
+const OFF_SUPERSTAR = Number(envVar('OFF_SUPERSTAR') ?? 1);
 const MAX_SUPERSTAR_ENGINE_BONUS = 6;
 const NO_SUPERSTAR_ENGINE_MALUS = 2;
 const SUPERSTAR_ENGINE_OTAL_START = 85;
@@ -828,7 +833,7 @@ export function superstarEngineBonus(team: Team): number {
     );
     best = Math.max(best, readiness * Math.min(1, minutes / STARTER_MINUTES));
   }
-  return best * (MAX_SUPERSTAR_ENGINE_BONUS + NO_SUPERSTAR_ENGINE_MALUS) - NO_SUPERSTAR_ENGINE_MALUS;
+  return (best * (MAX_SUPERSTAR_ENGINE_BONUS + NO_SUPERSTAR_ENGINE_MALUS) - NO_SUPERSTAR_ENGINE_MALUS) * OFF_SUPERSTAR;
 }
 
 /**
