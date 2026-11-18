@@ -51,9 +51,10 @@ export function isPerimeterDefender(span: { id: string; defensiveRole: string; p
  * 2026-11-18 (measuring): the role part of a player's switchability in Fit (40% of it, from a role-tag
  * table: Point of Attack 100 … Low Activity 20). No data says who switched onto whom, so the stand-in
  * for 1997+ windows is 0.6 point of attack + 0.4 help, set to the table's mean (53.6) and spread (32.3)
- * over those windows, 0-100. `SKILL_SWITCH=1` on; null = keep the table.
+ * over those windows, 0-100. On (the user, 2026-11-18): engine judges unchanged, the game's defense vs
+ * real DRtg 0.7786 → 0.7796, real fives' defense in the sim 0.557 → 0.562. `SKILL_SWITCH=0` = the table.
  */
-const SKILL_SWITCH = envVar('SKILL_SWITCH') === '1';
+const SKILL_SWITCH = envVar('SKILL_SWITCH') !== '0';
 export function switchRoleScore(span: { id: string }): number | null {
   if (!SKILL_SWITCH) return null;
   const poa = skill(span, 'pointOfAttack'), help = skill(span, 'help');
