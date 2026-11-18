@@ -51,6 +51,7 @@ import { envVar } from './env';
 // AI pick can be traced to the exact term that inflated (or sank) its score.
 // ---------------------------------------------------------------------------
 let aiDraftDebug = false;
+const AI_NEED = Number(envVar('AI_NEED') ?? 1);
 export function setAiDraftDebug(on: boolean): void {
   aiDraftDebug = on;
 }
@@ -2713,7 +2714,11 @@ function pickForAiSized(
     // peak still feels cap pressure, just softened, rather than being mechanically discounted
     // below a cheaper merely-very-good alternative the same way an ordinary star would be.
     const effectiveFgaPenalty = fgaPenalty * eliteTalentFgaPenaltyDampening(talent);
-    const talentTerm = talent * rampedNeed;
+    // 2026-11-18 (the user's review: stars slide, role players picked — Wade 95 passed over for up to
+    // 49 picks in every one of 10 drafts; Artest 79 at need ×3.2 out-valued him): `AI_NEED` scales how
+    // far the positional need multiplies talent (1 = as before, 0 = talent alone), scaled back so the
+    // average need keeps the value level the other terms were set against.
+    const talentTerm = AI_NEED === 1 ? talent * rampedNeed : talent * (1 + (rampedNeed - 1) * AI_NEED) * (rampedNeed > 0 ? 1 : 0);
     const fgaCost = p.fga * effectiveFgaPenalty;
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
