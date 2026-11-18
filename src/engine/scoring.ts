@@ -1,5 +1,5 @@
 import { defenderProfile } from './liveDefense';
-import { isRimProtector, isPerimeterDefender } from './skills';
+import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -320,9 +320,7 @@ export function benchDepthScore(team: Team): number {
     ) / deploymentMinutes * 100
     : 0;
 
-  const hasCreator = activeBench.some(({ player }) =>
-    ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(player.offensiveArchetype),
-  );
+  const hasCreator = activeBench.some(({ player }) => isCreator(player));
   const hasSpacer = activeBench.some(({ player }) => isPlusShooter(player));
   const hasDefensiveRole = activeBench.some(({ player }) =>
     isStrongPerimeterDefender(player) || isStrongRimProtector(player),
@@ -487,7 +485,7 @@ function starterSelfCreation(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, selfCreationFgByYear);
   const proxy = selfCreationProxy(player);
   if (measured == null) return proxy * 100;
-  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  const floor = ((selfCreatorLevel(player) ?? (PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : 0)) >= 0.85) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
   return Math.max(measured, floor) * 100;
 }
 

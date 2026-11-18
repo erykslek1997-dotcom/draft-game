@@ -1,5 +1,5 @@
 import { players } from '../data/players';
-import { switchRoleScore } from './skills';
+import { isShotFirst, selfCreatorLevel, switchRoleScore } from './skills';
 import { rimProtectionByNumbers } from './rimProtection';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import {
@@ -634,7 +634,7 @@ function huntingSelfCreationFor(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, huntingPotentialSelfCreationByYear);
   const proxy = huntingSelfCreationProxy(player);
   if (measured == null) return proxy * 100;
-  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  const floor = ((selfCreatorLevel(player) ?? (PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : 0)) >= 0.85) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
   return Math.max(measured, floor) * 100;
 }
 function huntingPotentialFor(starters: PlayerSpan[]): number {
@@ -1173,7 +1173,7 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   const shotFirstLoads = starterEntries
     .map(({ player, slot }) => {
       if (slot === 'PF' || slot === 'C') return { player, load: 0 };
-      if (player.offensiveArchetype !== 'Shot Creator' && player.offensiveArchetype !== 'Slasher') return { player, load: 0 };
+      if (!isShotFirst(player)) return { player, load: 0 };
       const paceAdjustedFga = player.fga * (LEAGUE_PACE_BASELINE / eraBaseline(player.spanLabel).pace);
       // A scorer who is also an elite passer (Bird, Wade) shares the ball more than his tag says.
       const sharing = clamp(((playmakingScoreForPlayer(player) ?? 0) - SHOT_FIRST_SHARING_START) / 10, 0, 1) * SHOT_FIRST_SHARING_RELIEF;

@@ -75,3 +75,37 @@ export function isLowActivity(span: { id: string; defensiveRole: string }): bool
   if (act === null || help === null) return span.defensiveRole === 'Low Activity';
   return 0.5 * act + 0.5 * help < 44.5;
 }
+
+/**
+ * 2026-11-18 (the user: "self creation a creation to dwie różne rzeczy"): the old creator tags mixed
+ * making your own shot (Shot Creator, Slasher) with making the offense for others (Primary / Secondary
+ * Ball Handler). Two weights from 1997+ skills, each at the label shares:
+ *  - selfCreatorLevel  1 / 0.85 / 0.8 / 0.55 / 0 at self-creation ≥ 95 / 89 / 85 / 76 (the shares of
+ *    Shot Creator / Primary BH / Slasher / Secondary BH / the rest)
+ *  - isPlaymaker       handling ≥ 86 (the share of Primary + Secondary BH, 13.9%); primary ≥ 95 (5.0%)
+ * `SKILL_CREATE=1` on; null / the label before 1996-97.
+ */
+const SKILL_CREATE = envVar('SKILL_CREATE') === '1';
+const SELF_LEVELS: [number, number][] = [[95, 1], [89, 0.85], [85, 0.8], [76, 0.55]];
+export function selfCreatorLevel(span: { id: string }): number | null {
+  const v = SKILL_CREATE ? skill(span, 'selfCreation') : null;
+  if (v === null) return null;
+  return SELF_LEVELS.find(([t]) => v >= t)?.[1] ?? 0;
+}
+export function isPlaymaker(span: { id: string; offensiveArchetype: string }, primary = false): boolean {
+  const v = SKILL_CREATE ? skill(span, 'handling') : null;
+  if (v === null) return primary ? span.offensiveArchetype === 'Primary Ball Handler' : span.offensiveArchetype === 'Primary Ball Handler' || span.offensiveArchetype === 'Secondary Ball Handler';
+  return v >= (primary ? 95 : 86);
+}
+/** Shot first: makes his own shot (level ≥ 0.8) and is not a playmaker — the old Shot Creator / Slasher. */
+export function isShotFirst(span: { id: string; offensiveArchetype: string }): boolean {
+  const lvl = selfCreatorLevel(span);
+  if (lvl === null) return span.offensiveArchetype === 'Shot Creator' || span.offensiveArchetype === 'Slasher';
+  return lvl >= 0.8 && !isPlaymaker(span);
+}
+/** A creator of either kind (the old Primary BH / Secondary BH / Shot Creator set). */
+export function isCreator(span: { id: string; offensiveArchetype: string }): boolean {
+  const lvl = selfCreatorLevel(span);
+  if (lvl === null) return ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(span.offensiveArchetype);
+  return lvl >= 0.85 || isPlaymaker(span);
+}

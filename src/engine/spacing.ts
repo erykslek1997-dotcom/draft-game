@@ -1,4 +1,5 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
+import { selfCreatorLevel } from './skills';
 import { normalizePlayerName } from '../data/schema';
 import { eraScaledThreePA, spanEndYears } from './era';
 import { players } from '../data/players';
@@ -228,7 +229,7 @@ const SELF_CREATION_BONUS_MIN_VOLUME = 4;
 /** Exported for `scripts/compareSelfCreationMeasured.ts`, which weighs this archetype proxy
  * against the measured unassisted-shot rates in `selfCreationLookup.ts`. */
 export function selfCreationRate(span: PlayerSpan): number {
-  const archetypeWeight = ARCHETYPE_SELF_CREATION[span.offensiveArchetype] ?? 0;
+  const archetypeWeight = selfCreatorLevel(span) ?? ARCHETYPE_SELF_CREATION[span.offensiveArchetype] ?? 0;
   if (archetypeWeight === 0) return 0;
   const usage = (span.fga - SELF_CREATION_USAGE_FLOOR) / (SELF_CREATION_USAGE_FULL - SELF_CREATION_USAGE_FLOOR);
   return archetypeWeight * Math.max(0, Math.min(1, usage));
