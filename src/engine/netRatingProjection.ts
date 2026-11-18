@@ -1,5 +1,5 @@
 import { computeOffensiveTalent } from './talent';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
 import type { Team } from './types';
@@ -104,7 +104,7 @@ export function projectedNetRating(team: Team): NetRatingProjection {
   const roleMinutes = assignments.reduce((sum, { player, minutes }) => {
     const hasRole =
       isRimProtector(player) ||
-      PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]);
+      isPerimeterDefender(player);
     return hasRole ? sum + minutes : sum;
   }, 0);
   const defRoleShare = roleMinutes / totalMinutes;

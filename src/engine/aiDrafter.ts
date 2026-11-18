@@ -1,5 +1,5 @@
 import { isTwilightWindow } from './veteran';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
@@ -783,7 +783,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
         : starterPlayers.reduce((sum, p) => sum + teamSpacingValue(p), 0) / starterPlayers.length,
     // 2026-10-02: a rim protector by the numbers (rimProtection.ts), not by the role label.
     lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, isRimProtector(p))),
-    perimeterDefenderStarterCount: starterPlayers.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)).length,
+    perimeterDefenderStarterCount: starterPlayers.filter((p) => isPerimeterDefender(p)).length,
     usageWeight: starterPlayers.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0),
     avgDefensivePortability:
       starterPlayers.length === 0
@@ -2577,7 +2577,7 @@ function pickForAiSized(
     // A real contender stacks 2-3 perimeter defenders, not one — taper the bonus over the first
     // two starters rather than dropping it to zero the moment one is aboard (see
     // `perimeterDefenderStarterCount`'s own docstring). Third and beyond: nothing.
-    if (PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)) {
+    if (isPerimeterDefender(p)) {
       const already = needs.perimeterDefenderStarterCount;
       // 2026-09-09: halved from 0.4/0.25 — the original was reaching cheap Point-of-Attack guards
       // (Kris Dunn eTAL 55 → pick ~99, Don Buse) well past their talent. The smaller nudge still
@@ -2586,7 +2586,7 @@ function pickForAiSized(
     }
     if (
       needs.usageWeight >= OFFENSE_HEAVY_USAGE_THRESHOLD &&
-      (isRealRimProtector(p, isRimProtector(p)) || PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole))
+      (isRealRimProtector(p, isRimProtector(p)) || isPerimeterDefender(p))
     ) {
       need += OFFENSE_HEAVY_DEFENSE_BONUS;
     }

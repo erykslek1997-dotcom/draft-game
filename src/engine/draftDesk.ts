@@ -1,5 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent } from './defensiveTalent';
@@ -134,7 +134,7 @@ export function takesFor(roster: PlayerSpan[]): Take[] {
       advice: 'a big who protects the rim' });
   }
 
-  const stopper = best(roster.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && p.primaryPosition !== 'C'), d);
+  const stopper = best(roster.filter((p) => isPerimeterDefender(p) && p.primaryPosition !== 'C'), d);
   if (stopper && d(stopper) >= 85) {
     takes.push({ topic: 'perimeterD', expert: 'coach', kind: 'strength', weight: 0.7,
       line: `${deskName(stopper)} can take the other team’s best scorer every single night. That’s a real weapon.` });

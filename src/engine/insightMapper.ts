@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { realSecondaryPositions } from './positionCompetence';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import type { Team } from './types';
@@ -112,7 +112,7 @@ function toPlayerFeature(
     // shooting anomaly (Curry) as "spacing solved," rather than reading the archetype tag alone.
     isSpacingArchetype: isPlusShooter(p) || isShootingAnomalyPlayer(p),
     isRimProtectorRole: isRimProtector(p),
-    isPerimeterDefenderRole: PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole),
+    isPerimeterDefenderRole: isPerimeterDefender(p),
     threePct: p.box.threePct,
     threePA: p.box.threePA,
     tsPct: p.box.tsPct,
@@ -220,7 +220,7 @@ export function buildTeamFeatureSnapshot(team: Team): TeamFeatureSnapshot {
   const totalShooterMinutes = allPlusShooters.reduce((s, p) => s + p.minutes, 0);
   const topShooterMinutes = allPlusShooters.length > 0 ? Math.max(...allPlusShooters.map((p) => p.minutes)) : 0;
 
-  const starterPerimeterDefenders = starterSpans.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole));
+  const starterPerimeterDefenders = starterSpans.filter((p) => isPerimeterDefender(p));
   const starterRimProtectors = starterSpans.filter((p) => isRimProtector(p));
   const rimProtectors = rotationPlayers.filter((p) => p.isRimProtectorRole);
   const perimeterDefenders = rotationPlayers.filter((p) => p.isPerimeterDefenderRole);

@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { completeRosterGreedy } from './aiDrafter';
@@ -238,8 +238,8 @@ const ON_BALL = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator
 const INSIDE = ['Slasher', 'Roll & Cut Big', 'Post Scorer', 'Versatile Big'];
 const FIXES: Record<Topic, (p: PlayerSpan) => boolean> = {
   rimProtection: (p) => isRimProtector(p) && computeDefensiveTalent(p) >= 70,
-  perimeterD: (p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && computeDefensiveTalent(p) >= 70,
-  weakLink: (p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && computeDefensiveTalent(p) >= 70,
+  perimeterD: (p) => isPerimeterDefender(p) && computeDefensiveTalent(p) >= 70,
+  weakLink: (p) => isPerimeterDefender(p) && computeDefensiveTalent(p) >= 70,
   rebounding: (p) => p.box.rpg >= 9,
   spacing: (p) => computeSpacing(p) >= 65,
   rimPressure: (p) => INSIDE.includes(p.offensiveArchetype),

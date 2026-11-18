@@ -1,5 +1,5 @@
 import { defenderProfile } from './liveDefense';
-import { isRimProtector } from './skills';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -65,7 +65,7 @@ function isStrongRimProtector(player: { defensiveRole: string }): boolean {
 
 function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
   return (
-    PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
+    isPerimeterDefender(player as PlayerSpan) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
   );
 }
