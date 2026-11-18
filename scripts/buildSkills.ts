@@ -32,6 +32,7 @@ import { draftPool } from '../src/data/draftPool';
 import { normalizePlayerName, type PlayerSpan } from '../src/data/schema';
 import { spanEndYears } from '../src/engine/era';
 import { realSpan } from '../src/engine/realAdvancedLookup';
+import { realDefenseExcessDetail } from '../src/engine/darkoCorrection';
 import { estimatedMinutesPerGame } from '../src/engine/minutesPerGame';
 import zoneData from '../src/data/awards/zoneEfficiency.json';
 import selfData from '../src/data/awards/selfCreation.json';
@@ -57,6 +58,7 @@ const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : nul
 
 function raw(span: PlayerSpan): Record<string, number | null> {
   const r = realSpan(span);
+  const d = realDefenseExcessDetail(span);
   const mpg = estimatedMinutesPerGame(span) ?? r?.mpg ?? null;
   const ss = seasonsOf(span);
   const zs = ss.map((x) => x.z).filter(Boolean) as Row[];
@@ -85,18 +87,42 @@ function raw(span: PlayerSpan): Record<string, number | null> {
     offGlass: n(r?.orb),
     // rimDiff > 0: opponents shoot worse at the rim against him than expected (Gobert +11, Klay -3).
     rimProtect: n(r?.blk) !== null ? r!.blk! + (n(r?.rimDiff) ?? 0) * 0.15 + (n(r?.rimAttempts36) ?? 0) * 0.15 : null,
-    pointOfAttack: n(r?.stl) !== null ? r!.stl! + (n(r?.deflections36) ?? 0) * 0.3 : null,
     activity: n(r?.stl) !== null && n(r?.blk) !== null ? r!.stl! + r!.blk! * 0.6 + (n(r?.deflections36) ?? 0) * 0.3 + (n(r?.looseBalls36) ?? 0) * 0.5 : null,
-    // DBPM less what his blocks and steals already explain (defensive Win Shares follow the team).
-    help: n(r?.dbpm) !== null ? r!.dbpm! - 0.25 * (n(r?.blk) ?? 0) - 0.4 * (n(r?.stl) ?? 0) : null,
     defGlass: n(r?.drb),
     _mpg: mpg,
+    // Components for the two composite skills below (z-scored across windows, then combined).
+    _stl: n(r?.stl), _blk: n(r?.blk), _drb: n(r?.drb), _defl: n(r?.deflections36), _c3: n(r?.contests3pt36),
+    _matchup: d?.matchupDefense ?? null,
+    _impact: (() => { const v = [d?.onOffDdpm, d?.raptorDefense, d?.bpm2Defense].filter((x): x is number => typeof x === 'number' && Number.isFinite(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })(),
   };
 }
 
 const mid = (s: PlayerSpan) => { const y = spanEndYears(s.spanLabel); return (y[0] + y[y.length - 1]) / 2; };
 const windows = draftPool.filter((s) => { const y = spanEndYears(s.spanLabel); return y.length > 0 && Math.min(...y) >= FIRST; });
 const raws = windows.map((s) => ({ s, m: mid(s), r: raw(s) }));
+// 2026-11-18 (the user: point of attack and help "zdecydowanie do poprawki" — Klay 37 on steals alone,
+// Jokic / Westbrook ~100 on DBPM's rebounds):
+//  pointOfAttack  mean of the z-scores he has of: STL% (x1), deflections a 36 (x1), three-point contests
+//                 a 36 (x0.7), matchup defense 2018+ (x1.5) — a stopper who rarely steals still reads
+//  help           defensive impact (mean of on/off, RAPTOR, BPM2 defense) less the part his steals,
+//                 blocks and defensive rebounds explain (least squares over the windows): positioning,
+//                 help and rotations
+const zOf = (k: string) => { const v = raws.map((q) => q.r[k]).filter((x): x is number => x !== null); const m = v.reduce((a, b) => a + b, 0) / v.length; const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1; return (x: number | null) => (x === null ? null : (x - m) / sd); };
+const Z = Object.fromEntries(['_stl', '_blk', '_drb', '_defl', '_c3', '_matchup', '_impact'].map((k) => [k, zOf(k)]));
+for (const q of raws) {
+  const parts = ([['_stl', 1], ['_defl', 1], ['_c3', 0.7], ['_matchup', 1.5]] as const).map(([k, w]) => [Z[k](q.r[k]), w] as const).filter(([z]) => z !== null) as [number, number][];
+  q.r.pointOfAttack = parts.length ? parts.reduce((t, [z, w]) => t + z * w, 0) / parts.reduce((t, [, w]) => t + w, 0) : null;
+}
+{
+  const rows = raws.filter((q) => q.r._impact !== null && q.r._stl !== null && q.r._blk !== null && q.r._drb !== null);
+  const X = rows.map((q) => [1, Z._stl(q.r._stl)!, Z._blk(q.r._blk)!, Z._drb(q.r._drb)!]), y = rows.map((q) => Z._impact(q.r._impact)!);
+  const k = 4, A = Array.from({ length: k }, () => new Array(k + 1).fill(0));
+  X.forEach((x, i) => { for (let a = 0; a < k; a++) { for (let b = 0; b < k; b++) A[a][b] += x[a] * x[b]; A[a][k] += x[a] * y[i]; } });
+  for (let c = 0; c < k; c++) { for (let r2 = 0; r2 < k; r2++) { if (r2 === c) continue; const f = A[r2][c] / A[c][c]; for (let j = c; j <= k; j++) A[r2][j] -= f * A[c][j]; } }
+  const b = A.map((row, i) => row[k] / row[i]);
+  console.log('help: impact explained by stl / blk / drb (z):', b.slice(1).map((v) => v.toFixed(2)).join(' / '));
+  for (const q of raws) q.r.help = q.r._impact === null || q.r._stl === null || q.r._blk === null || q.r._drb === null ? null : Z._impact(q.r._impact)! - (b[0] + b[1] * Z._stl(q.r._stl)! + b[2] * Z._blk(q.r._blk)! + b[3] * Z._drb(q.r._drb)!);
+}
 const SKILLS = Object.keys(raws[0].r).filter((k) => !k.startsWith('_'));
 const out: Record<string, Record<string, number>> = {};
 for (const { s, m, r } of raws) {
