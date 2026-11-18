@@ -8,6 +8,7 @@ import { teamSpacingValue } from './midrangeGravity';
 import { eraBaseline } from './era';
 import { boxRatesForSpan } from './boxRatesLookup';
 import { envVar } from './env';
+import { skill } from './skills';
 
 /**
  * G6a — archetype-pair anti-patterns. `fitScore` grades every starter's role in isolation and
@@ -320,8 +321,22 @@ const INITIATOR_QUALITY_FULL = 90;
 const LEAD_SHOOTING_FLOOR = 0.75;
 const LEAD_SHOOTING_FULL = 60;
 
+/** 2026-11-18 (labels → data, `SKILL_PNR=1`): how real a ball-screen lead he is from the handling
+ * skill (0.6 at the median and below, 1 at 95) instead of the label factor; the roll share likewise
+ * from the roll skill (0.6 → 1). */
+const SKILL_PNR = envVar('SKILL_PNR') === '1';
+function initiatorFactor(player: PlayerSpan): number {
+  const h = SKILL_PNR ? skill(player, 'handling') : null;
+  if (h !== null) return 0.6 + 0.4 * Math.max(0, Math.min(1, (h - 50) / 45));
+  return INITIATOR_ARCHETYPE_FACTOR[player.offensiveArchetype] ?? OTHER_INITIATOR_FACTOR;
+}
+function rollShare(player: PlayerSpan): number {
+  const r = SKILL_PNR ? skill(player, 'roll') : null;
+  if (r !== null) return OFF_ARCHETYPE_ROLL_SHARE + (1 - OFF_ARCHETYPE_ROLL_SHARE) * Math.max(0, Math.min(1, (r - 50) / 45));
+  return ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE;
+}
 function initiatorRating(player: PlayerSpan): number {
-  return (INITIATOR_ARCHETYPE_FACTOR[player.offensiveArchetype] ?? OTHER_INITIATOR_FACTOR) * (playmakingScoreForPlayer(player) ?? 40);
+  return initiatorFactor(player) * (playmakingScoreForPlayer(player) ?? 40);
 }
 
 /** 2026-11-06, the user (Curry + Klay + Draymond at Fit 58): the screener who catches on the short
@@ -334,7 +349,7 @@ const SHORT_ROLL_RELIEF = (envVar('SR_RELIEF') ?? '1') === '1';
 /** Team spacing a surrounding player needs to count as a real shooter beside the short roll. */
 const SHORT_ROLL_SHOOTER = 70;
 function screenerGravity(player: PlayerSpan, slot: Position): number {
-  const roll = rimPressureForFit(player) * (ROLL_SCREENER_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : OFF_ARCHETYPE_ROLL_SHARE);
+  const roll = rimPressureForFit(player) * rollShare(player);
   const popTagged = player.offensiveArchetype === 'Stretch Big' || player.offensiveArchetype === 'Versatile Big' || isPlusShooter(player);
   const pop = teamSpacingValue(player) * (popTagged ? 1 : UNTAGGED_POP_SHARE);
   const shortRoll = (playmakingScoreForPlayer(player) ?? 0) * SHORT_ROLL_SHARE;
