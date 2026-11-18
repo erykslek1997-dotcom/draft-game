@@ -1,5 +1,5 @@
 import { isTwilightWindow } from './veteran';
-import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull } from './skills';
+import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill } from './skills';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
@@ -1081,6 +1081,26 @@ export function playoffBpmDraftBonus(p: PlayerSpan): number {
 }
 
 const ELITE_PERIMETER_ENGINE_ARCHETYPES = new Set(['Primary Ball Handler', 'Shot Creator']);
+/**
+ * 2026-11-18 (labels → data, `SKILL_AI=1`): the four role gates of the early-round bonuses and
+ * penalties read the skills; a window without them keeps its label.
+ *  - post (post-engine bonus): post ≥ 85.
+ *  - engine (perimeter-engine bonus): handling ≥ 86 or selfCreation ≥ 89, and post < 85.
+ *  - scorer (sub-96 creator must prove elite offense): selfCreation ≥ 89 and handling < 86 — a scorer, not the playmaker.
+ *  - offBallShooter (specialist discount): spotUp or offBall ≥ 70, handling < 70, selfCreation < 76.
+ */
+function aiRole(p: PlayerSpan, kind: 'post' | 'engine' | 'scorer' | 'offBallShooter', label: () => boolean): boolean {
+  if (envVar('SKILL_AI') !== '1') return label();
+  const h = skill(p, 'handling');
+  if (h === null) return label();
+  const sc = skill(p, 'selfCreation') ?? 0, post = skill(p, 'post') ?? 0;
+  switch (kind) {
+    case 'post': return post >= 85;
+    case 'engine': return (h >= 86 || sc >= 89) && post < 85;
+    case 'scorer': return sc >= 89 && h < 86;
+    case 'offBallShooter': return ((skill(p, 'spotUp') ?? 0) >= 70 || (skill(p, 'offBall') ?? 0) >= 70) && h < 70 && sc < 76;
+  }
+}
 const ELITE_PERIMETER_ENGINE_TALENT_FLOOR = 96;
 const ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR = 90;
 const ELITE_PERIMETER_ENGINE_FGA_FLOOR = 17.5;
@@ -1094,7 +1114,7 @@ function elitePerimeterEngineBonus(p: PlayerSpan): number {
   if (p.fga < ELITE_PERIMETER_ENGINE_FGA_FLOOR) return 0;
   if (effectiveTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
   const offensiveTalent = computeOffensiveTalent(p);
-  if (p.offensiveArchetype === 'Post Scorer') {
+  if (aiRole(p, 'post', () => p.offensiveArchetype === 'Post Scorer')) {
     if (offensiveTalent < 88 || computeDefensiveTalent(p) >= 90) return 0;
     // The post-engine bump is meant for a workload a team can actually build around. Embiid's
     // 34-minute/load-managed spans keep their measured TAL but do not receive the same extra
@@ -1104,7 +1124,7 @@ function elitePerimeterEngineBonus(p: PlayerSpan): number {
     const postBonus = p.box.apg >= 6 ? ELITE_POST_PLAYMAKING_HUB_BONUS : ELITE_POST_SCORER_BONUS;
     return postBonus * workloadFactor;
   }
-  if (!ELITE_PERIMETER_ENGINE_ARCHETYPES.has(p.offensiveArchetype)) return 0;
+  if (!aiRole(p, 'engine', () => ELITE_PERIMETER_ENGINE_ARCHETYPES.has(p.offensiveArchetype))) return 0;
   if (offensiveTalent < ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR) return 0;
   return Math.min(
     MAX_ELITE_PERIMETER_ENGINE_BONUS,
@@ -1270,7 +1290,7 @@ const MAX_OFF_BALL_SPECIALIST_PENALTY = 6.5;
  * and only discounts off-ball specialists below the all-time talent tier. */
 function earlyCoreRolePenalty(p: PlayerSpan): number {
   const talent = effectiveTalent(p);
-  if (p.offensiveArchetype === 'Shot Creator' && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
+  if (aiRole(p, 'scorer', () => p.offensiveArchetype === 'Shot Creator') && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
     const offenseShortfall = Math.max(0, NON_ELITE_CREATOR_OFFENSE_REFERENCE - computeOffensiveTalent(p));
     const penalty = Math.min(
       MAX_NON_ELITE_CREATOR_PENALTY,
@@ -1278,7 +1298,7 @@ function earlyCoreRolePenalty(p: PlayerSpan): number {
     );
     return isValidatedPortableTwoWayWing(p) ? penalty * PORTABLE_TWO_WAY_WING_PENALTY_SCALE : penalty;
   }
-  if (OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
+  if (aiRole(p, 'offBallShooter', () => OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype)) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
     return Math.min(
       MAX_OFF_BALL_SPECIALIST_PENALTY,
       (OFF_BALL_SPECIALIST_TALENT_REFERENCE - talent) * OFF_BALL_SPECIALIST_PENALTY_SCALE +
