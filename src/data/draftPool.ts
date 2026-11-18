@@ -9,6 +9,8 @@ import { auditedPrimaryDefensiveRole, buildRoleFitContext } from '../engine/role
 import { runtimeAvailabilityForSpan } from '../engine/runtimeSpanLookups';
 import { applyRoleAudit } from './roleAudit';
 import { personNameFor } from './personNames';
+import { envVar } from '../engine/env';
+import { spanEndYears } from '../engine/era';
 import { applyPositionDecision } from './positionDecisions';
 
 // The JSON is a precomputed build artifact, but position corrections in players.ts must also be
@@ -109,4 +111,9 @@ export const draftPoolBeforeRoleAudit: PlayerSpan[] = positionCorrectedPool.filt
   defensiveRole: auditedPrimaryDefensiveRole(span, defensiveRoleAuditContext),
 }));
 
-export const draftPool: PlayerSpan[] = draftPoolBeforeRoleAudit.map(applyRoleAudit);
+/** 2026-11-18, measurement (the user: how do the judges agree on the seasons with exact data, 1997+?):
+ * `POOL_FROM=1997` keeps only windows whose every season ends in or after that year. Off by default. */
+const POOL_FROM = Number(envVar('POOL_FROM') ?? 0);
+export const draftPool: PlayerSpan[] = draftPoolBeforeRoleAudit
+  .filter((s) => !POOL_FROM || Math.min(...spanEndYears(s.spanLabel)) >= POOL_FROM)
+  .map(applyRoleAudit);
