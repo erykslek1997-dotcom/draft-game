@@ -2770,6 +2770,8 @@ function pickForAiSized(
   }
 
   scoredBySpan.sort((a, b) => b.value - a.value);
+  // Dev hook (scripts only): every candidate's value, for tracing a pick.
+  (globalThis as { __aiScoredHook?: (r: PlayerSpan[], e: typeof scoredBySpan) => void }).__aiScoredHook?.(roster, scoredBySpan);
   const scored = uniqueRankedPlayers(scoredBySpan);
 
   // `marginalStarterValue` (see its own docstring above) is expensive — an exact rotation

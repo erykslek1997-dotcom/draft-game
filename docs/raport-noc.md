@@ -56,3 +56,11 @@ Sędziowie przy W=1 (quick): SRS 0.842 / 0.838 (base 0.836), sim 0.67, D-TAL 0.8
 Sędziowie (quick): SRS 0.842 / 0.839 (base 0.842 / 0.836), sim 0.66 (0.67), D-TAL 0.825, piątki 0.551 (0.548).
 AI, pełny test 10 draftów: Overall 77.57 (base 77.96), sd 2.98 (2.96), starter TAL < 60 na 10+ min 24% (26%), gwiazdy 90+: 90. centyl wyboru 20 (20), najgorszy 86 (84). Kontrolne 9/12 (8/12).
 Czyli: nie psuje niczego, lekko pomaga piątkom i starterom; nie rozwiązuje ataku Curry'ego (to osobny problem Offense).
+
+## 8. Dlaczego AI omija gwiazdy (Wade, Oscar) i bierze role playerów
+Licznik (`scripts/_oddities.ts`, poprawiony: raz na pominiętego gracza), 10 draftów: Wade 95 pomijany w **każdym** drafcie, zwykle od ~#24 do #56-79 (do 49 wyborów); Oscar 92 od ~#45-74 do #80; Kareem 97 do #13-28; LeBron 105 nie idzie z #1.
+Ślad wyceny (`scripts/_wadeWhy.ts`, seed 104, hook `__aiScoredHook` w `aiDrafter.ts`):
+- pick 30 (roster: LeBron): Stockton 156.7 > Wade 151.1 (5. miejsce) — blisko.
+- pick 40 (Bird, Green): Carter 221.5, Billups 219.9 (`gmProfileBonus` +14..16), Klay 216.3 > Wade 211.3 (11.).
+- pick 55: Artest 79 TAL → `talentTerm` 253 (need × 3.2), Anunoby 77 → 241, Marion 85 → 256.
+**Wniosek:** potrzeba pozycji mnoży talent (`rampedNeed` 1.4-3.2), a do tego profil GM (+14..16) i szum tablicy (±14). Różnica 16 TAL (Wade 95 vs Artest 79) przegrywa z samym mnożnikiem potrzeby. To jest mechanizm „AI wypełnia role zamiast brać talent”. Propozycja na rano (do decyzji): ograniczyć mnożnik potrzeby (np. ≤ 1.5× albo addytywnie) i zmniejszyć profil GM / szum dla talentu 90+; zmierzyć licznikiem + `measureRosterSense` + kontrolnymi.
