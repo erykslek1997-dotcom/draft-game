@@ -1,4 +1,5 @@
 import type { DefensiveRole, PlayerSpan, Position } from '../data/schema';
+import { envVar } from './env';
 import { eraBaseline, eraBlocksPerGame, LEAGUE_PACE_BASELINE, reboundAvailabilityFactor, stealRateEraResidual } from './era';
 
 /**
@@ -58,6 +59,8 @@ const DEFENSIVE_ROLE_TYPICAL_ACTIVITY: Record<DefensiveRole, number> = {
   Chaser: 7.4,
   'Low Activity': 1, // unused — base weight is 0
 };
+/** 2026-11-18, labels → data (measuring): the role tag's share of the box defense read (1 = as is). */
+const DEF_ROLE_WEIGHT = Number(envVar('DEF_ROLEW') ?? 1);
 const ROLE_SCALE_MIN = 0.5;
 const ROLE_SCALE_MAX = 1.8;
 
@@ -143,7 +146,7 @@ export function defensiveBoxParts(span: PlayerSpan): {
       : baseWeight *
         Math.max(ROLE_SCALE_MIN, Math.min(ROLE_SCALE_MAX, activity / DEFENSIVE_ROLE_TYPICAL_ACTIVITY[defensiveRole]));
 
-  return { stealActivity, blockActivity, activity, rebounding, roleWeight };
+  return { stealActivity, blockActivity, activity, rebounding, roleWeight: roleWeight * DEF_ROLE_WEIGHT };
 }
 
 export function computeDefensiveImpact(span: PlayerSpan): number {
