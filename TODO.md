@@ -1894,6 +1894,8 @@ Sędziowie na końcu nocy: real 0,8589 / gra 0,8059 / obrona drużyn (real DRtg)
 
 **Weszło 2026-11-18 (po południu):** trójki dla okien sprzed linii (z FT% i pozycji); przechwyty i bloki sprzed 1974 jako estymacje całych karier (`scripts/buildPreStocks.ts`: model na oknach 1974+, most przez własne okna gracza, krzywa wieku osobno dla specjalistów, kotwice z danych — Wilt 7,5 i 1972-73 5,4, Russell 7,0; test na znanych: przechwyty r 0,80, bloki 0,90); waga O-TAL w kotwicy gry ×2,5 (gra vs real SRS 0,827 → 0,844, ORtg 0,717 → 0,773, gra vs silnik 0,68 bez zmian). Sędziowie: SRS 0,840, D-TAL 0,824, piątki 0,548.
 
+**Wyłączone 2026-11-18 (decyzja Eryka):** premia za superstara w ataku (`OFF_SUPERSTAR` 0): atak vs real ORtg 0,7946 → 0,8042; rozrzut AI 2,61 → 2,49 — do nadrobienia różnorodnością AI.
+
 **Do zrobienia (2026-11-18):** dane z Basketball-Reference (`scripts/fetch_bbref_totals_browser.js`, w przeglądarce) — `playerSeasonStats.csv` niekompletne przed latami 80., czyta je też `buildModernBox` i `era.ts`; po podmianie przebudować modernBox i estymacje. `calibrationReference`: „Nash-Kobe-Malone ≥ Tulsa” pada od rana (Nash 86 vs Tulsa 88, silnik) — zdecydować. Silnik i gra zaniżają drużyny z mocnym drugim planem (+0,6…+0,9), zawyżają słaby. Sonda epok: przed 1974 gra daje w wyniku +5,6 ponad silnik mimo ataku −10 — wyjaśnić.
 
 **Weszło 2026-11-18:** wagi obrony według roli (rim protector ×1,6, PG ×0,6, gra + silnik); podłoga za All-Defense potwierdzana danymi (DBPM 0 → nic, 2+ → pełna; dotyczy też drugiego odczytu podłogi z sąsiednimi oknami, który wcześniej ignorował pokrętła). Sędziowie: D-TAL 0,810 → 0,824, gra 0,65 → 0,69, piątki 0,543 → 0,548, SRS 0,840. Kobe 2005-07 D 86 → 69, Payton 1999-01 87 → 77, Rodman 1991-93 83 → 76.

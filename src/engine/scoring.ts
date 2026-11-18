@@ -812,8 +812,13 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
  * spread with less drift (mean 78.9, teams above 90: 3 -> 14 of 192). Same Billups/White/E. Jones/
  * Pippen shell: Jokic 77 -> 83, Gobert stays 72 (engine floor).
  */
-/** 2026-11-18, measuring: the superstar term's scale (1 = as is). */
-const OFF_SUPERSTAR = Number(envVar('OFF_SUPERSTAR') ?? 1);
+/** 2026-11-18, off (the user: "Tak", after the measurement): the term over-read star-plus-thin-cast
+ * offenses against real ORtg (top-usage star with a weak rest: real 1.0 worse than the engine said).
+ * Offense vs real ORtg 0.7946 → 0.8042, Overall vs real SRS 0.8712 → 0.8710, game vs engine 0.68 →
+ * 0.67; Jokic vs Gobert in the same shell still 15 Offense apart (24 with it; 5 when it was added —
+ * the star-weighted O-TAL since carries most of it). AI rosters' Overall spread 2.61 → 2.49: to be
+ * widened by AI variety, not by this term. `OFF_SUPERSTAR=1` = the old term. */
+const OFF_SUPERSTAR = Number(envVar('OFF_SUPERSTAR') ?? 0);
 const MAX_SUPERSTAR_ENGINE_BONUS = 6;
 const NO_SUPERSTAR_ENGINE_MALUS = 2;
 const SUPERSTAR_ENGINE_OTAL_START = 85;
