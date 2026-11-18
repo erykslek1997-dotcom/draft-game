@@ -1034,7 +1034,7 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const defAway = defSpans.reduce((sum, s, j) => sum + Math.max(0, 1 - positionFitMultiplier(s, STARTER_SLOTS[j])), 0) / Math.max(1, defSpans.length);
   const offFit = fiveFit(off.map((c) => c.player.span)).off;
   const defFit = fiveFit(defSpans).def;
-  const defAnchor = (1 - FIT_TUNING.def.shot * defFit) * Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length)))) * (1 + ROTATION_TUNING.defAway * defAway);
+  const defAnchor = (1 - FIT_TUNING.def.shot * defFit) * Math.max(0.7, Math.min(1.3, 1 - 2 * roleWeightedDefAnchor(defSpans, fd))) * (1 + ROTATION_TUNING.defAway * defAway);
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
@@ -1061,6 +1061,30 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     rimAnchor: fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0),
     lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off) + SWITCH_TUNING.iso * switchZ - FIT_TUNING.off.late * offFit)),
   };
+}
+
+/**
+ * 2026-11-18, defense by on-court role (the user, 2026-11-14: the main rim protector covers the
+ * others' mistakes; a point guard's D-TAL point is worth less). Real five-man units put a center's
+ * D-TAL point at ~1.6 of the average and a point guard's at ~0.58. The five's anchor is a weighted
+ * mean: the five's best rim protector (whatever slot he plays) weighs `rim`, everyone else by the
+ * slot he plays on the floor. Weights are renormalised to a mean of 1, so the league stays put.
+ */
+const ROLE_WEIGHT = {
+  rim: Number(envVar('SIM_ROLE_RIM') ?? 1),
+  slot: { PG: Number(envVar('SIM_ROLE_PG') ?? 1), SG: 1, SF: 1, PF: Number(envVar('SIM_ROLE_PF') ?? 1), C: 1 } as Record<Position, number>,
+};
+function roleWeightedDefAnchor(defSpans: PlayerSpan[], fd: FiveDefense): number {
+  if (defSpans.length === 0) return 0;
+  const anchorIdx = fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0);
+  let sum = 0;
+  let wSum = 0;
+  defSpans.forEach((s, j) => {
+    const w = j === anchorIdx ? ROLE_WEIGHT.rim : ROLE_WEIGHT.slot[STARTER_SLOTS[j]] ?? 1;
+    sum += w * anchorOf(s).def;
+    wSum += w;
+  });
+  return sum / wSum;
 }
 
 /** What the weakest defender gives up when he is hunted, on top of his own matchup. */
