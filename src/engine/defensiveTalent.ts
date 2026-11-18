@@ -1,5 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
-import { isLowActivity } from './skills';
+import { isLowActivity, skill, type Skill } from './skills';
 import { eraBlocksPerGame, spanEndYears } from './era';
 import { per36 } from './minutesPerGame';
 import { athleticismScoreForSpan } from './athleticismLookup';
@@ -1323,7 +1323,32 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
   const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, smoothed))));
-  const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const final = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * 2026-11-18 (the user's review, principle 4: Paul George 2018-20 82 → 2019-21 62, Iguodala 2011-13
+ * 88 → 2014-16 63 with help 91-97, Manu at 85 five windows running): D-TAL moves `DT_SKILL` of the
+ * way to a read from the defensive skills — guards and wings 0.45 point of attack + 0.35 help + 0.2
+ * activity, bigs 0.45 rim protection + 0.3 help + 0.15 defensive glass + 0.1 activity — put on the
+ * D-TAL scale by position (each side's mean and spread over the pool's windows with the skills,
+ * `scripts/_dskill.ts`; r with today's D-TAL 0.73-0.81). A window without the skills keeps its D-TAL.
+ */
+const DT_SKILL = Number(envVar('DT_SKILL') ?? 0);
+const SKILL_DEF_SCALE: Record<string, [number, number, number, number]> = {
+  PG: [55.0, 20.2, 38.3, 18.9], SG: [49.8, 20.9, 38.0, 18.8], SF: [51.1, 21.2, 40.0, 18.7], PF: [60.4, 14.2, 40.4, 19.2], C: [73.9, 12.7, 49.8, 22.0],
+};
+function withSkillDefense(span: PlayerSpan, dtal: number): number {
+  const g = (k: Skill) => skill(span, k);
+  const poa = g('pointOfAttack'), rim = g('rimProtect'), act = g('activity');
+  const sc = SKILL_DEF_SCALE[span.primaryPosition];
+  if (poa === null || rim === null || act === null || !sc) return dtal;
+  const help = g('help') ?? 50;
+  const big = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
+  const comp = big ? 0.45 * rim + 0.3 * help + 0.15 * (g('defGlass') ?? 50) + 0.1 * act : 0.45 * poa + 0.35 * help + 0.2 * act;
+  const fromSkills = sc[2] + ((comp - sc[0]) / sc[1]) * sc[3];
+  return Math.round(Math.max(0, Math.min(100, dtal + DT_SKILL * (fromSkills - dtal))));
 }
