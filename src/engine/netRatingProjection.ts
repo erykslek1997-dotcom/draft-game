@@ -1,4 +1,5 @@
 import { computeOffensiveTalent } from './talent';
+import { isRimProtector } from './skills';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
 import type { Team } from './types';
@@ -102,7 +103,7 @@ export function projectedNetRating(team: Team): NetRatingProjection {
   const predSpc = assignments.reduce((sum, { player, minutes }) => sum + computeSpacing(player) * minutes, 0) / totalMinutes;
   const roleMinutes = assignments.reduce((sum, { player, minutes }) => {
     const hasRole =
-      RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) ||
+      isRimProtector(player) ||
       PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]);
     return hasRole ? sum + minutes : sum;
   }, 0);

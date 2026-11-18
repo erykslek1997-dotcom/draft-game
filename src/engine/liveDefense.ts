@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { isRimProtector } from './skills';
 import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import defenseData from '../data/spanDefense.json';
 import { computeDefensiveTalent } from './defensiveTalent';
@@ -63,7 +64,7 @@ export function defenderProfile(span: PlayerSpan): DefenderProfile {
     const dtal = z(computeDefensiveTalent(span), REFERENCE.dtal);
     const blk = z(gameStocks(span).bpg * per36, REFERENCE.blk36);
     const stl = z(gameStocks(span).spg * per36, REFERENCE.stl36);
-    const rimRole = RIM_PROTECTOR_ROLES.includes(span.defensiveRole) || isBig(span.primaryPosition);
+    const rimRole = isRimProtector(span) || isBig(span.primaryPosition);
     const perimRole = PERIMETER_DEFENDER_ROLES.includes(span.defensiveRole) || !isBig(span.primaryPosition);
     const reb36 = m.rpg * per36;
     p = {

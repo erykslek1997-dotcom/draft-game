@@ -1,4 +1,5 @@
 import { defenderProfile } from './liveDefense';
+import { isRimProtector } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -57,7 +58,7 @@ const PERIMETER_DEFENDER_IMPACT_THRESHOLD = 10;
 
 function isStrongRimProtector(player: { defensiveRole: string }): boolean {
   return (
-    RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
+    isRimProtector(player as PlayerSpan) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= RIM_PROTECTOR_IMPACT_THRESHOLD
   );
 }
@@ -1492,8 +1493,8 @@ export function rotationScore(team: Team): RotationScoreResult {
     notes.push('Bench brings shooting the starting five lacks.');
   }
 
-  const rimGap = !startersRoles.some((r) => RIM_PROTECTOR_ROLES.includes(r));
-  if (rimGap && bench.some((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) {
+  const rimGap = !starters.some((s) => isRimProtector(s.player));
+  if (rimGap && bench.some((p) => isRimProtector(p))) {
     score += 7;
     components.benchRimCoverage = 7;
     notes.push('Bench brings rim protection the starting five lacks.');

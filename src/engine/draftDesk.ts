@@ -1,4 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
+import { isRimProtector } from './skills';
 import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent } from './defensiveTalent';
@@ -112,7 +113,7 @@ export function takesFor(roster: PlayerSpan[]): Take[] {
   }
 
   // ── Coach ────────────────────────────────────────────────────────────────
-  const protectors = roster.filter((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole));
+  const protectors = roster.filter((p) => isRimProtector(p));
   const anchor = best(protectors, d);
   if (!anchor) {
     takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'concern', weight: 0.85,
