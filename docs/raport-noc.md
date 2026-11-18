@@ -51,3 +51,8 @@ Kontrolne: W=0 8/12 → W=1 9/12, W=2 9/12. Dalej nie przechodzą: Giannis + Hor
 ## 6. Minuty (LeBron 16 z 40 na PF)
 Nie błąd, tylko zamierzone: gwiazda pokrywa inną pozycję, gdy siada tamtejszy starter. LeBron we wszystkich czterech drużynach z 10 draftów: PG 10-12 min + PF 26-29 (albo SF 24 + PF 16). Strona pokazywała to jako „16m (razem 40m)”. Do oceny użytkownika, czy LeBron jako zmiennik PG jest ok.
 Sędziowie przy W=1 (quick): SRS 0.842 / 0.838 (base 0.836), sim 0.67, D-TAL 0.825, piątki 0.550 (base 0.548) — bez szkody, lekko lepiej. AI (quick): starter z TAL < 60 na 10+ min 26% → 19%, starter poza pozycją 9% → 13%.
+
+## 7. Zestaw rekomendowany: `REVIEW_W=1 SKILL_TAL=1 SKILL_PNR=1`
+Sędziowie (quick): SRS 0.842 / 0.839 (base 0.842 / 0.836), sim 0.66 (0.67), D-TAL 0.825, piątki 0.551 (0.548).
+AI, pełny test 10 draftów: Overall 77.57 (base 77.96), sd 2.98 (2.96), starter TAL < 60 na 10+ min 24% (26%), gwiazdy 90+: 90. centyl wyboru 20 (20), najgorszy 86 (84). Kontrolne 9/12 (8/12).
+Czyli: nie psuje niczego, lekko pomaga piątkom i starterom; nie rozwiązuje ataku Curry'ego (to osobny problem Offense).
