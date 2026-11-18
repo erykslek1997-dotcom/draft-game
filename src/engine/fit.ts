@@ -1178,7 +1178,7 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
       // A scorer who is also an elite passer (Bird, Wade) shares the ball more than his tag says.
       const sharing = clamp(((playmakingScoreForPlayer(player) ?? 0) - SHOT_FIRST_SHARING_START) / 10, 0, 1) * SHOT_FIRST_SHARING_RELIEF;
       const offBall = clamp((computeSpacing(player) - SHOT_FIRST_OFF_BALL_START) / (SHOT_FIRST_OFF_BALL_FULL - SHOT_FIRST_OFF_BALL_START), 0, 1) * SHOT_FIRST_OFF_BALL_RELIEF;
-      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) * (1 - offBall) };
+      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) * (1 - offBall) * (1 - playmakingRelief(player)) };
     })
     .filter(({ load }) => load > 0)
     .sort((a, b) => b.load - a.load);

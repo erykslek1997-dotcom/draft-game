@@ -85,7 +85,10 @@ export function isLowActivity(span: { id: string; defensiveRole: string }): bool
  *  - isPlaymaker       handling ≥ 86 (the share of Primary + Secondary BH, 13.9%); primary ≥ 95 (5.0%)
  * `SKILL_CREATE=1` on; null / the label before 1996-97.
  */
-const SKILL_CREATE = envVar('SKILL_CREATE') === '1';
+const SKILL_CREATE = envVar('SKILL_CREATE') === '1' || envVar('SKILL_CREATE') === '2';
+/** `SKILL_CREATE=2`: the smooth variant — handling relieves the shot-first cost gradually and a bench
+ * creator needs handling ≥ 80 (Kobe, McGrady count as part playmakers). */
+const CREATE_SMOOTH = envVar('SKILL_CREATE') === '2';
 const SELF_LEVELS: [number, number][] = [[95, 1], [89, 0.85], [85, 0.8], [76, 0.55]];
 export function selfCreatorLevel(span: { id: string }): number | null {
   const v = SKILL_CREATE ? skill(span, 'selfCreation') : null;
@@ -101,11 +104,17 @@ export function isPlaymaker(span: { id: string; offensiveArchetype: string }, pr
 export function isShotFirst(span: { id: string; offensiveArchetype: string }): boolean {
   const lvl = selfCreatorLevel(span);
   if (lvl === null) return span.offensiveArchetype === 'Shot Creator' || span.offensiveArchetype === 'Slasher';
-  return lvl >= 0.8 && !isPlaymaker(span);
+  return CREATE_SMOOTH ? lvl >= 0.8 : lvl >= 0.8 && !isPlaymaker(span);
+}
+/** Smooth variant: the share of a shot-first scorer's cost his passing takes away — 0 at handling 70, all at 95. */
+export function playmakingRelief(span: { id: string }): number {
+  const h = CREATE_SMOOTH ? skill(span, 'handling') : null;
+  return h === null ? 0 : Math.max(0, Math.min(1, (h - 70) / 25));
 }
 /** A creator of either kind (the old Primary BH / Secondary BH / Shot Creator set). */
 export function isCreator(span: { id: string; offensiveArchetype: string }): boolean {
   const lvl = selfCreatorLevel(span);
   if (lvl === null) return ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(span.offensiveArchetype);
+  if (CREATE_SMOOTH) return lvl >= 0.85 || (skill(span, 'handling') ?? 0) >= 80;
   return lvl >= 0.85 || isPlaymaker(span);
 }
