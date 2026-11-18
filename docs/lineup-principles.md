@@ -1,16 +1,15 @@
 # Zasady oceny składu (z oceny draftów użytkownika, 2026-11-18)
 
-Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do zmierzenia na danych przed wprowadzeniem.
+Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogólne zasady (akceptowane przez użytkownika); sposób liczenia ustala kod i każdą sprawdzają sędziowie na prawdziwych danych (SRS, piątki) przed włączeniem. Punkty 1, 7-10 najpewniej jako jeden mechanizm: budżet piłki + malejąca wartość tej samej cechy.
 
 ## Rola i system
 1. **Skalowanie do mniejszej roli.** Obok głównego kreatora gracz jest wart głównie swoich umiejętności bez piłki (spot-up, gra bez piłki, obrona). Stockton obok LeBrona traci; White, Kidd 2008-10, Kirilenko, Klay nie.
-2. **Piąta opcja z atakiem z kozła.** Sam rzut z miejsca + obrona to za mało: White tak; Danny Green, Bridges 2019-21, Caruso nie.
+2. **Piąta opcja z atakiem z kozła.** Wada, nie dyskwalifikacja (Green: 3 tytuły jako starter). Sam rzut z miejsca + obrona to za mało: White tak; Danny Green, Bridges 2019-21, Caruso nie.
 6. **Najlepszy gracz wyznacza system** i potrzebuje konkretnych typów obok siebie:
    - Curry: post-upy zbędne, niestrzelający wysocy to zaleta (zasłony, zbiórki), Butler jako point forward.
    - Dončić: dwóch wysokich do lobów to zaleta (Davis + Howard).
    - Shaq: strzelcy dookoła, przy nim rzucający PF (Kemp nie pasuje).
    - Giannis: czterech strzelców i rzucający center (Ben Wallace nie pasuje).
-   - Magic 1985-87: biegacze do kontry; bez nich zostaje mu tylko atak pozycyjny. Brakuje cechy „biega do kontry”.
 7. **Sufit ataku:** kto stworzy rzut, gdy akcja się zatnie (Garnett + Tatum + Conley + Hornacek: pozycyjnie, niski sufit).
 8. **Dublowanie tendencji:** dwóch graczy z tą samą rolą w ataku przeszkadza sobie (Duncan i Dirk, obaj post-up w systemie Hardena). Liczone po profilu cech, nie po pozycji: Wade 2008-10 to „mini-Giannis 6'4”, razem overkill.
 9. **Limit piłki:** dwóch graczy z dużym posiadaniem piłki to zwykle górna granica. Frazier + Kobe ok; Frazier + Kobe + Wilt 1966-68 za dużo; Jokić + Carter + Brunson + Pippen za dużo. Para rozgrywający + center w poście (Magic + Embiid) jest ok.
@@ -29,7 +28,7 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do
 11. **Zagrożenie za 3** w piątce: Jordan 1987-89 + West 1970-72 + Kirilenko, gdzie rzucają tylko Bridges i Gasol, więc obrona zbija się na Jordana.
 
 ## Pozycje / draft
-12. **Pozycje się nie zgrywają:** Battier (SF) gra PF, bo AI wzięło dwóch SF; słaby przód obok Robinsona. AI w drafcie nie pilnuje pozycji.
+12. **Pozycje się nie zgrywają:** niski PF działa tylko, gdy obok jest ktoś, kto przejmie zadania wysokiego (Battier na PF w Miami miał LeBrona; tu Robinson zostaje sam, a Hill tego nie przejmie). AI w drafcie nie pilnuje pozycji.
 - Słabi starterzy wybierani przez AI: Brunson 71, Ibaka 2013-15 71, Person 69, Hornacek 72, Bridges 68.
 
 ## Wzorcowe składy (silnik powinien ocenić je wysoko)
