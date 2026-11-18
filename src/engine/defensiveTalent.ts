@@ -1014,7 +1014,7 @@ const RECOGNIZED_DEFENDER_FULL_RATE = Number(envVar('DT_RFULL') ?? 0.6);
 // of 0.75 — LeBron 2012-14 82 -> 86, Kobe 2001-03 82 -> 87.
 /** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
  * the accolade floor counts — 1 as before, 0 off. */
-const DTAL_RULES = { recognitionShare: 1, carry: true };
+const DTAL_RULES = { recognitionShare: Number(envVar('DT_RECOG') ?? 1), carry: true };
 function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
   if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
