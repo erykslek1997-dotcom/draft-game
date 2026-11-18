@@ -46,7 +46,8 @@ export function gameStocks(span: PlayerSpan): { spg: number; bpg: number } {
   if (!c) {
     const m = modernBox(span);
     const ys = years(span);
-    if (!ON || !ys.length || Math.max(...ys) >= FIRST_FULL) c = { spg: m.spg, bpg: m.bpg };
+    const mixed = ys.length > 0 && Math.min(...ys) < FIRST_FULL && Math.max(...ys) >= FIRST_FULL;
+    if (!ON || !ys.length || (Math.max(...ys) >= FIRST_FULL && !(mixed && (m.spg === 0 || m.bpg === 0)))) c = { spg: m.spg, bpg: m.bpg };
     else {
       const b = span.box;
       const bridge = fullWindows(span.playerName).sort((x, y) => Math.abs(mid(x) - mid(span)) - Math.abs(mid(y) - mid(span)))[0];
@@ -63,10 +64,12 @@ export function gameStocks(span: PlayerSpan): { spg: number; bpg: number } {
         c = { bpg: byHeight ?? f(REG.bpg), spg: f(REG.spg) };
       }
     }
+    // 2026-11-18: a window with both kinds of seasons (1972-74) keeps a stat it carries; only a 0 —
+    // nothing recorded for it — takes the estimate (Bellamy and Thurmond 1972-74 read 0 blocks).
+    if (mixed && c) c = { spg: m.spg > 0 ? m.spg : c.spg, bpg: m.bpg > 0 ? m.bpg : c.bpg };
     if (c && ON && Math.max(...(ys.length ? ys : [9999])) < FIRST_FULL) {
       const r = reportedBlocks(span, m.rpg);
       if (r !== null) c = { ...c, bpg: r };
-      c = { ...c, bpg: eraCappedBlocks(span, c.bpg, m.rpg) };
     }
     cache.set(span, c);
   }
@@ -103,7 +106,7 @@ let heightModel: { b: number[]; real: number[]; byYear: Map<number, { name: stri
 const hFeat = (s: PlayerSpan): number[] | null => {
   const h = getHeightInches(s.playerName), w = getBodyWeightLbs(s.playerName), x = s.box;
   if (h === undefined || w === undefined || ![x.rpg, x.apg, x.fgPct, x.ftPct].every(Number.isFinite)) return null;
-  return [1, h - 80, (h - 80) ** 2, (w - 225) / 25, x.rpg, x.apg, x.fgPct, x.ftPct];
+  return [1, h - 80, 0, (w - 225) / 25, x.rpg, x.apg, x.fgPct, x.ftPct];
 };
 function fitHeightModel() {
   const rows: { f: number[]; y: number }[] = [];
@@ -138,30 +141,13 @@ function heightBlocks(span: PlayerSpan): number | null {
   const best = new Map<string, number>();
   for (let y = m - 1; y <= m + 1; y++) for (const x of byYear.get(y) ?? []) if (x.name !== span.playerName) best.set(x.name, Math.max(best.get(x.name) ?? -Infinity, x.v));
   if (best.size < 10) return null;
-  const others = [...best.values()];
-  const rank = others.filter((x) => x > v).length;
-  // Leagues of 8-14 teams had fewer such players than 1974-86's 18-23: scale the rank by the pool's size.
-  const scaled = Math.round(rank * real.length / best.size);
-  // The league's best is not capped at a typical 1974-86 season's best (the user, on Wilt): the model is
-  // in log blocks, so his lead over the next player is a ratio — at most x1.5.
-  const lead = rank === 0 ? Math.min(1.5, Math.exp(v - Math.max(...others))) : 1;
-  return real[Math.min(real.length - 1, scaled)] * lead * MODERN_RATIO;
-}
-
-/**
- * 2026-11-18 (the user: "bliżej mi do pułapów między 8-6 im głębiej w wczesne 60 i 50 wchodzimy"):
- * an estimated pre-1974 window blocks at most `cap` a game in its own era's numbers — 6 up to 1953,
- * rising to 8 by 1962, 8 through 1967, uncapped from 1968 (late Wilt is counted). Read back from
- * today's terms through the window's rebound translation, the same one `reportedBlocks` uses.
- */
-function eraBlockCap(year: number): number {
-  if (year >= 1968) return Infinity;
-  if (year >= 1962) return 8;
-  return Math.max(6, 6 + (year - 1953) * (2 / 9));
-}
-function eraCappedBlocks(span: PlayerSpan, bpg: number, modernRpg: number): number {
-  if (!(span.box.rpg > 0)) return bpg;
-  const t = (modernRpg / span.box.rpg) * BLOCKS_PER_REBOUND_TRANSLATION;
-  const cap = eraBlockCap(mid(span));
-  return Math.min(bpg, cap * t);
+  // Anchored on his seasons' THIRD-best shot blocker, who reads a typical 1974-86 season's third best;
+  // everyone reads the model's own ratio to him (the model is in log blocks), never more than x1.5 a
+  // typical season's best. An anchor below the top keeps one player's arrival from moving everyone:
+  // under a rank lookup, or anchored on the top, Russell fell from ~8 to ~3 in his era's numbers the
+  // season Wilt entered his ±1-year window.
+  const all = [...best.values(), v].sort((a, c) => c - a);
+  const k = Math.min(2, all.length - 1);
+  const est = real[Math.min(real.length - 1, k)] * Math.exp(v - all[k]);
+  return Math.min(est, real[0] * 1.5) * MODERN_RATIO;
 }
