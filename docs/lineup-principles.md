@@ -9,7 +9,7 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do
 5. **Atak za nisko** dla mocnych składów: Bird + Barkley + Lowry + Mourning 64, Curry + Klay + Butler + Mobley + Russell 63. Rozdzielić wkład piątki i ławki.
 6. **Najlepszy gracz wyznacza system.** Przy Currym post-upy są zbędne, a niestrzelający wysocy to zaleta (zasłony, zbiórki); Butler gra point forwarda. Przy Dončiciu dwóch wysokich do lobów to zaleta.
 7. **Sufit ataku:** kto stworzy rzut, gdy akcja się zatnie (Garnett + Tatum + Conley + Hornacek: pozycyjnie, niski sufit).
-8. **Dublowanie tendencji:** dwóch graczy z tą samą rolą w ataku (Duncan i Dirk obaj post-up w systemie Hardena) przeszkadza sobie.
+8. **Dublowanie tendencji:** dwóch graczy z tą samą rolą w ataku (Duncan i Dirk obaj post-up w systemie Hardena) przeszkadza sobie. Liczone po profilu cech, nie po pozycji: Wade 2008-10 to „mini-Giannis 6'4” (rimPressure wysoko, spotUp/pullUp3 nisko) — razem overkill.
 9. **Limit piłki:** dwóch graczy z dużym posiadaniem piłki to zwykle górna granica (Frazier + Kobe ok, Frazier + Kobe + Wilt 1966-68 za dużo).
 
 **Wzorcowe składy (silnik powinien ocenić je wysoko):**
