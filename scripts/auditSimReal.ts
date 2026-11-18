@@ -171,9 +171,9 @@ function ridge(resid: (x: Row) => number, title: string) {
   for (const [k, v] of XtX) { const [i, j] = k.split(',').map(Number); if (i !== j) nb[i].push([j, v]); }
   for (let it = 0; it < 200; it++) for (let i = 0; i < n; i++) { let s = Xty[i]; for (const [j, v] of nb[i]) s -= v * b[j]; b[i] = s / ((XtX.get(`${i},${i}`) ?? 0) + LAMBDA); }
   const order = names.map((nm, i) => ({ nm, v: b[i], w: w[i] })).filter((p) => p.w >= 4).sort((p, q) => p.v - q.v);
-  console.log(`\n${title} — sim OVERRATES their real teams (ridge λ ${LAMBDA}, 4+ weighted seasons):`);
+  console.log(`\n${title} — OVERRATES their real teams (ridge λ ${LAMBDA}, 4+ weighted seasons):`);
   order.slice(0, 15).forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
-  console.log(`${title} — sim UNDERRATES:`);
+  console.log(`${title} — UNDERRATES:`);
   order.slice(-15).reverse().forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
   const spansOf = new Map<string, PlayerSpan[]>();
   for (const x of kept) for (const sp of x.spans) spansOf.set(sp.playerName, [...(spansOf.get(sp.playerName) ?? []), sp]);
@@ -188,10 +188,14 @@ function ridge(resid: (x: Row) => number, title: string) {
     const pts = order.map((pl) => ({ v: pl.v, x: mean(spansOf.get(pl.nm)!.map(f).filter((z): z is number => z !== null && Number.isFinite(z))) })).filter((q) => Number.isFinite(q.x));
     line.push(`${k} ${corr(pts.map((q) => q.x), pts.map((q) => q.v)).toFixed(2)}`);
   }
-  console.log(`  residual follows (r, + = sim underrates players high in it): ${line.join(' | ')}`);
+  console.log(`  residual follows (r, + = underrates players high in it): ${line.join(' | ')}`);
 }
 ridge(res, 'Whole game (SRS)');
 const slopeO = corr(kept.map((x) => x.simO), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.simO));
 ridge((x) => x.ortg - slopeO * x.simO, 'Offense (ORtg)');
 const slopeD = corr(kept.map((x) => x.simD), kept.map((x) => x.drtg)) * sd(kept.map((x) => x.drtg)) / sd(kept.map((x) => x.simD));
 ridge((x) => x.drtg - slopeD * x.simD, 'Defense (DRtg)');
+// 2026-11-18: the same per-player read for the ENGINE's Offense score — does the engine share the sim's
+// miss on high-usage scorers and pass-first non-shooters, or is it the game's alone?
+const slopeEO = corr(kept.map((x) => x.off), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.off));
+ridge((x) => x.ortg - slopeEO * x.off, 'ENGINE Offense score (ORtg)');
