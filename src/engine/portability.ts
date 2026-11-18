@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { isSpacer } from './skills';
 import { SPACING_ARCHETYPES, normalizePlayerName } from '../data/schema';
 import { players } from '../data/players';
 import { computeSpacing } from './spacing';
@@ -410,7 +411,7 @@ function offenseComponents(span: PlayerSpan): OffenseComponents {
   const shootPct = computeSpacing(span) / 100;
   const spacingValue =
     shootPct * shootPct * SPACING_VALUE_SCALE +
-    (SPACING_ARCHETYPES.includes(span.offensiveArchetype) ? SPACING_ARCHETYPE_BONUS : 0);
+    (isSpacer(span, SPACING_ARCHETYPES) ? SPACING_ARCHETYPE_BONUS : 0);
   const rimTarget = rimTargetValue(span);
   const rawUsagePenalty =
     Math.pow(runtimeSelfCreationPercentile(span), SELF_CREATION_PENALTY_CURVE) *
