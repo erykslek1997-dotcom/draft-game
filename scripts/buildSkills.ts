@@ -15,6 +15,7 @@
  *   post           unassisted twos a 36 that are not at the rim (mid + post) — bigs and wings alike
  *   roll           assisted rim makes a 36, plus screen assists a 36 where tracked
  *   spotUp         assisted threes made a 36 × 3P%
+ *   pullUp3        unassisted threes made a 36 × 3P% (off his own dribble)
  *   stretch        share of his shots from three × 3P% (the gravity a defense has to respect)
  *   offBall        off-ball movement share (offBallProfile)
  *   offGlass       ORB%
@@ -85,6 +86,9 @@ function raw(span: PlayerSpan): Record<string, number | null> {
     post: zs.length && un2 !== null && twoMakes > 0 ? per36(midFgm * un2 * 1) : null,
     roll: zs.length && un2 !== null ? (per36(rimFgm * (1 - un2)) ?? 0) + (n(r?.screenAssists36) ?? 0) * 0.5 : null,
     spotUp: zs.length && un3 !== null && p3 !== null ? (per36(threeFgm * (1 - un3)) ?? 0) * p3 : zs.length ? 0 : null,
+    // 2026-11-18: threes he makes off his own dribble (unassisted 3PM a 36 × 3P%) — what spacing's
+    // self-creation credit needs; self-creation as a whole lifted non-shooting bigs (Antoine Walker 33 → 76).
+    pullUp3: zs.length && un3 !== null && p3 !== null ? (per36(threeFgm * un3) ?? 0) * p3 : zs.length ? 0 : null,
     stretch: fga > 50 ? (threeFga / fga) * (p3 ?? 0.3) : null,
     offBall: OFF[span.id]?.[0] ?? null,
     offGlass: n(r?.orb),

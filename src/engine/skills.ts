@@ -9,7 +9,7 @@ import skillsData from '../data/skills.json';
 import { envVar } from './env';
 
 const SKILLS = skillsData as Record<string, Record<string, number>>;
-export type Skill = 'selfCreation' | 'handling' | 'rimPressure' | 'post' | 'roll' | 'spotUp' | 'stretch' | 'offBall' | 'offGlass' | 'rimProtect' | 'pointOfAttack' | 'activity' | 'help' | 'defGlass';
+export type Skill = 'selfCreation' | 'handling' | 'rimPressure' | 'post' | 'roll' | 'spotUp' | 'pullUp3' | 'stretch' | 'offBall' | 'offGlass' | 'rimProtect' | 'pointOfAttack' | 'activity' | 'help' | 'defGlass';
 /** A window's skill (0-100), or null before 1996-97 / without the data. */
 export function skill(span: { id: string }, key: Skill): number | null {
   return SKILLS[span.id]?.[key] ?? null;
@@ -117,4 +117,18 @@ export function isCreator(span: { id: string; offensiveArchetype: string }): boo
   if (lvl === null) return ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(span.offensiveArchetype);
   if (CREATE_SMOOTH) return lvl >= 0.85 || (skill(span, 'handling') ?? 0) >= 80;
   return lvl >= 0.85 || isPlaymaker(span);
+}
+
+/**
+ * 2026-11-18 (measured: spacing's self-creation credit from self-creation as a whole gave non-shooting
+ * high-usage bigs a shooter's credit — Antoine Walker 33 → 76, Embiid, Randle at 30-33% from three):
+ * the level spacing reads comes from threes made off his own dribble instead, at the label shares
+ * (94 / 89 / 85 / 76 → 1 / 0.85 / 0.8 / 0.55). `SKILL_PULLUP=1` on; null = the label.
+ */
+const SKILL_PULLUP = envVar('SKILL_PULLUP') === '1';
+const PULLUP_LEVELS: [number, number][] = [[94, 1], [89, 0.85], [85, 0.8], [76, 0.55]];
+export function pullUpLevel(span: { id: string }): number | null {
+  const v = SKILL_PULLUP ? skill(span, 'pullUp3') : null;
+  if (v === null) return null;
+  return PULLUP_LEVELS.find(([t]) => v >= t)?.[1] ?? 0;
 }
