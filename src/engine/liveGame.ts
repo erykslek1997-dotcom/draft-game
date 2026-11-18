@@ -1071,8 +1071,8 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
  * slot he plays on the floor. Weights are renormalised to a mean of 1, so the league stays put.
  */
 const ROLE_WEIGHT = {
-  rim: Number(envVar('SIM_ROLE_RIM') ?? 1),
-  slot: { PG: Number(envVar('SIM_ROLE_PG') ?? 1), SG: 1, SF: 1, PF: Number(envVar('SIM_ROLE_PF') ?? 1), C: 1 } as Record<Position, number>,
+  rim: Number(envVar('SIM_ROLE_RIM') ?? 1.6),
+  slot: { PG: Number(envVar('SIM_ROLE_PG') ?? 0.6), SG: 1, SF: 1, PF: Number(envVar('SIM_ROLE_PF') ?? 1), C: 1 } as Record<Position, number>,
 };
 function roleWeightedDefAnchor(defSpans: PlayerSpan[], fd: FiveDefense): number {
   if (defSpans.length === 0) return 0;

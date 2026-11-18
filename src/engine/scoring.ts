@@ -1086,8 +1086,8 @@ const positionWeightedDefense = (p: PlayerSpan) => {
 /** 2026-11-18, defense by on-court role — the engine side of `liveGame.ts`'s `roleWeightedDefAnchor`
  * (same knobs, so the game and the engine weigh a defender alike): the team's main rim protector
  * (best `defenderProfile` rim among its starters) weighs `SIM_ROLE_RIM`, everyone else by the slot he
- * plays (`SIM_ROLE_PG`, `SIM_ROLE_PF`). A weighted mean, so the scale stays put. Default 1 = off. */
-const ROLE_W = { rim: Number(envVar('SIM_ROLE_RIM') ?? 1), PG: Number(envVar('SIM_ROLE_PG') ?? 1), PF: Number(envVar('SIM_ROLE_PF') ?? 1) };
+ * plays (`SIM_ROLE_PG`, `SIM_ROLE_PF`). A weighted mean, so the scale stays put. On since 2026-11-18 at 1.6 / 0.6 (the user: better draft feel, direction right). */
+const ROLE_W = { rim: Number(envVar('SIM_ROLE_RIM') ?? 1.6), PG: Number(envVar('SIM_ROLE_PG') ?? 0.6), PF: Number(envVar('SIM_ROLE_PF') ?? 1) };
 const ROLE_ON = ROLE_W.rim !== 1 || ROLE_W.PG !== 1 || ROLE_W.PF !== 1;
 export function teamDefensiveTalentScore(team: Team): number {
   let roleWeight: ((p: PlayerSpan, slot: Position) => number) | undefined;
