@@ -66,6 +66,7 @@ export function gameStocks(span: PlayerSpan): { spg: number; bpg: number } {
     if (c && ON && Math.max(...(ys.length ? ys : [9999])) < FIRST_FULL) {
       const r = reportedBlocks(span, m.rpg);
       if (r !== null) c = { ...c, bpg: r };
+      c = { ...c, bpg: eraCappedBlocks(span, c.bpg, m.rpg) };
     }
     cache.set(span, c);
   }
@@ -145,4 +146,22 @@ function heightBlocks(span: PlayerSpan): number | null {
   // in log blocks, so his lead over the next player is a ratio — at most x1.5.
   const lead = rank === 0 ? Math.min(1.5, Math.exp(v - Math.max(...others))) : 1;
   return real[Math.min(real.length - 1, scaled)] * lead * MODERN_RATIO;
+}
+
+/**
+ * 2026-11-18 (the user: "bliżej mi do pułapów między 8-6 im głębiej w wczesne 60 i 50 wchodzimy"):
+ * an estimated pre-1974 window blocks at most `cap` a game in its own era's numbers — 6 up to 1953,
+ * rising to 8 by 1962, 8 through 1967, uncapped from 1968 (late Wilt is counted). Read back from
+ * today's terms through the window's rebound translation, the same one `reportedBlocks` uses.
+ */
+function eraBlockCap(year: number): number {
+  if (year >= 1968) return Infinity;
+  if (year >= 1962) return 8;
+  return Math.max(6, 6 + (year - 1953) * (2 / 9));
+}
+function eraCappedBlocks(span: PlayerSpan, bpg: number, modernRpg: number): number {
+  if (!(span.box.rpg > 0)) return bpg;
+  const t = (modernRpg / span.box.rpg) * BLOCKS_PER_REBOUND_TRANSLATION;
+  const cap = eraBlockCap(mid(span));
+  return Math.min(bpg, cap * t);
 }
