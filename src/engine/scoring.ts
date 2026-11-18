@@ -1009,6 +1009,9 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
+/** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
+const OFF_COH = Number(envVar('OFF_COH') ?? 1);
+const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1018,8 +1021,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
-  const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
+  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus * OFF_COH + superstarEngineBonus(team)));
+  const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team) * OFF_WEAK);
   const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
