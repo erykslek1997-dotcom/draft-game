@@ -1,3 +1,4 @@
+import { defenderProfile } from './liveDefense';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -373,6 +374,7 @@ function benchBoostedWeightedAverage(
   valueFor: (player: PlayerSpan, slot: Position) => number,
   applyFitMultiplier: boolean,
   benchWeight: number = BENCH_INFLUENCE_BOOST,
+  roleWeight?: (player: PlayerSpan, slot: Position) => number,
 ): number {
   const assignments = allAssignments(team);
   const fullMinutes = STARTER_SLOTS.length * GAME_MINUTES;
@@ -383,7 +385,7 @@ function benchBoostedWeightedAverage(
   const weighted = assignments.reduce((sum, { slot, player, minutes }) => {
     rawAssignedMinutes += minutes;
     const isBench = !starterKeys.has(`${slot}|${player.id}`);
-    const effectiveMinutes = isBench ? minutes * benchWeight : minutes;
+    const effectiveMinutes = (isBench ? minutes * benchWeight : minutes) * (roleWeight ? roleWeight(player, slot) : 1);
     weightSum += effectiveMinutes;
     const fitMultiplier = applyFitMultiplier ? positionFitMultiplier(player, slot) : 1;
     return sum + valueFor(player, slot) * fitMultiplier * effectiveMinutes;
@@ -1081,9 +1083,21 @@ const positionWeightedDefense = (p: PlayerSpan) => {
   const t = envVar('DEF_POS_ERA') === '0' ? 1 : Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
   return 50 + (1 + DEFENSE_POSITION_SHARE * (w[0] + (w[1] - w[0]) * t - 1)) * (d - 50);
 };
+/** 2026-11-18, defense by on-court role — the engine side of `liveGame.ts`'s `roleWeightedDefAnchor`
+ * (same knobs, so the game and the engine weigh a defender alike): the team's main rim protector
+ * (best `defenderProfile` rim among its starters) weighs `SIM_ROLE_RIM`, everyone else by the slot he
+ * plays (`SIM_ROLE_PG`, `SIM_ROLE_PF`). A weighted mean, so the scale stays put. Default 1 = off. */
+const ROLE_W = { rim: Number(envVar('SIM_ROLE_RIM') ?? 1), PG: Number(envVar('SIM_ROLE_PG') ?? 1), PF: Number(envVar('SIM_ROLE_PF') ?? 1) };
+const ROLE_ON = ROLE_W.rim !== 1 || ROLE_W.PG !== 1 || ROLE_W.PF !== 1;
 export function teamDefensiveTalentScore(team: Team): number {
+  let roleWeight: ((p: PlayerSpan, slot: Position) => number) | undefined;
+  if (ROLE_ON) {
+    const starters = primaryStarters(team);
+    const anchor = starters.reduce<PlayerSpan | null>((best, s) => (!best || defenderProfile(s.player).rim > defenderProfile(best).rim ? s.player : best), null);
+    roleWeight = (p, slot) => (anchor && p.id === anchor.id ? ROLE_W.rim : slot === 'PG' ? ROLE_W.PG : slot === 'PF' ? ROLE_W.PF : 1);
+  }
   return rescaleToFullRange(
-    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE),
+    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE, roleWeight),
     DEFENSE_SCORE_ANCHORS,
   );
 }
