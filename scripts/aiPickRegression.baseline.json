@@ -276,7 +276,7 @@
       "mike conley",
       "chris mullin",
       "chet holmgren",
-      "og anunoby",
+      "shane battier",
       "jason kidd",
       "terry porter"
     ],
@@ -344,7 +344,7 @@
       "mike conley",
       "chris mullin",
       "chet holmgren",
-      "og anunoby",
+      "shane battier",
       "jason kidd",
       "terry porter",
       "ron artest",
@@ -354,7 +354,7 @@
       "walt frazier",
       "paul pierce",
       "charles barkley",
-      "kyle korver",
+      "danny green",
       "jalen williams"
     ],
     "expectedPickId": "mariosh01-2003-2004",
@@ -1000,7 +1000,7 @@
       "jimmy butler",
       "kyle korver",
       "jrue holiday",
-      "jason kidd"
+      "chauncey billups"
     ],
     "expectedPickId": "kirilan01-2003-2004",
     "expectedPickLabel": "Andrei Kirilenko | 2002-04"
@@ -1068,7 +1068,7 @@
       "jimmy butler",
       "kyle korver",
       "jrue holiday",
-      "jason kidd",
+      "chauncey billups",
       "andrei kirilenko",
       "peja stojakovic",
       "mike conley",
@@ -1079,7 +1079,7 @@
       "gerald wallace",
       "ron artest"
     ],
-    "expectedPickId": "billuch01-2005-2006",
-    "expectedPickLabel": "Chauncey Billups | 2004-06"
+    "expectedPickId": "waltobi01-1977-1978",
+    "expectedPickLabel": "Bill Walton | 1976-78"
   }
 ]

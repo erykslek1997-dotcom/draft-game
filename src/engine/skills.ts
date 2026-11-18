@@ -140,9 +140,10 @@ export function pullUpLevel(span: { id: string }): number | null {
  * 2026-11-18 (measuring): a spacer for O-POR's spacing bonus (was: the Stationary / Movement / Off
  * Screen Shooter, Stretch / Versatile Big tags). For 1997+ windows, stretch ≥ 67 — the label share
  * (32.1%). Adds Curry 2020-22, Harden, Doncic, Edwards; drops Giannis, LeBron 2021-23, Embiid 2021-23.
- * `SKILL_SPACER=1` on; before 1996-97, the label.
+ * On (2026-11-18, all from data): judges unchanged (raw offense 0.7672 vs 0.7674). `SKILL_SPACER=0` =
+ * the label; before 1996-97, the label.
  */
-const SKILL_SPACER = envVar('SKILL_SPACER') === '1';
+const SKILL_SPACER = envVar('SKILL_SPACER') !== '0';
 export function isSpacer(span: { id: string; offensiveArchetype: string }, labels: readonly string[]): boolean {
   const v = SKILL_SPACER ? skill(span, 'stretch') : null;
   return v === null ? labels.includes(span.offensiveArchetype) : v >= 67;
