@@ -17,6 +17,7 @@ import { spanEndYears } from './era';
 import { envVar } from './env';
 import { modernBox } from './modernBox';
 import { getHeightInches, getBodyWeightLbs } from '../data/heightLookup';
+import { REPORTED_BLOCKS } from '../data/reportedBlocks';
 
 const ON = envVar('SIM_PRE_STOCKS') !== '0';
 const FIRST_FULL = 1974;
@@ -62,9 +63,29 @@ export function gameStocks(span: PlayerSpan): { spg: number; bpg: number } {
         c = { bpg: byHeight ?? f(REG.bpg), spg: f(REG.spg) };
       }
     }
+    if (c && ON && Math.max(...(ys.length ? ys : [9999])) < FIRST_FULL) {
+      const r = reportedBlocks(span, m.rpg);
+      if (r !== null) c = { ...c, bpg: r };
+    }
     cache.set(span, c);
   }
   return c;
+}
+
+/**
+ * 2026-11-18: a documented count (`reportedBlocks.ts`) beats any estimate. The career figure is spread
+ * over his windows by rebounds (blocks move with rebounds at an elasticity of 0.86 among 1974-86 bigs,
+ * `scripts/_peerBlk.ts`), and brought to today's game by the window's own rebound translation
+ * (`modernBox`), times 0.9 — on 1974-86 windows blocks translate about a tenth lower than rebounds.
+ */
+const BLOCKS_PER_REBOUND_TRANSLATION = 0.9;
+function reportedBlocks(span: PlayerSpan, modernRpg: number): number | null {
+  const r = REPORTED_BLOCKS[span.playerName];
+  if (!r || !(span.box.rpg > 0)) return null;
+  const own = draftPool.filter((s) => s.playerName === span.playerName && s.box.rpg > 0);
+  const careerRpg = own.reduce((t, s) => t + s.box.rpg, 0) / own.length;
+  const raw = r.bpg * (span.box.rpg / careerRpg) ** 0.86;
+  return raw * (modernRpg / span.box.rpg) * BLOCKS_PER_REBOUND_TRANSLATION;
 }
 
 /**
@@ -116,8 +137,12 @@ function heightBlocks(span: PlayerSpan): number | null {
   const best = new Map<string, number>();
   for (let y = m - 1; y <= m + 1; y++) for (const x of byYear.get(y) ?? []) if (x.name !== span.playerName) best.set(x.name, Math.max(best.get(x.name) ?? -Infinity, x.v));
   if (best.size < 10) return null;
-  const rank = [...best.values()].filter((x) => x > v).length;
+  const others = [...best.values()];
+  const rank = others.filter((x) => x > v).length;
   // Leagues of 8-14 teams had fewer such players than 1974-86's 18-23: scale the rank by the pool's size.
   const scaled = Math.round(rank * real.length / best.size);
-  return real[Math.min(real.length - 1, scaled)] * MODERN_RATIO;
+  // The league's best is not capped at a typical 1974-86 season's best (the user, on Wilt): the model is
+  // in log blocks, so his lead over the next player is a ratio — at most x1.5.
+  const lead = rank === 0 ? Math.min(1.5, Math.exp(v - Math.max(...others))) : 1;
+  return real[Math.min(real.length - 1, scaled)] * lead * MODERN_RATIO;
 }

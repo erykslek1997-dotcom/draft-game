@@ -1,0 +1,21 @@
+/**
+ * Blocked shots counted from game stories for players whose careers ended before the NBA counted
+ * blocks (1973-74). Regular season, per game, in the player's own era.
+ *
+ * Wilt Chamberlain: an APBR community project (apbr.org forum, topic 6064, presented at the Sloan
+ * Sports Analytics Conference, March 2026) read 5-10k game stories and found reported totals for 180
+ * regular-season and 77 playoff games (8.2 and 7.2 a game). The sample leans to his later seasons;
+ * the author's own estimate of his career regular-season average is about 8.7 (9,058 blocks). An
+ * estimate, used as one: the game reads it, TAL and D-TAL do not.
+ *
+ * Add a player only from a documented count like this one, never from memory.
+ */
+export interface ReportedBlocks {
+  bpg: number;
+  /** Games behind the figure. */
+  games: number;
+  source: string;
+}
+export const REPORTED_BLOCKS: Record<string, ReportedBlocks> = {
+  'Wilt Chamberlain': { bpg: 8.7, games: 180, source: 'APBR topic 6064 (Sloan 2026): 180 counted regular-season games at 8.2; author estimate 8.7 career' },
+};
