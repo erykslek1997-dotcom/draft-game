@@ -13,8 +13,9 @@ const SKILLS = skillsData as Record<string, Record<string, number>>;
 /** 2026-11-18: windows before 1996-97 (`scripts/buildSkillsPre.ts`: models on box + advanced fitted on
  * 1997+, a bridge through the player's own 1997+ windows, ranked within the era; hold-out r 0.84-0.98,
  * three-based skills left out before 1979-80, help without the advanced numbers left out).
- * `SKILL_PRE=1` reads them; otherwise a pre-1997 window has no skills and every rule keeps its label. */
-const SKILL_PRE = envVar('SKILL_PRE') === '1';
+ * On (2026-11-18, all from data): judges unchanged, AI rosters' spread 2.84 → 2.96. `SKILL_PRE=0` =
+ * no skills before 1996-97 (every rule keeps its label there). */
+const SKILL_PRE = envVar('SKILL_PRE') !== '0';
 const PRE = skillsPreData as Record<string, Record<string, number>>;
 export type Skill = 'selfCreation' | 'handling' | 'rimPressure' | 'post' | 'roll' | 'spotUp' | 'pullUp3' | 'stretch' | 'offBall' | 'offGlass' | 'rimProtect' | 'pointOfAttack' | 'activity' | 'help' | 'defGlass';
 /** A window's skill (0-100), or null before 1996-97 / without the data. */
