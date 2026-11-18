@@ -1025,7 +1025,8 @@ interface Clash {
 
 function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const defSpans = defCourt.map((c) => c.player.span);
-  const fd = fiveDefense(defSpans);
+  const fdRaw = fiveDefense(defSpans);
+  const fd = DEF_OVERLAP && fdRaw.perimeter > OVERLAP_REF.perimeter ? { ...fdRaw, perimeter: OVERLAP_REF.perimeter + (fdRaw.perimeter - OVERLAP_REF.perimeter) * rimOverlap(fdRaw.rim) } : fdRaw;
   const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
   const switchZ = Math.max(-2.5, Math.min(2.5, (fiveSwitchability(defSpans, STARTER_SLOTS) - REF_SWITCH.mean) / REF_SWITCH.sd));
@@ -1074,17 +1075,26 @@ const ROLE_WEIGHT = {
   rim: Number(envVar('SIM_ROLE_RIM') ?? 1.6),
   slot: { PG: Number(envVar('SIM_ROLE_PG') ?? 0.6), SG: 1, SF: 1, PF: Number(envVar('SIM_ROLE_PF') ?? 1), C: 1 } as Record<Position, number>,
 };
+/** 2026-11-18, overlap (real fives: an elite on-ball guard next to a decent-or-better center defended
+ * ~0.7-1 point worse than the sim said): drives a good on-ball defender stops, a rim protector behind
+ * him would mostly have stopped too. The five's perimeter pressure above the median shrinks with its rim
+ * protection above the median. `SIM_DEF_OVERLAP` 0 = off. */
+const DEF_OVERLAP = Number(envVar('SIM_DEF_OVERLAP') ?? 0);
+/** Medians of a random five's `fiveDefense` rim and perimeter (2000 fives from the pool). */
+const OVERLAP_REF = { rim: -0.15, perimeter: -1.16 };
+const rimOverlap = (rim: number) => 1 / (1 + DEF_OVERLAP * Math.max(0, rim - OVERLAP_REF.rim));
+const DEF_SECOND = Number(envVar('SIM_DEF_SECOND') ?? 1);
 function roleWeightedDefAnchor(defSpans: PlayerSpan[], fd: FiveDefense): number {
   if (defSpans.length === 0) return 0;
   const anchorIdx = fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0);
-  let sum = 0;
-  let wSum = 0;
-  defSpans.forEach((s, j) => {
-    const w = j === anchorIdx ? ROLE_WEIGHT.rim : ROLE_WEIGHT.slot[STARTER_SLOTS[j]] ?? 1;
-    sum += w * anchorOf(s).def;
-    wSum += w;
-  });
-  return sum / wSum;
+  // 2026-11-18, diminishing returns (the user: "fajne"): real fives with an elite guard AND an elite
+  // center defended ~1 point worse than the sim said — two great defenders don't fully add up. Above
+  // the best one, every further defender's edge counts `SIM_DEF_SECOND` (1 = off).
+  const parts = defSpans.map((s, j) => ({ w: j === anchorIdx ? ROLE_WEIGHT.rim : ROLE_WEIGHT.slot[STARTER_SLOTS[j]] ?? 1, d: anchorOf(s).def }));
+  const order = parts.map((p, i) => i).filter((i) => parts[i].d > 0).sort((a, b) => parts[b].w * parts[b].d - parts[a].w * parts[a].d);
+  order.slice(1).forEach((i) => { parts[i].d *= DEF_SECOND; });
+  const wSum = parts.reduce((t, p) => t + p.w, 0);
+  return parts.reduce((t, p) => t + p.w * p.d, 0) / wSum;
 }
 
 /** What the weakest defender gives up when he is hunted, on top of his own matchup. */
