@@ -102,8 +102,9 @@ function freeThrowRateFactor(span: PlayerSpan): number {
  */
 /** 2026-11-18, labels → data (measuring): with zone data (1996-97 on) the label gate goes and the
  * rim data alone decides — a guard or wing who lives at the rim reads what his shots say.
- * `RIM_DATA=1` on; pre-1997 keeps the label proxy below. */
-const RIM_DATA = envVar('RIM_DATA') === '1';
+ * On (the user, 2026-11-18): judges unchanged (SRS 0.841, offense 0.8041), AI rosters' Overall spread
+ * 2.49 → 2.69. `RIM_DATA=0` = the label gate; pre-1997 keeps the label proxy below. */
+const RIM_DATA = envVar('RIM_DATA') !== '0';
 export function rimPressure(span: PlayerSpan): number {
   const prof0 = RIM_DATA ? computeOffensiveProfile(span) : null;
   const elig = RIM_DATA && prof0!.hasZoneData ? 1 : ARCH_ELIGIBILITY[span.offensiveArchetype];
