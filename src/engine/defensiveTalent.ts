@@ -1019,7 +1019,22 @@ function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
   if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
   const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  const floor = RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  return RECOGNITION_CONFIRM.on ? floor * recognitionConfirmed(span) : floor;
+}
+/**
+ * 2026-11-18 (the user: "nagrody potwierdzają, nie boostują"; the rule was made early on): the
+ * accolade floor counts only as far as the data confirms a good defender. The window's DBPM (half way
+ * to his career, as the DBPM source reads it): at `lo` or below nothing, at `hi` the full floor.
+ * Kobe 1996-2013 (DBPM 0.0, teams defended 33 points of D-TAL worse than his 83) loses it; Kirilenko
+ * (2.5) keeps it. A window with no DBPM (before 1973-74) keeps half. `DT_RCONF=1` turns it on (measuring).
+ */
+const RECOGNITION_CONFIRM = { on: envVar('DT_RCONF') === '1', lo: Number(envVar('DT_RCONF_LO') ?? 0), hi: Number(envVar('DT_RCONF_HI') ?? 2) };
+function recognitionConfirmed(span: PlayerSpan): number {
+  const r = realSpan(span);
+  if (r?.dbpm == null) return 0.5;
+  const dbpm = careerShrunkDbpm(span, r.dbpm);
+  return Math.max(0, Math.min(1, (dbpm - RECOGNITION_CONFIRM.lo) / (RECOGNITION_CONFIRM.hi - RECOGNITION_CONFIRM.lo)));
 }
 
 const RIM_PROTECTOR_MIN_BLOCKS = 1.6;
@@ -1128,8 +1143,12 @@ onNeighbourWindowsRegistered(() => shiftedDefensiveTalentCache.clear());
 
 function neighbourAwareFloor(span: PlayerSpan): number {
   const rate = individualDefenseRateWithNeighbours(span);
-  if (rate <= 0) return 0;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
+  const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
+  const floor = RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  // 2026-11-18: the same knobs as `recognizedDefenderFloor` — this second read of the accolade floor
+  // ignored them, so the D-TAL the team scores kept the full floor whatever they said.
+  return RECOGNITION_CONFIRM.on ? floor * recognitionConfirmed(span) : floor;
 }
 
 /**
