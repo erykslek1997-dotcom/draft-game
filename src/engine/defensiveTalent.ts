@@ -1027,9 +1027,9 @@ function recognizedDefenderFloor(span: PlayerSpan): number {
  * accolade floor counts only as far as the data confirms a good defender. The window's DBPM (half way
  * to his career, as the DBPM source reads it): at `lo` or below nothing, at `hi` the full floor.
  * Kobe 1996-2013 (DBPM 0.0, teams defended 33 points of D-TAL worse than his 83) loses it; Kirilenko
- * (2.5) keeps it. A window with no DBPM (before 1973-74) keeps half. `DT_RCONF=1` turns it on (measuring).
+ * (2.5) keeps it. A window with no DBPM (before 1973-74) keeps half. On (the user, 2026-11-18): D-TAL judge 0.810 → 0.824, game 0.65 → 0.69, lineups 0.543 → 0.548, SRS ±0.001. `DT_RCONF=0` = the old floor.
  */
-const RECOGNITION_CONFIRM = { on: envVar('DT_RCONF') === '1', lo: Number(envVar('DT_RCONF_LO') ?? 0), hi: Number(envVar('DT_RCONF_HI') ?? 2) };
+const RECOGNITION_CONFIRM = { on: envVar('DT_RCONF') !== '0', lo: Number(envVar('DT_RCONF_LO') ?? 0), hi: Number(envVar('DT_RCONF_HI') ?? 2) };
 function recognitionConfirmed(span: PlayerSpan): number {
   const r = realSpan(span);
   if (r?.dbpm == null) return 0.5;
