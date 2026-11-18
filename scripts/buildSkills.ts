@@ -93,7 +93,8 @@ function raw(span: PlayerSpan): Record<string, number | null> {
     // Components for the two composite skills below (z-scored across windows, then combined).
     _stl: n(r?.stl), _blk: n(r?.blk), _drb: n(r?.drb), _defl: n(r?.deflections36), _c3: n(r?.contests3pt36),
     _matchup: d?.matchupDefense ?? null,
-    _impact: (() => { const v = [d?.onOffDdpm, d?.raptorDefense, d?.bpm2Defense].filter((x): x is number => typeof x === 'number' && Number.isFinite(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })(),
+    // BPM2 left out (box-built: it rewards the very steals and rebounds `help` takes out — Jokic +3.9); matchup defense in.
+    _impact: (() => { const v = [d?.onOffDdpm, d?.raptorDefense, d?.matchupDefense].filter((x): x is number => typeof x === 'number' && Number.isFinite(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })(),
   };
 }
 
@@ -104,7 +105,7 @@ const raws = windows.map((s) => ({ s, m: mid(s), r: raw(s) }));
 // Jokic / Westbrook ~100 on DBPM's rebounds):
 //  pointOfAttack  mean of the z-scores he has of: STL% (x1), deflections a 36 (x1), three-point contests
 //                 a 36 (x0.7), matchup defense 2018+ (x1.5) — a stopper who rarely steals still reads
-//  help           defensive impact (mean of on/off, RAPTOR, BPM2 defense) less the part his steals,
+//  help           defensive impact (mean of on/off, RAPTOR, matchup defense) less the part his steals,
 //                 blocks and defensive rebounds explain (least squares over the windows): positioning,
 //                 help and rotations
 const zOf = (k: string) => { const v = raws.map((q) => q.r[k]).filter((x): x is number => x !== null); const m = v.reduce((a, b) => a + b, 0) / v.length; const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1; return (x: number | null) => (x === null ? null : (x - m) / sd); };
