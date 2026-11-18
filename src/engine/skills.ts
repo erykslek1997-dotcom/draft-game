@@ -35,9 +35,10 @@ export function isRimProtector(span: { id: string; defensiveRole: string }): boo
  * blended with help (defense the team gets beyond his stocks): 0.5 × the lower of the two + 0.25 × each,
  * ≥ 66.75 (the threshold that keeps the label share, 17.1% of 1997+ windows), centers excluded. Drops
  * Iverson, Kobe 2004-07, McGrady, Harden, Westbrook; adds Giannis, Davis, Garnett, Mitchell. Before
- * 1996-97, the label. Measuring: `SKILL_PERIM=1` on.
+ * 1996-97, the label. On (the user, 2026-11-18): Overall vs real SRS 0.8711 → 0.8717, Defense vs DRtg
+ * 0.8046 both, AI rosters' weak backups at 10+ minutes 28% → 25%. `SKILL_PERIM=0` = the label.
  */
-const SKILL_PERIM = envVar('SKILL_PERIM') === '1';
+const SKILL_PERIM = envVar('SKILL_PERIM') !== '0';
 const PERIM_SKILL_THRESHOLD = 66.75;
 export function isPerimeterDefender(span: { id: string; defensiveRole: string; primaryPosition: string }): boolean {
   const poa = SKILL_PERIM ? skill(span, 'pointOfAttack') : null, help = SKILL_PERIM ? skill(span, 'help') : null;
