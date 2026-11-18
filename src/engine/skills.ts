@@ -61,3 +61,16 @@ export function switchRoleScore(span: { id: string }): number | null {
   if (poa === null || help === null) return null;
   return Math.max(0, Math.min(100, 53.61 + ((0.6 * poa + 0.4 * help - 49.64) * 32.27) / 22.44));
 }
+
+/**
+ * 2026-11-18 (measuring): "Low Activity" — a defender a team hides. For 1997+ windows: activity and
+ * help averaged below 44.5, the threshold that keeps the label share (41.8%). Takes in Kobe 2004-13,
+ * Iverson, McGrady, Westbrook 2016-18; lets out the near-misses Curry, Booker, Lillard (45-55).
+ * Before 1996-97, the label. `SKILL_LOWACT=1` on.
+ */
+const SKILL_LOWACT = envVar('SKILL_LOWACT') === '1';
+export function isLowActivity(span: { id: string; defensiveRole: string }): boolean {
+  const act = SKILL_LOWACT ? skill(span, 'activity') : null, help = SKILL_LOWACT ? skill(span, 'help') : null;
+  if (act === null || help === null) return span.defensiveRole === 'Low Activity';
+  return 0.5 * act + 0.5 * help < 44.5;
+}

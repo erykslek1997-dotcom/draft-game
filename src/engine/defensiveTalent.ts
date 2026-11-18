@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { isLowActivity } from './skills';
 import { eraBlocksPerGame, spanEndYears } from './era';
 import { per36 } from './minutesPerGame';
 import { athleticismScoreForSpan } from './athleticismLookup';
@@ -593,7 +594,7 @@ function teamDefenseCorroborationFloor(span: PlayerSpan): number {
   const ctx = teamDefenseContextForSpan(span);
   if (!ctx || ctx.strength < TEAM_D_FLOOR_MIN_STRENGTH) return 0;
   if (ctx.meanSeasonMinutes < TEAM_D_FLOOR_MIN_SEASON_MINUTES) return 0;
-  if (span.defensiveRole === 'Low Activity' && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
+  if (isLowActivity(span) && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
   if (individualDefenseRate(span) === 0) {
     // Veto on the RAW real plus-minus, not the excess: a genuine turnstile reads negative DDPM/
     // RAPTOR, but a solid big can read a negative *excess* (real below what his box predicts)
