@@ -19,9 +19,10 @@ export function skill(span: { id: string }, key: Skill): number | null {
  * Rim protector: from 1996-97 on, rim-protection skill ≥ 93 — the threshold that keeps the share the
  * labels gave (7.8% of those windows); it adds shot-blockers the labels missed (McGee, Gafford,
  * Andersen, Kirilenko 2004-06) and drops switch bigs who don't guard the rim (Nenê, Hayes, Adebayo).
- * Before then, the label. Measuring: `SKILL_RIM=1` on.
+ * Before then, the label. On (the user, 2026-11-18): judges unchanged (Defense vs real DRtg 0.8046 both),
+ * one rule in one place. `SKILL_RIM=0` = the label everywhere.
  */
-const SKILL_RIM = envVar('SKILL_RIM') === '1';
+const SKILL_RIM = envVar('SKILL_RIM') !== '0';
 const RIM_SKILL_THRESHOLD = 93;
 export function isRimProtector(span: { id: string; defensiveRole: string }): boolean {
   const v = SKILL_RIM ? skill(span, 'rimProtect') : null;
