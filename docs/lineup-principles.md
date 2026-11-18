@@ -10,6 +10,7 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do
 6. **Najlepszy gracz wyznacza system.** Przy Currym post-upy są zbędne, a niestrzelający wysocy to zaleta (zasłony, zbiórki); Butler gra point forwarda. Przy Dončiciu dwóch wysokich do lobów to zaleta.
 7. **Sufit ataku:** kto stworzy rzut, gdy akcja się zatnie (Garnett + Tatum + Conley + Hornacek: pozycyjnie, niski sufit).
 8. **Dublowanie tendencji:** dwóch graczy z tą samą rolą w ataku (Duncan i Dirk obaj post-up w systemie Hardena) przeszkadza sobie.
+9. **Limit piłki:** dwóch graczy z dużym posiadaniem piłki to zwykle górna granica (Frazier + Kobe ok, Frazier + Kobe + Wilt 1966-68 za dużo).
 
 **Wzorcowe składy (silnik powinien ocenić je wysoko):**
 - Curry 2015-17, Klay 2015-17, Butler 2015-17, Mobley 2024-26, Russell 1957-59
