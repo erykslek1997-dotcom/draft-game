@@ -98,20 +98,54 @@ const report: string[] = [];
 const effects: Record<'stl' | 'blk', Map<string, number>> = { stl: new Map(), blk: new Map() };
 const models: Record<'stl' | 'blk', number[]> = { stl: [], blk: [] };
 const smear: Record<'stl' | 'blk', number> = { stl: 1, blk: 1 };
+const specOf: Record<'stl' | 'blk', Set<string>> = { stl: new Set(), blk: new Set() };
+const ageCurves: Record<'stl' | 'blk', { spec: number[]; rest: number[] }> = { stl: { spec: [0, 0], rest: [0, 0] }, blk: { spec: [0, 0], rest: [0, 0] } };
+const fullPred = (key: 'stl' | 'blk', x: number[], spec: boolean) => dot(models[key], x.map((v, i) => (i === 1 || i === 2 ? 0 : v))) + (spec ? ageCurves[key].spec : ageCurves[key].rest).reduce((t, c, j) => t + c * x[j + 1], 0);
 
 for (const key of ['stl', 'blk'] as const) {
   const rate = (s: Season) => Math.log(s[key] / s.lgFga + EPS);
-  const b = wls(counted.map((s) => s.x), counted.map(rate), counted.map((s) => s.min));
+  // 2026-11-18 (the user: Thurmond at 3.6 beside Wilt and Russell's 8): the age curve across players
+  // came out flat (Thurmond peak / 32-33 ~0.8), while the same blockers lose about 43% from 25-27 to
+  // 32-33 (median of 34 since 1974, both 1974-89 and 1990+ peaks: 0.57). The bridge carries a player
+  // across his own career, so the age terms are fitted WITHIN players (each player's windows centred
+  // on his own means), the rest across players with the age part held fixed.
+  const AGE = [1, 2];
+  // Specialists (a window of 2+ a 36 at 25-29) age much faster than the rest: blocking and steals ride
+  // on athleticism. Two within-player curves; a pre-1974 player takes the specialists' curve when his
+  // estimate at 27 reaches the same 2 a 36.
+  const byPlayer = new Map<string, Season[]>();
+  for (const q of counted) byPlayer.set(q.id, [...(byPlayer.get(q.id) ?? []), q]);
+  const SPEC = 2.0;
+  const isSpec = (list: Season[]) => list.some((q) => q.x[1] >= -2 && q.x[1] <= 2 && q[key] >= SPEC);
+  const fitAge = (spec: boolean) => {
+    const wx: number[][] = [], wy: number[] = [], ww: number[] = [];
+    for (const list of byPlayer.values()) {
+      if (list.length < 3 || isSpec(list) !== spec) continue;
+      const W = list.reduce((t, q) => t + q.min, 0);
+      const ma = AGE.map((i) => list.reduce((t, q) => t + q.min * q.x[i], 0) / W), my = list.reduce((t, q) => t + q.min * rate(q), 0) / W;
+      for (const q of list) { wx.push(AGE.map((i) => q.x[i] - ma[AGE.indexOf(i)])); wy.push(rate(q) - my); ww.push(q.min); }
+    }
+    return wls(wx, wy, ww);
+  };
+  const ageSpec = fitAge(true), ageRest = fitAge(false);
+  specOf[key] = new Set([...byPlayer].filter(([, l]) => isSpec(l)).map(([id]) => id));
+  ageCurves[key] = { spec: ageSpec, rest: ageRest };
+  const ageOf = (x: number[], spec: boolean) => AGE.reduce((t, i, j) => t + (spec ? ageSpec : ageRest)[j] * x[i], 0);
+  const rest = wls(counted.map((q) => q.x.map((v, i) => (AGE.includes(i) ? 0 : v))), counted.map((q) => rate(q) - ageOf(q.x, specOf[key].has(q.id))), counted.map((q) => q.min));
+  const b = rest;
+  const ageB = ageSpec;
+  const r32 = (a: number[]) => Math.exp(a[0] * 6.5 + a[1] * (5.5 ** 2 - 1)).toFixed(2);
+  report.push(`${key}: within-player age, 32.5 vs 26 — specialists x${r32(ageSpec)} (${specOf[key].size} players), the rest x${r32(ageRest)}`);
   models[key] = b;
   // Duan's smearing: exp of a fitted log is a median, not a mean — scale back by the mean of exp(residual).
   const wsum = counted.reduce((t, s) => t + s.min, 0);
-  smear[key] = counted.reduce((t, s) => t + s.min * Math.exp(rate(s) - dot(b, s.x)), 0) / wsum;
-  const predMean = counted.reduce((t, s) => t + s.min * ((Math.exp(dot(b, s.x)) * smear[key] - EPS) * s.lgFga), 0) / wsum;
+  smear[key] = counted.reduce((t, s) => t + s.min * Math.exp(rate(s) - fullPred(key, s.x, specOf[key].has(s.id))), 0) / wsum;
+  const predMean = counted.reduce((t, s) => t + s.min * ((Math.exp(fullPred(key, s.x, specOf[key].has(s.id))) * smear[key] - EPS) * s.lgFga), 0) / wsum;
   const realMean = counted.reduce((t, s) => t + s.min * s[key], 0) / wsum;
   report.push(`${key}: smearing x${smear[key].toFixed(3)}; 1974+ minute-weighted per 36 — model ${predMean.toFixed(3)}, real ${realMean.toFixed(3)}`);
   // Player effect from 1974+ seasons, shrunk by n/(n+1).
   const res = new Map<string, number[]>();
-  for (const s of counted) res.set(s.id, [...(res.get(s.id) ?? []), rate(s) - dot(b, s.x)]);
+  for (const s of counted) res.set(s.id, [...(res.get(s.id) ?? []), rate(s) - fullPred(key, s.x, specOf[key].has(s.id))]);
   for (const [id, r] of res) effects[key].set(id, (r.reduce((a, c) => a + c, 0) / r.length) * (r.length / (r.length + 1)));
   // Hold-out: careers starting 1974-80 with 6+ seasons; first 3 seasons predicted, effect from seasons 3+ years after.
   const byId = new Map<string, Season[]>();
@@ -122,9 +156,9 @@ for (const key of ['stl', 'blk'] as const) {
     if (list.length < 6 || list[0].year > 1980) continue;
     const first = list.slice(0, 3), later = list.filter((s) => s.year >= first[2].year + 3);
     if (!later.length) continue;
-    const r = later.map((s) => rate(s) - dot(b, s.x));
+    const r = later.map((s) => rate(s) - fullPred(key, s.x, specOf[key].has(s.id)));
     const u = (r.reduce((a, c) => a + c, 0) / r.length) * (r.length / (r.length + 1));
-    for (const s of first) { truth.push(s[key] * 36 / 36); bare.push((Math.exp(dot(b, s.x)) - EPS) * s.lgFga); bridged.push((Math.exp(dot(b, s.x) + u) - EPS) * s.lgFga); }
+    for (const s of first) { truth.push(s[key] * 36 / 36); bare.push((Math.exp(fullPred(key, s.x, specOf[key].has(s.id))) - EPS) * s.lgFga); bridged.push((Math.exp(fullPred(key, s.x, specOf[key].has(s.id)) + u) - EPS) * s.lgFga); }
   }
   report.push(`${key}: hold-out on ${truth.length} early seasons — model alone r ${corr(bare, truth).toFixed(3)}, with the bridge r ${corr(bridged, truth).toFixed(3)}`);
 }
@@ -134,7 +168,13 @@ const pre = seasons.filter((s) => s.year > 0 && s.year < 1974);
 const est = new Map<string, { name: string; year: number; g: number; min: number; stl: number; blk: number; key: string }[]>();
 for (const s of pre) {
   const mpg = s.min / s.g;
-  const f = (key: 'stl' | 'blk') => Math.max(0, (Math.exp(dot(models[key], s.x) + (effects[key].get(s.id) ?? 0)) * smear[key] - EPS) * s.lgFga) * (mpg / 36);
+  const f = (key: 'stl' | 'blk') => {
+    const u = effects[key].get(s.id) ?? 0;
+    // Specialist if he is one in his 1974+ windows, or if his estimate at 27 reaches 2 a 36.
+    const at27 = s.x.map((v, i) => (i === 1 || i === 2 ? 0 : v));
+    const spec = specOf[key].has(s.id) || (Math.exp(fullPred(key, at27, false) + u) * smear[key] - EPS) * s.lgFga >= 2.0;
+    return Math.max(0, (Math.exp(fullPred(key, s.x, spec) + u) * smear[key] - EPS) * s.lgFga) * (mpg / 36);
+  };
   est.set(s.id, [...(est.get(s.id) ?? []), { name: s.name, year: s.year, g: s.g, min: s.min, stl: f('stl'), blk: f('blk'), key: windowKey.get(s)! }]);
 }
 // Documented counts: the career scaled to the reported average; a fully counted season replaces its
