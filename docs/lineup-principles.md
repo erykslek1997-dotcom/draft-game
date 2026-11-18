@@ -15,3 +15,8 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do
 **Wzorcowe składy (silnik powinien ocenić je wysoko):**
 - Curry 2015-17, Klay 2015-17, Butler 2015-17, Mobley 2024-26, Russell 1957-59
 - Kidd 2008-10, Dončić 2022-24, Pierce 2007-09, Davis 2019-21, Howard 2008-10
+
+**Przypadki kontrolne (silnik po zmianach powinien je ocenić tak samo jak użytkownik):**
+- Hill 1998-00, Price 1988-90, Miller 1993-95, Battier 2004-06, Robinson 1997-99 → atak wysoko, obrona nisko.
+- Jordan 1987-89, West 1970-72, Bridges 2019-21, Kirilenko 2002-04, Gasol 2016-18 → obrona wysoko, mało rzutu za 3.
+- Jokić 2022-24, Carter 1999-01, Pippen 1995-97, Bobby Jones 1976-78 + **Holiday 2020-22 lepszy niż Brunson 2021-23** (mniej piłki, obrona obwodu, rzut).
