@@ -11,6 +11,7 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Każda jest do
 7. **Sufit ataku:** kto stworzy rzut, gdy akcja się zatnie (Garnett + Tatum + Conley + Hornacek: pozycyjnie, niski sufit).
 8. **Dublowanie tendencji:** dwóch graczy z tą samą rolą w ataku (Duncan i Dirk obaj post-up w systemie Hardena) przeszkadza sobie. Liczone po profilu cech, nie po pozycji: Wade 2008-10 to „mini-Giannis 6'4” (rimPressure wysoko, spotUp/pullUp3 nisko) — razem overkill.
 9. **Limit piłki:** dwóch graczy z dużym posiadaniem piłki to zwykle górna granica (Frazier + Kobe ok, Frazier + Kobe + Wilt 1966-68 za dużo).
+10. **Malejąca wartość specjalizacji:** gdy potrzeba systemu jest spełniona (np. spacing przy Shaqu: Allen + Kawhi), kolejny strzelec (Haliburton) dodaje mało — lepiej zatkać inną dziurę (obrona obwodu, jak Fisher / Harper). Dublowanie Wade + Giannis „może działać, ale po co” → malejąca wartość, nie twarda kara.
 
 **Wzorcowe składy (silnik powinien ocenić je wysoko):**
 - Curry 2015-17, Klay 2015-17, Butler 2015-17, Mobley 2024-26, Russell 1957-59
