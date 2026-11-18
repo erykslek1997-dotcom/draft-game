@@ -10,7 +10,7 @@
  * Each skill's raw read (per window, seasons weighted by minutes):
  *  attack
  *   selfCreation   usage × share of his makes unassisted
- *   handling       AST% less half his TOV%
+ *   handling       AST% × √(AST% / USG%) less half his TOV% (passing, not ball dominance)
  *   rimPressure    rim attempts a 36
  *   post           unassisted twos a 36 that are not at the rim (mid + post) — bigs and wings alike
  *   roll           assisted rim makes a 36, plus screen assists a 36 where tracked
@@ -77,7 +77,10 @@ function raw(span: PlayerSpan): Record<string, number | null> {
   const twoMakes = rimFgm + midFgm;
   return {
     selfCreation: usg !== null && unFg !== null ? usg * unFg : null,
-    handling: n(r?.ast) !== null ? r!.ast! - 0.5 * (n(r?.tov) ?? 0) : null,
+    // 2026-11-18 (the user: "self creation a creation to dwie różne rzeczy"): AST% alone grows with
+    // the ball in his hands (Iverson, Kobe read as playmakers) — weighed by how much of what he uses he
+    // gives away (AST% / USG%), less half his TOV%.
+    handling: n(r?.ast) !== null && n(r?.usg) ? r!.ast! * Math.sqrt(r!.ast! / r!.usg!) - 0.5 * (n(r?.tov) ?? 0) : null,
     rimPressure: zs.length ? per36(rimFga) : null,
     post: zs.length && un2 !== null && twoMakes > 0 ? per36(midFgm * un2 * 1) : null,
     roll: zs.length && un2 !== null ? (per36(rimFgm * (1 - un2)) ?? 0) + (n(r?.screenAssists36) ?? 0) * 0.5 : null,
