@@ -14,7 +14,7 @@ SRS 0.842 / 0.836 · sim R² 0.67 · D-TAL 0.825 · piątki 0.548 · AI: sd 2.89
 | `SKILL_USAGE` | posiadanie piłki: USG% (tracking / BBRef od 1978) × samodzielność, zamiast etykiety; fit.ts przed 1997 + AI | SRS 0.841 / 0.836, sim 0.68, piątki 0.548 — bez zmian | 8/12 |
 | + `SKILL_PNR` `SKILL_TAL` `SKILL_AI` (wszystkie) | rozgrywający w pick-and-rollu i rolowanie z cech; 4 bramki w TAL; 4 bramki ról AI | SRS 0.841 / 0.837, sim 0.67, D-TAL 0.825, piątki 0.549 — bez zmian | 8/12 |
 - TAL przy `SKILL_TAL`: 1272 okien z 10 962 zmienia się o ≥ 0.5; 80+ średnio +0.07. W górę m.in. Lowry 2007-09 64→71, DeRozan 2021-23 58→65, Arizin 1957-59 72→78; w dół Marques Johnson 1980-82 78→73, Josh Howard 2003-05 65→60. Poprawione po drodze: Carmelo +8 (zwolnienie z kary za dużo rzutów — teraz tylko dla nie-kreatorów), Wembanyama −6 (bramka „finiszer” — teraz z prawdziwego % asystowanych rzutów).
-- AI (quick, 4 drafty, głośne): gorzej — starter poza pozycją 9% → 25%, gwiazdy 90+ spadają dalej (90. centyl 15 → 34). Pełny test 10 draftów w toku.
+- AI, pełny test 10 draftów (wszystkie cztery przełączniki): Overall 77.96 → 78.38, sd 2.96 → 2.72 (dalej od celu 3-3.5), gwiazdy 90+ spadają dalej w drafcie (90. centyl numeru wyboru 20 → 32, najgorszy 84 → 68). **Etykiety w AI (`SKILL_AI` + `SKILL_USAGE`) pogarszają draft gwiazd** — rekomendacja: włączyć `SKILL_TAL` i `SKILL_PNR` (sędziowie bez zmian), AI zostawić na etykietach do osobnego dostrojenia.
 - Wade / Oscar pomijani w drafcie: to cap (Wade 2008-10 20.8 FGA na ~11 średnio na gracza), nie etykieta.
 
 ## 2. Atak za nisko (pkt 5) — diagnoza
