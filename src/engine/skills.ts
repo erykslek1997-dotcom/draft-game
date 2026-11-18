@@ -83,12 +83,13 @@ export function isLowActivity(span: { id: string; defensiveRole: string }): bool
  *  - selfCreatorLevel  1 / 0.85 / 0.8 / 0.55 / 0 at self-creation ≥ 95 / 89 / 85 / 76 (the shares of
  *    Shot Creator / Primary BH / Slasher / Secondary BH / the rest)
  *  - isPlaymaker       handling ≥ 86 (the share of Primary + Secondary BH, 13.9%); primary ≥ 95 (5.0%)
- * `SKILL_CREATE=1` on; null / the label before 1996-97.
+ * On, smooth (the user, 2026-11-18: "jak wszystko z danych to wszystko"): judges unchanged.
+ * `SKILL_CREATE=1` the threshold variant, `=0` the labels; null / the label before 1996-97.
  */
-const SKILL_CREATE = envVar('SKILL_CREATE') === '1' || envVar('SKILL_CREATE') === '2';
+const SKILL_CREATE = envVar('SKILL_CREATE') !== '0';
 /** `SKILL_CREATE=2`: the smooth variant — handling relieves the shot-first cost gradually and a bench
  * creator needs handling ≥ 80 (Kobe, McGrady count as part playmakers). */
-const CREATE_SMOOTH = envVar('SKILL_CREATE') === '2';
+const CREATE_SMOOTH = envVar('SKILL_CREATE') !== '1';
 const SELF_LEVELS: [number, number][] = [[95, 1], [89, 0.85], [85, 0.8], [76, 0.55]];
 export function selfCreatorLevel(span: { id: string }): number | null {
   const v = SKILL_CREATE ? skill(span, 'selfCreation') : null;
@@ -123,9 +124,11 @@ export function isCreator(span: { id: string; offensiveArchetype: string }): boo
  * 2026-11-18 (measured: spacing's self-creation credit from self-creation as a whole gave non-shooting
  * high-usage bigs a shooter's credit — Antoine Walker 33 → 76, Embiid, Randle at 30-33% from three):
  * the level spacing reads comes from threes made off his own dribble instead, at the label shares
- * (94 / 89 / 85 / 76 → 1 / 0.85 / 0.8 / 0.55). `SKILL_PULLUP=1` on; null = the label.
+ * (94 / 89 / 85 / 76 → 1 / 0.85 / 0.8 / 0.55). On: raw offense vs real ORtg 0.7674 against the
+ * labels' 0.7678 (odd seasons 0.7776 / 0.7775); a 27-setting search of the credit's constants found
+ * nothing that held out of sample. `SKILL_PULLUP=0` = the label.
  */
-const SKILL_PULLUP = envVar('SKILL_PULLUP') === '1';
+const SKILL_PULLUP = envVar('SKILL_PULLUP') !== '0';
 const PULLUP_LEVELS: [number, number][] = [[94, 1], [89, 0.85], [85, 0.8], [76, 0.55]];
 export function pullUpLevel(span: { id: string }): number | null {
   const v = SKILL_PULLUP ? skill(span, 'pullUp3') : null;
