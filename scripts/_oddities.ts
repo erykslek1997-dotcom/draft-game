@@ -5,7 +5,10 @@ const d = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const tot = { wasted: 0, weak: 0, inverted: 0, dupBench: 0, teams: 0, picks: 0 };
 const ex: Record<string, string[]> = { wasted: [], weak: [], inverted: [], dupBench: [] };
 for (const dr of d) {
-  for (const p of dr.picks ?? []) { tot.picks++; if (p.pick <= 80 && p.bestTal - p.tal >= 8) { tot.wasted++; ex.wasted.push(`s${dr.seed} #${p.pick} ${p.team.split(' ').pop()}: ${p.n} ${p.tal} (był ${p.best} ${p.bestTal})`); } }
+  // One line per player who kept being passed over: first and last pick he was there 8+ TAL above the pick.
+  const slid = new Map<string, { tal: number; from: number; to: number; n: number }>();
+  for (const p of dr.picks ?? []) { tot.picks++; if (p.pick <= 80 && p.bestTal - p.tal >= 8) { const e = slid.get(p.best) ?? { tal: p.bestTal, from: p.pick, to: p.pick, n: 0 }; e.to = p.pick; e.n++; slid.set(p.best, e); } }
+  for (const [name, e] of slid) { tot.wasted++; ex.wasted.push(`s${dr.seed} ${name} ${e.tal}: pomijany od #${e.from} do #${e.to} (${e.n} wyborów)`); }
   const sums = dr.teams.map((t: any) => t.players.filter((p: any) => p.st).reduce((a: number, p: any) => a + p.tal, 0));
   const order = [...sums].map((s, i) => [s, i]).sort((a, b) => b[0] - a[0]).map((x) => x[1]);
   dr.teams.forEach((t: any, i: number) => {
@@ -20,7 +23,7 @@ for (const dr of d) {
 }
 const n = d.length;
 console.log(`${n} draftów, ${tot.teams} drużyn`);
-console.log(`zmarnowane wybory (top 80, lepszy o 8+): ${tot.wasted}  (${(tot.wasted / n).toFixed(1)}/draft)`);
+console.log(`pomijani gracze (lepszy o 8+ od wyboru, top 80): ${tot.wasted}  (${(tot.wasted / n).toFixed(1)}/draft)`);
 console.log(`słabi starterzy (<75): ${tot.weak}  (${(tot.weak / n).toFixed(1)}/draft)`);
 console.log(`odwrócona kolejność (5+ miejsc): ${tot.inverted}  (${(tot.inverted / n).toFixed(1)}/draft)`);
 console.log(`lepszy na ławce niż starter (5+): ${tot.dupBench}  (${(tot.dupBench / n).toFixed(1)}/draft)`);
