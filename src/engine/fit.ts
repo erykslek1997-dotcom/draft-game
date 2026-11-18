@@ -1,4 +1,5 @@
 import { players } from '../data/players';
+import { switchRoleScore } from './skills';
 import { rimProtectionByNumbers } from './rimProtection';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import {
@@ -775,10 +776,12 @@ function playerSwitchability(player: PlayerSpan, physical: { athleticism: number
     // A curated `Switch Big` secondary (defensiveRoleProfiles.ts) means "switches 1-5" even when
     // the primary tag is the more conservative Anchor/Mobile Big — take the better of the two.
     {
-      value: Math.max(
-        SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
-        secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
-      ),
+      value:
+        switchRoleScore(player) ??
+        Math.max(
+          SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
+          secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
+        ),
       weight: 0.40,
     },
     { value: positionVersatilityScore(player), weight: 0.30 },

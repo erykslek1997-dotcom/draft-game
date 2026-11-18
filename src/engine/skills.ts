@@ -46,3 +46,17 @@ export function isPerimeterDefender(span: { id: string; defensiveRole: string; p
   if (span.primaryPosition === 'C') return false;
   return 0.5 * Math.min(poa, help) + 0.25 * (poa + help) >= PERIM_SKILL_THRESHOLD;
 }
+
+/**
+ * 2026-11-18 (measuring): the role part of a player's switchability in Fit (40% of it, from a role-tag
+ * table: Point of Attack 100 … Low Activity 20). No data says who switched onto whom, so the stand-in
+ * for 1997+ windows is 0.6 point of attack + 0.4 help, set to the table's mean (53.6) and spread (32.3)
+ * over those windows, 0-100. `SKILL_SWITCH=1` on; null = keep the table.
+ */
+const SKILL_SWITCH = envVar('SKILL_SWITCH') === '1';
+export function switchRoleScore(span: { id: string }): number | null {
+  if (!SKILL_SWITCH) return null;
+  const poa = skill(span, 'pointOfAttack'), help = skill(span, 'help');
+  if (poa === null || help === null) return null;
+  return Math.max(0, Math.min(100, 53.61 + ((0.6 * poa + 0.4 * help - 49.64) * 32.27) / 22.44));
+}
