@@ -23,3 +23,20 @@ Curry + Klay + Butler + Mobley + Russell bez ławki: atak 67 (raw 79). Składnik
 ## 3. D-TAL z cech (`DT_SKILL`)
 Odczyt z cech (obwodowi 0.45 POA + 0.35 help + 0.2 aktywność; wysocy 0.45 rim + 0.3 help + 0.15 zbiórka + 0.1 aktywność), na skali D-TAL według pozycji. r z dzisiejszym D-TAL 0.73-0.81.
 Przy 0.5 nie naprawia przypadków z listy: George 2016-18 62 → 53, Bridges 2019-21 64 → 54, Jokić 63 → 41; Manu z 85 → 80-81 (sufit znika), Caruso 95 → 85. Sędzia w toku.
+
+## 4. Czy zasady z oceny widać w prawdziwych danych? (przed budową mechanizmu)
+**Drużyny 1998+** (`scripts/_offfeat.ts`, 511 sezonów, cechy pierwszej piątki vs to, czego surowy Offense nie łapie w prawdziwym ORtg): wszystkie |r| ≤ 0.10 i niestabilne parzyste/nieparzyste — elitarny strzelec, liczba niestrzelających, obciążenie piłką, trzeci z piłką, drugi atakujący kosz (+0.10, odwrotnie niż zasada), drugi post, najlepszy kreator, obwodowy bez rzutu i piłki.
+**Prawdziwe piątki 2007-08+** (`measureLineups.ts`, 150+ min, net na 100 vs Overall):
+| Zasada | n | efekt | |
+|---|---|---|---|
+| trzech dominujących piłkę | 5 | +0.92 ± 1.97 | za mało |
+| dwóch atakujących kosz bez rzutu | 74 | +0.27 ± 0.77 | brak |
+| dwóch post-scorerów | 253 | −0.41 ± 0.43 | kierunek zgodny, w szumie |
+| obwodowy bez piłki i rzutu | 204 | −0.36 ± 0.56 | kierunek zgodny, w szumie |
+| elitarny strzelec + dwóch niestrzelających wysokich | 114 | +0.65 ± 0.70 | kierunek zgodny (Curry), w szumie |
+| dwóch słabych obrońców obwodu | 509 | −0.30 ± 0.33 | kierunek zgodny, w szumie |
+| starter poziomu ławki (TAL < 70) | 1005 | −0.03 ± 0.23 | brak |
+| brak samodzielnego kreatora (sufit) | 296 | −0.12 ± 0.44 | brak |
+| (istniejąca) trzech+ niestrzelających | 388 | −0.84 ± 0.36 | realny koszt — silnik już go liczy |
+
+**Wniosek:** dane NBA nie potwierdzają ani nie obalają zasad — kierunki zwykle zgodne, efekty małe. Najpewniej dlatego, że prawdziwe drużyny rzadko budują takie konflikty (Magic + Wade, dwóch C MVP nie istnieją). Zasady z oceny to więc wiedza ekspercka do składów all-time, a nie coś, co da się skalibrować na NBA. Propozycja: wprowadzać je małymi wagami (rzędu tych kierunków: 0.3-0.7 pkt na 100), tak żeby nie psuły sędziów, i sprawdzać przypadkami kontrolnymi — decyzja użytkownika.

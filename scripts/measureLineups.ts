@@ -8,6 +8,7 @@ import { teamSpacingValue } from '../src/engine/midrangeGravity';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
 import { computeDefensiveTalent } from '../src/engine/talent';
+import { skill, dataUsageDemand } from '../src/engine/skills';
 import type { Team } from '../src/engine/types';
 
 /**
@@ -59,6 +60,15 @@ const FLAGS: Record<string, (five: PlayerSpan[]) => boolean> = {
   '3&D beside a star': (f) => f.some((p) => effectiveTalent(p) >= 85) && f.some((p) => !isBig(p) && p.fga <= 9 && teamSpacingValue(p) >= 60 && computeDefensiveTalent(p) >= 70),
   'two point guards': (f) => f.filter((p) => p.primaryPosition === 'PG').length >= 2,
   'no point guard': (f) => !f.some((p) => p.primaryPosition === 'PG'),
+  // 2026-11-18, the user's review (docs/lineup-principles.md), from the skills:
+  'review: three ball-dominant (usage)': (f) => f.filter((p) => (dataUsageDemand(p) ?? 0) >= 0.45).length >= 3,
+  'review: two rim attackers, no shot': (f) => f.filter((p) => (skill(p, 'rimPressure') ?? 0) >= 85 && (skill(p, 'spotUp') ?? 50) < 40 && (skill(p, 'pullUp3') ?? 50) < 40).length >= 2,
+  'review: two post scorers': (f) => f.filter((p) => (skill(p, 'post') ?? 0) >= 85).length >= 2,
+  'review: off-ball guard, no shot': (f) => f.some((p) => !isBig(p) && (dataUsageDemand(p) ?? 0.3) < 0.25 && (skill(p, 'spotUp') ?? 50) < 35),
+  'review: elite shooter + two non-shooting bigs': (f) => f.some((p) => (skill(p, 'pullUp3') ?? 0) >= 95) && f.filter((p) => isBig(p) && teamSpacingValue(p) < 30).length >= 2,
+  'review: two weak perimeter defenders': (f) => f.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length >= 2,
+  'review: bench-calibre starter (TAL < 70)': (f) => f.some((p) => effectiveTalent(p) < 70),
+  'review: no self-creator (sufit)': (f) => !f.some((p) => (skill(p, 'selfCreation') ?? 0) >= 89),
 };
 
 interface Row { overall: number; offense: number; defense: number; net: number; off: number; def: number; w: number; five: PlayerSpan[]; who: string }
