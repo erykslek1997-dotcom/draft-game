@@ -199,3 +199,27 @@ ridge((x) => x.drtg - slopeD * x.simD, 'Defense (DRtg)');
 // miss on high-usage scorers and pass-first non-shooters, or is it the game's alone?
 const slopeEO = corr(kept.map((x) => x.off), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.off));
 ridge((x) => x.ortg - slopeEO * x.off, 'ENGINE Offense score (ORtg)');
+// 2026-11-18 (hypothesis: a high-usage scorer is worth more next to weak teammates — he takes shots
+// that would go to them): offense residual (real ORtg over what each side says) by the team's top
+// usage and the O-TAL of the rest of its top eight, minutes-weighted.
+{
+  const rO = (x: Row) => x.ortg - slopeO * x.simO, rE = (x: Row) => x.ortg - slopeEO * x.off;
+  const cell = (x: Row) => {
+    const usg = x.spans.map((sp) => realSpan(sp)?.usg ?? 0);
+    const top = usg.indexOf(Math.max(...usg));
+    const rest = x.spans.map((sp, i) => ({ o: computeOffensiveTalent(sp), w: x.minShare[i] })).filter((_, i) => i !== top);
+    const restO = rest.reduce((t, r) => t + r.o * r.w, 0) / rest.reduce((t, r) => t + r.w, 0);
+    return { usg: usg[top], restO };
+  };
+  const cells = kept.map((x) => ({ x, ...cell(x) }));
+  const q = (v: number[], p: number) => [...v].sort((a, b) => a - b)[Math.floor(p * v.length)];
+  const u1 = q(cells.map((c) => c.usg), 1 / 3), u2 = q(cells.map((c) => c.usg), 2 / 3), o1 = q(cells.map((c) => c.restO), 1 / 3), o2 = q(cells.map((c) => c.restO), 2 / 3);
+  console.log(`\nOffense miss by top usage × the rest's O-TAL (+ = real better than said). Usage cuts ${u1.toFixed(1)} / ${u2.toFixed(1)}, rest O-TAL cuts ${o1.toFixed(1)} / ${o2.toFixed(1)}:`);
+  console.log('  top usage      rest O-TAL      n    game    engine');
+  for (const [un, uf] of [['low', (u: number) => u < u1], ['mid', (u: number) => u >= u1 && u < u2], ['high', (u: number) => u >= u2]] as const)
+    for (const [on, of] of [['weak', (o: number) => o < o1], ['mid', (o: number) => o >= o1 && o < o2], ['strong', (o: number) => o >= o2]] as const) {
+      const g = cells.filter((c) => uf(c.usg) && of(c.restO));
+      if (g.length < 10) continue;
+      console.log(`  ${un.padEnd(14)} ${on.padEnd(12)} ${String(g.length).padStart(4)}  ${mean(g.map((c) => rO(c.x))).toFixed(2).padStart(6)}  ${mean(g.map((c) => rE(c.x))).toFixed(2).padStart(7)}`);
+    }
+}
