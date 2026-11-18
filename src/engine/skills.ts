@@ -156,3 +156,35 @@ export function isSpacer(span: { id: string; offensiveArchetype: string }, label
   const v = SKILL_SPACER ? skill(span, 'stretch') : null;
   return v === null ? labels.includes(span.offensiveArchetype) : v >= 67;
 }
+
+/**
+ * 2026-11-18 (the user's review, principle 9 "limit piłki"; labels → data): how much of the ball a
+ * player takes, on the scale `HIGH_USAGE_ARCHETYPE_WEIGHT` used (Shot Creator / Slasher 1, Primary
+ * Ball Handler 0.5, Secondary 0.25). From his real USG% (NBA tracking 1996-97 on, else
+ * Basketball-Reference, 1977-78 on) times how much of it he makes himself (1 − assisted FG%, else
+ * the selfCreation skill), the demand `fit.ts` already reads for 1996-97 on, ÷ 0.571 — the mean
+ * demand of the spans labelled Shot Creator, so a typical one still reads 1. Post scorers, which
+ * the label left at 0, read 0.59 on average. `SKILL_USAGE=1` turns it on; else (or without USG%)
+ * the label weight.
+ */
+import { usageForSpan } from './usageLookup';
+import { realSpan } from './realAdvancedLookup';
+import { HIGH_USAGE_ARCHETYPE_WEIGHT } from '../data/schema';
+const SKILL_USAGE = envVar('SKILL_USAGE') === '1';
+const SHOT_CREATOR_MEAN_DEMAND = 0.571;
+export function dataUsageDemand(span: PlayerSpan): number | null {
+  const u = usageForSpan(span);
+  const usg = u?.usgPct ?? ((realSpan(span) as { usg?: number } | null)?.usg ?? NaN) / 100;
+  if (!Number.isFinite(usg)) return null;
+  const self = u ? 1 - u.assistedFgPct : (skill(span, 'selfCreation') ?? 50) / 100;
+  return Math.min(1.3, Math.max(0, (usg - 0.14) / 0.2)) * (0.5 + 0.5 * self);
+}
+export function usageWeight(span: PlayerSpan): number {
+  const d = SKILL_USAGE ? dataUsageDemand(span) : null;
+  return d !== null ? Math.min(1.5, d / SHOT_CREATOR_MEAN_DEMAND) : HIGH_USAGE_ARCHETYPE_WEIGHT[span.offensiveArchetype] ?? 0;
+}
+/** A bench scorer who goes and gets his own shot: the selfCreation skill (level ≥ 0.85), else the label. */
+export function isSelfCreatorFull(span: PlayerSpan): boolean {
+  const lvl = SKILL_USAGE ? selfCreatorLevel(span) : null;
+  return lvl !== null ? lvl >= 0.85 : (HIGH_USAGE_ARCHETYPE_WEIGHT[span.offensiveArchetype] ?? 0) >= 1;
+}

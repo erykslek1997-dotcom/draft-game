@@ -1,5 +1,6 @@
 import { players } from '../data/players';
-import { isShotFirst, playmakingRelief, selfCreatorLevel, switchRoleScore } from './skills';
+import { isShotFirst, playmakingRelief, selfCreatorLevel, switchRoleScore, dataUsageDemand } from './skills';
+import { envVar } from './env';
 import { rimProtectionByNumbers } from './rimProtection';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import {
@@ -723,6 +724,9 @@ function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): numb
   if (realUsage && realUsage.games >= MIN_GAMES_FOR_REAL_USAGE) {
     return realUsageDemand(realUsage);
   }
+  // 2026-11-18: before 1996-97, Basketball-Reference USG% and the selfCreation skill (SKILL_USAGE).
+  const dataDemand = envVar('SKILL_USAGE') === '1' ? dataUsageDemand(span) : null;
+  if (dataDemand !== null) return dataDemand;
 
   const demandScale = fgaDemandScale(span.fga);
   const archetypeWeight = (HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0) * demandScale;

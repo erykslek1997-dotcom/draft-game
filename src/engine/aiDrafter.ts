@@ -1,12 +1,12 @@
 import { isTwilightWindow } from './veteran';
-import { isRimProtector, isPerimeterDefender } from './skills';
+import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull } from './skills';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { STRUCTURED_AI } from './structuredMode';
 import { BACKUP_PAIRS, backupOptions, bigThreat, startedIrl, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
-import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
+import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
   ROSTER_SIZE,
@@ -636,7 +636,7 @@ interface NeedContext {
  * 1) count — a lead guard (Primary/Secondary Ball Handler, weight 0.5/0.25) creates offense for
  * teammates, not necessarily his own shot off the dribble, which is the specific "can go get a
  * bucket himself" trait a bench scorer needs when the starters' half-court sets aren't running. */
-const isSelfCreatorArchetype = (p: PlayerSpan) => (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) >= 1;
+const isSelfCreatorArchetype = (p: PlayerSpan) => isSelfCreatorFull(p);
 
 /** Measured against the real in-game pool (`draftPool.json`, ~3,100 spans): apg reads p50=2.9 /
  * p75=4.7 / p90=6.7 / p95=8.2 — 7.0 sits just past p90, "genuinely elite playmaking rate," not a
@@ -784,7 +784,7 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
     // 2026-10-02: a rim protector by the numbers (rimProtection.ts), not by the role label.
     lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, isRimProtector(p))),
     perimeterDefenderStarterCount: starterPlayers.filter((p) => isPerimeterDefender(p)).length,
-    usageWeight: starterPlayers.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0),
+    usageWeight: starterPlayers.reduce((sum, p) => sum + usageWeight(p), 0),
     avgDefensivePortability:
       starterPlayers.length === 0
         ? 50
@@ -2640,7 +2640,7 @@ function pickForAiSized(
     // actually thought they were worth.
     const talent = effectiveTalent(p);
     if (needs.usageWeight >= 2 && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
-      const usageDiscount = (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
+      const usageDiscount = usageWeight(p) * 0.5;
       // Option A (bench-shot-creator fix): this discount fires off `usageWeight`, which is
       // starter-only (see its own docstring) — it can't tell "competing with starters for
       // touches" apart from "this exact archetype is the one thing the bench still lacks," so
@@ -2665,7 +2665,7 @@ function pickForAiSized(
       need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT;
     }
     if (needs.hasSelfSufficientEngineStarter && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
-      need -= (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * SELF_SUFFICIENT_USAGE_DAMPENING;
+      need -= usageWeight(p) * SELF_SUFFICIENT_USAGE_DAMPENING;
     }
 
     // Ramp need's above-baseline influence (both bonuses and the redundancy discount) in over
