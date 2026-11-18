@@ -1,4 +1,5 @@
 import { predatesThreePointLine } from './era';
+import { gameStocks } from './preStocks';
 import { nicknameFor } from '../data/nicknames';
 import { CLUTCH_TRAIT, GLUE, MICROWAVE, hasTrait } from './traits';
 import shotTendencyData from '../data/shotTendencies.json';
@@ -227,7 +228,7 @@ function rates(span: PlayerSpan) {
   if (!r) {
     const k = 36 / (estimatedMinutesPerGame(span) ?? 36);
     const m = modernBox(span);
-    r = { reb: m.rpg * k, ast: m.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: m.spg * k, blk: m.bpg * k };
+    r = { reb: m.rpg * k, ast: m.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: gameStocks(span).spg * k, blk: gameStocks(span).bpg * k };
     rateCache.set(span, r);
   }
   return r;

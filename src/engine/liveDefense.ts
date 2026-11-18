@@ -5,6 +5,7 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { computeOffensiveTalent } from './talent';
 import { positionFitMultiplier, STARTER_SLOTS } from './positions';
 import { modernBox } from './modernBox';
+import { gameStocks } from './preStocks';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { rimPressureForFit } from './rimPressure';
@@ -60,8 +61,8 @@ export function defenderProfile(span: PlayerSpan): DefenderProfile {
     const per36 = 36 / (estimatedMinutesPerGame(span) ?? 32);
     const [foul, orebShare] = DEFENSE[span.id] ?? [1000, 240];
     const dtal = z(computeDefensiveTalent(span), REFERENCE.dtal);
-    const blk = z(m.bpg * per36, REFERENCE.blk36);
-    const stl = z(m.spg * per36, REFERENCE.stl36);
+    const blk = z(gameStocks(span).bpg * per36, REFERENCE.blk36);
+    const stl = z(gameStocks(span).spg * per36, REFERENCE.stl36);
     const rimRole = RIM_PROTECTOR_ROLES.includes(span.defensiveRole) || isBig(span.primaryPosition);
     const perimRole = PERIMETER_DEFENDER_ROLES.includes(span.defensiveRole) || !isBig(span.primaryPosition);
     const reb36 = m.rpg * per36;
