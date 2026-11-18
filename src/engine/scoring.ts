@@ -48,6 +48,7 @@ import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD }
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
 import { envVar } from './env';
+import { reviewAdjustment } from './reviewRules';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -2088,7 +2089,9 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-11: the weakest reserve's card number (see BENCH_FLOOR).
     benchFloorAdjustment(team) +
     // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
-    eraAdjustment(team);
+    eraAdjustment(team) +
+    // 2026-11-18: the user's review rules (reviewRules.ts; REVIEW_W, off by default).
+    reviewAdjustment(primaryStarters(team).map((a) => a.player));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
