@@ -23,7 +23,7 @@ Curry + Klay + Butler + Mobley + Russell bez ławki: atak 67 (raw 79). Składnik
 ## 3. D-TAL z cech (`DT_SKILL`)
 Odczyt z cech (obwodowi 0.45 POA + 0.35 help + 0.2 aktywność; wysocy 0.45 rim + 0.3 help + 0.15 zbiórka + 0.1 aktywność), na skali D-TAL według pozycji. r z dzisiejszym D-TAL 0.73-0.81.
 Przy 0.5 nie naprawia przypadków z listy: George 2016-18 62 → 53, Bridges 2019-21 64 → 54, Jokić 63 → 41; Manu z 85 → 80-81 (sufit znika), Caruso 95 → 85.
-**Sędzia (0.5): D-TAL 0.825 → 0.810, sim 0.67 → 0.64, SRS 0.842 → 0.843, piątki 0.548 → 0.546. Odrzucam** — z tymi wagami cechy obronne gorzej przewidują prawdziwą obronę niż obecny D-TAL. Skoki George'a / Iguodali z listy też nie znikają. Do zrobienia inaczej: wagi dopasowane do prawdziwego DRtg (z podziałem parzyste/nieparzyste), nie ustawione ręcznie.
+**Sędzia (0.5): D-TAL 0.825 → 0.810, sim 0.67 → 0.64, SRS 0.842 → 0.843, piątki 0.548 → 0.546. Odrzucam** — z tymi wagami cechy obronne gorzej przewidują prawdziwą obronę niż obecny D-TAL. Skoki George'a / Iguodali z listy też nie znikają. Potem wagi dopasowane do prawdziwego DRtg (`scripts/_dfit.ts`, 375 sezonów 1998+, fit parzyste / test nieparzyste): obecny D-TAL r 0.788; same cechy 0.742; D-TAL + cechy 0.792 (+0.004). Prawie całą wagę bierze `help` (częściowo z on/off, czyli z wyników drużyny — błędne koło); point of attack i rim protect ~0. **Wniosek: dane nie uzasadniają D-TAL z cech.** Skoki George'a / Iguodali naprawiać wygładzaniem sąsiednich okien (`NEIGHBOUR_WINDOW_SHARE`), nie cechami — do decyzji.
 
 ## 4. Czy zasady z oceny widać w prawdziwych danych? (przed budową mechanizmu)
 **Drużyny 1998+** (`scripts/_offfeat.ts`, 511 sezonów, cechy pierwszej piątki vs to, czego surowy Offense nie łapie w prawdziwym ORtg): wszystkie |r| ≤ 0.10 i niestabilne parzyste/nieparzyste — elitarny strzelec, liczba niestrzelających, obciążenie piłką, trzeci z piłką, drugi atakujący kosz (+0.10, odwrotnie niż zasada), drugi post, najlepszy kreator, obwodowy bez rzutu i piłki.
@@ -47,3 +47,6 @@ Reguły z piątki, każda ±`REVIEW_W` pkt Overall:
 − tłok w pomalowanym (dwóch trzymających piłkę przy koszu bez rzutu: Wade + Giannis, Embiid + Duncan), − trzech dominujących piłkę (Magic + Wade + Dirk, Jokić + Carter + Brunson), − obwodowy bez piłki i bez rzutu (Alvin), − drugi słaby obrońca obwodu, − starter poziomu ławki (TAL < 70 albo skrzydłowy z O < 50: Caruso), + elitarny strzelec z piłką (Curry, Dončić) kasuje koszt niestrzelających wysokich-zasłoniarzy.
 Uwaga: cecha `post` mierzy strefę, nie post-up (Nash 97, Shaq 9) — dlatego „tłok” liczony z rim pressure + brak spot-upu + piłka.
 Kontrolne: W=0 8/12 → W=1 9/12, W=2 9/12. Dalej nie przechodzą: Giannis + Horford > + Wallace, Dončić > Stockton, atak Stocktona < Curry'ego — to już sam Offense (pkt 2 diagnozy), nie reguły.
+
+## 6. Minuty (LeBron 16 z 40 na PF)
+Nie błąd, tylko zamierzone: gwiazda pokrywa inną pozycję, gdy siada tamtejszy starter. LeBron we wszystkich czterech drużynach z 10 draftów: PG 10-12 min + PF 26-29 (albo SF 24 + PF 16). Strona pokazywała to jako „16m (razem 40m)”. Do oceny użytkownika, czy LeBron jako zmiennik PG jest ok.
