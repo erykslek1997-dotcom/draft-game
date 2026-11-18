@@ -14,6 +14,7 @@ Zasada: każdy krok za przełącznikiem, domyślnie wyłączony. Mierzone sędzi
 - Kandydat: D-TAL z pointOfAttack / help / rimProtect / activity / defGlass (+ pre-1997).
 - Warunki: sędzia D-TAL ≥ 0.825, gładkość między sąsiednimi oknami (George, Iguodala, Manu), obrona obwodu osobno od ochrony kosza (pkt 3).
 
+## 1b. Etykiety (przeniesione przed atak — decyzja użytkownika)
 ## 3. Etykiety → cechy, posiadanie piłki (pkt 9)
 - `HIGH_USAGE_ARCHETYPE_WEIGHT` w `fit.ts` i `aiDrafter.ts` → prawdziwe USG% + handling.
 - Potem `talent.ts` (4 miejsca: samodzielne tworzenie, zwolnienie z kary bez piłki, rozgrywanie, roll big), `pairwiseFit.ts`, `portability.ts`.
