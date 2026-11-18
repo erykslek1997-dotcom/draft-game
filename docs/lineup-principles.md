@@ -41,3 +41,18 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
 - Jokić 2022-24, Carter 1999-01, Pippen 1995-97, Bobby Jones 1976-78: **Holiday 2020-22 lepszy niż Brunson 2021-23** (mniej piłki, obrona obwodu, rzut).
 - Shaq 2001-03 + Allen 2001-03 + Kawhi: obrońca obwodu lepszy niż Haliburton.
 - Giannis 2020-22 + Wade 2008-10 + Ben Wallace: rzucający center lepszy niż Wallace.
+
+## Dopisane po drugiej serii (seed 5 drafty, 2026-11-18 wieczór)
+- **Kolejność oceny:** najpierw kto ma piłkę, kto komu zabiera miejsce, kto broni kosza i obwodu — talent na końcu.
+- **1a. Obwodowy bez piłki musi rzucać:** niestrzelający PG/SG bez piłki (Alvin Robertson obok Oscara) jest prawie bezwartościowy w ataku i mało portable. U wysokich słabiej (zasłony, zbiórki, rolowanie).
+- **1b. Wartość cuttera zależy od miejsca:** Kirilenko obok Magica i Wade'a nie ma gdzie ścinać.
+- **2a. Poziom startera vs ławki:** role player na poziomie startera (White, Battier, Artest) „przejdzie”; poziom ławki (Caruso, Thybulle) psuje piątkę mimo elitarnej obrony. Wada ≠ problem; problem dopiero poniżej poziomu startera.
+- **3a. Słabi obrońcy obwodu — nieliniowo:** jednego się chowa, dwóch (Dončić + Ray Allen) już nie.
+- **6a. Znane pary:** Draymond + Klay (zasłony, short roll) ratują ograniczenie Draymond + Gobert.
+- **8a. Ta sama płaszczyzna:** Magic 1987-89 + Wade 2008-10 (obaj w pomalowanym, żaden nie rozciąga); dwóch centrów MVP (Embiid na PF obok Davida Robinsona).
+- **Silnik — minuty:** gracze przypisani na pozycję grają tam mało (LeBron 16 min na PF z 40, Rasheed 17, Kawhi 25) — sprawdzić rozbijanie minut.
+
+## Przypadki kontrolne (druga seria)
+- Stockton 1990-92 + White + Hayward 2015-17 + Garnett 2006-08 + Porziņģis → wysokie dopasowanie, niski sufit ataku (brak pierwszego strzelca).
+- Bird 1983-85 + Lowry 2017-19 + Klay + Draymond + Gobert → bardzo dobry; Draymond z Gobertem ograniczają, Klay ratuje.
+- Billups + Caruso + Artest 2007-09 + LeBron 2012-14 + Mourning → Caruso to błąd (ławka), reszta „przejdzie”.
