@@ -1,7 +1,7 @@
 import { players } from '../src/data/players';
 import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { reviewAdjustment } from '../src/engine/reviewRules';
-import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, benchFloorAdjustment, eraAdjustment, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
+import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, benchOffenseAdjustment, benchRoleAdjustment, benchFloorAdjustment, eraAdjustment, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
 import { liftAdjustment } from '../src/engine/teammateLift';
 import { heliocentricAdjustment } from '../src/engine/heliocentric';
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
@@ -106,7 +106,9 @@ const recomputedOverall = Math.round(
     // 2026-11-11: partial decade-drift correction.
     eraAdjustment(fullRoster) +
     // 2026-11-19: the user's review rules (reviewRules.ts).
-    reviewAdjustment(primaryStarters(fullRoster).map((a) => a.player)),
+    reviewAdjustment(primaryStarters(fullRoster).map((a) => a.player)) +
+    benchOffenseAdjustment(fullRoster) +
+    benchRoleAdjustment(fullRoster),
 );
 // 2026-11-11: within one point — the parts are read rounded, Overall from their exact values, so a
 // team sitting near a .5 (this one moved there when the lineup search changed) can round apart.
