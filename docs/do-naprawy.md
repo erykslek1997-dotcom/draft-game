@@ -41,7 +41,18 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - Symulacja meczów — dostosować raz, gdy oceny składów będą ok (sim R² 0.66 → 0.63 po zmianach w ataku).
 - `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
+## Z draftu 1627088049 (2026-11-19) — zostało
+- **Wade vs Klay:** w piątce Curry / J-Dub / Draymond / Lopez Klay (TAL 85) daje 82.5, Wade (95) 82 — reszta kary dla dwóch graczy z piłką (obrona / rozmiar / dopasowanie) do sprawdzenia.
+- **Rotacja:** Gobert (84) 18 min za Lopezem (75) 30; Curry 26 na PG + 10 na SG, Chalmers 22 na PG — gwiazda ma grać na swojej pozycji.
+- **Atak szerokich składów za nisko:** Cheyenne (Frazier / Butler / Middleton / Nowitzki / Hakeem) 63, Miami (Jordan / Billups / Pierce) 68, a Mobile (SGA / Bell / C. Robinson / McHale / Jokić) 90.
+- **Obrona Little Rock 92** (Kidd 2008-10 / White / Bird / Millsap / Wilt) i przewaga 3 pkt — chyba za dużo.
+- **AI — dopasowanie przy podobnej wartości:** Marion (17.5 capu) obok LeBrona i Howarda zamiast strzelca klasy Allena / George'a.
+- **AI — gwiazdy spadają:** Dončić 63., McGrady 57., Harden 48., Carter 101.
+- **AI — śmieci:** Tom Gola (12.7 capu), Don Buse TAL 41 gra 19 min.
+
 ## Już zrobione (2026-11-19)
+- **Curry + Wade** (`REV_STAR`, `PNR_BEST_LEAD`): elitarny strzelec z miejsca nie liczy się jako trzeci gracz z piłką ani jako „silnik” dla reguły zbędnego rozgrywającego (Draymond przy Currym to point forward); współgwiazda nie jest zbędnym rozgrywającym; pick-and-roll przez lepszego z dwóch prowadzących. Syracuse 78 → 82. Sim 0.62 → 0.65, SRS 0.843, piątki 0.559, słabi rezerwowi 34% → 27%.
+- **Podłoga ataku dla dwóch gwiazd** (`OFF_PAIR_W=0.35`): LeBron + McGrady 63 → 70. Sędziowie bez zmian.
 - **Koszt drugiego gracza z piłką ze spacingiem** (`BH_SHOOT=0.6`): z dwóch chcących piłki ten lepiej rzucający z miejsca gra bez niej i kosztuje mniej. Billups obok LeBrona 0.69 → 0.00, Stockton 0.69 → 0.26; Stockton obok Wade + Garnett 1.29 → 0.76. SRS 0.844 / 0.841, sim 0.61, trzech+ PG 16% → 11%. (Kolejność wyborów — Stockton przed Wade'em — zostaje: wymaga planowania składu przez AI.)
 - **AI: wybór okresu kariery** (`AI_WIN_OTAL=15`, `AI_WIN_OW=0.3`): okresy „równe poza ceną” tylko przy podobnym ataku, a oddany atak kosztuje. Kawhi 2015-17 zamiast 2013-15. 10 draftów: zróżnicowanie 3.13 → 3.41, 90. centyl wyboru gwiazd 90+ 25 → 22.
 - **Efekt rotacji na tych samych draftach (401-402):** „lepszy na ławce niż starter” 5.5 → 2.5 na draft, „drogi zmiennik TAL 80+ ≤ 16 min” 1.5 → 0.5, słabi starterzy 5.5 → 5.0.
