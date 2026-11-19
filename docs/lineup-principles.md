@@ -89,3 +89,12 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
 - **Wzorcowe trio (2026-11-19): Wade 2008-10 + Garnett 2002-04 + Brook Lopez 2018-20** — „sexy trio”: wjazd + wysoki post / półdystans + rzucający C z ochroną kosza; nikt nikomu nie zabiera miejsca, obrona D 80+. Przeciwieństwo Wade + Giannis. W tej drużynie (Stockton 1990-92 / Hayward 2015-17): atak **62** (pkt 5), obrona 75 (raczej za mało), ławka najgorsza: Duhon 2010-12 TAL 37, Bradley 67, B. Russell 69, Kukoč 70. Stockton obok Wade'a = pkt 1.
 - **AI: tani w capie, drogi w piłce (2026-11-19):** Stockton obok Wade'a i Garnetta — „zabiera mało capu, ale wymaga piłki”. Cap liczy rzuty (FGA), a rozgrywający kosztuje posiadanie piłki (asysty, usage przez podania). AI widzi okazję (wysoki TAL, niska cena), a jego wartość przepada przy dwóch gwiazdach z piłką. AI powinno liczyć oba koszty: cap i piłkę, gdy skład ma już graczy z piłką (pkt 1, 9, 10).
 - **Dolph Schayes 1951-53 w piątce (2026-11-19, po zmianach w ataku):** Billups 2003-05 / Eddie Jones 1998-00 / Bird 1985-87 / **Schayes (TAL 77, PF, 34 min)** / Mourning 1998-00 — atak 75, obrona 77, ocena 83.0. (1) Rotacja: Butler 2023-25 (TAL 87) 30 min z ławki, a Schayes zaczyna; lepiej Bird na PF, Butler na SF. (2) Draft: AI bierze gracza sprzed zegara 24 s (1954) z szacowanymi danymi — kara za pewność danych (`dataCertaintyAdjustment`) nie zadziałała / za słaba; TAL 77 podejrzanie wysoko. George Hill 2 min na SG, Bradley (67) 15 min.
+  **Rotacja według użytkownika (Chicago, „i jest bazunia”):**
+  | Poz | Starter | Zmiennik |
+  |---|---|---|
+  | PG | Billups 34 | Hill 14 |
+  | SG | Eddie Jones 36 | Hill 12 |
+  | SF | Butler 34 | Bird 14 |
+  | PF | Bird 26 | ktoś zamiast Schayesa 22 |
+  | C | Mourning 33 | Bradley 15 |
+  Łącznie: Billups 34, Jones 36, Butler 34, Bird 40, Mourning 33, Hill 26, Bradley 15, rezerwowy PF 22; Schayes poza rotacją (w drafcie ktoś inny). Silnik: Schayes 34 w piątce, Butler 30 z ławki (8 SG + 22 SF), Bird 26 SF + 14 PF.
