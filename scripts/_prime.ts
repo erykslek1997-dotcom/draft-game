@@ -1,0 +1,2 @@
+import { draftPool } from '../src/data/draftPool'; import { tierContextFor, displayTalentForSpan } from '../src/engine/grades'; import '../src/engine/fit';
+for (const n of process.argv.slice(2)) { const best = draftPool.filter((s) => s.playerName === n).map((s) => [s.spanLabel, displayTalentForSpan(tierContextFor(s))] as const).sort((a, b) => b[1] - a[1])[0]; console.log(n, best?.[0], best?.[1].toFixed(0)); }
