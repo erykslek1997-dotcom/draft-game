@@ -1710,6 +1710,7 @@ const WINDOW_FGA_RATE = Number(envVar('WINDOW_FGA_RATE') ?? 1.6);
  * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
  * spends what cap is left on the better windows.
  */
+const AI_WIN_OTAL = Number(envVar('AI_WIN_OTAL') ?? Infinity);
 const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
@@ -1732,7 +1733,12 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
     const bestDraftEntry = entries[0];
     const peak = Math.max(...entries.map((entry) => entry.talent));
     const within = peak >= WINDOW_EQUAL.starPeak ? WINDOW_EQUAL.within : WINDOW_EQUAL.withinBelowStar;
-    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    // 2026-11-19 (the user: Kawhi 2013-15 — TAL 92, O 63 — taken over 2015-17 — TAL 95, O 96): two windows
+    // count as equal but for the price only when their offense is close too (`AI_WIN_OTAL` O-TAL apart at
+    // most); otherwise the better one keeps its whole TAL edge.
+    const peakO = AI_WIN_OTAL < Infinity ? Math.max(...entries.map((e) => computeOffensiveTalent(e.player))) : 0;
+    const equalWindow = (entry: T) => peak - entry.talent <= within && (AI_WIN_OTAL === Infinity || peakO - computeOffensiveTalent(entry.player) <= AI_WIN_OTAL);
+    const windowScore = (entry: T) => entry.windowValue + (equalWindow(entry) ? (peak - entry.talent) * entry.windowTalentCredit : 0);
     const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
