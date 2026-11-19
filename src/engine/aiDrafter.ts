@@ -1988,6 +1988,8 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
+const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
 const AI_STAR_SWAP = Number(envVar('AI_STAR_SWAP') ?? 0);
 const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
 const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
@@ -2987,6 +2989,21 @@ function pickForAiSized(
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
     const slots = rosterSize - roster.length;
+    // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"; the value terms kept burying useful
+    // backups — DeAndre Jordan 77 ranked 6930th): the last `AI_BENCH_GREEDY` picks ask the team score
+    // directly — of the best talents that fit the cap and keep the shape reachable, the one that lifts
+    // the roster most (0 = off). No star (`STRUCTURE_STAR_TAL`+) goes to the bench this way.
+    if (AI_BENCH_GREEDY > 0 && slots <= AI_BENCH_GREEDY && roster.length >= 5) {
+      const room = capLimit - spent - (slots - 1) * LOOKAHEAD_MIN_FILL_FGA;
+      const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
+      const fits = available.filter((p) => !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
+        && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))));
+      const byTal = [...fits].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+      const shortlist = [...new Set([...byTal.slice(0, AI_BENCH_SHORTLIST), ...byTal.filter((p) => p.fga <= 4).slice(0, 10)])];
+      let top: { p: PlayerSpan; v: number } | null = null;
+      for (const p of shortlist) { const v = teamScorer([...roster, p]); if (!top || v > top.v) top = { p, v }; }
+      if (top) return top.p;
+    }
     // 2026-11-05, the user ("KD czy Nash z ławki nieakceptowalne"): in the structured test a player's
     // window goes where his roster has room — a window whose own position is still open, within
     // `WINDOW_EQUAL.within` TAL of his best legal one, beats one at a filled spot (Durant's SF years
