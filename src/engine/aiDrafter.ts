@@ -1989,7 +1989,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
-const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 0);
+const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
 const AI_BENCH_SCORER = envVar('AI_BENCH_SCORER') === '1';
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
@@ -1997,7 +1997,7 @@ const AI_BENCH_RESERVE = Number(envVar('AI_BENCH_RESERVE') ?? 6);
 const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
 const AI_STAR_SWAP = Number(envVar('AI_STAR_SWAP') ?? 0);
 const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
-const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
+const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? 5);
 const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
 const AI_LAST_BEST = Number(envVar('AI_LAST_BEST') ?? 0);
 export const AI_PLAN = {
