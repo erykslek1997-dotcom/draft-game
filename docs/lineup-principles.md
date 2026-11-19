@@ -59,3 +59,4 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
 
 ## Do zrobienia na koniec (z kalibracji 2026-11-19)
 - **Minuty ławki na złej osobie:** Stockton / White / Durant / Malone / Mutombo — P.J. Tucker (TAL 63) gra 23 min na PF, OG Anunoby (TAL 76, PF „full”) tylko 12 na SF. Lepszy rezerwowy powinien dostać minuty słabszego na pozycji, którą umie grać. Sprawdzić rozdział minut (`allocateMinutes` / `capBenchMinutes`).
+- **To samo, drugi przykład:** Billups / Dumars 1988-90 / Artest / Bird 1982-84 / Wilt 1967-69 (atak 74, obrona 84, ocena 81.8) — Delonte West (TAL 63) 24 min jako zmiennik PG; Danny Green 25 min na SF, więcej niż starter Artest (23, bo 8 min na PF). Dumars D 65 podejrzanie nisko (All-Defense) — pkt 4.
