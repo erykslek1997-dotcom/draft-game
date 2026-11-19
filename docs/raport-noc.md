@@ -64,3 +64,6 @@ Licznik (`scripts/_oddities.ts`, poprawiony: raz na pominiętego gracza), 10 dra
 - pick 40 (Bird, Green): Carter 221.5, Billups 219.9 (`gmProfileBonus` +14..16), Klay 216.3 > Wade 211.3 (11.).
 - pick 55: Artest 79 TAL → `talentTerm` 253 (need × 3.2), Anunoby 77 → 241, Marion 85 → 256.
 **Wniosek:** potrzeba pozycji mnoży talent (`rampedNeed` 1.4-3.2), a do tego profil GM (+14..16) i szum tablicy (±14). Różnica 16 TAL (Wade 95 vs Artest 79) przegrywa z samym mnożnikiem potrzeby. To jest mechanizm „AI wypełnia role zamiast brać talent”. Propozycja na rano (do decyzji): ograniczyć mnożnik potrzeby (np. ≤ 1.5× albo addytywnie) i zmniejszyć profil GM / szum dla talentu 90+; zmierzyć licznikiem + `measureRosterSense` + kontrolnymi.
+
+## 9. Nowe drafty do oceny
+10 draftów (seedy 201-210) z zestawem rekomendowanym na stronie, zakładki „Nowy 1-10”. Licznik (inne seedy niż 101-110, więc porównanie orientacyjne): słabi starterzy < 75: 6.2 → 4.3 na draft; lepszy na ławce niż starter 3.7 → 3.2; pomijani 3.3 → 3.1; odwrócona kolejność 2.7 → 3.6.
