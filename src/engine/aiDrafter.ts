@@ -1988,6 +1988,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
 const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
 const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
 const AI_LAST_BEST = Number(envVar('AI_LAST_BEST') ?? 0);
@@ -2757,7 +2758,10 @@ function pickForAiSized(
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
     const adjustments = {
-      lowUsageBigMalus: -lowUsageBigMalus(p),
+      // 2026-11-19 (the user: "dlaczego łapie to backup centra na 12 minut"): the malus is for a cheap
+      // defensive star drafted early to start; a backup centre behind a starter owes no points
+      // (`AI_BIG_BENCH=1`: off for a C when a C already starts).
+      lowUsageBigMalus: AI_BIG_BENCH && needs.starterPlayers.some((s) => s.primaryPosition === 'C') ? 0 : -lowUsageBigMalus(p),
       eliteLowUsageDraftMalus: -eliteLowUsageDraftMalus(p),
       highVolumeNonElitePenalty: -highVolumeNonElitePenalty(p),
       elitePerimeterEngineBonus: elitePerimeterEngineBonus(p),
