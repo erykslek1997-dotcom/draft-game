@@ -659,13 +659,17 @@ const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
+const OFF_BALL_ORDER = envVar('OFF_BALL_ORDER') ?? 'usage';
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
   if (!OFF_BALL) return entries.map((e) => e.value);
   // `OFF_BALL_SHOOT`: a catch-and-shoot scorer's usage is partly off the ball (Dirk, Klay) — that share of
   // his on-ball part goes away at a spot-up skill of 90 (none at 50), as in the second-handler cost.
   const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
   const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6) * (1 - OFF_BALL_SHOOT * shoot(p));
-  const order = [...entries].sort((a, b) => share(b.player) - share(a.player));
+  // 2026-11-19 (the user, Jordan + Nash at Offense 77): the ball goes to the best scorers first, so the
+  // budget ranks by O-TAL (`OFF_BALL_ORDER=value`), not by usage — by usage Nash (0.38) ranked fourth
+  // behind Walton and Pierce and lost a quarter of his 96.
+  const order = OFF_BALL_ORDER === 'value' ? [...entries].sort((a, b) => b.value - a.value) : [...entries].sort((a, b) => share(b.player) - share(a.player));
   return order.map((e, rank) => {
     const on = share(e.player);
     const keep = 1 - OFF_BALL * (1 - BALL_RANK_KEEP[Math.min(rank, BALL_RANK_KEEP.length - 1)]);
