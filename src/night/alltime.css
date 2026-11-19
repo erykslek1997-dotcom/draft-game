@@ -1586,8 +1586,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .m2-acct { margin-top: 24px; }
 
 /* 2026-11-13: the board's rounds in one scrolling window (about four rounds tall), not two pages. */
-.nt .bg-rows { position: relative; min-width: 100%; width: max-content; overflow-x: hidden; max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
-@media (max-width: 600px) { .nt .bg-rows { max-height: 360px; } }
+.nt .bg-rows { position: relative; overflow-x: hidden; max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
+@media (max-width: 600px) { .nt .bg-rows { max-height: 360px; min-width: 100%; width: max-content; } }
 
 /* 2026-11-14 (the phone: "board by można ścisnąć"): the position rides the face's corner, cells shrink,
    a round nobody has reached yet is a short strip of numbers. */
