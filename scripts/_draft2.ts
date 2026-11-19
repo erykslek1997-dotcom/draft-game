@@ -1,5 +1,5 @@
 import { createDraft, resolveAiPickIfNeeded, availablePlayers, draftCapLimit } from '../src/engine/draft';
-import { finalizeAiRoster } from '../src/engine/finalizeAiRoster';
+import { finalizeAiRoster, aiRotation } from '../src/engine/finalizeAiRoster';
 import { scoreTeam } from '../src/engine/scoring';
 import { autoAssignRotation, allAssignments, bestPrimaryAssignment } from '../src/engine/rotation';
 import { computeOffensiveTalent } from '../src/engine/talent';
@@ -29,11 +29,12 @@ for (const seed of (process.argv[2] ?? "11,27").split(",").map(Number)) {
   const teams = st.teams.map((t) => {
     // As the game: the worker finalizes each CPU roster after the draft (finalizeAiRoster).
     const roster = finalizeAiRoster(t, draftCapLimit(st));
-    const team = { ...t, roster, rotation: autoAssignRotation(roster) };
+    const team = { ...t, roster, rotation: aiRotation(roster) };  // the game's CPU rotation (structured)
     const b = scoreTeam(team);
     const mins = new Map<string, { slot: string; min: number; starter: boolean; slots: { s: string; m: number; st: boolean }[] }>();
     const seen = new Set<string>();
-    const five = bestPrimaryAssignment(team.roster).assignment as Record<string, { id: string }>;
+    // Starters: the first row of each slot in the rotation the game uses.
+    const five = Object.fromEntries(Object.entries(team.rotation.slots).map(([sl, a]) => [sl, a[0] ? { id: a[0].playerId } : undefined])) as Record<string, { id: string }>;
     for (const a of allAssignments(team)) {
       const e = mins.get(a.player.id);
       const starter = five[a.slot]?.id === a.player.id; seen.add(a.slot);
