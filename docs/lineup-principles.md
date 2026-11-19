@@ -70,3 +70,12 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
 - **AI: drugi C na ławkę (2026-11-19, znowu):** Dončić 2024-26 / Green 2012-14 / Anunoby 2023-25 / Horford 2016-18 / Hakeem 1992-94 — Dwight Howard 2009-11 (TAL 87, DPOY) 12 min za Hakeemem, a Thybulle (TAL 62, O 32) 24 min. Gwiazda kupiona wysokim wyborem i capem jako zmiennik. AI powinno wyceniać gracza, który nie zmieści się do piątki i gra tylko na zajętej pozycji, po minutach, które dostanie, nie po talencie. **Doprecyzowanie użytkownika:** drugi C na ławce jest ok, gdy jest tani (Ben Wallace 2000-02 za Duncanem kosztuje połowę Howarda) — problemem jest drogi zmiennik z małą liczbą minut: minuty / koszt w capie. Za tę cenę: skrzydłowy-kreator (tego brakuje piątce: Green + Anunoby bez ataku z kozła). Razem z: Wade pomijany, mnożnik potrzeby pozycji.
 - Ta sama drużyna: Dončić (PnR) + Hakeem (post) — dwa systemy się nie zgrywają (pkt 6).
 - **Nash 2006-08 / Miller 1993-95 / J. Williams 2023-25 / Barkley 1990-92 / Duncan 2006-08** (atak 88, obrona 67, fit 59, ocena 78.1 — silnik dobrze widzi słaby fit): trzech z piłką (Nash, Barkley, Duncan), Barkley + Duncan w tej samej strefie, dwóch słabych obrońców obwodu (Nash 21, Miller 40). Rotacja: Duncan tylko 23 min na C + 12 na PF, Ben Wallace 25 na C; Butler 2023-25 (TAL 87) 15 min, Doc Rivers (TAL 69) 25 min.
+  **Rotacja według użytkownika (wzorzec dla rozdziału minut):**
+  | Poz | Starter | Zmiennik |
+  |---|---|---|
+  | PG | Nash 36 | Rivers 12 |
+  | SG | Miller 35 | J. Williams 13 |
+  | SF | J. Williams 20 | Butler 28 |
+  | PF | Barkley 36 | Duncan 12 |
+  | C | Duncan 24 | Ben Wallace 24 |
+  Łącznie: Nash 36, Miller 35, Williams 33, Butler 28, Barkley 36, Duncan 36, Wallace 24, Rivers 12. Silnik: Duncan 35 (23 C + 12 PF), Butler 15, Rivers 25, Nash 36 (23 PG + 13 SG). Różnice: lepszy rezerwowy (Butler 87) gra więcej niż starter na tej pozycji; słaby rezerwowy (Rivers 69) tylko 12; gwiazda (Duncan) pełne minuty rozbite między dwie pozycje.
