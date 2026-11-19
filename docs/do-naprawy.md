@@ -1,54 +1,47 @@
 # Do naprawy (z przeglądu draftów, 2026-11-19)
 
-Kolejność: od tego, co wpływa na najwięcej. Każda zmiana za przełącznikiem → sędziowie + przypadki kontrolne (`scripts/controlCases.ts`) + licznik (`scripts/_oddities.ts`) → decyzja użytkownika. Szczegóły i przykłady: `docs/lineup-principles.md`.
+Każda zmiana za przełącznikiem → sędziowie + przypadki kontrolne (`scripts/controlCases.ts`, dziś 12/16) + licznik (`scripts/_oddities.ts`) → decyzja użytkownika. Przykłady: `docs/lineup-principles.md`.
 
-## 1. Atak drużyny (najważniejsze)
-**Problem:** atak liczony prawie jak średnia talentu piątki. Gwiazda nie podnosi drużyny, a słabszy atakujący ją ściąga.
-- Za nisko: Jordan 1990-92 → **59**, Wade + Garnett + Stockton **62**, Curry **67**, Jokić + McGrady **68**, Kareem + West **69**, Magic + Malone **73**.
-- Za wysoko: kolejni gracze z piłką dodają pełny talent — Kobe + Tatum + Love **93** vs Kobe + Anunoby + Rasheed 68 (użytkownik woli drugi).
-**Do zrobienia:**
-- a) Gwiazda z piłką podnosi atak całej drużyny (nie tylko swoją część średniej).
-- b) Malejąca wartość: drugi, trzeci gracz z piłką dodaje do ataku coraz mniej (pkt 9, 10). Dziś reguła „trzech z piłką” daje tylko −1 — za mało.
-- c) Strzelec elitarny daje coś ponad maksimum spacingu (Curry).
-- Test: przypadki kontrolne — Curry i Dončić wysoko, Anunoby + Rasheed > Tatum + Love, atak Stocktona < Curry'ego.
+**Główny wniosek z przeglądu:** piątki bywają dobre, a ławka prawie zawsze psuje odbiór; AI buduje ogólnie słabe drużyny, więc solidne składy (Kidd + Hakeem) lądują w czołówce. Najpierw AI i ławka.
 
-## 2. Systemy liderów (pkt 6)
-Co lider potrzebuje obok siebie:
-- Curry: point forward (Draymond, Iguodala, Butler) i zasłoniarze.
-- Dončić: wysocy do lobów.
-- Shaq, Kareem: PF, który rzuca (nie Kemp, nie Bobby Jones).
-- Giannis: czterech strzelców, rzucający C (Lopez).
-- Konflikty: Dončić + Hakeem, Shaq + Harden — dwa systemy.
-- Pary, które działają: Stockton + Malone, Draymond + Klay, Wade + Garnett + Lopez, Malone + Porziņģis w obronie.
+## 1. AI w drafcie (priorytet)
+Wspólna przyczyna: AI wycenia gracza jedną liczbą (TAL / koszt w capie), a nie tym, co da tej drużynie.
+- **Zły okres kariery:** Kawhi 2013-15 (TAL 92, O 63, 11.3 FGA) zamiast 2015-17 (TAL 95, O 96, 16.5 FGA). 3 pkt TAL ukrywa 33 pkt ataku. Z Kawhim 2015-17 (i tańszym zmiennikiem C zamiast Holmgrena) — „najlepszy AI drafted skład”.
+- **Tani w capie, drogi w piłce:** Stockton przy Wade + Garnett. Cap liczy rzuty, rozgrywający kosztuje piłkę.
+- **Drogi zmiennik, który mało gra:** Howard za Hakeemem / za Wembanyamą, Walton za Gasolem (14 min). Tani zmiennik (Ben Wallace za Duncanem) jest ok.
+- **Ławka:** po wydaniu capu najtańsi, nie najbardziej przydatni — bez ataku (Chuck Hayes, Thybulle mimo kary `benchOffense`), TAL 37-60 (Duhon, Temple, Prigioni, Bonner), bez PG i bez rzutu.
+- **Gwiazdy pomijane:** Wade 95 przez 30-50 wyborów w każdym drafcie; mnożnik potrzeby pozycji przewyższa różnicę talentu (`AI_NEED=0.5` — mieszane, odrzucone).
+- **Starzy gracze:** Dolph Schayes 1951-53 w piątce, Bob Kauffman 1971-73 21 min — kara za niepewne dane nie działa.
 
-## 3. Rotacja — minuty
-- Słabszy rezerwowy gra więcej niż lepszy: Tucker 23 vs Anunoby 12; Thybulle 24 vs Howard 12; Rivers 25 vs Butler 15; Fisher 24 vs Russell 13; Hill 24 vs Kirilenko 14; Outlaw 25 > starter Love na PF.
-- Lepszy rezerwowy ma prawo grać więcej niż starter na tej pozycji (Butler 28 vs Williams 20).
-- Gwiazdy za mało: Duncan 23 na C, Davis 12 na C (Nenê 36).
-- Pojedyncze minuty na innej pozycji: Fisher 1 min na SF; Prigioni 16 min na SG.
-- Wzorzec użytkownika (Nash / Barkley / Duncan) w `lineup-principles.md`.
+## 2. Rotacja — minuty
+- **Gwiazda C gra za mało, słabszy C resztę:** Wembanyama 24 (Chandler 24), Duncan 23-24 (Nenê 25, Rollins 24), Davis 12 na C (Lanier 36) — najczęstszy błąd.
+- **Lepszy rezerwowy siedzi, słabszy gra:** Butler 30 z ławki, a Schayes w piątce; Tucker 23 vs Anunoby 12; Thybulle 24 vs Howard 12; Rivers 25 vs Butler 15; Hill 24 vs Kirilenko 14; Fisher 24 vs Russell 13.
+- **Gracz nie na swojej pozycji / okruchy:** Prigioni 16 min na SG (trzy razy), Fisher 1 min na SF, Dantley 1 min na SG.
+- **Zasada z wzorców użytkownika:** piątka to najlepszych pięciu, pozycje dopasowane do nich (Bird na PF, Butler na SF); słaby rezerwowy gra tylko zastępstwo; lepszy rezerwowy może grać więcej niż starter tej pozycji. Wzorce: Nash / Barkley / Duncan i Chicago (Bird / Butler) w `lineup-principles.md`.
 
-## 4. AI w drafcie
-- Drogi zmiennik, który mało gra: Howard za Hakeemem. (Tani — Ben Wallace za Duncanem — jest ok.) Wycena: minuty, które dostanie / koszt.
-- Tani w capie, drogi w piłce: Stockton przy Wade + Garnett. Liczyć koszt piłki, nie tylko rzutów.
-- Gwiazdy pomijane: Wade 95 w każdym drafcie przez 30-50 wyborów; mnożnik potrzeby pozycji (×1.4-3.2) przewyższa różnicę talentu. (Test `AI_NEED=0.5` — mieszany, odrzucony; trzeba inaczej.)
-- Ławka: rezerwowi bez ataku mimo kary `benchOffense` (Chuck Hayes, Thybulle), gracze TAL 37-60 (Duhon, Prigioni, Bonner), za mało PG i rzutu.
+## 3. Ocena drugiego składu
+Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul / Klay; na prawdziwych piątkach „brak PG” −1.31), brak rzutu z ławki (Bird / Allen / Holiday).
 
-## 5. Ocena drugiego składu
-- Brak rozgrywającego z ławki (Paul / Klay; Giannis): na prawdziwych piątkach „brak PG” −1.31.
-- Brak rzutu z ławki (Bird / Allen / Holiday: Baron Davis, Prince, DeAndre).
-- Silnik liczy spacing i rozgrywanie głównie dla piątki.
+## 4. Atak — dokończyć
+- Wartość spacingu dla gwiazdy: przy LeBronie Billups + Manu + rzucający wysocy vs Payton + Russell — atak ma się różnić ≥ 8 (dziś 5).
+- Jordan dalej niżej niż przeładowane składy.
 
-## 6. Obrona — pojedyncze oceny (pkt 4)
-Za nisko, box nie widzi: Dumars (All-Defensive, D 21-65), Paul George 2019-21 62, Iguodala 2014-16 63, Bridges 2019-21 64, Rodman 1993-95 66. Sprawdzić podłogę za nagrody All-Defensive. (D-TAL z cech i wygładzanie — odrzucone przez sędziów.)
-Podejrzanie wysoko: Charlie Ward 89.
+## 5. Systemy liderów (mała strata, nie kara — „działa, ale nie maksymalizuje”)
+- PnR-PG potrzebuje lob threat: Paul + Kareem, Dončić + Hakeem.
+- Post C potrzebuje rzucającego PF: Shaq + Kemp, Kareem + Bobby Jones, Hakeem + Nenê, Duncan + Rodman.
+- Curry potrzebuje point forwarda (Draymond, Iguodala, Butler).
+- Konflikty liderów: Harden + Wade, Harden + Shaq, Dončić + Giannis.
+- Pary, które działają: Stockton + Malone, Draymond + Klay, Wade + Garnett + Lopez, Billups + Manu + LeBron, Malone + Porziņģis (obrona).
 
-## 7. Drobne
-- Test `testDefensiveHuntability` („all-time defensive shell…”) nie przechodzi — od przed zmian z nocy.
-- `testRotationEditable` — przekroczył czas przy równoległym obciążeniu, sprawdzić osobno.
+## 6. Pojedyncze oceny graczy
+- Za nisko w obronie: Dumars (All-Defensive, D 21-65), Rodman 1993-95 66, George 2019-21 62, Iguodala 2014-16 63, Bridges 2019-21 64. Sprawdzić podłogę za All-Defensive.
+- Podejrzane: Tony Parker 2006-08 TAL 66 (MVP finałów 2007), Schayes 1951-53 TAL 77, Charlie Ward D 89, Kawhi 2013-15 TAL 92 przy O 63.
+
+## 7. Na koniec
+- Symulacja meczów — dostosować raz, gdy oceny składów będą ok (sim R² 0.66 → 0.63 po zmianach w ataku).
+- `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
 ## Już zrobione (2026-11-19)
-- **Atak (pkt 1, część):** bez dodatku za spójność (nagradzał drugiego i trzeciego elitarnego strzelca), limit piłki 0.5 (kolejni gracze z piłką liczą się coraz mniej), łagodna podłoga gwiazdy 0.15, skala wyśrodkowana. Sędziowie: SRS 0.844 / 0.839, piątki 0.551, atak vs ORtg 0.766 → 0.770, kontrolne 11/13, AI sd 3.14. Jordan 63 → 69, Curry 67 → 70, Shaq + Harden 93 → 83, Kobe + Tatum + Love 93 → 82 (Anunoby + Rasheed teraz wyżej). Zostaje: Jordan nadal niżej niż przeładowane składy (mocniejsza podłoga psuła dane NBA); Dončić > Stockton i Giannis + Horford > + Wallace nie przechodzą.
-- **Symulacja meczów** liczy atak po staremu (sim R² 0.66 → 0.63) — dostosować raz, na końcu, gdy oceny składów będą ok (decyzja użytkownika).
-- Reguły z oceny (`reviewRules.ts`, `REVIEW_W=1`): tłok w pomalowanym, trzech z piłką, obwodowy bez piłki i rzutu, drugi słaby obrońca obwodu, starter poziomu ławki, niestrzelający rozgrywający obok gwiazdy, brak floor generala, + elitarny strzelec z piłką.
-- Etykiety → dane w TAL i pick-and-rollu (`SKILL_TAL`, `SKILL_PNR`).
+- **Atak:** bez dodatku za spójność, limit piłki 0.5, łagodna podłoga gwiazdy 0.15. SRS 0.844 / 0.839, piątki 0.551, atak vs ORtg 0.766 → 0.770. Jordan 63 → 69, Curry 67 → 70, Shaq + Harden 93 → 83.
+- **Reguły z oceny** (`reviewRules.ts`): tłok w pomalowanym, trzech z piłką, obwodowy bez piłki i rzutu, drugi słaby obrońca obwodu, starter poziomu ławki, niestrzelający rozgrywający obok gwiazdy, brak floor generala, + elitarny strzelec z piłką.
+- **Etykiety → dane** w TAL i pick-and-rollu.
