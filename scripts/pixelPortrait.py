@@ -1,4 +1,4 @@
-"""Turn a player photo into a Pantheon pixel portrait (face card art).
+"""Turn a player photo into a Pantheon pixel portrait (face card art). 56 px for reels, 40 px for game cells.
 
     python scripts/pixelPortrait.py in.png out.png [--size 40] [--colors 14] [--scale 8]
                                      [--eyes auto|off|X1,Y1,X2,Y2] [--bg "#1D428A"]
@@ -24,6 +24,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 OUTLINE = (15, 10, 18, 255)
 IVORY = (226, 218, 204)
 INK = (30, 20, 16)
+PALETTE_TOLERANCE = 45  # RGB distance; above it a pixel keeps its own colour
 
 
 def mix(c, t, f):
@@ -52,7 +53,7 @@ def detect_eyes(crop: Image.Image):
     return [((cx - half) / up, ey / up), ((cx + half) / up, ey / up)]
 
 
-def portrait(path: str, size: int = 40, colors: int = 14, eyes: str = 'auto', contrast: float = 1.12, smooth: float = 0.0) -> Image.Image:
+def portrait(path: str, size: int = 56, colors: int = 18, eyes: str = 'auto', contrast: float = 1.12, smooth: float = 0.0) -> Image.Image:
     im = Image.open(path).convert('RGBA')
     w, h = im.size
     side = min(w, int(h * 0.95))
@@ -67,6 +68,12 @@ def portrait(path: str, size: int = 40, colors: int = 14, eyes: str = 'auto', co
     small = rgb.resize((size, size), Image.LANCZOS)
     alpha = im.getchannel('A').resize((size, size), Image.BOX).point(lambda v: 255 if v > 120 else 0)
     flat = small.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
+    # A shared palette can snap a small feature to a far colour - LeBron's teeth took the jersey
+    # gold. Where the palette pick is far from the pixel's own colour, keep the pixel's own colour.
+    src, dst = np.asarray(small, dtype=float), np.asarray(flat, dtype=float)
+    far = np.sqrt(((src - dst) ** 2).sum(axis=2)) > PALETTE_TOLERANCE
+    dst[far] = src[far]
+    flat = Image.fromarray(dst.astype('uint8'), 'RGB')
     out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     out.paste(flat, (0, 0), alpha)
 
@@ -105,8 +112,8 @@ def main():
     ap = argparse.ArgumentParser(description='Photo -> Pantheon pixel portrait')
     ap.add_argument('input')
     ap.add_argument('output')
-    ap.add_argument('--size', type=int, default=40)
-    ap.add_argument('--colors', type=int, default=14)
+    ap.add_argument('--size', type=int, default=56, help='56 for reels, 40 for small game cells')
+    ap.add_argument('--colors', type=int, default=18)
     ap.add_argument('--scale', type=int, default=8, help='nearest-neighbour upscale of the saved PNG')
     ap.add_argument('--eyes', default='auto', help='auto | off | X1,Y1,X2,Y2 in output-grid pixels')
     ap.add_argument('--contrast', type=float, default=1.12)
