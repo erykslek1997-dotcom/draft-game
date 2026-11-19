@@ -57,7 +57,7 @@ export function BoardGrid({
   useEffect(() => {
     const box = rowsRef.current;
     const row = box?.querySelector<HTMLElement>(`[data-r="${Math.max(0, round - 1)}"]`);
-    if (box && row) box.scrollTo({ top: row.offsetTop - box.offsetTop, behavior: 'smooth' });
+    if (box && row) box.scrollTo({ top: row.offsetTop, behavior: 'smooth' });
   }, [round]);
   return (
     <section className="bgrid">

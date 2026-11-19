@@ -391,8 +391,25 @@ export const RoomDockContext = createContext<{ unread: number; openChat: () => v
 export function PhoneDock({ tabs }: { tabs: DockTab[] }) {
   const room = useContext(RoomDockContext);
   const all = room ? [...tabs, { label: 'Chat', onClick: room.openChat, badge: room.unread }] : tabs;
+  // 2026-11-14 (the phone, Brave: "chowa się menu"): the browser's bottom bar slid over the dock.
+  // The dock sits above whatever part of the window the visual viewport doesn't show.
+  const [gap, setGap] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fit = () => setGap(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    fit();
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    window.addEventListener('resize', fit);
+    return () => {
+      vv.removeEventListener('resize', fit);
+      vv.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+    };
+  }, []);
   return (
-    <nav className="ph-dock" aria-label="Screen">
+    <nav className="ph-dock" aria-label="Screen" style={gap ? { bottom: gap } : undefined}>
       {all.map((t, i) => (
         <button key={i} type="button" className={cx(t.on && 'on', t.go && 'go')} onClick={t.onClick}>
           {t.label}
