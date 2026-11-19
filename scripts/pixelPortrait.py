@@ -52,14 +52,18 @@ def detect_eyes(crop: Image.Image):
     return [((cx - half) / up, ey / up), ((cx + half) / up, ey / up)]
 
 
-def portrait(path: str, size: int = 40, colors: int = 14, eyes: str = 'auto') -> Image.Image:
+def portrait(path: str, size: int = 40, colors: int = 14, eyes: str = 'auto', contrast: float = 1.12, smooth: float = 0.0) -> Image.Image:
     im = Image.open(path).convert('RGBA')
     w, h = im.size
     side = min(w, int(h * 0.95))
     x0 = (w - side) // 2
     im = im.crop((x0, 0, x0 + side, side))
 
-    rgb = ImageEnhance.Contrast(im.convert('RGB')).enhance(1.12).filter(ImageFilter.UnsharpMask(1.5, 90, 2))
+    rgb = im.convert('RGB')
+    if smooth:
+        # studio photos with sweat or hard light: soften highlights before they quantize into grey patches
+        rgb = rgb.filter(ImageFilter.GaussianBlur(smooth * side / 400))
+    rgb = ImageEnhance.Contrast(rgb).enhance(contrast).filter(ImageFilter.UnsharpMask(1.5, 90, 2))
     small = rgb.resize((size, size), Image.LANCZOS)
     alpha = im.getchannel('A').resize((size, size), Image.BOX).point(lambda v: 255 if v > 120 else 0)
     flat = small.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
@@ -105,9 +109,11 @@ def main():
     ap.add_argument('--colors', type=int, default=14)
     ap.add_argument('--scale', type=int, default=8, help='nearest-neighbour upscale of the saved PNG')
     ap.add_argument('--eyes', default='auto', help='auto | off | X1,Y1,X2,Y2 in output-grid pixels')
+    ap.add_argument('--contrast', type=float, default=1.12)
+    ap.add_argument('--smooth', type=float, default=0.0, help='blur before downscaling (try 2-4 for sweaty or hard-lit photos)')
     ap.add_argument('--bg', default=None, help='fill colour behind the portrait, e.g. "#1D428A"')
     args = ap.parse_args()
-    img = portrait(args.input, args.size, args.colors, args.eyes)
+    img = portrait(args.input, args.size, args.colors, args.eyes, args.contrast, args.smooth)
     if args.bg:
         back = Image.new('RGBA', img.size, args.bg)
         back.alpha_composite(img)
