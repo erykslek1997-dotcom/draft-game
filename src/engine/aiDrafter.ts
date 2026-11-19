@@ -1988,6 +1988,14 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
+const AI_BENCH_RESERVE = Number(envVar('AI_BENCH_RESERVE') ?? 6);
+const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
+const AI_STAR_SWAP = Number(envVar('AI_STAR_SWAP') ?? 0);
+const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
+const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
+const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
+const AI_LAST_BEST = Number(envVar('AI_LAST_BEST') ?? 0);
 export const AI_PLAN = {
   // 2026-11-19 (the user: "zrób żeby wszystko dobrze było w grze"): on everywhere, not only in the
   // worker — auto-finish and the page's fallback pick drafted unplanned (a weaker AI). AI_PLAN=0 turns it off.
@@ -1997,6 +2005,7 @@ export const AI_PLAN = {
   fromRoster: STRUCTURED_AI ? 0 : 2,
   alternatives: Number(envVar('AI_PLAN_ALT') ?? (STRUCTURED_AI ? 8 : 14)),
   cheapFga: 7,
+  talentAlternatives: Number(envVar('AI_PLAN_TAL') ?? 0),
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
   reserveGlue: STRUCTURED_AI,
@@ -2015,6 +2024,13 @@ export const AI_PLAN = {
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
 const planMemory = new Map<string, string[]>();
+/** 2026-11-19: a new draft starts from empty plan memory — a second draft with the same seed in one
+ * process (tests, judges, a replayed daily) read the first one's finished plans and diverged by the
+ * third pick; across processes the drafts were already identical. */
+export function resetAiPlanMemory(planSeed?: number): void {
+  if (planSeed === undefined) return planMemory.clear();
+  for (const k of [...planMemory.keys()]) if (k.startsWith(`${planSeed}|`)) planMemory.delete(k);
+}
 /** Seeds a team's plan memory — the joint pre-draft plan (jointPlan.ts) is where it starts. */
 export function seedPlanMemory(planSeed: number, team: string, names: string[]): void {
   planMemory.set(`${planSeed}|${team}`, names);
@@ -2090,7 +2106,11 @@ function planPick(
             ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, AI_PLAN.structuralPerSlot)),
           ]
         : [];
-      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
+      // 2026-11-19 (bench): the board's order buries a backup the need terms mark down (DeAndre Jordan
+      // 6930th), so the plan never tries him though the team score rates him well; the best talents
+      // that fit the room come up too (`AI_PLAN_TAL`, 0 = as before).
+      const byTal = AI_PLAN.talentAlternatives > 0 ? [...open].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, AI_PLAN.talentAlternatives) : [];
+      const pool = [...new Set([...byTal, ...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
       for (const candidate of pool) {
         const value = score([...roster, ...others, candidate]);
         if (value > best + 1e-6) {
@@ -2715,7 +2735,11 @@ function pickForAiSized(
     // a team's first few picks — see NEED_RAMP_ROSTER_SIZE above. At roster.length 0 this
     // collapses `need` to a flat 1 for everyone (pure best-talent-available); by
     // NEED_RAMP_ROSTER_SIZE picks in, `need` applies at its full computed value.
-    const rampedNeed = 1 + (need - 1) * needRampProgress;
+    // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"): the stacked redundancy discounts took
+    // need below zero, so a backup's talent counted against him (DeAndre Jordan 2014-16, TAL 77, 6.6
+    // shots, ranked 6930th of 8488 behind Jokić). A backup still plays minutes: need never under
+    // `AI_NEED_FLOOR` (0 = as before).
+    const rampedNeed = Math.max(AI_NEED_FLOOR, 1 + (need - 1) * needRampProgress);
 
     // 2026-08-05, experiment per explicit user request: durability REMOVED from the AI's draft
     // VALUE (previously `talent * durabilityScale(...) * rampedNeed`, 2026-08-01). Reason: it
@@ -2745,7 +2769,10 @@ function pickForAiSized(
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
     const adjustments = {
-      lowUsageBigMalus: -lowUsageBigMalus(p),
+      // 2026-11-19 (the user: "dlaczego łapie to backup centra na 12 minut"): the malus is for a cheap
+      // defensive star drafted early to start; a backup centre behind a starter owes no points
+      // (`AI_BIG_BENCH=1`: off for a C when a C already starts).
+      lowUsageBigMalus: AI_BIG_BENCH && needs.starterPlayers.some((s) => s.primaryPosition === 'C') ? 0 : -lowUsageBigMalus(p),
       eliteLowUsageDraftMalus: -eliteLowUsageDraftMalus(p),
       highVolumeNonElitePenalty: -highVolumeNonElitePenalty(p),
       elitePerimeterEngineBonus: elitePerimeterEngineBonus(p),
@@ -2881,7 +2908,10 @@ function pickForAiSized(
         return projectedMinutes >= MATERIAL_BENCH_MINUTES && bestLegalTalent >= PENULTIMATE_ROTATION_TALENT_FLOOR;
       });
       if (qualityReserve.length > 0) playable = qualityReserve;
-    } else if (picksIncludingThisOne === 1 && !roster.some((player) => player.fga < TRUE_CAP_GLUE_FGA_CEILING)) {
+    } else if (picksIncludingThisOne === 1 && !roster.some((player) => player.fga < TRUE_CAP_GLUE_FGA_CEILING) && capLimit - spent < AI_GLUE_SLACK) {
+      // 2026-11-19 (the user: "jak zostaje więcej to AI powinno reagować na to"): only when the cap is
+      // really tight — with `AI_GLUE_SLACK`+ shots left the last pick is the best backup that fits
+      // (Tucson: 7 shots left, Jarron Collins 36 over Camby 72 / Tyson Chandler 77).
       // Once eight meaningful names are aboard, the ninth slot may deliberately be cap glue.
       // It is never rewarded with minutes for being cheap; rotation quality still decides that.
       const glue = playable.filter((entry) => entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING);
@@ -2967,6 +2997,23 @@ function pickForAiSized(
 
   if (AI_PLAN.on && teamScorer && roster.length >= AI_PLAN.fromRoster) {
     const slots = rosterSize - roster.length;
+    // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"; the value terms kept burying useful
+    // backups — DeAndre Jordan 77 ranked 6930th): the last `AI_BENCH_GREEDY` picks ask the team score
+    // directly — of the best talents that fit the cap and keep the shape reachable, the one that lifts
+    // the roster most (0 = off). No star (`STRUCTURE_STAR_TAL`+) goes to the bench this way.
+    if (AI_BENCH_GREEDY > 0 && slots <= AI_BENCH_GREEDY && roster.length >= 5) {
+      // Room for the picks after this one at a real backup's price (`AI_BENCH_RESERVE` shots each), not
+      // the 3-shot minimum: taking it all now left Danny Young (43) and Theo Ratliff (53) 25-29 minutes.
+      const room = capLimit - spent - (slots - 1) * AI_BENCH_RESERVE;
+      const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
+      const fits = available.filter((p) => !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
+        && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))));
+      const byTal = [...fits].sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+      const shortlist = [...new Set([...byTal.slice(0, AI_BENCH_SHORTLIST), ...byTal.filter((p) => p.fga <= 4).slice(0, 10)])];
+      let top: { p: PlayerSpan; v: number } | null = null;
+      for (const p of shortlist) { const v = teamScorer([...roster, p]); if (!top || v > top.v) top = { p, v }; }
+      if (top) return top.p;
+    }
     // 2026-11-05, the user ("KD czy Nash z ławki nieakceptowalne"): in the structured test a player's
     // window goes where his roster has room — a window whose own position is still open, within
     // `WINDOW_EQUAL.within` TAL of his best legal one, beats one at a filled spot (Durant's SF years
@@ -3007,6 +3054,10 @@ function pickForAiSized(
       // empty spot: off the board until a starter holds it.
       if (structureHoles && !starter && !startedIrl(p) && p.fga > STRUCTURE.glueFga) return false;
       // A star at a filled spot would come off the bench: off the board too.
+      // 2026-11-19 (the user: Barkley prime, Grant Hill, Bobby Jones never drafted — every team had a
+      // four by round three): a player clearly better than the starter at his spot (`AI_STAR_SWAP` TAL+)
+      // takes the job; the starter becomes his backup, so the star still starts.
+      if (starter && AI_STAR_SWAP > 0 && effectiveTalent(p) >= effectiveTalent(starter) + AI_STAR_SWAP) return true;
       return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
     });
     const board = unlocked.length > 0 ? unlocked : fullBoard;
@@ -3015,7 +3066,7 @@ function pickForAiSized(
     // planned from the start — the board's best cheap player stands in for it while the other
     // slots are planned on the cap less his shots, and he is only taken with the last pick.
     const glue =
-      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
+      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga) && capLimit - spent - (slots - 1) * LOOKAHEAD_MIN_FILL_FGA * 2 < AI_GLUE_SLACK
         ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
         : undefined;
     // The structured test's last pick: with the shape already whole but for the glue, the glue is a
@@ -3032,6 +3083,19 @@ function pickForAiSized(
         const off = allowed.has(p.id) ? 0 : 1;
         const tal = effectiveTalent(p);
         if (!best || breaks < best.breaks || (breaks === best.breaks && (off < best.off || (off === best.off && tal > best.tal)))) best = { p, breaks, off, tal };
+      }
+      // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"; scripts/_leftover.ts: a swap of the
+      // last pick for an undrafted player in the cap gained 1.6 Overall a team — Aşık 42 for DeAndre
+      // Jordan 77 with 6 shots left): among the players who leave the fewest breaks and fit the cap,
+      // the one the team score rates highest, not the best talent of the cheapest.
+      if (best && AI_LAST_BEST > 0 && teamScorer) {
+        const fits = fullBoard
+          .filter((p) => p.fga <= capLimit - spent && readStructure([...roster, p]).problems.length === best!.breaks)
+          .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
+          .slice(0, AI_LAST_BEST);
+        let top = { p: best.p, v: teamScorer([...roster, best.p]) };
+        for (const p of fits) { const v = teamScorer([...roster, p]); if (v > top.v + 1e-6) top = { p, v }; }
+        return top.p;
       }
       if (best) return best.p;
     }

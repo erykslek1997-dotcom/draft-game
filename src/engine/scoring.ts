@@ -296,6 +296,42 @@ export function talentScore(team: Team): number {
  * minute-weighted TAL (55%), position/role fit (25%), and active depth resilience (20%). A DNP is
  * emergency depth, not part of the current bench product, so adding one cannot lower this score.
  */
+/**
+ * 2026-11-19 (the user: "AI lubi obronę na ławkę bo to tanie i mocno boostuje, a totalnie pomija że
+ * atak jest zły"; Bo Outlaw + DeAndre Jordan): bench minutes count toward Defense at a boosted
+ * weight, but toward Offense only through an 18% share of O-TAL, so a reserve unit of non-scorers
+ * read as a plus. In Overall points, `BENCH_OFF.w` each:
+ *  - every reserve beyond the first who plays `minMin`+ with O-TAL under `noOff` (two non-scorers
+ *    on the floor together for the second unit);
+ *  - the reserves' minute-weighted O-TAL under `floor`, per 10 points short (at most `cap`).
+ * `BENCH_OFF_W=0` = off.
+ */
+const BENCH_OFF = { w: Number(envVar('BENCH_OFF_W') ?? 0), noOff: 50, minMin: 10, floor: 58, cap: 1.5 };
+export function benchOffenseAdjustment(team: Team): number {
+  if (BENCH_OFF.w === 0) return 0;
+  const bench = benchWithMinutes(team).filter(({ minutes }) => minutes >= BENCH_OFF.minMin);
+  if (bench.length === 0) return 0;
+  const o = bench.map(({ player, minutes }) => ({ o: computeOffensiveTalent(player), minutes }));
+  const nonScorers = o.filter((x) => x.o < BENCH_OFF.noOff).length;
+  const mins = o.reduce((a, x) => a + x.minutes, 0);
+  const mean = o.reduce((a, x) => a + x.o * x.minutes, 0) / mins;
+  return -BENCH_OFF.w * (Math.max(0, nonScorers - 1) + Math.min(BENCH_OFF.cap, Math.max(0, BENCH_OFF.floor - mean) / 10));
+}
+/** 2026-11-19, the second variant (`BENCH_ROLE_W`, 0 = off): O-TAL reads every role player 43-55
+ * (DeAndre Jordan 62 as a finisher), so the unit's jobs are read instead — `BENCH_ROLE_W` Overall
+ * points for a second unit (reserves at 10+ minutes) with no plus shooter, again for none who
+ * creates, and again for two bigs at 10+ minutes who don't space (team spacing under 30). */
+const BENCH_ROLE_W = Number(envVar('BENCH_ROLE_W') ?? 1);
+export function benchRoleAdjustment(team: Team): number {
+  if (BENCH_ROLE_W === 0) return 0;
+  const bench = benchWithMinutes(team).filter(({ minutes }) => minutes >= BENCH_OFF.minMin).map((x) => x.player);
+  if (bench.length === 0) return 0;
+  const noShooter = bench.some((p) => isPlusShooter(p)) ? 0 : 1;
+  const noCreator = bench.some((p) => isCreator(p)) ? 0 : 1;
+  const bigs = bench.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && teamSpacingValue(p) < 30).length;
+  return -BENCH_ROLE_W * (noShooter + noCreator + Math.max(0, bigs - 1));
+}
+
 export function benchDepthScore(team: Team): number {
   const activeBench = benchWithMinutes(team).filter(({ minutes }) => minutes > 0);
   if (activeBench.length === 0) return 0;
@@ -659,13 +695,17 @@ const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
+const OFF_BALL_ORDER = envVar('OFF_BALL_ORDER') ?? 'usage';
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
   if (!OFF_BALL) return entries.map((e) => e.value);
   // `OFF_BALL_SHOOT`: a catch-and-shoot scorer's usage is partly off the ball (Dirk, Klay) — that share of
   // his on-ball part goes away at a spot-up skill of 90 (none at 50), as in the second-handler cost.
   const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
   const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6) * (1 - OFF_BALL_SHOOT * shoot(p));
-  const order = [...entries].sort((a, b) => share(b.player) - share(a.player));
+  // 2026-11-19 (the user, Jordan + Nash at Offense 77): the ball goes to the best scorers first, so the
+  // budget ranks by O-TAL (`OFF_BALL_ORDER=value`), not by usage — by usage Nash (0.38) ranked fourth
+  // behind Walton and Pierce and lost a quarter of his 96.
+  const order = OFF_BALL_ORDER === 'value' ? [...entries].sort((a, b) => b.value - a.value) : [...entries].sort((a, b) => share(b.player) - share(a.player));
   return order.map((e, rank) => {
     const on = share(e.player);
     const keep = 1 - OFF_BALL * (1 - BALL_RANK_KEEP[Math.min(rank, BALL_RANK_KEEP.length - 1)]);
@@ -2133,7 +2173,10 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
     eraAdjustment(team) +
     // 2026-11-18: the user's review rules (reviewRules.ts; REVIEW_W, off by default).
-    reviewAdjustment(primaryStarters(team).map((a) => a.player));
+    reviewAdjustment(primaryStarters(team).map((a) => a.player)) +
+    // 2026-11-19: the second unit's offense (see BENCH_OFF).
+    benchOffenseAdjustment(team) +
+    benchRoleAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
