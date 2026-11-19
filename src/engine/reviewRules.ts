@@ -23,7 +23,7 @@ import { effectiveTalent } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { teamSpacingValue } from './midrangeGravity';
 
-const W = Number(envVar('REVIEW_W') ?? 0);
+const W = Number(envVar('REVIEW_W') ?? 1);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 

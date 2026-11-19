@@ -2480,7 +2480,7 @@ export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
  *    and handling < 70 and selfCreation < 76 — he scores without running the offense or creating his own shot.
  */
 function talentGate(span: PlayerSpan, kind: 'finisher' | 'playmaker' | 'creator' | 'offBallRole', label: () => boolean): boolean {
-  if (envVar('SKILL_TAL') !== '1') return label();
+  if ((envVar('SKILL_TAL') ?? '1') !== '1') return label();
   const g = (k: Skill) => skill(span, k);
   const h = g('handling');
   if (h === null) return label();

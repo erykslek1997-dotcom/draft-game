@@ -324,7 +324,7 @@ const LEAD_SHOOTING_FULL = 60;
 /** 2026-11-18 (labels → data, `SKILL_PNR=1`): how real a ball-screen lead he is from the handling
  * skill (0.6 at the median and below, 1 at 95) instead of the label factor; the roll share likewise
  * from the roll skill (0.6 → 1). */
-const SKILL_PNR = envVar('SKILL_PNR') === '1';
+const SKILL_PNR = (envVar('SKILL_PNR') ?? '1') === '1';
 function initiatorFactor(player: PlayerSpan): number {
   const h = SKILL_PNR ? skill(player, 'handling') : null;
   if (h !== null) return 0.6 + 0.4 * Math.max(0, Math.min(1, (h - 50) / 45));
