@@ -1,4 +1,5 @@
-import { createDraft, resolveAiPickIfNeeded, availablePlayers } from '../src/engine/draft';
+import { createDraft, resolveAiPickIfNeeded, availablePlayers, draftCapLimit } from '../src/engine/draft';
+import { finalizeAiRoster } from '../src/engine/finalizeAiRoster';
 import { scoreTeam } from '../src/engine/scoring';
 import { autoAssignRotation, allAssignments, bestPrimaryAssignment } from '../src/engine/rotation';
 import { computeOffensiveTalent } from '../src/engine/talent';
@@ -26,7 +27,9 @@ for (const seed of (process.argv[2] ?? "11,27").split(",").map(Number)) {
     st = n;
   }
   const teams = st.teams.map((t) => {
-    const team = { ...t, rotation: t.rotation ?? autoAssignRotation(t.roster) };
+    // As the game: the worker finalizes each CPU roster after the draft (finalizeAiRoster).
+    const roster = finalizeAiRoster(t, draftCapLimit(st));
+    const team = { ...t, roster, rotation: autoAssignRotation(roster) };
     const b = scoreTeam(team);
     const mins = new Map<string, { slot: string; min: number; starter: boolean; slots: { s: string; m: number; st: boolean }[] }>();
     const seen = new Set<string>();
