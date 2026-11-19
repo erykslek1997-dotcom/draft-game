@@ -1988,6 +1988,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_STAR_SWAP = Number(envVar('AI_STAR_SWAP') ?? 0);
 const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
 const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
 const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
@@ -3026,6 +3027,10 @@ function pickForAiSized(
       // empty spot: off the board until a starter holds it.
       if (structureHoles && !starter && !startedIrl(p) && p.fga > STRUCTURE.glueFga) return false;
       // A star at a filled spot would come off the bench: off the board too.
+      // 2026-11-19 (the user: Barkley prime, Grant Hill, Bobby Jones never drafted — every team had a
+      // four by round three): a player clearly better than the starter at his spot (`AI_STAR_SWAP` TAL+)
+      // takes the job; the starter becomes his backup, so the star still starts.
+      if (starter && AI_STAR_SWAP > 0 && effectiveTalent(p) >= effectiveTalent(starter) + AI_STAR_SWAP) return true;
       return !starter || (effectiveTalent(p) <= effectiveTalent(starter) && effectiveTalent(p) < STRUCTURE_STAR_TAL);
     });
     const board = unlocked.length > 0 ? unlocked : fullBoard;
