@@ -42,8 +42,8 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
 ## Z draftu 1627088049 (2026-11-19) — zostało
-- **Wade vs Klay:** w piątce Curry / J-Dub / Draymond / Lopez Klay (TAL 85) daje 82.5, Wade (95) 82 — reszta kary dla dwóch graczy z piłką (obrona / rozmiar / dopasowanie) do sprawdzenia.
-- **Rotacja:** Gobert (84) 18 min za Lopezem (75) 30; Curry 26 na PG + 10 na SG, Chalmers 22 na PG — gwiazda ma grać na swojej pozycji.
+- ~~**Wade vs Klay**~~ — ok według użytkownika: Klay ma realny bonus dopasowania z Currym i Draymondem (Warriors), więc remis z Wade'em jest uczciwy.
+- ~~**Rotacja Syracuse**~~ — decyzje użytkownika, nie błąd: Lopez 30 min dla spacingu przy Wadzie, Curry chwilę na SG w ustawieniu z dwoma rozgrywającymi.
 - **Atak szerokich składów za nisko:** Cheyenne (Frazier / Butler / Middleton / Nowitzki / Hakeem) 63, Miami (Jordan / Billups / Pierce) 68, a Mobile (SGA / Bell / C. Robinson / McHale / Jokić) 90.
 - **Obrona Little Rock 92** (Kidd 2008-10 / White / Bird / Millsap / Wilt) i przewaga 3 pkt — chyba za dużo.
 - **AI — dopasowanie przy podobnej wartości:** Marion (17.5 capu) obok LeBrona i Howarda zamiast strzelca klasy Allena / George'a.

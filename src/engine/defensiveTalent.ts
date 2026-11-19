@@ -590,20 +590,48 @@ const TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH = 1.5;
  * blend. D1 human-vote defenseScore Spearman 0.364 -> 0.504, overall -> 0.596; Taylor 0.891 /
  * GOAT-40 0.700 exact.
  */
-function teamDefenseCorroborationFloor(span: PlayerSpan): number {
+// 2026-11-19 (the user, Billups 2003-05 71 → 2004-06 49: "przeskok z okienka 71 na 49 nie ma sensu"):
+// a low-activity defender's team-defense floor was all or nothing at strength 1.5. Now it ramps from
+// his own read at the minimum strength to the full floor at 1.5 (`TD_LOWACT_RAMP=0` = the old cliff).
+const TD_LOWACT_RAMP = envVar('TD_LOWACT_RAMP') !== '0';
+// 2026-11-19 (the user: "advanced w obronie liczone od pozycji"): defensive plus-minus reads guards
+// low and centers high by construction (rebounds, blocks). Each position's median over the pool's
+// windows is taken off before a threshold reads it (`DT_POSREL=0` = raw). Medians (scripts/_posd.ts):
+// DBPM PG −0.13 SG −0.20 SF −0.06 PF −0.02 C +0.56; on/off DDPM PG/SG −0.5, C +1.0; RAPTOR PG −0.58
+// SG −0.52 SF −0.13 C +1.10. Billups 2002-04: DDPM −1.0 → −0.5, RAPTOR −0.12 → +0.46.
+const DT_POSREL = envVar('DT_POSREL') !== '0';
+const POS_MEDIAN = {
+  dbpm: { PG: -0.13, SG: -0.2, SF: -0.06, PF: -0.02, C: 0.56 },
+  ddpm: { PG: -0.5, SG: -0.5, SF: 0, PF: 0, C: 1.0 },
+  raptor: { PG: -0.58, SG: -0.52, SF: -0.13, PF: 0.01, C: 1.1 },
+} as const;
+function posRel(span: PlayerSpan, kind: keyof typeof POS_MEDIAN, v: number): number {
+  return DT_POSREL ? v - (POS_MEDIAN[kind] as Record<string, number>)[span.primaryPosition] : v;
+}
+// The own-data veto on the team-defense floor ramps over half a point under each veto line instead
+// of cutting it off (with `TD_LOWACT_RAMP`).
+const VETO_RAMP = 0.5;
+function teamDefenseCorroborationFloor(span: PlayerSpan, credited = 0): number {
   const ctx = teamDefenseContextForSpan(span);
   if (!ctx || ctx.strength < TEAM_D_FLOOR_MIN_STRENGTH) return 0;
   if (ctx.meanSeasonMinutes < TEAM_D_FLOOR_MIN_SEASON_MINUTES) return 0;
-  if (isLowActivity(span) && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
+  const lowActivityShare = !isLowActivity(span) ? 1
+    : TD_LOWACT_RAMP ? Math.min(1, (ctx.strength - TEAM_D_FLOOR_MIN_STRENGTH) / (TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH - TEAM_D_FLOOR_MIN_STRENGTH))
+    : ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH ? 0 : 1;
+  if (lowActivityShare <= 0) return 0;
+  let vetoShare = 1;
   if (individualDefenseRate(span) === 0) {
     // Veto on the RAW real plus-minus, not the excess: a genuine turnstile reads negative DDPM/
     // RAPTOR, but a solid big can read a negative *excess* (real below what his box predicts)
     // while still being an honestly positive defender — Gasol 2008-10 (DDPM +0.5, excess -0.46).
     const detail = realDefenseExcessDetail(span);
     if (!detail) return 0;
-    if (detail.onOffDdpm !== null && detail.onOffDdpm < TEAM_D_FLOOR_OWN_DDPM_VETO) return 0;
-    if (detail.raptorDefense !== null && detail.raptorDefense < TEAM_D_FLOOR_OWN_RAPTOR_VETO) return 0;
     if (detail.onOffDdpm === null && detail.raptorDefense === null) return 0;
+    const ddpm = detail.onOffDdpm === null ? null : posRel(span, 'ddpm', detail.onOffDdpm);
+    const raptor = detail.raptorDefense === null ? null : posRel(span, 'raptor', detail.raptorDefense);
+    const ramp = (v: number | null, veto: number) => v === null ? 1 : TD_LOWACT_RAMP ? Math.max(0, Math.min(1, (v - veto + VETO_RAMP) / VETO_RAMP)) : v < veto ? 0 : 1;
+    vetoShare = Math.min(ramp(ddpm, TEAM_D_FLOOR_OWN_DDPM_VETO), ramp(raptor, TEAM_D_FLOOR_OWN_RAPTOR_VETO));
+    if (vetoShare <= 0) return 0;
   }
   const strengthFrac = Math.min(
     1,
@@ -614,7 +642,9 @@ function teamDefenseCorroborationFloor(span: PlayerSpan): number {
     (ctx.meanSeasonMinutes - TEAM_D_FLOOR_MIN_SEASON_MINUTES) /
       (TEAM_D_FLOOR_FULL_SEASON_MINUTES - TEAM_D_FLOOR_MIN_SEASON_MINUTES),
   );
-  return TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
+  const full = TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
+  const share = Math.min(lowActivityShare, vetoShare);
+  return share >= 1 ? full : credited + Math.max(0, full - credited) * share;
 }
 
 /**
@@ -925,7 +955,7 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   const floors = {
     named: namedFloor,
     onOff: onOffDefenseFloor(span),
-    teamDefense: teamDefenseCorroborationFloor(span),
+    teamDefense: teamDefenseCorroborationFloor(span, credited),
     perimeterStopper: perimeterStopperFloor(span),
     corroboratedAllD: corroboratedAllDefenseFloor(span),
     consistentReal: consistentRealDefenseFloor(span),
@@ -1034,7 +1064,7 @@ const RECOGNITION_CONFIRM = { on: envVar('DT_RCONF') !== '0', lo: Number(envVar(
 function recognitionConfirmed(span: PlayerSpan): number {
   const r = realSpan(span);
   if (r?.dbpm == null) return 0.5;
-  const dbpm = careerShrunkDbpm(span, r.dbpm);
+  const dbpm = posRel(span, 'dbpm', careerShrunkDbpm(span, r.dbpm));
   return Math.max(0, Math.min(1, (dbpm - RECOGNITION_CONFIRM.lo) / (RECOGNITION_CONFIRM.hi - RECOGNITION_CONFIRM.lo)));
 }
 
