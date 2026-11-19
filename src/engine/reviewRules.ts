@@ -49,8 +49,9 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // 2026-11-19 (the user, Kyrie / Manu / Kawhi / Davis / Nenê: "brakuje floor generala na PG"):
   // nobody organizes — the point guard is no real playmaker (< 88) and no one else is an elite
   // one (95+, a LeBron / Jokić / Magic who runs it from anywhere).
-  // No playmaking score (mostly before the tracking years): assists stand in — 7+ a game reads as a floor general.
-  const pm = (p: PlayerSpan) => playmakingScoreForPlayer(p) ?? (p.box.apg >= 7 ? 95 : p.box.apg >= 5 ? 88 : 70);
+  // The playmaking score reads old floor generals low (Oscar 1962-64: 81 at 10.2 assists), so the
+  // higher of it and an assists read (8+ a game = 95, 6+ = 88) counts.
+  const pm = (p: PlayerSpan) => Math.max(playmakingScoreForPlayer(p) ?? 0, p.box.apg >= 8 ? 95 : p.box.apg >= 6 ? 88 : 0);
   const pgs = five.filter((p) => p.primaryPosition === 'PG');
   const noFloorGeneral = (pgs.length === 0 || Math.max(...pgs.map(pm)) < 88) && Math.max(...five.map(pm)) < 95 ? 1 : 0;
   const nonShootBigs = five.filter((p) => isBig(p) && teamSpacingValue(p) < 30 && use(p) < 0.35).length;
