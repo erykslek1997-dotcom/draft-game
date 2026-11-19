@@ -1988,6 +1988,8 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
+const AI_LAST_BEST = Number(envVar('AI_LAST_BEST') ?? 0);
 export const AI_PLAN = {
   // 2026-11-19 (the user: "zrób żeby wszystko dobrze było w grze"): on everywhere, not only in the
   // worker — auto-finish and the page's fallback pick drafted unplanned (a weaker AI). AI_PLAN=0 turns it off.
@@ -2715,7 +2717,11 @@ function pickForAiSized(
     // a team's first few picks — see NEED_RAMP_ROSTER_SIZE above. At roster.length 0 this
     // collapses `need` to a flat 1 for everyone (pure best-talent-available); by
     // NEED_RAMP_ROSTER_SIZE picks in, `need` applies at its full computed value.
-    const rampedNeed = 1 + (need - 1) * needRampProgress;
+    // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"): the stacked redundancy discounts took
+    // need below zero, so a backup's talent counted against him (DeAndre Jordan 2014-16, TAL 77, 6.6
+    // shots, ranked 6930th of 8488 behind Jokić). A backup still plays minutes: need never under
+    // `AI_NEED_FLOOR` (0 = as before).
+    const rampedNeed = Math.max(AI_NEED_FLOOR, 1 + (need - 1) * needRampProgress);
 
     // 2026-08-05, experiment per explicit user request: durability REMOVED from the AI's draft
     // VALUE (previously `talent * durabilityScale(...) * rampedNeed`, 2026-08-01). Reason: it
@@ -3032,6 +3038,19 @@ function pickForAiSized(
         const off = allowed.has(p.id) ? 0 : 1;
         const tal = effectiveTalent(p);
         if (!best || breaks < best.breaks || (breaks === best.breaks && (off < best.off || (off === best.off && tal > best.tal)))) best = { p, breaks, off, tal };
+      }
+      // 2026-11-19 (the user: "AI powinno wybierać ławkę mądrze"; scripts/_leftover.ts: a swap of the
+      // last pick for an undrafted player in the cap gained 1.6 Overall a team — Aşık 42 for DeAndre
+      // Jordan 77 with 6 shots left): among the players who leave the fewest breaks and fit the cap,
+      // the one the team score rates highest, not the best talent of the cheapest.
+      if (best && AI_LAST_BEST > 0 && teamScorer) {
+        const fits = fullBoard
+          .filter((p) => p.fga <= capLimit - spent && readStructure([...roster, p]).problems.length === best!.breaks)
+          .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))
+          .slice(0, AI_LAST_BEST);
+        let top = { p: best.p, v: teamScorer([...roster, best.p]) };
+        for (const p of fits) { const v = teamScorer([...roster, p]); if (v > top.v + 1e-6) top = { p, v }; }
+        return top.p;
       }
       if (best) return best.p;
     }
