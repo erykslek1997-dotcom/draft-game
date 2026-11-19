@@ -1711,6 +1711,7 @@ const WINDOW_FGA_RATE = Number(envVar('WINDOW_FGA_RATE') ?? 1.6);
  * spends what cap is left on the better windows.
  */
 const AI_WIN_OTAL = Number(envVar('AI_WIN_OTAL') ?? Infinity);
+const AI_WIN_OW = Number(envVar('AI_WIN_OW') ?? 0);
 const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
@@ -1738,7 +1739,10 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
     // most); otherwise the better one keeps its whole TAL edge.
     const peakO = AI_WIN_OTAL < Infinity ? Math.max(...entries.map((e) => computeOffensiveTalent(e.player))) : 0;
     const equalWindow = (entry: T) => peak - entry.talent <= within && (AI_WIN_OTAL === Infinity || peakO - computeOffensiveTalent(entry.player) <= AI_WIN_OTAL);
-    const windowScore = (entry: T) => entry.windowValue + (equalWindow(entry) ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    // `AI_WIN_OW`: each O-TAL point a window gives up against the player's best offense costs that much
+    // (TAL hides offense: Kawhi's 3 TAL between 2013-15 and 2015-17 is 33 O-TAL).
+    const oGap = (entry: T) => (AI_WIN_OW ? Math.max(...entries.map((e) => computeOffensiveTalent(e.player))) - computeOffensiveTalent(entry.player) : 0);
+    const windowScore = (entry: T) => entry.windowValue + (equalWindow(entry) ? (peak - entry.talent) * entry.windowTalentCredit : 0) - AI_WIN_OW * oGap(entry);
     const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
