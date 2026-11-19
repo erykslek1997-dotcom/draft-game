@@ -590,11 +590,18 @@ const TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH = 1.5;
  * blend. D1 human-vote defenseScore Spearman 0.364 -> 0.504, overall -> 0.596; Taylor 0.891 /
  * GOAT-40 0.700 exact.
  */
-function teamDefenseCorroborationFloor(span: PlayerSpan): number {
+// 2026-11-19 (the user, Billups 2003-05 71 → 2004-06 49: "przeskok z okienka 71 na 49 nie ma sensu"):
+// a low-activity defender's team-defense floor was all or nothing at strength 1.5. Now it ramps from
+// his own read at the minimum strength to the full floor at 1.5 (`TD_LOWACT_RAMP=0` = the old cliff).
+const TD_LOWACT_RAMP = envVar('TD_LOWACT_RAMP') !== '0';
+function teamDefenseCorroborationFloor(span: PlayerSpan, credited = 0): number {
   const ctx = teamDefenseContextForSpan(span);
   if (!ctx || ctx.strength < TEAM_D_FLOOR_MIN_STRENGTH) return 0;
   if (ctx.meanSeasonMinutes < TEAM_D_FLOOR_MIN_SEASON_MINUTES) return 0;
-  if (isLowActivity(span) && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
+  const lowActivityShare = !isLowActivity(span) ? 1
+    : TD_LOWACT_RAMP ? Math.min(1, (ctx.strength - TEAM_D_FLOOR_MIN_STRENGTH) / (TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH - TEAM_D_FLOOR_MIN_STRENGTH))
+    : ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH ? 0 : 1;
+  if (lowActivityShare <= 0) return 0;
   if (individualDefenseRate(span) === 0) {
     // Veto on the RAW real plus-minus, not the excess: a genuine turnstile reads negative DDPM/
     // RAPTOR, but a solid big can read a negative *excess* (real below what his box predicts)
@@ -614,7 +621,8 @@ function teamDefenseCorroborationFloor(span: PlayerSpan): number {
     (ctx.meanSeasonMinutes - TEAM_D_FLOOR_MIN_SEASON_MINUTES) /
       (TEAM_D_FLOOR_FULL_SEASON_MINUTES - TEAM_D_FLOOR_MIN_SEASON_MINUTES),
   );
-  return TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
+  const full = TEAM_D_FLOOR_AT_MIN + strengthFrac * minutesFrac * (TEAM_D_FLOOR_AT_FULL - TEAM_D_FLOOR_AT_MIN);
+  return lowActivityShare >= 1 ? full : credited + Math.max(0, full - credited) * lowActivityShare;
 }
 
 /**
@@ -925,7 +933,7 @@ function regularSeasonParts(span: PlayerSpan, withDbpm = true) {
   const floors = {
     named: namedFloor,
     onOff: onOffDefenseFloor(span),
-    teamDefense: teamDefenseCorroborationFloor(span),
+    teamDefense: teamDefenseCorroborationFloor(span, credited),
     perimeterStopper: perimeterStopperFloor(span),
     corroboratedAllD: corroboratedAllDefenseFloor(span),
     consistentReal: consistentRealDefenseFloor(span),
