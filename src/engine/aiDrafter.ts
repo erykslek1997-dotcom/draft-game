@@ -1999,6 +1999,7 @@ export const AI_PLAN = {
   fromRoster: STRUCTURED_AI ? 0 : 2,
   alternatives: Number(envVar('AI_PLAN_ALT') ?? (STRUCTURED_AI ? 8 : 14)),
   cheapFga: 7,
+  talentAlternatives: Number(envVar('AI_PLAN_TAL') ?? 0),
   /** The structured test (STRUCT=1, structuredRoster.ts) also tries the best players on few shots. */
   glueFga: 4,
   reserveGlue: STRUCTURED_AI,
@@ -2092,7 +2093,11 @@ function planPick(
             ...STARTER_SLOTS.flatMap((slot) => open.filter((p) => p.primaryPosition === slot).slice(0, AI_PLAN.structuralPerSlot)),
           ]
         : [];
-      const pool = [...new Set([...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
+      // 2026-11-19 (bench): the board's order buries a backup the need terms mark down (DeAndre Jordan
+      // 6930th), so the plan never tries him though the team score rates him well; the best talents
+      // that fit the room come up too (`AI_PLAN_TAL`, 0 = as before).
+      const byTal = AI_PLAN.talentAlternatives > 0 ? [...open].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, AI_PLAN.talentAlternatives) : [];
+      const pool = [...new Set([...byTal, ...open.slice(0, AI_PLAN.alternatives), ...open.filter((p) => p.fga <= AI_PLAN.cheapFga).slice(0, AI_PLAN.cheapAlternatives), ...glue, ...structural])];
       for (const candidate of pool) {
         const value = score([...roster, ...others, candidate]);
         if (value > best + 1e-6) {
