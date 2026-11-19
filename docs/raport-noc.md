@@ -78,5 +78,5 @@ Te same seedy 101-105: Wade spada krócej (#24 → #35-44 zamiast do #39-79), al
 **Otwarte, do rozmowy:**
 1. Atak Curry'ego / Birda — Offense to prawie średnia O-TAL + bonusy za grę w pomalowanym; strzelec elitarny nie daje nic ponad sufit spacingu. Dane NBA nie pokazują, że to błąd (r ≈ 0) — więc to decyzja ekspercka.
 2. Gwiazdy z dużą liczbą rzutów spadają w drafcie przez cap — zamierzone czy nie?
-3. Skoki D-TAL (George, Iguodala) — mocniejsze wygładzanie sąsiednich okien zamiast cech.
+3. Skoki D-TAL (George, Iguodala): wygładzanie sąsiednich okien `DT_NEIGH=0.5` (z 0.25) sprawdzone po pingu 02:25 — George 2019-21 67 → 72, ale sędzia D-TAL 0.825 → 0.816, SRS 0.842 → 0.840. Odrzucone. Skoki zostają; dane mówią, że obecny D-TAL lepiej przewiduje obronę drużyn niż każda wygładzona wersja.
 4. Zasady z oceny są zgodne z kierunkiem danych NBA, ale w szumie — wagi ustawiać na przypadkach kontrolnych.
