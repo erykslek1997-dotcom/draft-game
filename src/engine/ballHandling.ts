@@ -57,7 +57,8 @@ function secondHandlerExcess(five: PlayerSpan[]): number {
   const shooter = Math.max(shoot(ranked[0]), shoot(second));
   return Math.max(0, ballShare(second) * (1 - BH_SHOOT * shooter) - BALL_HANDLER_TUNING.from);
 }
-const BH_SHOOT = Number(envVar('BH_SHOOT') ?? 0);
+// 2026-11-19: on at 0.6 — SRS 0.843 / 0.840 → 0.844 / 0.841, sim 0.60 → 0.61, lineups 0.559 held; three+ PGs 16% → 11%.
+const BH_SHOOT = Number(envVar('BH_SHOOT') ?? 0.6);
 
 /** ORtg points a 100 trips per point of shooting on every shot of the five, as the game plays it:
  * set so Harden 2016-18 + Westbrook 2016-18 (cost 2.5) lose 2.5 points a 100 trips in the game's

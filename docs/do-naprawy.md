@@ -42,6 +42,7 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
 ## Już zrobione (2026-11-19)
+- **Koszt drugiego gracza z piłką ze spacingiem** (`BH_SHOOT=0.6`): z dwóch chcących piłki ten lepiej rzucający z miejsca gra bez niej i kosztuje mniej. Billups obok LeBrona 0.69 → 0.00, Stockton 0.69 → 0.26; Stockton obok Wade + Garnett 1.29 → 0.76. SRS 0.844 / 0.841, sim 0.61, trzech+ PG 16% → 11%. (Kolejność wyborów — Stockton przed Wade'em — zostaje: wymaga planowania składu przez AI.)
 - **AI: wybór okresu kariery** (`AI_WIN_OTAL=15`, `AI_WIN_OW=0.3`): okresy „równe poza ceną” tylko przy podobnym ataku, a oddany atak kosztuje. Kawhi 2015-17 zamiast 2013-15. 10 draftów: zróżnicowanie 3.13 → 3.41, 90. centyl wyboru gwiazd 90+ 25 → 22.
 - **Efekt rotacji na tych samych draftach (401-402):** „lepszy na ławce niż starter” 5.5 → 2.5 na draft, „drogi zmiennik TAL 80+ ≤ 16 min” 1.5 → 0.5, słabi starterzy 5.5 → 5.0.
 - **Odrzucone:** `AI_BENCH_WASTE=1` (kara w drafcie za zablokowanego zmiennika) — drogi zmiennik 0.5 → 1.5, gorzej.
