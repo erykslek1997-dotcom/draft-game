@@ -24,7 +24,7 @@ import { modernBox } from './modernBox';
 const ON = envVar('SIM_PRE_STOCKS') !== '0';
 const FIRST_FULL = 1974;
 /** window key (`name|spanLabel`) → [steals, blocks, middle year], per game in the era's numbers. */
-const EST = seasonsData as Record<string, [number, number, number]>;
+const EST = seasonsData as unknown as Record<string, [number, number, number]>;
 
 const years = (s: PlayerSpan) => spanEndYears(s.spanLabel);
 const mid = (s: PlayerSpan) => { const y = years(s); return (y[0] + y[y.length - 1]) / 2; };

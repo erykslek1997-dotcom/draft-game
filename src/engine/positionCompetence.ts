@@ -176,8 +176,6 @@ function rawCompetenceScore(span: PlayerSpan, slot: Position): number {
   return entry.pos[slot] ?? 0;
 }
 
-const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
-const CREATORS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
 const PG_ASSISTS_TARGET = 7;
 const PG_ASSIST_WEIGHT = 0.3;
 const PG_ASSIST_CAP = 1.5;

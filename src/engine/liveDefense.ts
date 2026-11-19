@@ -1,6 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { isRimProtector, isPerimeterDefender } from './skills';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import defenseData from '../data/spanDefense.json';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeOffensiveTalent } from './talent';

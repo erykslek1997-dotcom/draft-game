@@ -1122,7 +1122,7 @@ function roleWeightedDefAnchor(defSpans: PlayerSpan[], fd: FiveDefense): number 
   // center defended ~1 point worse than the sim said — two great defenders don't fully add up. Above
   // the best one, every further defender's edge counts `SIM_DEF_SECOND` (1 = off).
   const parts = defSpans.map((s, j) => ({ w: j === anchorIdx ? ROLE_WEIGHT.rim : ROLE_WEIGHT.slot[STARTER_SLOTS[j]] ?? 1, d: anchorOf(s).def }));
-  const order = parts.map((p, i) => i).filter((i) => parts[i].d > 0).sort((a, b) => parts[b].w * parts[b].d - parts[a].w * parts[a].d);
+  const order = parts.map((_, i) => i).filter((i) => parts[i].d > 0).sort((a, b) => parts[b].w * parts[b].d - parts[a].w * parts[a].d);
   order.slice(1).forEach((i) => { parts[i].d *= DEF_SECOND; });
   const wSum = parts.reduce((t, p) => t + p.w, 0);
   return parts.reduce((t, p) => t + p.w * p.d, 0) / wSum;

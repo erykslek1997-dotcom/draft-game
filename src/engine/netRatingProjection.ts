@@ -5,7 +5,6 @@ import { computeSpacing } from './spacing';
 import type { Team } from './types';
 import { allAssignments, GAME_MINUTES } from './rotation';
 import { STARTER_SLOTS } from './positions';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY } from './defensiveHuntability';
 import { defensiveCohesion, ELITE_SHELL_DRTG_TARGET } from './defensiveCohesion';
 

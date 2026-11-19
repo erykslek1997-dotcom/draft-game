@@ -1,6 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
 import { isRimProtector, isPerimeterDefender } from './skills';
-import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { playmakingScoreForPlayer } from './playmakingLookup';

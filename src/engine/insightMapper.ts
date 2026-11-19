@@ -1,7 +1,7 @@
 import type { PlayerSpan, Position } from '../data/schema';
 import { isRimProtector, isPerimeterDefender } from './skills';
 import { realSecondaryPositions } from './positionCompetence';
-import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
+import { HIGH_USAGE_ARCHETYPE_WEIGHT, normalizePlayerName } from '../data/schema';
 import type { Team } from './types';
 import type { PlayerTeamFeature, TeamFeatureSnapshot } from './insights';
 import { STARTER_SLOTS, ROSTER_SIZE, positionFitMultiplier, positionDistance } from './positions';

@@ -4,7 +4,6 @@ import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -1516,7 +1515,6 @@ export function rotationScore(team: Team): RotationScoreResult {
   }
 
   const bench = benchWithMinutes(team).map((b) => b.player);
-  const startersRoles = starters.map((s) => s.player.defensiveRole);
 
   const spacingGap = !starters.some((s) => isPlusShooter(s.player));
   if (spacingGap && bench.some(isPlusShooter)) {

@@ -6,7 +6,7 @@ import { offPositionMinutes } from './minuteAllocation';
 import { STRUCTURED_AI } from './structuredMode';
 import { BACKUP_PAIRS, backupOptions, bigThreat, startedIrl, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
   ROSTER_SIZE,
@@ -1989,7 +1989,9 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 export const AI_PLAN = {
-  on: (envVar('AI_PLAN') ?? '0') === '1',
+  // 2026-11-19 (the user: "zrób żeby wszystko dobrze było w grze"): on everywhere, not only in the
+  // worker — auto-finish and the page's fallback pick drafted unplanned (a weaker AI). AI_PLAN=0 turns it off.
+  on: (envVar('AI_PLAN') ?? '1') === '1',
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
   // Embiid left as a 19.9-FGA glue).
   fromRoster: STRUCTURED_AI ? 0 : 2,
