@@ -1035,7 +1035,7 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
 const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0.15);
-const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0);
+const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0.35);
 /** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
 const OFF_COH = Number(envVar('OFF_COH') ?? 0); // 2026-11-19: off — it paid for a second and third elite scorer, the overload the user's review penalises; real ORtg r 0.766 → 0.769 without it.
 const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
