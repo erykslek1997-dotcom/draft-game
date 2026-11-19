@@ -14,6 +14,7 @@
  *  − a bench-calibre starter (TAL < 70, or a wing at O < 50) 2a
  *  − each non-shooting playmaker (playmaking ≥ 85, spacing < 55) beside an on-ball engine
  *    (usage ≥ 0.5, handling ≥ 90) — 2026-11-19, LeBron + Draymond: the passing repeats   10
+ *  − no floor general: the PG under 88 playmaking and nobody at 95+ (Kyrie at the point)
  *  + an on-ball elite pull-up shooter (pullUp3 ≥ 98, usage ≥ 0.5) — he spaces for everyone, so non-shooting screening bigs (usage < 0.35) beside
  *    him stop costing (6: "Curry swoim rzutem wszystko rozwiązuje")
  */
@@ -45,6 +46,13 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // repeats what the engine already does, and off the ball he doesn't space.
   const engine = five.find((p) => use(p) >= 0.5 && s(p, 'handling', 0) >= 90);
   const extraPlaymakers = engine ? five.filter((p) => p !== engine && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < 55).length : 0;
+  // 2026-11-19 (the user, Kyrie / Manu / Kawhi / Davis / Nenê: "brakuje floor generala na PG"):
+  // nobody organizes — the point guard is no real playmaker (< 88) and no one else is an elite
+  // one (95+, a LeBron / Jokić / Magic who runs it from anywhere).
+  // No playmaking score (mostly before the tracking years): assists stand in — 7+ a game reads as a floor general.
+  const pm = (p: PlayerSpan) => playmakingScoreForPlayer(p) ?? (p.box.apg >= 7 ? 95 : p.box.apg >= 5 ? 88 : 70);
+  const pgs = five.filter((p) => p.primaryPosition === 'PG');
+  const noFloorGeneral = (pgs.length === 0 || Math.max(...pgs.map(pm)) < 88) && Math.max(...five.map(pm)) < 95 ? 1 : 0;
   const nonShootBigs = five.filter((p) => isBig(p) && teamSpacingValue(p) < 30 && use(p) < 0.35).length;
   return {
     paintCrowd: paint >= 2 ? paint - 1 : 0,
@@ -53,6 +61,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
     secondWeakPerim: Math.max(0, weakPerim - 1),
     benchStarter: bench,
     extraPlaymaker: extraPlaymakers,
+    noFloorGeneral,
     eliteShooterCover: eliteShooter ? Math.min(2, nonShootBigs) : 0,
   };
 }
@@ -60,5 +69,5 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
 export function reviewAdjustment(five: PlayerSpan[]): number {
   if (W === 0 || five.length < 5) return 0;
   const h = reviewRuleHits(five);
-  return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter - h.extraPlaymaker);
+  return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter - h.extraPlaymaker - h.noFloorGeneral);
 }

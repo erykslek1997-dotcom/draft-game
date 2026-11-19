@@ -79,3 +79,4 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
   | PF | Barkley 36 | Duncan 12 |
   | C | Duncan 24 | Ben Wallace 24 |
   Łącznie: Nash 36, Miller 35, Williams 33, Butler 28, Barkley 36, Duncan 36, Wallace 24, Rivers 12. Silnik: Duncan 35 (23 C + 12 PF), Butler 15, Rivers 25, Nash 36 (23 PG + 13 SG). Różnice: lepszy rezerwowy (Butler 87) gra więcej niż starter na tej pozycji; słaby rezerwowy (Rivers 69) tylko 12; gwiazda (Duncan) pełne minuty rozbite między dwie pozycje.
+- **Nowa reguła: brak floor generala (2026-11-19):** Kyrie 2022-24 / Manu 2004-06 / Kawhi 2019-21 / Davis 2018-20 / Nenê 2008-10 — „za dużo nasrane bez składu i ładu, brakuje floor generala na PG”; Horry 2003-05 „tu nic nie daje”. Liczone: PG z playmaking < 88 i nikt w piątce ≥ 95 (bez wyniku: asysty 7+ = 95, 5+ = 88). −1 pkt. Ta sama drużyna: Kyrie + Kawhi to dwóch izolacyjnych (pkt 8), Davis powinien grać 36 na C zamiast Nenê.
