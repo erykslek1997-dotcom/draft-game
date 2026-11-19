@@ -67,3 +67,16 @@ Licznik (`scripts/_oddities.ts`, poprawiony: raz na pominiętego gracza), 10 dra
 
 ## 9. Nowe drafty do oceny
 10 draftów (seedy 201-210) z zestawem rekomendowanym na stronie, zakładki „Nowy 1-10”. Licznik (inne seedy niż 101-110, więc porównanie orientacyjne): słabi starterzy < 75: 6.2 → 4.3 na draft; lepszy na ławce niż starter 3.7 → 3.2; pomijani 3.3 → 3.1; odwrócona kolejność 2.7 → 3.6.
+
+### Test `AI_NEED=0.5` (mnożnik potrzeby o połowę)
+Te same seedy 101-105: Wade spada krócej (#24 → #35-44 zamiast do #39-79), ale zaczynają spadać inni (McGrady 92 #49-80, Barkley 92 #50-76); słabi starterzy 5.4 → 6.2 / draft, lepszy na ławce 3.6 → 4.6, pomijani 3.2 → 4.0. Pełny test AI: sd 2.83 (2.96), starter TAL < 60 na 10+ min 22% (26%), 90+ 90. centyl 21 (20).
+**Wniosek:** sam mnożnik potrzeby to nie cała przyczyna — gwiazdy z dużą liczbą rzutów (Wade, Oscar, McGrady, Barkley) i tak spadają przez cap (koszt FGA). Odrzucam 0.5; to temat do rozmowy: czy cap ma tak mocno karać gwiazdy, czy to zamierzony element gry.
+
+## Podsumowanie nocy
+**Do włączenia (rekomendacja, decyzja użytkownika):** `REVIEW_W=1` (reguły z oceny), `SKILL_TAL=1`, `SKILL_PNR=1` — sędziowie bez szkody, mniej słabych starterów, kontrolne 9/12.
+**Odrzucone:** `DT_SKILL` (D-TAL z cech gorzej przewiduje obronę), `AI_NEED=0.5`, etykiety w AI (`SKILL_AI`, `SKILL_USAGE`) — gwiazdy spadają dalej.
+**Otwarte, do rozmowy:**
+1. Atak Curry'ego / Birda — Offense to prawie średnia O-TAL + bonusy za grę w pomalowanym; strzelec elitarny nie daje nic ponad sufit spacingu. Dane NBA nie pokazują, że to błąd (r ≈ 0) — więc to decyzja ekspercka.
+2. Gwiazdy z dużą liczbą rzutów spadają w drafcie przez cap — zamierzone czy nie?
+3. Skoki D-TAL (George, Iguodala) — mocniejsze wygładzanie sąsiednich okien zamiast cech.
+4. Zasady z oceny są zgodne z kierunkiem danych NBA, ale w szumie — wagi ustawiać na przypadkach kontrolnych.
