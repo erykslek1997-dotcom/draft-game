@@ -1,5 +1,6 @@
 import { isTwilightWindow } from './veteran';
-import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill } from './skills';
+import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill, isCreator } from './skills';
+import { isPlusShooter } from './shooting';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
@@ -1988,6 +1989,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 0);
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
 const AI_BENCH_RESERVE = Number(envVar('AI_BENCH_RESERVE') ?? 6);
 const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
@@ -3001,6 +3003,29 @@ function pickForAiSized(
     // backups — DeAndre Jordan 77 ranked 6930th): the last `AI_BENCH_GREEDY` picks ask the team score
     // directly — of the best talents that fit the cap and keep the shape reachable, the one that lifts
     // the roster most (0 = off). No star (`STRUCTURE_STAR_TAL`+) goes to the bench this way.
+    // 2026-11-19 (the user's rotation templates, docs/lineup-principles.md; "AI lubi obronę na ławkę
+    // bo to tanie"): the bench is planned by role, not by the value terms — a guard who shoots or runs
+    // the point, a 3&D wing, a big who defends, never two bigs who don't space. Each pick fills the
+    // first role the bench still lacks with the best talent that fits the cap (`AI_BENCH_ROLES`, the
+    // last that many picks; 0 = off). A filled template hands the pick back to the planner.
+    if (AI_BENCH_ROLES > 0 && slots <= AI_BENCH_ROLES && roster.length >= 5) {
+      const starters = new Set(Object.values(readStructure(roster).starters).filter(Boolean).map((p) => (p as PlayerSpan).id));
+      const bench = roster.filter((p) => !starters.has(p.id));
+      const guard = (p: PlayerSpan) => (p.primaryPosition === 'PG' || p.primaryPosition === 'SG') && (isCreator(p) || isPlusShooter(p));
+      const wing = (p: PlayerSpan) => (p.primaryPosition === 'SG' || p.primaryPosition === 'SF') && computeDefensiveTalent(p) >= 70 && teamSpacingValue(p) >= 55;
+      const bigNoSpace = (p: PlayerSpan) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && teamSpacingValue(p) < 30;
+      const big = (p: PlayerSpan) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && computeDefensiveTalent(p) >= 70 && !(bigNoSpace(p) && bench.some(bigNoSpace));
+      const roles = [guard, wing, big].filter((r) => !bench.some(r));
+      const room = capLimit - spent - (slots - 1) * AI_BENCH_RESERVE;
+      const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
+      for (const role of roles) {
+        const pick = available
+          .filter((p) => role(p) && !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
+            && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))))
+          .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+        if (pick) return pick;
+      }
+    }
     if (AI_BENCH_GREEDY > 0 && slots <= AI_BENCH_GREEDY && roster.length >= 5) {
       // Room for the picks after this one at a real backup's price (`AI_BENCH_RESERVE` shots each), not
       // the 3-shot minimum: taking it all now left Danny Young (43) and Theo Ratliff (53) 25-29 minutes.
