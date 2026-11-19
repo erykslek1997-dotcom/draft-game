@@ -42,6 +42,7 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
 ## Już zrobione (2026-11-19)
+- **AI: wybór okresu kariery** (`AI_WIN_OTAL=15`, `AI_WIN_OW=0.3`): okresy „równe poza ceną” tylko przy podobnym ataku, a oddany atak kosztuje. Kawhi 2015-17 zamiast 2013-15. 10 draftów: zróżnicowanie 3.13 → 3.41, 90. centyl wyboru gwiazd 90+ 25 → 22.
 - **Efekt rotacji na tych samych draftach (401-402):** „lepszy na ławce niż starter” 5.5 → 2.5 na draft, „drogi zmiennik TAL 80+ ≤ 16 min” 1.5 → 0.5, słabi starterzy 5.5 → 5.0.
 - **Odrzucone:** `AI_BENCH_WASTE=1` (kara w drafcie za zablokowanego zmiennika) — drogi zmiennik 0.5 → 1.5, gorzej.
 - **Rotacja (część pkt 2):** gwiazda może zaczynać na pozycji, którą gra w pełni (Bird na PF → Butler w piątce, Schayes poza nią); dodatek za własną pozycję 18 → 10 (Butler 27 na SF, Williams 11 na SG). Odtwarza oba wzorce użytkownika prawie co do minuty. Piątki 0.551 → **0.559**, SRS 0.843 / 0.840, test rotacji ok.

@@ -1710,8 +1710,9 @@ const WINDOW_FGA_RATE = Number(envVar('WINDOW_FGA_RATE') ?? 1.6);
  * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
  * spends what cap is left on the better windows.
  */
-const AI_WIN_OTAL = Number(envVar('AI_WIN_OTAL') ?? Infinity);
-const AI_WIN_OW = Number(envVar('AI_WIN_OW') ?? 0);
+// 2026-11-19: on (15 / 0.3) — 10 drafts: spread 3.13 → 3.41, stars' 90th-percentile pick 25 → 22, Kawhi 2015-17 taken.
+const AI_WIN_OTAL = Number(envVar('AI_WIN_OTAL') ?? 15);
+const AI_WIN_OW = Number(envVar('AI_WIN_OW') ?? 0.3);
 const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
