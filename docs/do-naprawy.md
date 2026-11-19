@@ -50,3 +50,6 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - **Atak:** bez dodatku za spójność, limit piłki 0.5, łagodna podłoga gwiazdy 0.15. SRS 0.844 / 0.839, piątki 0.551, atak vs ORtg 0.766 → 0.770. Jordan 63 → 69, Curry 67 → 70, Shaq + Harden 93 → 83.
 - **Reguły z oceny** (`reviewRules.ts`): tłok w pomalowanym, trzech z piłką, obwodowy bez piłki i rzutu, drugi słaby obrońca obwodu, starter poziomu ławki, niestrzelający rozgrywający obok gwiazdy, brak floor generala, + elitarny strzelec z piłką.
 - **Etykiety → dane** w TAL i pick-and-rollu.
+
+## Odkryte 2026-11-19 (po przejściu na AI jak w grze)
+- **Planowanie AI nie jest powtarzalne:** ten sam draft dwa razy w jednym procesie różni się od 3. wyboru (Bird vs Garnett) — pamięci podręczne planera. Skutki: weryfikacja dziennego draftu na serwerze nie odtworzy planowanych wyborów (oznacza „ai-diverged”, nie usuwa wyniku); tryb wieloosobowy, jeśli liczy na identyczne wybory AI u wszystkich, może się rozjechać. Weryfikacja dalej odtwarza bez planowania (`verifyDaily.ts`). Do naprawy: planer deterministyczny (czyszczenie / klucze pamięci podręcznej).

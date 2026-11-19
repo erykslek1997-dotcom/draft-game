@@ -7,6 +7,7 @@ import { totalFga } from '../engine/positions';
 import { rankTeams } from '../engine/scoring';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import type { Rotation } from '../engine/types';
+import { AI_PLAN } from '../engine/aiDrafter';
 
 /**
  * 2026-11-11, the leaderboard's check (variant B, the user: "jak mi powiesz co i jak to robimy").
@@ -41,6 +42,18 @@ export interface DailyClaim {
 export type Verdict = { status: 'ok' } | { status: 'ai-diverged'; at: number } | { status: 'rejected'; reason: string };
 
 export function verifyDaily(mode: DailyDraftMode, day: string, proof: DailyProof, claim: DailyClaim): Verdict {
+  // 2026-11-19: planned drafting is now on everywhere, but its picks are not reproducible from a fresh
+  // replay (the planner's caches fill differently), so the check replays unplanned as it always did; a
+  // planned CPU pick that differs reads as 'ai-diverged', never as a false draft.
+  const planWas = AI_PLAN.on;
+  AI_PLAN.on = false;
+  try {
+    return verifyDailyUnplanned(mode, day, proof, claim);
+  } finally {
+    AI_PLAN.on = planWas;
+  }
+}
+function verifyDailyUnplanned(mode: DailyDraftMode, day: string, proof: DailyProof, claim: DailyClaim): Verdict {
   if (mode === 'mini') return { status: 'rejected', reason: 'mini has no replayable proof yet' };
   const daily = dailyDraftDay(mode, day);
   let state: DraftState = createDraft(false, undefined, proof.teamName, daily.seed, undefined, { day, cap: daily.cap, rule: daily.rule, bomb: daily.bomb });
