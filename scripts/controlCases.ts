@@ -37,6 +37,8 @@ const L: Record<string, string[]> = {
   jordan9192: ['Kyle Lowry 2015-17', 'Michael Jordan 1990-92', 'Clifford Robinson 1999-01', 'Evan Mobley 2024-26', 'Dikembe Mutombo 1996-98'],
   wadeKgLopez: ['John Stockton 1990-92', 'Dwyane Wade 2008-10', 'Gordon Hayward 2015-17', 'Kevin Garnett 2002-04', 'Brook Lopez 2018-20'],
   shaqHarden: ['Mark Price 1988-90', 'James Harden 2014-16', 'Scottie Pippen 1995-97', 'Pau Gasol 2016-18', "Shaquille O'Neal 1999-01"],
+  topeka: ['Chauncey Billups 2003-05', 'Manu Ginóbili 2004-06', 'LeBron James 2016-18', 'Rasheed Wallace 2007-09', 'Brook Lopez 2018-20'],
+  raleighRussell: ['Gary Payton 1997-99', 'Manu Ginóbili 2004-06', 'LeBron James 2008-10', 'Al Horford 2021-23', 'Bill Russell 1961-63'],
   twoCenters: ['Jason Kidd 2008-10', 'Donovan Mitchell 2022-24', 'Clifford Robinson 1998-00', 'Joel Embiid 2021-23', 'David Robinson 1990-92'],
 };
 const res: Record<string, { o: number; d: number; f: number; ovr: number }> = {};
@@ -51,7 +53,7 @@ for (const [k, r] of rows) console.log(`${k.padEnd(16)} ovr ${String(r.ovr).padS
 const checks: [string, boolean][] = [];
 const gt = (a: string, b: string) => res[a] && res[b] && checks.push([`${a} > ${b}`, res[a].ovr > res[b].ovr]);
 gt('jokicHoliday', 'jokicBrunson'); gt('shaqWhite', 'shaqHali'); gt('giannisHorford', 'giannisWallace'); gt('lebronKlay', 'lebronCaruso');
-gt('kobeOgSheed', 'kobeTatumLove'); gt('curry', 'stockton'); gt('doncic', 'stockton'); gt('curry', 'twoCenters'); gt('doncic', 'twoCenters');
+gt('kobeOgSheed', 'kobeTatumLove'); gt('topeka', 'raleighRussell'); gt('curry', 'stockton'); gt('doncic', 'stockton'); gt('curry', 'twoCenters'); gt('doncic', 'twoCenters');
 if (res.hill) checks.push(['hill: O > D', res.hill.o > res.hill.d]);
 if (res.jordan) checks.push(['jordan: D > O', res.jordan.d > res.jordan.o]);
 if (res.stockton && res.curry) checks.push(['stockton: O < curry O', res.stockton.o < res.curry.o]);
