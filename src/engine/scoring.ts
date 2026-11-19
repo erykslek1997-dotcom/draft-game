@@ -1,5 +1,5 @@
 import { defenderProfile } from './liveDefense';
-import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand } from './skills';
+import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand, skill } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -657,10 +657,14 @@ const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
  */
 const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
+const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
   if (!OFF_BALL) return entries.map((e) => e.value);
-  const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6);
+  // `OFF_BALL_SHOOT`: a catch-and-shoot scorer's usage is partly off the ball (Dirk, Klay) — that share of
+  // his on-ball part goes away at a spot-up skill of 90 (none at 50), as in the second-handler cost.
+  const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
+  const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6) * (1 - OFF_BALL_SHOOT * shoot(p));
   const order = [...entries].sort((a, b) => share(b.player) - share(a.player));
   return order.map((e, rank) => {
     const on = share(e.player);
