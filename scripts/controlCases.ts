@@ -54,6 +54,7 @@ const checks: [string, boolean][] = [];
 const gt = (a: string, b: string) => res[a] && res[b] && checks.push([`${a} > ${b}`, res[a].ovr > res[b].ovr]);
 gt('jokicHoliday', 'jokicBrunson'); gt('shaqWhite', 'shaqHali'); gt('giannisHorford', 'giannisWallace'); gt('lebronKlay', 'lebronCaruso');
 gt('kobeOgSheed', 'kobeTatumLove'); gt('topeka', 'raleighRussell'); gt('curry', 'stockton'); gt('doncic', 'stockton'); gt('curry', 'twoCenters'); gt('doncic', 'twoCenters');
+if (res.topeka && res.raleighRussell) { checks.push(['topeka: O ≥ raleigh O + 8', res.topeka.o >= res.raleighRussell.o + 8]); checks.push(['topeka: fit ≥ raleigh fit + 10', res.topeka.f >= res.raleighRussell.f + 10]); }
 if (res.hill) checks.push(['hill: O > D', res.hill.o > res.hill.d]);
 if (res.jordan) checks.push(['jordan: D > O', res.jordan.d > res.jordan.o]);
 if (res.stockton && res.curry) checks.push(['stockton: O < curry O', res.stockton.o < res.curry.o]);
