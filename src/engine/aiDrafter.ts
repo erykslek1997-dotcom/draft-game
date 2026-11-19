@@ -1990,6 +1990,8 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 0);
+const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
+const AI_BENCH_SCORER = envVar('AI_BENCH_SCORER') === '1';
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
 const AI_BENCH_RESERVE = Number(envVar('AI_BENCH_RESERVE') ?? 6);
 const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
@@ -3012,10 +3014,12 @@ function pickForAiSized(
       const starters = new Set(Object.values(readStructure(roster).starters).filter(Boolean).map((p) => (p as PlayerSpan).id));
       const bench = roster.filter((p) => !starters.has(p.id));
       const guard = (p: PlayerSpan) => (p.primaryPosition === 'PG' || p.primaryPosition === 'SG') && (isCreator(p) || isPlusShooter(p));
-      const wing = (p: PlayerSpan) => (p.primaryPosition === 'SG' || p.primaryPosition === 'SF') && computeDefensiveTalent(p) >= 70 && teamSpacingValue(p) >= 55;
+      const wing = (p: PlayerSpan) => (p.primaryPosition === 'SG' || p.primaryPosition === 'SF') && computeDefensiveTalent(p) >= AI_BENCH_ROLE_D && teamSpacingValue(p) >= 55;
       const bigNoSpace = (p: PlayerSpan) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && teamSpacingValue(p) < 30;
-      const big = (p: PlayerSpan) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && computeDefensiveTalent(p) >= 70 && !(bigNoSpace(p) && bench.some(bigNoSpace));
-      const roles = [guard, wing, big].filter((r) => !bench.some(r));
+      const big = (p: PlayerSpan) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && computeDefensiveTalent(p) >= AI_BENCH_ROLE_D && !(bigNoSpace(p) && bench.some(bigNoSpace));
+      // `AI_BENCH_SCORER`: a fourth job, a reserve who scores (O-TAL 65+) — the Microwave of the unit.
+      const scorer = (p: PlayerSpan) => computeOffensiveTalent(p) >= 65;
+      const roles = [guard, wing, big, ...(AI_BENCH_SCORER ? [scorer] : [])].filter((r) => !bench.some(r));
       const room = capLimit - spent - (slots - 1) * AI_BENCH_RESERVE;
       const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
       for (const role of roles) {
