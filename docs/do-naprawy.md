@@ -50,6 +50,11 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - **AI — gwiazdy spadają:** Dončić 63., McGrady 57., Harden 48., Carter 101.
 - **AI — śmieci:** Tom Gola (12.7 capu), Don Buse TAL 41 gra 19 min.
 
+## Analiza wyborów AI (3 drafty z 2026-11-19, `scripts/_favs.ts`)
+- **Sieroty — gwiazdy na jednej pozycji znikają z tablicy:** Barkley prime (88-92, 13-16 rzutów) niewybrany w 2 z 3 draftów, Grant Hill 1995-97 (86), Alvin Robertson (81-83), Bobby Jones 1976-85 (78-82), Butler prime (87; brany jest tylko tani 2012-14, TAL 71), Mutombo prime (78-83; brany tylko 2004-07 za 2 rzuty), Tyson Chandler / DeAndre Jordan / Robert Williams (77). Przyczyna: zasada struktury „gwiazda na zajętej pozycji grałaby z ławki — poza tablicą” + „wybrany starter trzyma miejsce”. Gdy większość drużyn ma już PF / SF, Barkley i Hill nie są na tablicy nikogo.
+- **Ulubieńcy:** te same nazwiska w każdym drafcie w tym samym miejscu (Marion 34-48, Batum 81-84, Amen Thompson 85-87, O'Neale 89-95, Prigioni 99-118, Chuck Hayes, Greg Anthony, Ostertag, Andersen) i ten sam zestaw glue na końcu (Ryan Bowen, Johnny High, T.R. Dunn, Temple, Cage, Lang, Looney, Aşık) — przy lepszym glue na tablicy (Mark Eaton 54, Przybilla 54, Kornet 52).
+- **Ławka:** dostępni lepsi na tej samej pozycji za tyle samo rzutów prawie przy każdym słabym wyborze (Delon Wright 57 przy Lowrym 2008-10 74; Splitter 67 przy Chandlerze / DeAndre / R. Williamsie 77; Nenê / Kukoč / Hot Rod przy Bobbym Jonesie 78-82).
+
 ## Już zrobione (2026-11-19)
 - **Curry + Wade** (`REV_STAR`, `PNR_BEST_LEAD`): elitarny strzelec z miejsca nie liczy się jako trzeci gracz z piłką ani jako „silnik” dla reguły zbędnego rozgrywającego (Draymond przy Currym to point forward); współgwiazda nie jest zbędnym rozgrywającym; pick-and-roll przez lepszego z dwóch prowadzących. Syracuse 78 → 82. Sim 0.62 → 0.65, SRS 0.843, piątki 0.559, słabi rezerwowi 34% → 27%.
 - **Podłoga ataku dla dwóch gwiazd** (`OFF_PAIR_W=0.35`): LeBron + McGrady 63 → 70. Sędziowie bez zmian.
