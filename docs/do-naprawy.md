@@ -16,7 +16,7 @@ Wspólna przyczyna: AI wycenia gracza jedną liczbą (TAL / koszt w capie), a ni
 ## 2. Rotacja — minuty
 - **Gwiazda C gra za mało, słabszy C resztę:** Wembanyama 24 (Chandler 24), Duncan 23-24 (Nenê 25, Rollins 24), Davis 12 na C (Lanier 36) — najczęstszy błąd.
 - **Lepszy rezerwowy siedzi, słabszy gra:** Butler 30 z ławki, a Schayes w piątce; Tucker 23 vs Anunoby 12; Thybulle 24 vs Howard 12; Rivers 25 vs Butler 15; Hill 24 vs Kirilenko 14; Fisher 24 vs Russell 13.
-- **Gracz nie na swojej pozycji / okruchy:** Prigioni 16 min na SG (trzy razy), Fisher 1 min na SF, Dantley 1 min na SG.
+- **Gracz nie na swojej pozycji / okruchy:** Prigioni 16 min na SG (trzy razy), Fisher 1 min na SF, Dantley 1 min na SG. Sprawdzone: Prigioni ma w danych pełną drugą pozycję SG; wyższy próg „przydatnej zmiany” (`ROT_BENCH_FLOOR` 55 → 65) oddaje jego minuty Gregowi Anthony'emu (63), a Mullin 1997-99 ma limit 24 min — na tej ławce nie ma lepszego zmiennika obwodu, to problem draftu (pkt 1).
 - **Zasada z wzorców użytkownika:** piątka to najlepszych pięciu, pozycje dopasowane do nich (Bird na PF, Butler na SF); słaby rezerwowy gra tylko zastępstwo; lepszy rezerwowy może grać więcej niż starter tej pozycji. Wzorce: Nash / Barkley / Duncan i Chicago (Bird / Butler) w `lineup-principles.md`.
 
 ## 3. Ocena drugiego składu
