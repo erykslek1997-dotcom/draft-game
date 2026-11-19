@@ -1988,6 +1988,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  * order (taste and noise included), so GMs still differ.
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
+const AI_GLUE_SLACK = Number(envVar('AI_GLUE_SLACK') ?? Infinity);
 const AI_NEED_FLOOR = Number(envVar('AI_NEED_FLOOR') ?? 0);
 const AI_LAST_BEST = Number(envVar('AI_LAST_BEST') ?? 0);
 export const AI_PLAN = {
@@ -2892,7 +2893,10 @@ function pickForAiSized(
         return projectedMinutes >= MATERIAL_BENCH_MINUTES && bestLegalTalent >= PENULTIMATE_ROTATION_TALENT_FLOOR;
       });
       if (qualityReserve.length > 0) playable = qualityReserve;
-    } else if (picksIncludingThisOne === 1 && !roster.some((player) => player.fga < TRUE_CAP_GLUE_FGA_CEILING)) {
+    } else if (picksIncludingThisOne === 1 && !roster.some((player) => player.fga < TRUE_CAP_GLUE_FGA_CEILING) && capLimit - spent < AI_GLUE_SLACK) {
+      // 2026-11-19 (the user: "jak zostaje więcej to AI powinno reagować na to"): only when the cap is
+      // really tight — with `AI_GLUE_SLACK`+ shots left the last pick is the best backup that fits
+      // (Tucson: 7 shots left, Jarron Collins 36 over Camby 72 / Tyson Chandler 77).
       // Once eight meaningful names are aboard, the ninth slot may deliberately be cap glue.
       // It is never rewarded with minutes for being cheap; rotation quality still decides that.
       const glue = playable.filter((entry) => entry.player.fga < TRUE_CAP_GLUE_FGA_CEILING);
@@ -3026,7 +3030,7 @@ function pickForAiSized(
     // planned from the start — the board's best cheap player stands in for it while the other
     // slots are planned on the cap less his shots, and he is only taken with the last pick.
     const glue =
-      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga)
+      AI_PLAN.reserveGlue && slots >= 2 && !roster.some((p) => p.fga <= AI_PLAN.reserveGlueFga) && capLimit - spent - (slots - 1) * LOOKAHEAD_MIN_FILL_FGA * 2 < AI_GLUE_SLACK
         ? [...board].filter((p) => p.fga <= AI_PLAN.reserveGlueFga).sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0]
         : undefined;
     // The structured test's last pick: with the shape already whole but for the glue, the glue is a
