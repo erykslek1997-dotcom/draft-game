@@ -48,5 +48,7 @@ Podejrzanie wysoko: Charlie Ward 89.
 - `testRotationEditable` — przekroczył czas przy równoległym obciążeniu, sprawdzić osobno.
 
 ## Już zrobione (2026-11-19)
+- **Atak (pkt 1, część):** bez dodatku za spójność (nagradzał drugiego i trzeciego elitarnego strzelca), limit piłki 0.5 (kolejni gracze z piłką liczą się coraz mniej), łagodna podłoga gwiazdy 0.15, skala wyśrodkowana. Sędziowie: SRS 0.844 / 0.839, piątki 0.551, atak vs ORtg 0.766 → 0.770, kontrolne 11/13, AI sd 3.14. Jordan 63 → 69, Curry 67 → 70, Shaq + Harden 93 → 83, Kobe + Tatum + Love 93 → 82 (Anunoby + Rasheed teraz wyżej). Zostaje: Jordan nadal niżej niż przeładowane składy (mocniejsza podłoga psuła dane NBA); Dončić > Stockton i Giannis + Horford > + Wallace nie przechodzą.
+- **Symulacja meczów** liczy atak po staremu (sim R² 0.66 → 0.63) — dostosować raz, na końcu, gdy oceny składów będą ok (decyzja użytkownika).
 - Reguły z oceny (`reviewRules.ts`, `REVIEW_W=1`): tłok w pomalowanym, trzech z piłką, obwodowy bez piłki i rzutu, drugi słaby obrońca obwodu, starter poziomu ławki, niestrzelający rozgrywający obok gwiazdy, brak floor generala, + elitarny strzelec z piłką.
 - Etykiety → dane w TAL i pick-and-rollu (`SKILL_TAL`, `SKILL_PNR`).

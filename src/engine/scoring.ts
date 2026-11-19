@@ -656,7 +656,7 @@ const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
  * (shooting, cutting) always counts. `OFF_TOP` adds that much to the best player's weight in the
  * star-weighted blend (30% today), so the star lifts the team more.
  */
-const OFF_BALL = Number(envVar('OFF_BALL') ?? 0);
+const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
@@ -1031,9 +1031,9 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
-const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0);
+const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0.15);
 /** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
-const OFF_COH = Number(envVar('OFF_COH') ?? 1);
+const OFF_COH = Number(envVar('OFF_COH') ?? 0); // 2026-11-19: off — it paid for a second and third elite scorer, the overload the user's review penalises; real ORtg r 0.766 → 0.769 without it.
 const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
@@ -1084,7 +1084,9 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // 2026-10-07, stage 2b step 7: the new blend weights lift the raw field 0.6 on 60 AI drafts.
 // 2026-11-19: the ball budget (`OFF_BALL`) moves the raw field down 4.84 at 0.5 on 160 AI-drafted teams
 // (`scripts/_offmean.ts`); the mean follows so an average five keeps its Offense and only the shape moves.
-const OFFENSE_RAW_MEAN = envVar('OFF_RAW_MEAN') ? Number(envVar('OFF_RAW_MEAN')) : 85.0 - 9.68 * Number(envVar('OFF_BALL') ?? 0);
+// 2026-11-19: on with the three offense changes (no cohesion bonus, ball budget 0.5, star floor 0.15) the
+// raw field of 160 AI-drafted teams moved 83.72 → 77.47; the mean follows (85 − 6.25).
+const OFFENSE_RAW_MEAN = Number(envVar('OFF_RAW_MEAN') ?? 78.75);
 // `OFF_RAW_MEAN` / `OFF_RAW_SD` (measurement): re-centre and re-spread the raw field after a change to the blend.
 const OFFENSE_RAW_SD = Number(envVar('OFF_RAW_SD') ?? 8.5);
 const DEFENSE_RAW_MEAN = 77.4;
