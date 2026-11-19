@@ -1989,6 +1989,7 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
+const AI_BENCH_RESERVE = Number(envVar('AI_BENCH_RESERVE') ?? 6);
 const AI_BENCH_SHORTLIST = Number(envVar('AI_BENCH_SHORTLIST') ?? 40);
 const AI_STAR_SWAP = Number(envVar('AI_STAR_SWAP') ?? 0);
 const AI_BIG_BENCH = envVar('AI_BIG_BENCH') === '1';
@@ -2994,7 +2995,9 @@ function pickForAiSized(
     // directly — of the best talents that fit the cap and keep the shape reachable, the one that lifts
     // the roster most (0 = off). No star (`STRUCTURE_STAR_TAL`+) goes to the bench this way.
     if (AI_BENCH_GREEDY > 0 && slots <= AI_BENCH_GREEDY && roster.length >= 5) {
-      const room = capLimit - spent - (slots - 1) * LOOKAHEAD_MIN_FILL_FGA;
+      // Room for the picks after this one at a real backup's price (`AI_BENCH_RESERVE` shots each), not
+      // the 3-shot minimum: taking it all now left Danny Young (43) and Theo Ratliff (53) 25-29 minutes.
+      const room = capLimit - spent - (slots - 1) * AI_BENCH_RESERVE;
       const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
       const fits = available.filter((p) => !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
         && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))));
