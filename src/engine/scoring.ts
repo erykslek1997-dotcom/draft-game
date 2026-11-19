@@ -1031,6 +1031,7 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
+const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0);
 /** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
 const OFF_COH = Number(envVar('OFF_COH') ?? 1);
 const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
@@ -1045,7 +1046,12 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
   const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus * OFF_COH + superstarEngineBonus(team)));
   const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team) * OFF_WEAK);
-  const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
+  const raw0 = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
+  // 2026-11-19 (the user: "gracz z takim atakiem jak Jordan powinien dawać jakąś podłogę"): a soft floor
+  // under the best starter — the blend moves `OFF_FLOOR_W` of the way up to 0.9 × his O-TAL when it sits
+  // below that (Jordan's five read 71 raw against his 100). 0 = off.
+  const starO = Math.max(0, ...primaryStarters(team).map((e) => computeOffensiveTalent(e.player)));
+  const raw = raw0 + OFF_FLOOR_W * Math.max(0, 0.9 * starO - raw0);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
@@ -1078,8 +1084,9 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // 2026-10-07, stage 2b step 7: the new blend weights lift the raw field 0.6 on 60 AI drafts.
 // 2026-11-19: the ball budget (`OFF_BALL`) moves the raw field down 4.84 at 0.5 on 160 AI-drafted teams
 // (`scripts/_offmean.ts`); the mean follows so an average five keeps its Offense and only the shape moves.
-const OFFENSE_RAW_MEAN = 85.0 - 9.68 * Number(envVar('OFF_BALL') ?? 0);
-const OFFENSE_RAW_SD = 8.5;
+const OFFENSE_RAW_MEAN = envVar('OFF_RAW_MEAN') ? Number(envVar('OFF_RAW_MEAN')) : 85.0 - 9.68 * Number(envVar('OFF_BALL') ?? 0);
+// `OFF_RAW_MEAN` / `OFF_RAW_SD` (measurement): re-centre and re-spread the raw field after a change to the blend.
+const OFFENSE_RAW_SD = Number(envVar('OFF_RAW_SD') ?? 8.5);
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
 const DEFENSE_MEAN = 74.1;
