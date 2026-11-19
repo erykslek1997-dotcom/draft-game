@@ -12,6 +12,8 @@
  *  − each off-ball guard / wing without a shot             1a
  *  − a second weak perimeter defender (D-TAL < 40)         3a
  *  − a bench-calibre starter (TAL < 70, or a wing at O < 50) 2a
+ *  − each non-shooting playmaker (playmaking ≥ 85, spacing < 55) beside an on-ball engine
+ *    (usage ≥ 0.5, handling ≥ 90) — 2026-11-19, LeBron + Draymond: the passing repeats   10
  *  + an on-ball elite pull-up shooter (pullUp3 ≥ 98, usage ≥ 0.5) — he spaces for everyone, so non-shooting screening bigs (usage < 0.35) beside
  *    him stop costing (6: "Curry swoim rzutem wszystko rozwiązuje")
  */
@@ -22,6 +24,7 @@ import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { teamSpacingValue } from './midrangeGravity';
+import { playmakingScoreForPlayer } from './playmakingLookup';
 
 const W = Number(envVar('REVIEW_W') ?? 1);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
@@ -38,6 +41,10 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
   const bench = five.filter((p) => effectiveTalent(p) < 70 || (!isBig(p) && computeOffensiveTalent(p) < 50)).length;
   const eliteShooter = five.some((p) => s(p, 'pullUp3', 0) >= 98 && use(p) >= 0.5);
+  // A second playmaker who can't shoot, beside an on-ball engine (LeBron + Draymond): his passing
+  // repeats what the engine already does, and off the ball he doesn't space.
+  const engine = five.find((p) => use(p) >= 0.5 && s(p, 'handling', 0) >= 90);
+  const extraPlaymakers = engine ? five.filter((p) => p !== engine && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < 55).length : 0;
   const nonShootBigs = five.filter((p) => isBig(p) && teamSpacingValue(p) < 30 && use(p) < 0.35).length;
   return {
     paintCrowd: paint >= 2 ? paint - 1 : 0,
@@ -45,6 +52,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
     offBallNoShot,
     secondWeakPerim: Math.max(0, weakPerim - 1),
     benchStarter: bench,
+    extraPlaymaker: extraPlaymakers,
     eliteShooterCover: eliteShooter ? Math.min(2, nonShootBigs) : 0,
   };
 }
@@ -52,5 +60,5 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
 export function reviewAdjustment(five: PlayerSpan[]): number {
   if (W === 0 || five.length < 5) return 0;
   const h = reviewRuleHits(five);
-  return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter);
+  return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter - h.extraPlaymaker);
 }
