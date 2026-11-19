@@ -321,7 +321,7 @@ export function benchOffenseAdjustment(team: Team): number {
  * (DeAndre Jordan 62 as a finisher), so the unit's jobs are read instead — `BENCH_ROLE_W` Overall
  * points for a second unit (reserves at 10+ minutes) with no plus shooter, again for none who
  * creates, and again for two bigs at 10+ minutes who don't space (team spacing under 30). */
-const BENCH_ROLE_W = Number(envVar('BENCH_ROLE_W') ?? 0);
+const BENCH_ROLE_W = Number(envVar('BENCH_ROLE_W') ?? 1);
 export function benchRoleAdjustment(team: Team): number {
   if (BENCH_ROLE_W === 0) return 0;
   const bench = benchWithMinutes(team).filter(({ minutes }) => minutes >= BENCH_OFF.minMin).map((x) => x.player);

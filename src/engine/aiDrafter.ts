@@ -2024,6 +2024,13 @@ export const AI_PLAN = {
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
 const planMemory = new Map<string, string[]>();
+/** 2026-11-19: a new draft starts from empty plan memory — a second draft with the same seed in one
+ * process (tests, judges, a replayed daily) read the first one's finished plans and diverged by the
+ * third pick; across processes the drafts were already identical. */
+export function resetAiPlanMemory(planSeed?: number): void {
+  if (planSeed === undefined) return planMemory.clear();
+  for (const k of [...planMemory.keys()]) if (k.startsWith(`${planSeed}|`)) planMemory.delete(k);
+}
 /** Seeds a team's plan memory — the joint pre-draft plan (jointPlan.ts) is where it starts. */
 export function seedPlanMemory(planSeed: number, team: string, names: string[]): void {
   planMemory.set(`${planSeed}|${team}`, names);

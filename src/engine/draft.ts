@@ -21,7 +21,7 @@ import {
   MARGIN_PER_CONTENDING_TEAM,
   type CheapestLookup,
 } from './positions';
-import { pickForAi, setAiClassicTeamScorer, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
+import { pickForAi, resetAiPlanMemory, setAiClassicTeamScorer, setAiTeamScorer, setAiStructureHoles, seedPlanMemory, AI_GM_PROFILES, type AiDraftRuleset, type AiDraftStrategy, type AiGmProfile } from './aiDrafter';
 import { scoreTeam } from './scoring';
 import { autoAssignRotation } from './rotation';
 import { mulberry32, mixSeed, randomSeed } from './rng';
@@ -252,6 +252,8 @@ export function createDraft(
   daily?: { day: string; cap: number; rule: DailyRule; bomb?: DailyBomb },
 ): DraftState {
   planClaimsBySeed.delete(seed);
+  // Plan memory is keyed by each team's board seed (`boardSeed` below).
+  for (let slot = 0; slot <= 32; slot++) resetAiPlanMemory(mixSeed(seed, 0x7b00 + slot));
   // Optional-chained: `import.meta.env` is undefined when an engine test script runs this under
   // tsx (no Vite), and `.DEV` on undefined would throw.
   if (import.meta.env?.DEV) {
