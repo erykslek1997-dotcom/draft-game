@@ -2,8 +2,8 @@
 // JSON from `_draft2.ts` and counts four kinds of oddity per draft.
 import { readFileSync } from 'node:fs';
 const d = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-const tot = { wasted: 0, weak: 0, inverted: 0, dupBench: 0, teams: 0, picks: 0 };
-const ex: Record<string, string[]> = { wasted: [], weak: [], inverted: [], dupBench: [] };
+const tot = { wasted: 0, weak: 0, inverted: 0, dupBench: 0, costlyBackup: 0, teams: 0, picks: 0 };
+const ex: Record<string, string[]> = { wasted: [], weak: [], inverted: [], dupBench: [], costlyBackup: [] };
 for (const dr of d) {
   // One line per player who kept being passed over: first and last pick he was there 8+ TAL above the pick.
   const slid = new Map<string, { tal: number; from: number; to: number; n: number }>();
@@ -18,6 +18,7 @@ for (const dr of d) {
     const talRank = order.indexOf(i);
     if (i - talRank >= 5) { tot.inverted++; ex.inverted.push(`s${dr.seed} ${t.name.split(' ').pop()}: talent piątki #${talRank + 1}, tabela #${i + 1}`); }
     const stBest = Math.min(...st.map((p: any) => p.tal));
+    for (const p of t.players.filter((p: any) => !p.st && p.min > 0 && p.min <= 16 && p.tal >= 80)) { tot.costlyBackup++; ex.costlyBackup.push(`s${dr.seed} ${t.name.split(' ').pop()}: ${p.n} ${p.tal} tylko ${p.min} min`); }
     for (const p of t.players.filter((p: any) => !p.st && p.min > 0)) if (p.tal >= stBest + 5) { tot.dupBench++; ex.dupBench.push(`s${dr.seed} ${t.name.split(' ').pop()}: ${p.n} ${p.tal} na ławce`); }
   });
 }
@@ -27,4 +28,5 @@ console.log(`pomijani gracze (lepszy o 8+ od wyboru, top 80): ${tot.wasted}  (${
 console.log(`słabi starterzy (<75): ${tot.weak}  (${(tot.weak / n).toFixed(1)}/draft)`);
 console.log(`odwrócona kolejność (5+ miejsc): ${tot.inverted}  (${(tot.inverted / n).toFixed(1)}/draft)`);
 console.log(`lepszy na ławce niż starter (5+): ${tot.dupBench}  (${(tot.dupBench / n).toFixed(1)}/draft)`);
+console.log(`drogi zmiennik (TAL 80+, ≤ 16 min): ${tot.costlyBackup}  (${(tot.costlyBackup / n).toFixed(1)}/draft)`);
 if (process.argv[3] === 'v') for (const [k, v] of Object.entries(ex)) console.log(`\n${k}:\n  ` + v.slice(0, 25).join('\n  '));

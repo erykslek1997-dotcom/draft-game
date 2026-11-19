@@ -23,7 +23,7 @@ import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
 // the displayed badge shows), not raw `computeTalent` — see that function's own docstring
 // (grades.ts) for why.
 import { effectiveTalent } from './grades';
-import { autoAssignRotation, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
+import { autoAssignRotation, bestPrimaryAssignment, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
@@ -52,6 +52,15 @@ import { envVar } from './env';
 // ---------------------------------------------------------------------------
 let aiDraftDebug = false;
 const AI_NEED = Number(envVar('AI_NEED') ?? 1);
+const AI_BENCH_WASTE = Number(envVar('AI_BENCH_WASTE') ?? 0);
+function benchFgaWaste(p: PlayerSpan, roster: PlayerSpan[]): number {
+  const starters = Object.values(bestPrimaryAssignment(roster).assignment).filter((x): x is PlayerSpan => !!x);
+  const mySlots = (['PG', 'SG', 'SF', 'PF', 'C'] as const).filter((sl) => { const c = positionCompetence(p, sl); return c === 'natural' || c === 'full'; });
+  if (!mySlots.length) return 0;
+  const t = effectiveTalent(p);
+  const blocked = mySlots.every((sl) => starters.some((st) => st.primaryPosition === sl && effectiveTalent(st) >= t - 3));
+  return blocked ? AI_BENCH_WASTE * p.fga * (1 - 14 / 34) : 0;
+}
 export function setAiDraftDebug(on: boolean): void {
   aiDraftDebug = on;
 }
@@ -2747,6 +2756,11 @@ function pickForAiSized(
       // under `BENCH_OFFENSE.floor` O-TAL is worth less, by how far under; one defensive specialist
       // (D-TAL `specialistD`+) is let through if the bench has none yet.
       benchOffense: inBenchRound ? benchOffenseAdjustment(p, roster, talentTerm) : 0,
+      // 2026-11-19 (the user's review: Howard 2009-11 behind Hakeem, 12 minutes for a star's shots):
+      // in the bench rounds a candidate whose every real position already has a starter at least as
+      // good will play a backup's minutes — his shots cost what they'd buy elsewhere (`AI_BENCH_WASTE`
+      // per FGA). A cheap backup (Ben Wallace behind Duncan) costs little.
+      benchFgaWaste: inBenchRound && AI_BENCH_WASTE ? -benchFgaWaste(p, roster) : 0,
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
