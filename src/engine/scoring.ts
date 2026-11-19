@@ -1,5 +1,5 @@
 import { defenderProfile } from './liveDefense';
-import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel } from './skills';
+import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
@@ -646,13 +646,35 @@ export function interiorStrength(rimPressure: number, rebounding: number, size: 
 const OFF_STAR_FLAT = Number(envVar('OFF_STAR_FLAT') ?? 0);
 const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13].map((w) => w + (0.2 - w) * OFF_STAR_FLAT);
 const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
+
+/**
+ * 2026-11-19 (the user's review: Jordan's team at Offense 59, Kobe + Tatum + Love at 93 — "za dużo
+ * nasrane"): a five shares one ball. Each starter's O-TAL splits into an on-ball part (his usage
+ * demand, `dataUsageDemand`, as a share of 0.6 — Curry 2015-17 reads 1) and an off-ball part. Ranked
+ * by demand, the first player's on-ball part counts in full, the next ones' less and less
+ * (`OFF_BALL` = how much: 0 off, 1 = the second at 0.7, third 0.4, the rest 0.2); the off-ball part
+ * (shooting, cutting) always counts. `OFF_TOP` adds that much to the best player's weight in the
+ * star-weighted blend (30% today), so the star lifts the team more.
+ */
+const OFF_BALL = Number(envVar('OFF_BALL') ?? 0);
+const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
+const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
+function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
+  if (!OFF_BALL) return entries.map((e) => e.value);
+  const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6);
+  const order = [...entries].sort((a, b) => share(b.player) - share(a.player));
+  return order.map((e, rank) => {
+    const on = share(e.player);
+    const keep = 1 - OFF_BALL * (1 - BALL_RANK_KEEP[Math.min(rank, BALL_RANK_KEEP.length - 1)]);
+    return e.value * (1 - on + on * keep);
+  });
+}
 function starWeightedOffensiveTalent(team: Team): number {
   const starters = primaryStarters(team);
   if (starters.length === 0) return 0;
-  const values = starters
-    .map(({ player, slot }) => computeOffensiveTalent(player) * positionFitMultiplier(player, slot))
+  const values = ballBudgetValues(starters.map(({ player, slot }) => ({ player, value: computeOffensiveTalent(player) * positionFitMultiplier(player, slot) })))
     .sort((a, b) => b - a);
-  const weights = STAR_OTAL_WEIGHTS.slice(0, values.length);
+  const weights = (OFF_TOP ? STAR_OTAL_WEIGHTS.map((w, i) => (i === 0 ? w + OFF_TOP : w)) : STAR_OTAL_WEIGHTS).slice(0, values.length);
   const weightSum = weights.reduce((sum, w) => sum + w, 0);
   const starterValue = values.reduce((sum, v, i) => sum + v * weights[i], 0) / weightSum;
   const starterKeys = new Set(starters.map((s) => `${s.slot}|${s.player.id}`));
@@ -1054,7 +1076,9 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // lifted the raw field 84.2 -> 85.2 on the same seeds.
 // Then the AI's lower cap reserve (stronger fifth starters) lifted it again, 85.2 -> 86.4.
 // 2026-10-07, stage 2b step 7: the new blend weights lift the raw field 0.6 on 60 AI drafts.
-const OFFENSE_RAW_MEAN = 85.0;
+// 2026-11-19: the ball budget (`OFF_BALL`) moves the raw field down 4.84 at 0.5 on 160 AI-drafted teams
+// (`scripts/_offmean.ts`); the mean follows so an average five keeps its Offense and only the shape moves.
+const OFFENSE_RAW_MEAN = 85.0 - 9.68 * Number(envVar('OFF_BALL') ?? 0);
 const OFFENSE_RAW_SD = 8.5;
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;

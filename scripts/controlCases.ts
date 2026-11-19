@@ -34,6 +34,9 @@ const L: Record<string, string[]> = {
   lebronKlay: ['Chauncey Billups 2003-05', 'Klay Thompson 2015-17', 'Ron Artest 2007-09', 'LeBron James 2012-14', 'Alonzo Mourning 1998-00'],
   kobeTatumLove: ['Chauncey Billups 2004-06', 'Kobe Bryant 2007-09', 'Jayson Tatum 2022-24', 'Kevin Love 2013-15', 'David Robinson 1997-99'],
   kobeOgSheed: ['Chauncey Billups 2004-06', 'Kobe Bryant 2007-09', 'OG Anunoby 2023-25', 'Rasheed Wallace 2003-05', 'David Robinson 1997-99'],
+  jordan9192: ['Kyle Lowry 2015-17', 'Michael Jordan 1990-92', 'Clifford Robinson 1999-01', 'Evan Mobley 2024-26', 'Dikembe Mutombo 1996-98'],
+  wadeKgLopez: ['John Stockton 1990-92', 'Dwyane Wade 2008-10', 'Gordon Hayward 2015-17', 'Kevin Garnett 2002-04', 'Brook Lopez 2018-20'],
+  shaqHarden: ['Mark Price 1988-90', 'James Harden 2014-16', 'Scottie Pippen 1995-97', 'Pau Gasol 2016-18', "Shaquille O'Neal 1999-01"],
   twoCenters: ['Jason Kidd 2008-10', 'Donovan Mitchell 2022-24', 'Clifford Robinson 1998-00', 'Joel Embiid 2021-23', 'David Robinson 1990-92'],
 };
 const res: Record<string, { o: number; d: number; f: number; ovr: number }> = {};
