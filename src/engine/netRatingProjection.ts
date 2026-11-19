@@ -1,10 +1,10 @@
 import { computeOffensiveTalent } from './talent';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { computeSpacing } from './spacing';
 import type { Team } from './types';
 import { allAssignments, GAME_MINUTES } from './rotation';
 import { STARTER_SLOTS } from './positions';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import { defensiveHuntability, HUNTABILITY_DRTG_POINTS_PER_PENALTY } from './defensiveHuntability';
 import { defensiveCohesion, ELITE_SHELL_DRTG_TARGET } from './defensiveCohesion';
 
@@ -102,8 +102,8 @@ export function projectedNetRating(team: Team): NetRatingProjection {
   const predSpc = assignments.reduce((sum, { player, minutes }) => sum + computeSpacing(player) * minutes, 0) / totalMinutes;
   const roleMinutes = assignments.reduce((sum, { player, minutes }) => {
     const hasRole =
-      RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) ||
-      PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]);
+      isRimProtector(player) ||
+      isPerimeterDefender(player);
     return hasRole ? sum + minutes : sum;
   }, 0);
   const defRoleShare = roleMinutes / totalMinutes;

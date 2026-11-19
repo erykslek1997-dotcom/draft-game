@@ -1,4 +1,6 @@
 import type { DefensiveRole, PlayerSpan, Position } from '../data/schema';
+import { envVar } from './env';
+import { skill } from './skills';
 import { eraBaseline, eraBlocksPerGame, LEAGUE_PACE_BASELINE, reboundAvailabilityFactor, stealRateEraResidual } from './era';
 
 /**
@@ -58,6 +60,8 @@ const DEFENSIVE_ROLE_TYPICAL_ACTIVITY: Record<DefensiveRole, number> = {
   Chaser: 7.4,
   'Low Activity': 1, // unused — base weight is 0
 };
+/** 2026-11-18, labels → data (measuring): the role tag's share of the box defense read (1 = as is). */
+const DEF_ROLE_WEIGHT = Number(envVar('DEF_ROLEW') ?? 1);
 const ROLE_SCALE_MIN = 0.5;
 const ROLE_SCALE_MAX = 1.8;
 
@@ -143,7 +147,23 @@ export function defensiveBoxParts(span: PlayerSpan): {
       : baseWeight *
         Math.max(ROLE_SCALE_MIN, Math.min(ROLE_SCALE_MAX, activity / DEFENSIVE_ROLE_TYPICAL_ACTIVITY[defensiveRole]));
 
-  return { stealActivity, blockActivity, activity, rebounding, roleWeight };
+  return { stealActivity, blockActivity, activity, rebounding, roleWeight: skillRoleWeight(span) ?? roleWeight * DEF_ROLE_WEIGHT };
+}
+
+/**
+ * 2026-11-18, labels → data (measuring; the role weight carries real information — removing it took
+ * the D-TAL judge 0.824 → 0.803): for a window from 1996-97 on the role term comes from its skills
+ * instead of its tag — 0.5 rim protection + 0.3 point of attack + 0.2 help, set to the tag term's own
+ * mean (3.59) and spread (3.45) over those windows, floored at 0. `DEF_ROLE_SKILL=1` on.
+ */
+const DEF_ROLE_SKILL = envVar('DEF_ROLE_SKILL') === '1';
+const SKILL_ROLE = { mean: 3.591, sd: 3.45, compMean: 0.501, compSd: 0.18 };
+function skillRoleWeight(span: PlayerSpan): number | null {
+  if (!DEF_ROLE_SKILL) return null;
+  const rp = skill(span, 'rimProtect'), poa = skill(span, 'pointOfAttack'), help = skill(span, 'help');
+  if (rp === null || poa === null || help === null) return null;
+  const comp = (0.5 * rp + 0.3 * poa + 0.2 * help) / 100;
+  return Math.max(0, SKILL_ROLE.mean + ((comp - SKILL_ROLE.compMean) * SKILL_ROLE.sd) / SKILL_ROLE.compSd);
 }
 
 export function computeDefensiveImpact(span: PlayerSpan): number {

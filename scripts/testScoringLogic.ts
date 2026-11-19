@@ -1,5 +1,6 @@
 import { players } from '../src/data/players';
-import { autoAssignRotation } from '../src/engine/rotation';
+import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
+import { reviewAdjustment } from '../src/engine/reviewRules';
 import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, benchFloorAdjustment, eraAdjustment, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
 import { liftAdjustment } from '../src/engine/teammateLift';
 import { heliocentricAdjustment } from '../src/engine/heliocentric';
@@ -103,7 +104,9 @@ const recomputedOverall = Math.round(
     // 2026-11-11: the weakest reserve's card number.
     benchFloorAdjustment(fullRoster) +
     // 2026-11-11: partial decade-drift correction.
-    eraAdjustment(fullRoster),
+    eraAdjustment(fullRoster) +
+    // 2026-11-19: the user's review rules (reviewRules.ts).
+    reviewAdjustment(primaryStarters(fullRoster).map((a) => a.player)),
 );
 // 2026-11-11: within one point — the parts are read rounded, Overall from their exact values, so a
 // team sitting near a .5 (this one moved there when the lineup search changed) can round apart.

@@ -1,8 +1,9 @@
+import { defenderProfile } from './liveDefense';
+import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand, skill } from './skills';
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
 import { ballHandlerCost } from './ballHandling';
-import { RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES } from '../data/schema';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -46,6 +47,7 @@ import { fitScore, ELITE_SCORING_GRAVITY_OTAL, ELITE_PRIMARY_CREATOR_THRESHOLD }
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter } from './starterStandard';
 import spanContext from '../data/spanContext.json';
 import { envVar } from './env';
+import { reviewAdjustment } from './reviewRules';
 export type { FitScoreResult, FitScoreComponents } from './fit';
 
 /** Minimum defensive-impact score (box-score activity + rebounding + role weight) required,
@@ -56,14 +58,14 @@ const PERIMETER_DEFENDER_IMPACT_THRESHOLD = 10;
 
 function isStrongRimProtector(player: { defensiveRole: string }): boolean {
   return (
-    RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
+    isRimProtector(player as PlayerSpan) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= RIM_PROTECTOR_IMPACT_THRESHOLD
   );
 }
 
 function isStrongPerimeterDefender(player: { defensiveRole: string }): boolean {
   return (
-    PERIMETER_DEFENDER_ROLES.includes(player.defensiveRole as (typeof PERIMETER_DEFENDER_ROLES)[number]) &&
+    isPerimeterDefender(player as PlayerSpan) &&
     computeDefensiveImpact(player as Parameters<typeof computeDefensiveImpact>[0]) >= PERIMETER_DEFENDER_IMPACT_THRESHOLD
   );
 }
@@ -318,9 +320,7 @@ export function benchDepthScore(team: Team): number {
     ) / deploymentMinutes * 100
     : 0;
 
-  const hasCreator = activeBench.some(({ player }) =>
-    ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'].includes(player.offensiveArchetype),
-  );
+  const hasCreator = activeBench.some(({ player }) => isCreator(player));
   const hasSpacer = activeBench.some(({ player }) => isPlusShooter(player));
   const hasDefensiveRole = activeBench.some(({ player }) =>
     isStrongPerimeterDefender(player) || isStrongRimProtector(player),
@@ -373,6 +373,7 @@ function benchBoostedWeightedAverage(
   valueFor: (player: PlayerSpan, slot: Position) => number,
   applyFitMultiplier: boolean,
   benchWeight: number = BENCH_INFLUENCE_BOOST,
+  roleWeight?: (player: PlayerSpan, slot: Position) => number,
 ): number {
   const assignments = allAssignments(team);
   const fullMinutes = STARTER_SLOTS.length * GAME_MINUTES;
@@ -383,7 +384,7 @@ function benchBoostedWeightedAverage(
   const weighted = assignments.reduce((sum, { slot, player, minutes }) => {
     rawAssignedMinutes += minutes;
     const isBench = !starterKeys.has(`${slot}|${player.id}`);
-    const effectiveMinutes = isBench ? minutes * benchWeight : minutes;
+    const effectiveMinutes = (isBench ? minutes * benchWeight : minutes) * (roleWeight ? roleWeight(player, slot) : 1);
     weightSum += effectiveMinutes;
     const fitMultiplier = applyFitMultiplier ? positionFitMultiplier(player, slot) : 1;
     return sum + valueFor(player, slot) * fitMultiplier * effectiveMinutes;
@@ -484,7 +485,7 @@ function starterSelfCreation(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, selfCreationFgByYear);
   const proxy = selfCreationProxy(player);
   if (measured == null) return proxy * 100;
-  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  const floor = ((selfCreatorLevel(player) ?? (PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : 0)) >= 0.85) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
   return Math.max(measured, floor) * 100;
 }
 
@@ -639,15 +640,44 @@ export function interiorStrength(rimPressure: number, rebounding: number, size: 
  * best first, weighs 30/24/18/15/13%; the bench adds its minutes-weighted average at
  * `STAR_OTAL_BENCH_SHARE`.
  */
-const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13];
-const STAR_OTAL_BENCH_SHARE = 0.18;
+/** 2026-11-18 (measuring, the supporting cast: real offense beats both engine and game when the rest of
+ * the top eight is strong): `OFF_STAR_FLAT` blends these weights toward an even 20% each (0 = as is). */
+const OFF_STAR_FLAT = Number(envVar('OFF_STAR_FLAT') ?? 0);
+const STAR_OTAL_WEIGHTS = [0.3, 0.24, 0.18, 0.15, 0.13].map((w) => w + (0.2 - w) * OFF_STAR_FLAT);
+const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
+
+/**
+ * 2026-11-19 (the user's review: Jordan's team at Offense 59, Kobe + Tatum + Love at 93 — "za dużo
+ * nasrane"): a five shares one ball. Each starter's O-TAL splits into an on-ball part (his usage
+ * demand, `dataUsageDemand`, as a share of 0.6 — Curry 2015-17 reads 1) and an off-ball part. Ranked
+ * by demand, the first player's on-ball part counts in full, the next ones' less and less
+ * (`OFF_BALL` = how much: 0 off, 1 = the second at 0.7, third 0.4, the rest 0.2); the off-ball part
+ * (shooting, cutting) always counts. `OFF_TOP` adds that much to the best player's weight in the
+ * star-weighted blend (30% today), so the star lifts the team more.
+ */
+const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
+const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
+const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0);
+const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
+function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
+  if (!OFF_BALL) return entries.map((e) => e.value);
+  // `OFF_BALL_SHOOT`: a catch-and-shoot scorer's usage is partly off the ball (Dirk, Klay) — that share of
+  // his on-ball part goes away at a spot-up skill of 90 (none at 50), as in the second-handler cost.
+  const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
+  const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6) * (1 - OFF_BALL_SHOOT * shoot(p));
+  const order = [...entries].sort((a, b) => share(b.player) - share(a.player));
+  return order.map((e, rank) => {
+    const on = share(e.player);
+    const keep = 1 - OFF_BALL * (1 - BALL_RANK_KEEP[Math.min(rank, BALL_RANK_KEEP.length - 1)]);
+    return e.value * (1 - on + on * keep);
+  });
+}
 function starWeightedOffensiveTalent(team: Team): number {
   const starters = primaryStarters(team);
   if (starters.length === 0) return 0;
-  const values = starters
-    .map(({ player, slot }) => computeOffensiveTalent(player) * positionFitMultiplier(player, slot))
+  const values = ballBudgetValues(starters.map(({ player, slot }) => ({ player, value: computeOffensiveTalent(player) * positionFitMultiplier(player, slot) })))
     .sort((a, b) => b - a);
-  const weights = STAR_OTAL_WEIGHTS.slice(0, values.length);
+  const weights = (OFF_TOP ? STAR_OTAL_WEIGHTS.map((w, i) => (i === 0 ? w + OFF_TOP : w)) : STAR_OTAL_WEIGHTS).slice(0, values.length);
   const weightSum = weights.reduce((sum, w) => sum + w, 0);
   const starterValue = values.reduce((sum, v, i) => sum + v * weights[i], 0) / weightSum;
   const starterKeys = new Set(starters.map((s) => `${s.slot}|${s.player.id}`));
@@ -807,6 +837,13 @@ export function offensiveCohesion(team: Team): OffensiveCohesionResult {
  * spread with less drift (mean 78.9, teams above 90: 3 -> 14 of 192). Same Billups/White/E. Jones/
  * Pippen shell: Jokic 77 -> 83, Gobert stays 72 (engine floor).
  */
+/** 2026-11-18, off (the user: "Tak", after the measurement): the term over-read star-plus-thin-cast
+ * offenses against real ORtg (top-usage star with a weak rest: real 1.0 worse than the engine said).
+ * Offense vs real ORtg 0.7946 → 0.8042, Overall vs real SRS 0.8712 → 0.8710, game vs engine 0.68 →
+ * 0.67; Jokic vs Gobert in the same shell still 15 Offense apart (24 with it; 5 when it was added —
+ * the star-weighted O-TAL since carries most of it). AI rosters' Overall spread 2.61 → 2.49: to be
+ * widened by AI variety, not by this term. `OFF_SUPERSTAR=1` = the old term. */
+const OFF_SUPERSTAR = Number(envVar('OFF_SUPERSTAR') ?? 0);
 const MAX_SUPERSTAR_ENGINE_BONUS = 6;
 const NO_SUPERSTAR_ENGINE_MALUS = 2;
 const SUPERSTAR_ENGINE_OTAL_START = 85;
@@ -826,7 +863,7 @@ export function superstarEngineBonus(team: Team): number {
     );
     best = Math.max(best, readiness * Math.min(1, minutes / STARTER_MINUTES));
   }
-  return best * (MAX_SUPERSTAR_ENGINE_BONUS + NO_SUPERSTAR_ENGINE_MALUS) - NO_SUPERSTAR_ENGINE_MALUS;
+  return (best * (MAX_SUPERSTAR_ENGINE_BONUS + NO_SUPERSTAR_ENGINE_MALUS) - NO_SUPERSTAR_ENGINE_MALUS) * OFF_SUPERSTAR;
 }
 
 /**
@@ -997,6 +1034,11 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  * back. Cohesion, the superstar bonus and the weak-starter penalty stay (dropping cohesion: game 0.7922).
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
+const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0.15);
+const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0.35);
+/** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
+const OFF_COH = Number(envVar('OFF_COH') ?? 0); // 2026-11-19: off — it paid for a second and third elite scorer, the overload the user's review penalises; real ORtg r 0.766 → 0.769 without it.
+const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1006,9 +1048,20 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
     components.playmaking * OFFENSE_PLAYMAKING_BLEND_WEIGHT +
     components.selfCreation * OFFENSE_SELF_CREATION_BLEND_WEIGHT +
     components.mismatchStructure * OFFENSE_MISMATCH_STRUCTURE_BLEND_WEIGHT;
-  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus + superstarEngineBonus(team)));
-  const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team));
-  const raw = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
+  const blended = Math.max(0, Math.min(OFFENSE_RAW_TOP, rawBlend + offensiveCohesion(team).offenseScoreBonus * OFF_COH + superstarEngineBonus(team)));
+  const cappedBlended = Math.max(0, blended - weakOffensiveStarterPenalty(team) * OFF_WEAK);
+  const raw0 = ELITE_ENGINE_FLOOR_ON ? Math.max(cappedBlended, eliteOffensiveEngineFloorContribution(team)) : cappedBlended;
+  // 2026-11-19 (the user: "gracz z takim atakiem jak Jordan powinien dawać jakąś podłogę"): a soft floor
+  // under the best starter — the blend moves `OFF_FLOOR_W` of the way up to 0.9 × his O-TAL when it sits
+  // below that (Jordan's five read 71 raw against his 100). 0 = off.
+  const starO = Math.max(0, ...primaryStarters(team).map((e) => computeOffensiveTalent(e.player)));
+  const raw1 = raw0 + OFF_FLOOR_W * Math.max(0, 0.9 * starO - raw0);
+  // 2026-11-19 (the user: LeBron 2012-14 + McGrady 2001-03 at Offense 63 is too low): two elite scorers
+  // (both 88+ O-TAL) lift the floor further — `OFF_PAIR_W` of the way to 0.9 × their mean. Real teams
+  // rarely have such a pair, so the NBA judges barely see it.
+  const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
+  const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
@@ -1039,8 +1092,13 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
 // lifted the raw field 84.2 -> 85.2 on the same seeds.
 // Then the AI's lower cap reserve (stronger fifth starters) lifted it again, 85.2 -> 86.4.
 // 2026-10-07, stage 2b step 7: the new blend weights lift the raw field 0.6 on 60 AI drafts.
-const OFFENSE_RAW_MEAN = 85.0;
-const OFFENSE_RAW_SD = 8.5;
+// 2026-11-19: the ball budget (`OFF_BALL`) moves the raw field down 4.84 at 0.5 on 160 AI-drafted teams
+// (`scripts/_offmean.ts`); the mean follows so an average five keeps its Offense and only the shape moves.
+// 2026-11-19: on with the three offense changes (no cohesion bonus, ball budget 0.5, star floor 0.15) the
+// raw field of 160 AI-drafted teams moved 83.72 → 77.47; the mean follows (85 − 6.25).
+const OFFENSE_RAW_MEAN = Number(envVar('OFF_RAW_MEAN') ?? 78.75);
+// `OFF_RAW_MEAN` / `OFF_RAW_SD` (measurement): re-centre and re-spread the raw field after a change to the blend.
+const OFFENSE_RAW_SD = Number(envVar('OFF_RAW_SD') ?? 8.5);
 const DEFENSE_RAW_MEAN = 77.4;
 const DEFENSE_RAW_SD = 8.2;
 const DEFENSE_MEAN = 74.1;
@@ -1081,9 +1139,21 @@ const positionWeightedDefense = (p: PlayerSpan) => {
   const t = envVar('DEF_POS_ERA') === '0' ? 1 : Math.max(0, Math.min(1, (year - 1994) / (2008 - 1994)));
   return 50 + (1 + DEFENSE_POSITION_SHARE * (w[0] + (w[1] - w[0]) * t - 1)) * (d - 50);
 };
+/** 2026-11-18, defense by on-court role — the engine side of `liveGame.ts`'s `roleWeightedDefAnchor`
+ * (same knobs, so the game and the engine weigh a defender alike): the team's main rim protector
+ * (best `defenderProfile` rim among its starters) weighs `SIM_ROLE_RIM`, everyone else by the slot he
+ * plays (`SIM_ROLE_PG`, `SIM_ROLE_PF`). A weighted mean, so the scale stays put. On since 2026-11-18 at 1.6 / 0.6 (the user: better draft feel, direction right). */
+const ROLE_W = { rim: Number(envVar('SIM_ROLE_RIM') ?? 1.6), PG: Number(envVar('SIM_ROLE_PG') ?? 0.6), PF: Number(envVar('SIM_ROLE_PF') ?? 1) };
+const ROLE_ON = ROLE_W.rim !== 1 || ROLE_W.PG !== 1 || ROLE_W.PF !== 1;
 export function teamDefensiveTalentScore(team: Team): number {
+  let roleWeight: ((p: PlayerSpan, slot: Position) => number) | undefined;
+  if (ROLE_ON) {
+    const starters = primaryStarters(team);
+    const anchor = starters.reduce<PlayerSpan | null>((best, s) => (!best || defenderProfile(s.player).rim > defenderProfile(best).rim ? s.player : best), null);
+    roleWeight = (p, slot) => (anchor && p.id === anchor.id ? ROLE_W.rim : slot === 'PG' ? ROLE_W.PG : slot === 'PF' ? ROLE_W.PF : 1);
+  }
   return rescaleToFullRange(
-    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE),
+    benchBoostedWeightedAverage(team, positionWeightedDefense, true, BENCH_WEIGHT_DEFENSE, roleWeight),
     DEFENSE_SCORE_ANCHORS,
   );
 }
@@ -1456,7 +1526,6 @@ export function rotationScore(team: Team): RotationScoreResult {
   }
 
   const bench = benchWithMinutes(team).map((b) => b.player);
-  const startersRoles = starters.map((s) => s.player.defensiveRole);
 
   const spacingGap = !starters.some((s) => isPlusShooter(s.player));
   if (spacingGap && bench.some(isPlusShooter)) {
@@ -1465,8 +1534,8 @@ export function rotationScore(team: Team): RotationScoreResult {
     notes.push('Bench brings shooting the starting five lacks.');
   }
 
-  const rimGap = !startersRoles.some((r) => RIM_PROTECTOR_ROLES.includes(r));
-  if (rimGap && bench.some((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) {
+  const rimGap = !starters.some((s) => isRimProtector(s.player));
+  if (rimGap && bench.some((p) => isRimProtector(p))) {
     score += 7;
     components.benchRimCoverage = 7;
     notes.push('Bench brings rim protection the starting five lacks.');
@@ -2062,7 +2131,9 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-11: the weakest reserve's card number (see BENCH_FLOOR).
     benchFloorAdjustment(team) +
     // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
-    eraAdjustment(team);
+    eraAdjustment(team) +
+    // 2026-11-18: the user's review rules (reviewRules.ts; REVIEW_W, off by default).
+    reviewAdjustment(primaryStarters(team).map((a) => a.player));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

@@ -4,6 +4,7 @@ import { computeOffensiveProfile } from './offensiveProfile';
 import { boxRatesForSpan, leagueFtRateForSpan } from './boxRatesLookup';
 import { rimPressureEvidenceWeight } from '../data/historicalRimPressureEvidence';
 import { computeFinishing } from './finishing';
+import { envVar } from './env';
 
 /**
  * "Rim pressure" — how much a player forces the defense to send help at the rim / build its game
@@ -99,11 +100,17 @@ function freeThrowRateFactor(span: PlayerSpan): number {
 /**
  * 0-100: how much this player collapses the defense at the rim. Selective — most spans read 0.
  */
+/** 2026-11-18, labels → data (measuring): with zone data (1996-97 on) the label gate goes and the
+ * rim data alone decides — a guard or wing who lives at the rim reads what his shots say.
+ * On (the user, 2026-11-18): judges unchanged (SRS 0.841, offense 0.8041), AI rosters' Overall spread
+ * 2.49 → 2.69. `RIM_DATA=0` = the label gate; pre-1997 keeps the label proxy below. */
+const RIM_DATA = envVar('RIM_DATA') !== '0';
 export function rimPressure(span: PlayerSpan): number {
-  const elig = ARCH_ELIGIBILITY[span.offensiveArchetype];
+  const prof0 = RIM_DATA ? computeOffensiveProfile(span) : null;
+  const elig = RIM_DATA && prof0!.hasZoneData ? 1 : ARCH_ELIGIBILITY[span.offensiveArchetype];
   if (!elig) return 0;
 
-  const prof = computeOffensiveProfile(span);
+  const prof = prof0 ?? computeOffensiveProfile(span);
   if (prof.hasZoneData) {
     const shareRamp = clamp((prof.rimShare - 0.3) / 0.2, 0, 1); // sags off <0.30, doubles >0.50
     if (shareRamp <= 0) return 0;

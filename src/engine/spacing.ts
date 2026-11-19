@@ -1,4 +1,5 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
+import { pullUpLevel, selfCreatorLevel } from './skills';
 import { normalizePlayerName } from '../data/schema';
 import { eraScaledThreePA, spanEndYears } from './era';
 import { players } from '../data/players';
@@ -215,10 +216,10 @@ const ARCHETYPE_SELF_CREATION: Partial<Record<OffensiveArchetype, number>> = {
 /** Ramped on FGA, not a cliff: a low-usage player carrying a creator tag isn't creating much. */
 const SELF_CREATION_USAGE_FLOOR = 11;
 const SELF_CREATION_USAGE_FULL = 16;
-const SELF_CREATION_ACCURACY_DISCOUNT = 0.035;
-const SELF_CREATION_VOLUME_KICKER = 0.3;
+const SELF_CREATION_ACCURACY_DISCOUNT = Number(envVar('SC_ACC') ?? 0.035);
+const SELF_CREATION_VOLUME_KICKER = Number(envVar('SC_VOL') ?? 0.3);
 const SELF_CREATION_RAW_VOLUME_GATE = 7;
-const SELF_CREATION_BONUS = 4;
+const SELF_CREATION_BONUS = Number(envVar('SC_BONUS') ?? 4);
 /** The bonus needs a real shooter under it — without these floors it lifts high-usage guards who
  * simply miss a lot (Westbrook, Wade), which is the exact failure `VOLUME_ACCURACY_HEADROOM`
  * exists to prevent. */
@@ -228,7 +229,7 @@ const SELF_CREATION_BONUS_MIN_VOLUME = 4;
 /** Exported for `scripts/compareSelfCreationMeasured.ts`, which weighs this archetype proxy
  * against the measured unassisted-shot rates in `selfCreationLookup.ts`. */
 export function selfCreationRate(span: PlayerSpan): number {
-  const archetypeWeight = ARCHETYPE_SELF_CREATION[span.offensiveArchetype] ?? 0;
+  const archetypeWeight = pullUpLevel(span) ?? (envVar('SKILL_CREATE_NOSPACE') === '1' ? null : selfCreatorLevel(span)) ?? ARCHETYPE_SELF_CREATION[span.offensiveArchetype] ?? 0;
   if (archetypeWeight === 0) return 0;
   const usage = (span.fga - SELF_CREATION_USAGE_FLOOR) / (SELF_CREATION_USAGE_FULL - SELF_CREATION_USAGE_FLOOR);
   return archetypeWeight * Math.max(0, Math.min(1, usage));

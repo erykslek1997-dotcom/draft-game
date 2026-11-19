@@ -171,9 +171,9 @@ function ridge(resid: (x: Row) => number, title: string) {
   for (const [k, v] of XtX) { const [i, j] = k.split(',').map(Number); if (i !== j) nb[i].push([j, v]); }
   for (let it = 0; it < 200; it++) for (let i = 0; i < n; i++) { let s = Xty[i]; for (const [j, v] of nb[i]) s -= v * b[j]; b[i] = s / ((XtX.get(`${i},${i}`) ?? 0) + LAMBDA); }
   const order = names.map((nm, i) => ({ nm, v: b[i], w: w[i] })).filter((p) => p.w >= 4).sort((p, q) => p.v - q.v);
-  console.log(`\n${title} — sim OVERRATES their real teams (ridge λ ${LAMBDA}, 4+ weighted seasons):`);
+  console.log(`\n${title} — OVERRATES their real teams (ridge λ ${LAMBDA}, 4+ weighted seasons):`);
   order.slice(0, 15).forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
-  console.log(`${title} — sim UNDERRATES:`);
+  console.log(`${title} — UNDERRATES:`);
   order.slice(-15).reverse().forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
   const spansOf = new Map<string, PlayerSpan[]>();
   for (const x of kept) for (const sp of x.spans) spansOf.set(sp.playerName, [...(spansOf.get(sp.playerName) ?? []), sp]);
@@ -188,10 +188,38 @@ function ridge(resid: (x: Row) => number, title: string) {
     const pts = order.map((pl) => ({ v: pl.v, x: mean(spansOf.get(pl.nm)!.map(f).filter((z): z is number => z !== null && Number.isFinite(z))) })).filter((q) => Number.isFinite(q.x));
     line.push(`${k} ${corr(pts.map((q) => q.x), pts.map((q) => q.v)).toFixed(2)}`);
   }
-  console.log(`  residual follows (r, + = sim underrates players high in it): ${line.join(' | ')}`);
+  console.log(`  residual follows (r, + = underrates players high in it): ${line.join(' | ')}`);
 }
 ridge(res, 'Whole game (SRS)');
 const slopeO = corr(kept.map((x) => x.simO), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.simO));
 ridge((x) => x.ortg - slopeO * x.simO, 'Offense (ORtg)');
 const slopeD = corr(kept.map((x) => x.simD), kept.map((x) => x.drtg)) * sd(kept.map((x) => x.drtg)) / sd(kept.map((x) => x.simD));
 ridge((x) => x.drtg - slopeD * x.simD, 'Defense (DRtg)');
+// 2026-11-18: the same per-player read for the ENGINE's Offense score — does the engine share the sim's
+// miss on high-usage scorers and pass-first non-shooters, or is it the game's alone?
+const slopeEO = corr(kept.map((x) => x.off), kept.map((x) => x.ortg)) * sd(kept.map((x) => x.ortg)) / sd(kept.map((x) => x.off));
+ridge((x) => x.ortg - slopeEO * x.off, 'ENGINE Offense score (ORtg)');
+// 2026-11-18 (hypothesis: a high-usage scorer is worth more next to weak teammates — he takes shots
+// that would go to them): offense residual (real ORtg over what each side says) by the team's top
+// usage and the O-TAL of the rest of its top eight, minutes-weighted.
+{
+  const rO = (x: Row) => x.ortg - slopeO * x.simO, rE = (x: Row) => x.ortg - slopeEO * x.off;
+  const cell = (x: Row) => {
+    const usg = x.spans.map((sp) => realSpan(sp)?.usg ?? 0);
+    const top = usg.indexOf(Math.max(...usg));
+    const rest = x.spans.map((sp, i) => ({ o: computeOffensiveTalent(sp), w: x.minShare[i] })).filter((_, i) => i !== top);
+    const restO = rest.reduce((t, r) => t + r.o * r.w, 0) / rest.reduce((t, r) => t + r.w, 0);
+    return { usg: usg[top], restO };
+  };
+  const cells = kept.map((x) => ({ x, ...cell(x) }));
+  const q = (v: number[], p: number) => [...v].sort((a, b) => a - b)[Math.floor(p * v.length)];
+  const u1 = q(cells.map((c) => c.usg), 1 / 3), u2 = q(cells.map((c) => c.usg), 2 / 3), o1 = q(cells.map((c) => c.restO), 1 / 3), o2 = q(cells.map((c) => c.restO), 2 / 3);
+  console.log(`\nOffense miss by top usage × the rest's O-TAL (+ = real better than said). Usage cuts ${u1.toFixed(1)} / ${u2.toFixed(1)}, rest O-TAL cuts ${o1.toFixed(1)} / ${o2.toFixed(1)}:`);
+  console.log('  top usage      rest O-TAL      n    game    engine');
+  for (const [un, uf] of [['low', (u: number) => u < u1], ['mid', (u: number) => u >= u1 && u < u2], ['high', (u: number) => u >= u2]] as const)
+    for (const [on, of] of [['weak', (o: number) => o < o1], ['mid', (o: number) => o >= o1 && o < o2], ['strong', (o: number) => o >= o2]] as const) {
+      const g = cells.filter((c) => uf(c.usg) && of(c.restO));
+      if (g.length < 10) continue;
+      console.log(`  ${un.padEnd(14)} ${on.padEnd(12)} ${String(g.length).padStart(4)}  ${mean(g.map((c) => rO(c.x))).toFixed(2).padStart(6)}  ${mean(g.map((c) => rE(c.x))).toFixed(2).padStart(7)}`);
+    }
+}

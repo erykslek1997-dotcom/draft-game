@@ -35,6 +35,8 @@ import { runtimeDefenseTalentPercentile, runtimeImpliedDefensePercentile } from 
 // of this cycle, so don't reorder this block without re-testing a cold browser load.
 import { portabilityBonus, roleScalabilityBonus } from './portabilityCorrection';
 import { envVar } from './env';
+import { skill, type Skill } from './skills';
+import { usageForSpan } from './usageLookup';
 /** See `tierCalibration.ts` ENGINE_BLOCKS_OFF (2026-11-12, on): no grade ceiling, no small-role cap. */
 const ENGINE_BLOCKS_OFF = envVar('ENGINE_BLOCKS_OFF') !== '0';
 
@@ -553,7 +555,7 @@ export function lowUsageEfficiencyFactor(fga: number): number {
 const EFFICIENCY_SELF_CREATION_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set(['Roll & Cut Big']);
 const EFFICIENCY_SELF_CREATION_MIN_FACTOR = 0.6;
 function assistedEfficiencyFactor(span: PlayerSpan): number {
-  if (!EFFICIENCY_SELF_CREATION_ARCHETYPES.has(span.offensiveArchetype)) return 1;
+  if (!talentGate(span, 'finisher', () => EFFICIENCY_SELF_CREATION_ARCHETYPES.has(span.offensiveArchetype))) return 1;
   const percentile = selfCreationPercentileForPortability(span);
   if (percentile >= SELF_CREATION_BONUS_PERCENTILE_THRESHOLD) return 1;
   const shortfall = (SELF_CREATION_BONUS_PERCENTILE_THRESHOLD - percentile) / SELF_CREATION_BONUS_PERCENTILE_THRESHOLD;
@@ -667,7 +669,7 @@ function usageOffenseScale(span: PlayerSpan): number {
       }
     }
   }
-  if (scale < 1.0 && !PLAYMAKER_ARCHETYPES.has(span.offensiveArchetype)) return 1.0;
+  if (scale < 1.0 && !talentGate(span, 'playmaker', () => PLAYMAKER_ARCHETYPES.has(span.offensiveArchetype))) return 1.0;
   return scale;
 }
 
@@ -781,7 +783,7 @@ const SELF_CREATION_BONUS_ARCHETYPES: ReadonlySet<OffensiveArchetype> = new Set(
 /** Exported for `scripts/checkSelfCreationTalentBonus.ts`'s blast-radius report — same pattern
  * as `extremeUsageRatioPenalty` above. */
 function selfCreationTalentBonus(span: PlayerSpan): number {
-  if (!SELF_CREATION_BONUS_ARCHETYPES.has(span.offensiveArchetype)) return 0;
+  if (!talentGate(span, 'creator', () => SELF_CREATION_BONUS_ARCHETYPES.has(span.offensiveArchetype))) return 0;
   const excess = selfCreationPercentileForPortability(span) - SELF_CREATION_BONUS_PERCENTILE_THRESHOLD;
   return excess > 0 ? Math.min(MAX_SELF_CREATION_BONUS, excess * SELF_CREATION_BONUS_SCALE) : 0;
 }
@@ -1341,7 +1343,7 @@ function usagePenaltyDefenseFactor(normalizedDefense: number): number {
 }
 
 function highUsageLowPlaymakingPenalty(span: PlayerSpan, normalizedDefense: number): number {
-  if (OFF_BALL_USAGE_PENALTY_EXEMPT_ARCHETYPES.has(span.offensiveArchetype)) return 0;
+  if (talentGate(span, 'offBallRole', () => OFF_BALL_USAGE_PENALTY_EXEMPT_ARCHETYPES.has(span.offensiveArchetype))) return 0;
   if (span.fga < HIGH_USAGE_FGA_THRESHOLD) return 0;
   const gateFactor = usagePenaltyDefenseFactor(normalizedDefense);
   if (gateFactor <= 0) return 0;
@@ -2466,4 +2468,26 @@ export function computeUncappedOffensiveTalent(rawSpan: PlayerSpan): number {
   const result = Math.max(0, Math.round(computeUncappedOffensiveTalentBase(span) + namedShiftFor(span).offense));
   if (namedShiftRegistered()) shiftedUncappedOffensiveTalentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * 2026-11-18 (labels → data, `SKILL_TAL=1`): the four label gates in this file read the skills
+ * (`skills.json` / `skillsPre.json`) instead; a window without the skills keeps its label.
+ *  - finisher (assisted-efficiency discount): real assisted FG% ≥ 65% (1996-97 on) and roll ≥ 70; before that the label.
+ *  - playmaker (low-usage scale below 1): handling ≥ 80.
+ *  - creator (self-creation bonus): handling ≥ 70 or selfCreation ≥ 76.
+ *  - offBallRole (exempt from the high-usage-low-playmaking penalty): spotUp, offBall, post or roll ≥ 70
+ *    and handling < 70 and selfCreation < 76 — he scores without running the offense or creating his own shot.
+ */
+function talentGate(span: PlayerSpan, kind: 'finisher' | 'playmaker' | 'creator' | 'offBallRole', label: () => boolean): boolean {
+  if ((envVar('SKILL_TAL') ?? '1') !== '1') return label();
+  const g = (k: Skill) => skill(span, k);
+  const h = g('handling');
+  if (h === null) return label();
+  switch (kind) {
+    case 'finisher': { const u = usageForSpan(span); return u ? u.assistedFgPct >= 0.65 && (g('roll') ?? 0) >= 70 : label(); }
+    case 'playmaker': return h >= 80;
+    case 'creator': return h >= 70 || (g('selfCreation') ?? 0) >= 76;
+    case 'offBallRole': return h < 70 && (g('selfCreation') ?? 0) < 76 && (['spotUp', 'offBall', 'post', 'roll'] as Skill[]).some((k) => (g(k) ?? 0) >= 70);
+  }
 }

@@ -1,4 +1,5 @@
 import { RIM_PROTECTOR_ROLES, type Position, type PlayerSpan, type DefensiveRole } from '../data/schema';
+import { isRimProtector } from './skills';
 import { eraBlocksPerGame } from './era';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveTalent, hasEraOverrideDefenseFloor } from './defensiveTalent';
@@ -98,7 +99,7 @@ function roleKey(position: Position, role: DefensiveRole): string {
 const starterCaliberByRoleKey = new Map<string, PlayerSpan[]>();
 for (const pos of POSITIONS) {
   for (const player of starterCaliberByPosition[pos]) {
-    if (!RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) continue;
+    if (!isRimProtector(player)) continue;
     const key = roleKey(pos, player.defensiveRole);
     const bucket = starterCaliberByRoleKey.get(key);
     if (bucket) bucket.push(player);
@@ -146,7 +147,7 @@ function averageDtalFor(player: PlayerSpan): number {
   return Math.min(HUNT_BAR_CAP, averageDtalForUncapped(player));
 }
 function averageDtalForUncapped(player: PlayerSpan): number {
-  if (RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number])) {
+  if (isRimProtector(player)) {
     const bar = rimProtectorBar(player);
     if (bar !== null) return bar;
   }
@@ -374,7 +375,7 @@ const HEADROOM_NEUTRAL = 0.35;
 const REAL_SHOT_BLOCKER_BPG = 1.5;
 function isRealShotBlocker(player: PlayerSpan): boolean {
   return (
-    RIM_PROTECTOR_ROLES.includes(player.defensiveRole as (typeof RIM_PROTECTOR_ROLES)[number]) &&
+    isRimProtector(player) &&
     eraBlocksPerGame(player) >= REAL_SHOT_BLOCKER_BPG
   );
 }

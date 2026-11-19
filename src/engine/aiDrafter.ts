@@ -1,11 +1,12 @@
 import { isTwilightWindow } from './veteran';
+import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill } from './skills';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
 import { offPositionMinutes } from './minuteAllocation';
 import { STRUCTURED_AI } from './structuredMode';
 import { BACKUP_PAIRS, backupOptions, bigThreat, startedIrl, canStillComplete, keepsRoles, pairsFor, playsGuard, readStructure, STRUCTURE, STRUCTURE_STAR_TAL } from './structuredRoster';
 import { isRealRimProtector } from './rimProtection';
-import { HIGH_USAGE_ARCHETYPE_WEIGHT, RIM_PROTECTOR_ROLES, PERIMETER_DEFENDER_ROLES, normalizePlayerName } from '../data/schema';
+import { normalizePlayerName } from '../data/schema';
 import {
   STARTER_SLOTS,
   ROSTER_SIZE,
@@ -22,7 +23,7 @@ import { computeOffensiveTalent, computeDefensiveTalent } from './talent';
 // the displayed badge shows), not raw `computeTalent` — see that function's own docstring
 // (grades.ts) for why.
 import { effectiveTalent } from './grades';
-import { autoAssignRotation, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
+import { autoAssignRotation, bestPrimaryAssignment, projectedStarterValue, totalMinutesForPlayer, MAX_MINUTES_PER_PLAYER, GAME_MINUTES } from './rotation';
 import { maxSustainableMinutes } from './durability';
 import { computeOffensivePortability, computeDefensivePortability } from './portability';
 import { computeSpacing } from './spacing';
@@ -50,6 +51,16 @@ import { envVar } from './env';
 // AI pick can be traced to the exact term that inflated (or sank) its score.
 // ---------------------------------------------------------------------------
 let aiDraftDebug = false;
+const AI_NEED = Number(envVar('AI_NEED') ?? 1);
+const AI_BENCH_WASTE = Number(envVar('AI_BENCH_WASTE') ?? 0);
+function benchFgaWaste(p: PlayerSpan, roster: PlayerSpan[]): number {
+  const starters = Object.values(bestPrimaryAssignment(roster).assignment).filter((x): x is PlayerSpan => !!x);
+  const mySlots = (['PG', 'SG', 'SF', 'PF', 'C'] as const).filter((sl) => { const c = positionCompetence(p, sl); return c === 'natural' || c === 'full'; });
+  if (!mySlots.length) return 0;
+  const t = effectiveTalent(p);
+  const blocked = mySlots.every((sl) => starters.some((st) => st.primaryPosition === sl && effectiveTalent(st) >= t - 3));
+  return blocked ? AI_BENCH_WASTE * p.fga * (1 - 14 / 34) : 0;
+}
 export function setAiDraftDebug(on: boolean): void {
   aiDraftDebug = on;
 }
@@ -635,7 +646,7 @@ interface NeedContext {
  * 1) count — a lead guard (Primary/Secondary Ball Handler, weight 0.5/0.25) creates offense for
  * teammates, not necessarily his own shot off the dribble, which is the specific "can go get a
  * bucket himself" trait a bench scorer needs when the starters' half-court sets aren't running. */
-const isSelfCreatorArchetype = (p: PlayerSpan) => (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) >= 1;
+const isSelfCreatorArchetype = (p: PlayerSpan) => isSelfCreatorFull(p);
 
 /** Measured against the real in-game pool (`draftPool.json`, ~3,100 spans): apg reads p50=2.9 /
  * p75=4.7 / p90=6.7 / p95=8.2 — 7.0 sits just past p90, "genuinely elite playmaking rate," not a
@@ -781,9 +792,9 @@ export function assessNeeds(roster: PlayerSpan[]): NeedContext {
         ? 50
         : starterPlayers.reduce((sum, p) => sum + teamSpacingValue(p), 0) / starterPlayers.length,
     // 2026-10-02: a rim protector by the numbers (rimProtection.ts), not by the role label.
-    lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))),
-    perimeterDefenderStarterCount: starterPlayers.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)).length,
-    usageWeight: starterPlayers.reduce((sum, p) => sum + (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0), 0),
+    lacksRimProtection: !starterPlayers.some((p) => isRealRimProtector(p, isRimProtector(p))),
+    perimeterDefenderStarterCount: starterPlayers.filter((p) => isPerimeterDefender(p)).length,
+    usageWeight: starterPlayers.reduce((sum, p) => sum + usageWeight(p), 0),
     avgDefensivePortability:
       starterPlayers.length === 0
         ? 50
@@ -1080,6 +1091,26 @@ export function playoffBpmDraftBonus(p: PlayerSpan): number {
 }
 
 const ELITE_PERIMETER_ENGINE_ARCHETYPES = new Set(['Primary Ball Handler', 'Shot Creator']);
+/**
+ * 2026-11-18 (labels → data, `SKILL_AI=1`): the four role gates of the early-round bonuses and
+ * penalties read the skills; a window without them keeps its label.
+ *  - post (post-engine bonus): post ≥ 85.
+ *  - engine (perimeter-engine bonus): handling ≥ 86 or selfCreation ≥ 89, and post < 85.
+ *  - scorer (sub-96 creator must prove elite offense): selfCreation ≥ 89 and handling < 86 — a scorer, not the playmaker.
+ *  - offBallShooter (specialist discount): spotUp or offBall ≥ 70, handling < 70, selfCreation < 76.
+ */
+function aiRole(p: PlayerSpan, kind: 'post' | 'engine' | 'scorer' | 'offBallShooter', label: () => boolean): boolean {
+  if (envVar('SKILL_AI') !== '1') return label();
+  const h = skill(p, 'handling');
+  if (h === null) return label();
+  const sc = skill(p, 'selfCreation') ?? 0, post = skill(p, 'post') ?? 0;
+  switch (kind) {
+    case 'post': return post >= 85;
+    case 'engine': return (h >= 86 || sc >= 89) && post < 85;
+    case 'scorer': return sc >= 89 && h < 86;
+    case 'offBallShooter': return ((skill(p, 'spotUp') ?? 0) >= 70 || (skill(p, 'offBall') ?? 0) >= 70) && h < 70 && sc < 76;
+  }
+}
 const ELITE_PERIMETER_ENGINE_TALENT_FLOOR = 96;
 const ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR = 90;
 const ELITE_PERIMETER_ENGINE_FGA_FLOOR = 17.5;
@@ -1093,7 +1124,7 @@ function elitePerimeterEngineBonus(p: PlayerSpan): number {
   if (p.fga < ELITE_PERIMETER_ENGINE_FGA_FLOOR) return 0;
   if (effectiveTalent(p) < ELITE_PERIMETER_ENGINE_TALENT_FLOOR) return 0;
   const offensiveTalent = computeOffensiveTalent(p);
-  if (p.offensiveArchetype === 'Post Scorer') {
+  if (aiRole(p, 'post', () => p.offensiveArchetype === 'Post Scorer')) {
     if (offensiveTalent < 88 || computeDefensiveTalent(p) >= 90) return 0;
     // The post-engine bump is meant for a workload a team can actually build around. Embiid's
     // 34-minute/load-managed spans keep their measured TAL but do not receive the same extra
@@ -1103,7 +1134,7 @@ function elitePerimeterEngineBonus(p: PlayerSpan): number {
     const postBonus = p.box.apg >= 6 ? ELITE_POST_PLAYMAKING_HUB_BONUS : ELITE_POST_SCORER_BONUS;
     return postBonus * workloadFactor;
   }
-  if (!ELITE_PERIMETER_ENGINE_ARCHETYPES.has(p.offensiveArchetype)) return 0;
+  if (!aiRole(p, 'engine', () => ELITE_PERIMETER_ENGINE_ARCHETYPES.has(p.offensiveArchetype))) return 0;
   if (offensiveTalent < ELITE_PERIMETER_ENGINE_OFFENSE_FLOOR) return 0;
   return Math.min(
     MAX_ELITE_PERIMETER_ENGINE_BONUS,
@@ -1269,7 +1300,7 @@ const MAX_OFF_BALL_SPECIALIST_PENALTY = 6.5;
  * and only discounts off-ball specialists below the all-time talent tier. */
 function earlyCoreRolePenalty(p: PlayerSpan): number {
   const talent = effectiveTalent(p);
-  if (p.offensiveArchetype === 'Shot Creator' && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
+  if (aiRole(p, 'scorer', () => p.offensiveArchetype === 'Shot Creator') && talent < NON_ELITE_CREATOR_TALENT_CEILING) {
     const offenseShortfall = Math.max(0, NON_ELITE_CREATOR_OFFENSE_REFERENCE - computeOffensiveTalent(p));
     const penalty = Math.min(
       MAX_NON_ELITE_CREATOR_PENALTY,
@@ -1277,7 +1308,7 @@ function earlyCoreRolePenalty(p: PlayerSpan): number {
     );
     return isValidatedPortableTwoWayWing(p) ? penalty * PORTABLE_TWO_WAY_WING_PENALTY_SCALE : penalty;
   }
-  if (OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
+  if (aiRole(p, 'offBallShooter', () => OFF_BALL_SHOOTER_ARCHETYPES.has(p.offensiveArchetype)) && talent < OFF_BALL_SPECIALIST_TALENT_REFERENCE) {
     return Math.min(
       MAX_OFF_BALL_SPECIALIST_PENALTY,
       (OFF_BALL_SPECIALIST_TALENT_REFERENCE - talent) * OFF_BALL_SPECIALIST_PENALTY_SCALE +
@@ -1679,6 +1710,9 @@ const WINDOW_FGA_RATE = Number(envVar('WINDOW_FGA_RATE') ?? 1.6);
  * edge while the cap is loose and `keepTight` once it's tight. The post-draft `optimizeSpans` then
  * spends what cap is left on the better windows.
  */
+// 2026-11-19: on (15 / 0.3) — 10 drafts: spread 3.13 → 3.41, stars' 90th-percentile pick 25 → 22, Kawhi 2015-17 taken.
+const AI_WIN_OTAL = Number(envVar('AI_WIN_OTAL') ?? 15);
+const AI_WIN_OW = Number(envVar('AI_WIN_OW') ?? 0.3);
 const WINDOW_EQUAL = { within: 5, withinBelowStar: 3, starPeak: 88, keepComfortable: 0.5, keepTight: 0.2 };
 
 function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; talent: number; windowValue: number; windowTalentCredit: number }>(ranked: T[]): T[] {
@@ -1701,7 +1735,15 @@ function uniqueRankedPlayers<T extends { player: PlayerSpan; value: number; tale
     const bestDraftEntry = entries[0];
     const peak = Math.max(...entries.map((entry) => entry.talent));
     const within = peak >= WINDOW_EQUAL.starPeak ? WINDOW_EQUAL.within : WINDOW_EQUAL.withinBelowStar;
-    const windowScore = (entry: T) => entry.windowValue + (peak - entry.talent <= within ? (peak - entry.talent) * entry.windowTalentCredit : 0);
+    // 2026-11-19 (the user: Kawhi 2013-15 — TAL 92, O 63 — taken over 2015-17 — TAL 95, O 96): two windows
+    // count as equal but for the price only when their offense is close too (`AI_WIN_OTAL` O-TAL apart at
+    // most); otherwise the better one keeps its whole TAL edge.
+    const peakO = AI_WIN_OTAL < Infinity ? Math.max(...entries.map((e) => computeOffensiveTalent(e.player))) : 0;
+    const equalWindow = (entry: T) => peak - entry.talent <= within && (AI_WIN_OTAL === Infinity || peakO - computeOffensiveTalent(entry.player) <= AI_WIN_OTAL);
+    // `AI_WIN_OW`: each O-TAL point a window gives up against the player's best offense costs that much
+    // (TAL hides offense: Kawhi's 3 TAL between 2013-15 and 2015-17 is 33 O-TAL).
+    const oGap = (entry: T) => (AI_WIN_OW ? Math.max(...entries.map((e) => computeOffensiveTalent(e.player))) - computeOffensiveTalent(entry.player) : 0);
+    const windowScore = (entry: T) => entry.windowValue + (equalWindow(entry) ? (peak - entry.talent) * entry.windowTalentCredit : 0) - AI_WIN_OW * oGap(entry);
     const window = entries.reduce((best, entry) => (windowScore(entry) > windowScore(best) ? entry : best), bestDraftEntry);
     const key = normalizePlayerName(bestDraftEntry.player.playerName);
     const preferredSpan = USER_VALIDATED_PEAK_SPANS.get(key);
@@ -1947,7 +1989,9 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 export const AI_PLAN = {
-  on: (envVar('AI_PLAN') ?? '0') === '1',
+  // 2026-11-19 (the user: "zrób żeby wszystko dobrze było w grze"): on everywhere, not only in the
+  // worker — auto-finish and the page's fallback pick drafted unplanned (a weaker AI). AI_PLAN=0 turns it off.
+  on: (envVar('AI_PLAN') ?? '1') === '1',
   // The structured test plans from the first pick (the user: two centres in the first two rounds,
   // Embiid left as a 19.9-FGA glue).
   fromRoster: STRUCTURED_AI ? 0 : 2,
@@ -2572,11 +2616,11 @@ function pickForAiSized(
       const deficitRatio = (AI_SPACING_RULES.threshold - needs.avgSpacing) / AI_SPACING_RULES.threshold;
       need += deficitRatio * (teamSpacingValue(p) / 100) * AI_SPACING_RULES.scale;
     }
-    if (needs.lacksRimProtection && isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole))) need += 0.6;
+    if (needs.lacksRimProtection && isRealRimProtector(p, isRimProtector(p))) need += 0.6;
     // A real contender stacks 2-3 perimeter defenders, not one — taper the bonus over the first
     // two starters rather than dropping it to zero the moment one is aboard (see
     // `perimeterDefenderStarterCount`'s own docstring). Third and beyond: nothing.
-    if (PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole)) {
+    if (isPerimeterDefender(p)) {
       const already = needs.perimeterDefenderStarterCount;
       // 2026-09-09: halved from 0.4/0.25 — the original was reaching cheap Point-of-Attack guards
       // (Kris Dunn eTAL 55 → pick ~99, Don Buse) well past their talent. The smaller nudge still
@@ -2585,7 +2629,7 @@ function pickForAiSized(
     }
     if (
       needs.usageWeight >= OFFENSE_HEAVY_USAGE_THRESHOLD &&
-      (isRealRimProtector(p, RIM_PROTECTOR_ROLES.includes(p.defensiveRole)) || PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole))
+      (isRealRimProtector(p, isRimProtector(p)) || isPerimeterDefender(p))
     ) {
       need += OFFENSE_HEAVY_DEFENSE_BONUS;
     }
@@ -2639,7 +2683,7 @@ function pickForAiSized(
     // actually thought they were worth.
     const talent = effectiveTalent(p);
     if (needs.usageWeight >= 2 && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
-      const usageDiscount = (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * 0.5;
+      const usageDiscount = usageWeight(p) * 0.5;
       // Option A (bench-shot-creator fix): this discount fires off `usageWeight`, which is
       // starter-only (see its own docstring) — it can't tell "competing with starters for
       // touches" apart from "this exact archetype is the one thing the bench still lacks," so
@@ -2664,7 +2708,7 @@ function pickForAiSized(
       need -= ELITE_PLAYMAKING_REDUNDANCY_DISCOUNT;
     }
     if (needs.hasSelfSufficientEngineStarter && talent < ELITE_TALENT_REDUNDANCY_EXEMPTION) {
-      need -= (HIGH_USAGE_ARCHETYPE_WEIGHT[p.offensiveArchetype] ?? 0) * SELF_SUFFICIENT_USAGE_DAMPENING;
+      need -= usageWeight(p) * SELF_SUFFICIENT_USAGE_DAMPENING;
     }
 
     // Ramp need's above-baseline influence (both bonuses and the redundancy discount) in over
@@ -2692,7 +2736,11 @@ function pickForAiSized(
     // peak still feels cap pressure, just softened, rather than being mechanically discounted
     // below a cheaper merely-very-good alternative the same way an ordinary star would be.
     const effectiveFgaPenalty = fgaPenalty * eliteTalentFgaPenaltyDampening(talent);
-    const talentTerm = talent * rampedNeed;
+    // 2026-11-18 (the user's review: stars slide, role players picked — Wade 95 passed over for up to
+    // 49 picks in every one of 10 drafts; Artest 79 at need ×3.2 out-valued him): `AI_NEED` scales how
+    // far the positional need multiplies talent (1 = as before, 0 = talent alone), scaled back so the
+    // average need keeps the value level the other terms were set against.
+    const talentTerm = AI_NEED === 1 ? talent * rampedNeed : talent * (1 + (rampedNeed - 1) * AI_NEED) * (rampedNeed > 0 ? 1 : 0);
     const fgaCost = p.fga * effectiveFgaPenalty;
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
@@ -2721,6 +2769,11 @@ function pickForAiSized(
       // under `BENCH_OFFENSE.floor` O-TAL is worth less, by how far under; one defensive specialist
       // (D-TAL `specialistD`+) is let through if the bench has none yet.
       benchOffense: inBenchRound ? benchOffenseAdjustment(p, roster, talentTerm) : 0,
+      // 2026-11-19 (the user's review: Howard 2009-11 behind Hakeem, 12 minutes for a star's shots):
+      // in the bench rounds a candidate whose every real position already has a starter at least as
+      // good will play a backup's minutes — his shots cost what they'd buy elsewhere (`AI_BENCH_WASTE`
+      // per FGA). A cheap backup (Ben Wallace behind Duncan) costs little.
+      benchFgaWaste: inBenchRound && AI_BENCH_WASTE ? -benchFgaWaste(p, roster) : 0,
     };
     const value =
       talentTerm - fgaCost + Object.values(adjustments).reduce((s, v) => s + v, 0);
@@ -2749,6 +2802,8 @@ function pickForAiSized(
   }
 
   scoredBySpan.sort((a, b) => b.value - a.value);
+  // Dev hook (scripts only): every candidate's value, for tracing a pick.
+  (globalThis as { __aiScoredHook?: (r: PlayerSpan[], e: typeof scoredBySpan) => void }).__aiScoredHook?.(roster, scoredBySpan);
   const scored = uniqueRankedPlayers(scoredBySpan);
 
   // `marginalStarterValue` (see its own docstring above) is expensive — an exact rotation

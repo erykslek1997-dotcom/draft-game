@@ -1,3 +1,4 @@
+import { envVar } from './env';
 import { estimatedMinutesPerGame } from './minutesPerGame';
 import type { PlayerSpan, Position } from '../data/schema';
 import { STARTER_SLOTS, positionFitMultiplier } from './positions';
@@ -34,7 +35,7 @@ const UNIT = 2;
 const EMERGENCY_FIT_COST = 400;
 const TIER_FLOOR_BONUS = 200;
 const USEFUL_BENCH_MINUTES = 12;
-const USEFUL_BENCH_TALENT_FLOOR = 55;
+const USEFUL_BENCH_TALENT_FLOOR = Number(envVar('ROT_BENCH_FLOOR') ?? 55);
 const USEFUL_BENCH_BONUS = 25;
 const BACKUP_REAL_MINUTES_MARGIN = 1;
 const PAST_OPTIMAL_TALENT_SHARE = 0.5;
@@ -62,7 +63,8 @@ const STARTER_CORE_BONUS = 60;
 // 2026-11-04: 12 -> 18 (25 cost the score-vs-game fit 0.03 R², 18 0.01; the user, Raleigh: Wembanyama 25 at centre + 10 at the four, which handed
 // Mark Eaton 23 minutes at centre): a starter's minutes stay at his own position unless a real gap
 // elsewhere needs him; Wembanyama now plays 34 at centre and Eaton 14.
-const OWN_SLOT_BONUS = 18;
+// 2026-11-19: 18 -> 10 (the user's rotations: Butler 28 at SF over Jalen Williams 20, Williams to SG; lineups judge 0.551 -> 0.559).
+const OWN_SLOT_BONUS = Number(envVar('ROT_OWN_SLOT') ?? 10);
 const STAR_FRESH_CEILING = 40;
 const STAR_FRESH_EXTRA = 2;
 

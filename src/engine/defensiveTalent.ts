@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { isLowActivity, skill, type Skill } from './skills';
 import { eraBlocksPerGame, spanEndYears } from './era';
 import { per36 } from './minutesPerGame';
 import { athleticismScoreForSpan } from './athleticismLookup';
@@ -593,7 +594,7 @@ function teamDefenseCorroborationFloor(span: PlayerSpan): number {
   const ctx = teamDefenseContextForSpan(span);
   if (!ctx || ctx.strength < TEAM_D_FLOOR_MIN_STRENGTH) return 0;
   if (ctx.meanSeasonMinutes < TEAM_D_FLOOR_MIN_SEASON_MINUTES) return 0;
-  if (span.defensiveRole === 'Low Activity' && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
+  if (isLowActivity(span) && ctx.strength < TEAM_D_FLOOR_LOW_ACTIVITY_STRENGTH) return 0;
   if (individualDefenseRate(span) === 0) {
     // Veto on the RAW real plus-minus, not the excess: a genuine turnstile reads negative DDPM/
     // RAPTOR, but a solid big can read a negative *excess* (real below what his box predicts)
@@ -1014,12 +1015,27 @@ const RECOGNIZED_DEFENDER_FULL_RATE = Number(envVar('DT_RFULL') ?? 0.6);
 // of 0.75 — LeBron 2012-14 82 -> 86, Kobe 2001-03 82 -> 87.
 /** 2026-10-30 (being measured, the user on Malone 1991-93 at 58 beside his 1997-99 at 88): how much
  * the accolade floor counts — 1 as before, 0 off. */
-const DTAL_RULES = { recognitionShare: 1, carry: true };
+const DTAL_RULES = { recognitionShare: Number(envVar('DT_RECOG') ?? 1), carry: true };
 function recognizedDefenderFloor(span: PlayerSpan): number {
   const rate = individualDefenseRate(span);
   if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
   const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  const floor = RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  return RECOGNITION_CONFIRM.on ? floor * recognitionConfirmed(span) : floor;
+}
+/**
+ * 2026-11-18 (the user: "nagrody potwierdzają, nie boostują"; the rule was made early on): the
+ * accolade floor counts only as far as the data confirms a good defender. The window's DBPM (half way
+ * to his career, as the DBPM source reads it): at `lo` or below nothing, at `hi` the full floor.
+ * Kobe 1996-2013 (DBPM 0.0, teams defended 33 points of D-TAL worse than his 83) loses it; Kirilenko
+ * (2.5) keeps it. A window with no DBPM (before 1973-74) keeps half. On (the user, 2026-11-18): D-TAL judge 0.810 → 0.824, game 0.65 → 0.69, lineups 0.543 → 0.548, SRS ±0.001. `DT_RCONF=0` = the old floor.
+ */
+const RECOGNITION_CONFIRM = { on: envVar('DT_RCONF') !== '0', lo: Number(envVar('DT_RCONF_LO') ?? 0), hi: Number(envVar('DT_RCONF_HI') ?? 2) };
+function recognitionConfirmed(span: PlayerSpan): number {
+  const r = realSpan(span);
+  if (r?.dbpm == null) return 0.5;
+  const dbpm = careerShrunkDbpm(span, r.dbpm);
+  return Math.max(0, Math.min(1, (dbpm - RECOGNITION_CONFIRM.lo) / (RECOGNITION_CONFIRM.hi - RECOGNITION_CONFIRM.lo)));
 }
 
 const RIM_PROTECTOR_MIN_BLOCKS = 1.6;
@@ -1123,13 +1139,17 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
  *   `NEIGHBOUR_WINDOW_SHARE` of the result.
  * The neighbouring windows come from `neighbourWindows.ts` (registered by fit.ts).
  */
-const NEIGHBOUR_WINDOW_SHARE = 0.25;
+const NEIGHBOUR_WINDOW_SHARE = Number(envVar('DT_NEIGH') ?? 0.25);
 onNeighbourWindowsRegistered(() => shiftedDefensiveTalentCache.clear());
 
 function neighbourAwareFloor(span: PlayerSpan): number {
   const rate = individualDefenseRateWithNeighbours(span);
-  if (rate <= 0) return 0;
-  return RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  if (rate <= 0 || DTAL_RULES.recognitionShare <= 0) return 0;
+  const top = RECOGNIZED_DEFENDER_FLOOR_MIN + (RECOGNIZED_DEFENDER_FLOOR_MAX - RECOGNIZED_DEFENDER_FLOOR_MIN) * DTAL_RULES.recognitionShare;
+  const floor = RECOGNIZED_DEFENDER_FLOOR_MIN + (top - RECOGNIZED_DEFENDER_FLOOR_MIN) * Math.min(1, rate / RECOGNIZED_DEFENDER_FULL_RATE);
+  // 2026-11-18: the same knobs as `recognizedDefenderFloor` — this second read of the accolade floor
+  // ignored them, so the D-TAL the team scores kept the full floor whatever they said.
+  return RECOGNITION_CONFIRM.on ? floor * recognitionConfirmed(span) : floor;
 }
 
 /**
@@ -1303,7 +1323,32 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
   const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, smoothed))));
-  const result = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const final = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
+}
+
+/**
+ * 2026-11-18 (the user's review, principle 4: Paul George 2018-20 82 → 2019-21 62, Iguodala 2011-13
+ * 88 → 2014-16 63 with help 91-97, Manu at 85 five windows running): D-TAL moves `DT_SKILL` of the
+ * way to a read from the defensive skills — guards and wings 0.45 point of attack + 0.35 help + 0.2
+ * activity, bigs 0.45 rim protection + 0.3 help + 0.15 defensive glass + 0.1 activity — put on the
+ * D-TAL scale by position (each side's mean and spread over the pool's windows with the skills,
+ * `scripts/_dskill.ts`; r with today's D-TAL 0.73-0.81). A window without the skills keeps its D-TAL.
+ */
+const DT_SKILL = Number(envVar('DT_SKILL') ?? 0);
+const SKILL_DEF_SCALE: Record<string, [number, number, number, number]> = {
+  PG: [55.0, 20.2, 38.3, 18.9], SG: [49.8, 20.9, 38.0, 18.8], SF: [51.1, 21.2, 40.0, 18.7], PF: [60.4, 14.2, 40.4, 19.2], C: [73.9, 12.7, 49.8, 22.0],
+};
+function withSkillDefense(span: PlayerSpan, dtal: number): number {
+  const g = (k: Skill) => skill(span, k);
+  const poa = g('pointOfAttack'), rim = g('rimProtect'), act = g('activity');
+  const sc = SKILL_DEF_SCALE[span.primaryPosition];
+  if (poa === null || rim === null || act === null || !sc) return dtal;
+  const help = g('help') ?? 50;
+  const big = span.primaryPosition === 'C' || span.primaryPosition === 'PF';
+  const comp = big ? 0.45 * rim + 0.3 * help + 0.15 * (g('defGlass') ?? 50) + 0.1 * act : 0.45 * poa + 0.35 * help + 0.2 * act;
+  const fromSkills = sc[2] + ((comp - sc[0]) / sc[1]) * sc[3];
+  return Math.round(Math.max(0, Math.min(100, dtal + DT_SKILL * (fromSkills - dtal))));
 }

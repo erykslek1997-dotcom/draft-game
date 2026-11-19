@@ -4,6 +4,10 @@ import { normalizePlayerName } from '../src/data/schema';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
 import { STARTER_SLOTS } from '../src/engine/positions';
+import { AI_PLAN } from '../src/engine/aiDrafter';
+// 2026-11-19: draft as the game does — its worker turns planned drafting on (aiWorker.ts); AI_PLAN=0 turns it off.
+AI_PLAN.on = (process.env.AI_PLAN ?? '1') === '1';
+
 
 /**
  * 2026-10-29 (the user after a live draft: "bez szału są te składy… było lepiej", "na siłę to

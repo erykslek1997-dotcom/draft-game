@@ -1,4 +1,6 @@
 import { players } from '../data/players';
+import { isShotFirst, playmakingRelief, selfCreatorLevel, switchRoleScore, dataUsageDemand } from './skills';
+import { envVar } from './env';
 import { rimProtectionByNumbers } from './rimProtection';
 import { getBodyWeightLbs, getHeightInches } from '../data/heightLookup';
 import {
@@ -633,7 +635,7 @@ function huntingSelfCreationFor(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, huntingPotentialSelfCreationByYear);
   const proxy = huntingSelfCreationProxy(player);
   if (measured == null) return proxy * 100;
-  const floor = PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
+  const floor = ((selfCreatorLevel(player) ?? (PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : 0)) >= 0.85) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
   return Math.max(measured, floor) * 100;
 }
 function huntingPotentialFor(starters: PlayerSpan[]): number {
@@ -722,6 +724,9 @@ function starterOnBallDemand(profile: ShadowRoleProfile, span: PlayerSpan): numb
   if (realUsage && realUsage.games >= MIN_GAMES_FOR_REAL_USAGE) {
     return realUsageDemand(realUsage);
   }
+  // 2026-11-18: before 1996-97, Basketball-Reference USG% and the selfCreation skill (SKILL_USAGE).
+  const dataDemand = envVar('SKILL_USAGE') === '1' ? dataUsageDemand(span) : null;
+  if (dataDemand !== null) return dataDemand;
 
   const demandScale = fgaDemandScale(span.fga);
   const archetypeWeight = (HIGH_USAGE_ARCHETYPE_WEIGHT[profile.incumbentOffensiveRole] ?? 0) * demandScale;
@@ -775,10 +780,12 @@ function playerSwitchability(player: PlayerSpan, physical: { athleticism: number
     // A curated `Switch Big` secondary (defensiveRoleProfiles.ts) means "switches 1-5" even when
     // the primary tag is the more conservative Anchor/Mobile Big — take the better of the two.
     {
-      value: Math.max(
-        SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
-        secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
-      ),
+      value:
+        switchRoleScore(player) ??
+        Math.max(
+          SWITCHABILITY_ROLE_SCORE[player.defensiveRole],
+          secondaryDefensiveRoleStrength(player, 'Switch Big') > 0 ? SWITCHABILITY_ROLE_SCORE['Switch Big'] : 0,
+        ),
       weight: 0.40,
     },
     { value: positionVersatilityScore(player), weight: 0.30 },
@@ -1170,12 +1177,12 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   const shotFirstLoads = starterEntries
     .map(({ player, slot }) => {
       if (slot === 'PF' || slot === 'C') return { player, load: 0 };
-      if (player.offensiveArchetype !== 'Shot Creator' && player.offensiveArchetype !== 'Slasher') return { player, load: 0 };
+      if (!isShotFirst(player)) return { player, load: 0 };
       const paceAdjustedFga = player.fga * (LEAGUE_PACE_BASELINE / eraBaseline(player.spanLabel).pace);
       // A scorer who is also an elite passer (Bird, Wade) shares the ball more than his tag says.
       const sharing = clamp(((playmakingScoreForPlayer(player) ?? 0) - SHOT_FIRST_SHARING_START) / 10, 0, 1) * SHOT_FIRST_SHARING_RELIEF;
       const offBall = clamp((computeSpacing(player) - SHOT_FIRST_OFF_BALL_START) / (SHOT_FIRST_OFF_BALL_FULL - SHOT_FIRST_OFF_BALL_START), 0, 1) * SHOT_FIRST_OFF_BALL_RELIEF;
-      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) * (1 - offBall) };
+      return { player, load: clamp((paceAdjustedFga - SHOT_FIRST_FGA_START) / (SHOT_FIRST_FGA_FULL - SHOT_FIRST_FGA_START), 0, 1) * (1 - sharing) * (1 - offBall) * (1 - playmakingRelief(player)) };
     })
     .filter(({ load }) => load > 0)
     .sort((a, b) => b.load - a.load);

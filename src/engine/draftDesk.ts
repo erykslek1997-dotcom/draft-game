@@ -1,5 +1,5 @@
 import type { PlayerSpan } from '../data/schema';
-import { PERIMETER_DEFENDER_ROLES, RIM_PROTECTOR_ROLES } from '../data/schema';
+import { isRimProtector, isPerimeterDefender } from './skills';
 import { computeSpacing } from './spacing';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { playmakingScoreForPlayer } from './playmakingLookup';
@@ -112,7 +112,7 @@ export function takesFor(roster: PlayerSpan[]): Take[] {
   }
 
   // ── Coach ────────────────────────────────────────────────────────────────
-  const protectors = roster.filter((p) => RIM_PROTECTOR_ROLES.includes(p.defensiveRole));
+  const protectors = roster.filter((p) => isRimProtector(p));
   const anchor = best(protectors, d);
   if (!anchor) {
     takes.push({ topic: 'rimProtection', expert: 'coach', kind: 'concern', weight: 0.85,
@@ -133,7 +133,7 @@ export function takesFor(roster: PlayerSpan[]): Take[] {
       advice: 'a big who protects the rim' });
   }
 
-  const stopper = best(roster.filter((p) => PERIMETER_DEFENDER_ROLES.includes(p.defensiveRole) && p.primaryPosition !== 'C'), d);
+  const stopper = best(roster.filter((p) => isPerimeterDefender(p) && p.primaryPosition !== 'C'), d);
   if (stopper && d(stopper) >= 85) {
     takes.push({ topic: 'perimeterD', expert: 'coach', kind: 'strength', weight: 0.7,
       line: `${deskName(stopper)} can take the other team’s best scorer every single night. That’s a real weapon.` });

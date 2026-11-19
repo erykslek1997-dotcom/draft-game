@@ -231,6 +231,7 @@ const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
 /** 2026-11-11: a veteran window (`veteran.ts`) starts only when clearly the better option — its
  * starter value is `VETERAN_STARTER_KEEP` of the rest; off the bench he is worth what he is. */
 const VETERAN_STARTER_KEEP = 0.95;
+const ROT_PIN_FLEX = (envVar('ROT_PIN_FLEX') ?? '1') === '1';
 function starterOffenseFactor(player: PlayerSpan): number {
   if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
@@ -281,7 +282,10 @@ export function bestPrimaryAssignment(
   let valueFor = function valueForPlain(player: PlayerSpan, slot: Position): number {
     const key = `${player.id}|${slot}`;
     let v = valueByPlayerSlot.get(key);
-    if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition) {
+    // 2026-11-19 (the user's rotations: Bird to the four so Butler starts at three; "piątka to najlepszych
+    // pięciu, pozycje do nich"): with `ROT_PIN_FLEX` a pinned star may also start at a position he
+    // plays in full (a real second position), not only his own.
+    if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition && !(ROT_PIN_FLEX && positionCompetence(player, slot) === 'full')) {
       v = 0;
       valueByPlayerSlot.set(key, v);
     }

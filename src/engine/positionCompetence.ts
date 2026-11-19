@@ -1,4 +1,5 @@
 import type { PlayerSpan, Position } from '../data/schema';
+import { isCreator, isPlaymaker } from './skills';
 import { normalizePlayerName } from '../data/schema';
 import competenceData from '../data/positionCompetence.json';
 import { per36 } from './minutesPerGame';
@@ -175,8 +176,6 @@ function rawCompetenceScore(span: PlayerSpan, slot: Position): number {
   return entry.pos[slot] ?? 0;
 }
 
-const PG_HANDLERS = ['Primary Ball Handler', 'Secondary Ball Handler'];
-const CREATORS = ['Primary Ball Handler', 'Secondary Ball Handler', 'Shot Creator'];
 const PG_ASSISTS_TARGET = 7;
 const PG_ASSIST_WEIGHT = 0.3;
 const PG_ASSIST_CAP = 1.5;
@@ -204,8 +203,8 @@ export function pointGuardScore(span: PlayerSpan, natural: Position[]): number {
     score = OTHER_NATURAL_SCORE * Math.exp(-assistGap);
   } else {
     const from = span.primaryPosition;
-    if (!named && (from === 'PF' || from === 'C' || (from === 'SF' && !CREATORS.includes(span.offensiveArchetype)))) return 0;
-    let penalty = 0.25 + assistGap + (PG_HANDLERS.includes(span.offensiveArchetype) ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
+    if (!named && (from === 'PF' || from === 'C' || (from === 'SF' && !isCreator(span)))) return 0;
+    let penalty = 0.25 + assistGap + (isPlaymaker(span) ? 0 : 0.4) + (from === 'SG' || named ? 0 : 0.5);
     if (named) penalty = Math.min(penalty, NAMED_PG_MAX_PENALTY);
     score = UNLISTED_SECONDARY_SCORE * Math.exp(-penalty);
   }

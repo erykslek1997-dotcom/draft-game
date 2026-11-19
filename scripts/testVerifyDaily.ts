@@ -4,6 +4,9 @@ import { aiRotation, finalizeAiRoster } from '../src/engine/finalizeAiRoster';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { rankTeams } from '../src/engine/scoring';
 import { verifyDaily, type DailyProof } from '../src/online/verifyDaily';
+import { AI_PLAN } from '../src/engine/aiDrafter';
+// The honest draft here is replayed unplanned, as verifyDaily replays (planned picks are not reproducible).
+AI_PLAN.on = false;
 
 // 2026-11-11: the leaderboard's server check (src/online/verifyDaily.ts).
 let failures = 0;

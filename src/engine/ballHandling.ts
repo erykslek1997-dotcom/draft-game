@@ -1,5 +1,7 @@
+import { envVar } from './env';
 import type { PlayerSpan } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
+import { skill } from './skills';
 
 /**
  * 2026-10-28, step 6.2 (the user: two players who play WITH the ball should not fit — not two
@@ -15,7 +17,7 @@ import { realSpan } from './realAdvancedLookup';
  * 0.12 (90% −3.6…+0.3). A second high-usage scorer costs nothing (+0.9). `perTen`: ORtg a 100
  * trips per 0.10 of the second handler's share past `from`.
  */
-const BALL_HANDLER_TUNING = { from: 0.12, perTen: 1.6 };
+const BALL_HANDLER_TUNING = { from: 0.12, perTen: Number(envVar('SIM_HANDLERS') ?? 1.6) };
 
 const POSITION_SHIFT: Record<string, number> = { PG: 0.04444, SG: 0.00562, SF: 0, PF: -0.0103, C: -0.0103 };
 const shareCache = new WeakMap<PlayerSpan, number>();
@@ -40,9 +42,23 @@ export function ballShare(span: PlayerSpan): number {
 
 /** The second-highest ball share of a five past `from` (0 when one player has the ball). */
 function secondHandlerExcess(five: PlayerSpan[]): number {
-  const shares = five.map(ballShare).sort((a, b) => b - a);
-  return Math.max(0, (shares[1] ?? 0) - BALL_HANDLER_TUNING.from);
+  if (!BH_SHOOT) {
+    const shares = five.map(ballShare).sort((a, b) => b - a);
+    return Math.max(0, (shares[1] ?? 0) - BALL_HANDLER_TUNING.from);
+  }
+  // 2026-11-19 (the user: Billups beside LeBron fits, Stockton beside Wade + Garnett doesn't — "dołożenie
+  // spacingu do miary"): the second handler costs less the better he shoots off the catch — off the ball
+  // he still pulls a defender. `BH_SHOOT` of his share goes away at a spot-up skill of 90 (none at 50).
+  const ranked = [...five].sort((a, b) => ballShare(b) - ballShare(a));
+  const second = ranked[1];
+  if (!second) return 0;
+  // Of the two who want it, the better catch-and-shoot player is the one who gives the ball up.
+  const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
+  const shooter = Math.max(shoot(ranked[0]), shoot(second));
+  return Math.max(0, ballShare(second) * (1 - BH_SHOOT * shooter) - BALL_HANDLER_TUNING.from);
 }
+// 2026-11-19: on at 0.6 — SRS 0.843 / 0.840 → 0.844 / 0.841, sim 0.60 → 0.61, lineups 0.559 held; three+ PGs 16% → 11%.
+const BH_SHOOT = Number(envVar('BH_SHOOT') ?? 0.6);
 
 /** ORtg points a 100 trips per point of shooting on every shot of the five, as the game plays it:
  * set so Harden 2016-18 + Westbrook 2016-18 (cost 2.5) lose 2.5 points a 100 trips in the game's

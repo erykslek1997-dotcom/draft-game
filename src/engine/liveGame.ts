@@ -1,3 +1,5 @@
+import { predatesThreePointLine } from './era';
+import { gameStocks } from './preStocks';
 import { nicknameFor } from '../data/nicknames';
 import { CLUTCH_TRAIT, GLUE, MICROWAVE, hasTrait } from './traits';
 import shotTendencyData from '../data/shotTendencies.json';
@@ -226,7 +228,7 @@ function rates(span: PlayerSpan) {
   if (!r) {
     const k = 36 / (estimatedMinutesPerGame(span) ?? 36);
     const m = modernBox(span);
-    r = { reb: m.rpg * k, ast: m.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: m.spg * k, blk: m.bpg * k };
+    r = { reb: m.rpg * k, ast: m.apg * k * (PASSING_HUBS[span.playerName] ?? 1), stl: gameStocks(span).spg * k, blk: gameStocks(span).bpg * k };
     rateCache.set(span, r);
   }
   return r;
@@ -375,6 +377,35 @@ function pickWeighted<T>(rng: () => number, items: T[], weight: (t: T) => number
     if (x <= 0) return t;
   }
   return items[items.length - 1];
+}
+
+
+/**
+ * 2026-11-18 (the game vs the engine by era: teams of pre-1974 players lost 14.7 offense a 100 trips
+ * against what the engine said, 1974-79 5.5): before 1979-80 there was no three-point line, so West,
+ * Barry or Gervin came into today's game with no threes at all. Such a window takes a modern shooter's
+ * three-point rate and make rate from his free-throw % and position — the line fitted on 2005+ windows
+ * of 6+ FGA (`scripts/_fit3.ts`). `SIM_PRE3=0` = off.
+ */
+const PRE_LINE_THREE: Record<Position, { rate: [number, number]; pct: [number, number] }> = {
+  PG: { rate: [-0.156, 0.616], pct: [0.176, 0.231] },
+  SG: { rate: [-0.145, 0.696], pct: [0.214, 0.196] },
+  SF: { rate: [0.059, 0.397], pct: [0.24, 0.159] },
+  PF: { rate: [-0.391, 0.828], pct: [0.173, 0.241] },
+  C: { rate: [-0.321, 0.583], pct: [0.227, 0.17] },
+};
+const PRE3_ON = envVar('SIM_PRE3') !== '0';
+const gameThreeCache = new WeakMap<PlayerSpan, { rate: number; pct: number }>();
+function gameThree(span: PlayerSpan): { rate: number; pct: number } {
+  let g = gameThreeCache.get(span);
+  if (!g) {
+    const f = PRE_LINE_THREE[span.primaryPosition];
+    g = PRE3_ON && f && predatesThreePointLine(span.spanLabel)
+      ? { rate: Math.max(0, Math.min(0.6, f.rate[0] + f.rate[1] * span.box.ftPct)), pct: Math.max(0.28, Math.min(0.42, f.pct[0] + f.pct[1] * span.box.ftPct)) }
+      : { rate: span.box.threePA / Math.max(1, span.fga), pct: modernBox(span).threePct };
+    gameThreeCache.set(span, g);
+  }
+  return g;
 }
 
 /** His two-point % in today's game (`modernBox.ts`). */
@@ -1025,7 +1056,8 @@ interface Clash {
 
 function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const defSpans = defCourt.map((c) => c.player.span);
-  const fd = fiveDefense(defSpans);
+  const fdRaw = fiveDefense(defSpans);
+  const fd = DEF_OVERLAP && fdRaw.perimeter > OVERLAP_REF.perimeter ? { ...fdRaw, perimeter: OVERLAP_REF.perimeter + (fdRaw.perimeter - OVERLAP_REF.perimeter) * rimOverlap(fdRaw.rim) } : fdRaw;
   const guard = assignMatchups(off.map((c) => c.player.span), off.map((c) => c.usage), defSpans);
   const offOreb = off.reduce((s, c) => s + defenderProfile(c.player.span).oreb36, 0);
   const switchZ = Math.max(-2.5, Math.min(2.5, (fiveSwitchability(defSpans, STARTER_SLOTS) - REF_SWITCH.mean) / REF_SWITCH.sd));
@@ -1034,7 +1066,7 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
   const defAway = defSpans.reduce((sum, s, j) => sum + Math.max(0, 1 - positionFitMultiplier(s, STARTER_SLOTS[j])), 0) / Math.max(1, defSpans.length);
   const offFit = fiveFit(off.map((c) => c.player.span)).off;
   const defFit = fiveFit(defSpans).def;
-  const defAnchor = (1 - FIT_TUNING.def.shot * defFit) * Math.max(0.7, Math.min(1.3, 1 - 2 * (defSpans.reduce((sum, s) => sum + anchorOf(s).def, 0) / Math.max(1, defSpans.length)))) * (1 + ROTATION_TUNING.defAway * defAway);
+  const defAnchor = (1 - FIT_TUNING.def.shot * defFit) * Math.max(0.7, Math.min(1.3, 1 - 2 * roleWeightedDefAnchor(defSpans, fd))) * (1 + ROTATION_TUNING.defAway * defAway);
   const mods = off.map((c, i) => {
     const d = fd.profiles[guard[i]];
     const resist = defenseResist(c.player.span);
@@ -1061,6 +1093,39 @@ function buildClash(off: CourtPlayer[], defCourt: CourtPlayer[]): Clash {
     rimAnchor: fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0),
     lateP: Math.min(0.3, LATE_TUNING.share * Math.exp(LATE_TUNING.defense * fd.perimeter - LATE_TUNING.handler * handlerZ(off) + SWITCH_TUNING.iso * switchZ - FIT_TUNING.off.late * offFit)),
   };
+}
+
+/**
+ * 2026-11-18, defense by on-court role (the user, 2026-11-14: the main rim protector covers the
+ * others' mistakes; a point guard's D-TAL point is worth less). Real five-man units put a center's
+ * D-TAL point at ~1.6 of the average and a point guard's at ~0.58. The five's anchor is a weighted
+ * mean: the five's best rim protector (whatever slot he plays) weighs `rim`, everyone else by the
+ * slot he plays on the floor. Weights are renormalised to a mean of 1, so the league stays put.
+ */
+const ROLE_WEIGHT = {
+  rim: Number(envVar('SIM_ROLE_RIM') ?? 1.6),
+  slot: { PG: Number(envVar('SIM_ROLE_PG') ?? 0.6), SG: 1, SF: 1, PF: Number(envVar('SIM_ROLE_PF') ?? 1), C: 1 } as Record<Position, number>,
+};
+/** 2026-11-18, overlap (real fives: an elite on-ball guard next to a decent-or-better center defended
+ * ~0.7-1 point worse than the sim said): drives a good on-ball defender stops, a rim protector behind
+ * him would mostly have stopped too. The five's perimeter pressure above the median shrinks with its rim
+ * protection above the median. `SIM_DEF_OVERLAP` 0 = off. */
+const DEF_OVERLAP = Number(envVar('SIM_DEF_OVERLAP') ?? 0);
+/** Medians of a random five's `fiveDefense` rim and perimeter (2000 fives from the pool). */
+const OVERLAP_REF = { rim: -0.15, perimeter: -1.16 };
+const rimOverlap = (rim: number) => 1 / (1 + DEF_OVERLAP * Math.max(0, rim - OVERLAP_REF.rim));
+const DEF_SECOND = Number(envVar('SIM_DEF_SECOND') ?? 1);
+function roleWeightedDefAnchor(defSpans: PlayerSpan[], fd: FiveDefense): number {
+  if (defSpans.length === 0) return 0;
+  const anchorIdx = fd.profiles.reduce((best, p, i) => (p.rim > fd.profiles[best].rim ? i : best), 0);
+  // 2026-11-18, diminishing returns (the user: "fajne"): real fives with an elite guard AND an elite
+  // center defended ~1 point worse than the sim said — two great defenders don't fully add up. Above
+  // the best one, every further defender's edge counts `SIM_DEF_SECOND` (1 = off).
+  const parts = defSpans.map((s, j) => ({ w: j === anchorIdx ? ROLE_WEIGHT.rim : ROLE_WEIGHT.slot[STARTER_SLOTS[j]] ?? 1, d: anchorOf(s).def }));
+  const order = parts.map((_, i) => i).filter((i) => parts[i].d > 0).sort((a, b) => parts[b].w * parts[b].d - parts[a].w * parts[a].d);
+  order.slice(1).forEach((i) => { parts[i].d *= DEF_SECOND; });
+  const wSum = parts.reduce((t, p) => t + p.w, 0);
+  return parts.reduce((t, p) => t + p.w * p.d, 0) / wSum;
 }
 
 /** What the weakest defender gives up when he is hunted, on top of his own matchup. */
@@ -1178,7 +1243,12 @@ function expectedPossession(off: CourtPlayer[], cl: Clash, tired: Map<string, nu
  */
 const ANCHOR_TUNING = {
   /** FG points per point of O-TAL above the drafted average. */
-  otal: 0.0016,
+  // 2026-11-18 (the third judge, per player: the game underrated high-usage scorers' offense — Kobe,
+  // Westbrook, Dirk, Lillard — and its miss followed O-TAL r 0.26, USG 0.24, OBPM 0.29, while the
+  // engine's Offense showed none of it): x2.5. Real SRS 0.827 → 0.844, real ORtg 0.717 → 0.773, game vs
+  // engine R² 0.68 kept; x3.5 SRS 0.847 but R² 0.66, x5 R² 0.60. Overload / usage cost / second handler /
+  // the scorer terms moved the miss by 0.01-0.09 at most.
+  otal: 0.0016 * Number(envVar('SIM_A_OTAL') ?? 2.5),
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
   two: -0.0025 * Number(envVar('SIM_A_TWO') ?? 1),
@@ -1212,7 +1282,7 @@ function anchorOf(span: PlayerSpan): { off: number; def: number } {
         t.two * 100 * (twoPointPct(span) - TWO_PCT_BY_POSITION[span.primaryPosition]) +
         t.pts36 * (m.ppg * k - ANCHOR_REF.pts36) +
         t.reb36 * (m.rpg * k - ANCHOR_REF.reb36) +
-        t.tpaRate * (span.box.threePA / Math.max(1, span.fga) - ANCHOR_REF.tpaRate),
+        t.tpaRate * (gameThree(span).rate - ANCHOR_REF.tpaRate),
       def: t.dtal * (computeDefensiveTalent(span) - ANCHOR_REF.dtal),
     };
     anchorCache.set(span, a);
@@ -1270,7 +1340,7 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
     const setups = habits.map((h, i) => ({ two: setupHere(h.two * sync, lines[i]), three: setupHere(h.three * sync, lines[i]) }));
     const edges = habits.map(setupEdge);
     const owns = five.map((p, i) => {
-      const r3 = Math.min(0.9, p.span.box.threePA / Math.max(1, p.span.fga));
+      const r3 = Math.min(0.9, gameThree(p.span).rate);
       return Math.max(0.02, 1 - ((1 - r3) * habits[i].two + r3 * habits[i].three));
     });
     const usageCost = owns.map(usageCostScale);
@@ -1294,11 +1364,11 @@ function courtFor(cache: Map<string, CourtPlayer[]>, five: Player[]): CourtPlaye
       turnoverShare: Math.max(0.005, lines[i].usage - lines[i].shotWeight) * away[i].tov,
       foul: foulChance(lines[i].freeThrowRate),
       twoPct: Math.max(0.3, Math.min(0.72, twoPointPct(player.span) - away[i].two + spacingGain(lines[i].twoPointDelta) + usageGain[i] + edges[i].two * (setups[i].two - habits[i].two) + anchor + lifted[i] + traitMake[i])),
-      threePct: Math.max(0.15, Math.min(0.5, modernBox(player.span).threePct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes + traitMake[i] * THREE_PCT_PER_TS)),
+      threePct: Math.max(0.15, Math.min(0.5, gameThree(player.span).pct + SAGGED_OPEN_THREE * nonShooter(player.span) + usageGain[i] * THREE_PCT_PER_TS + edges[i].three * (setups[i].three - habits[i].three) + anchor * THREE_PCT_PER_TS + lifted[i] * LIFT_TUNING.threes + traitMake[i] * THREE_PCT_PER_TS)),
       rimShare: lines[i].rimShare,
       rimPct: 0,
       midPct: 0,
-      threeRate: Math.min(0.9, player.span.box.threePA / Math.max(1, player.span.fga)),
+      threeRate: Math.min(0.9, gameThree(player.span).rate),
       usage: lines[i].usage,
       setup2: setups[i].two,
       setup3: setups[i].three,
