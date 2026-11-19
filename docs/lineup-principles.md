@@ -56,3 +56,6 @@ Wynikają z przejścia przez prawdziwe drafty AI (seedy 101-110). Lista to ogól
 - Stockton 1990-92 + White + Hayward 2015-17 + Garnett 2006-08 + Porziņģis → wysokie dopasowanie, niski sufit ataku (brak pierwszego strzelca).
 - Bird 1983-85 + Lowry 2017-19 + Klay + Draymond + Gobert → bardzo dobry; Draymond z Gobertem ograniczają, Klay ratuje.
 - Billups + Caruso + Artest 2007-09 + LeBron 2012-14 + Mourning → Caruso to błąd (ławka), reszta „przejdzie”.
+
+## Do zrobienia na koniec (z kalibracji 2026-11-19)
+- **Minuty ławki na złej osobie:** Stockton / White / Durant / Malone / Mutombo — P.J. Tucker (TAL 63) gra 23 min na PF, OG Anunoby (TAL 76, PF „full”) tylko 12 na SF. Lepszy rezerwowy powinien dostać minuty słabszego na pozycji, którą umie grać. Sprawdzić rozdział minut (`allocateMinutes` / `capBenchMinutes`).
