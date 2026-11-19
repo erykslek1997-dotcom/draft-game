@@ -231,7 +231,7 @@ const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
 /** 2026-11-11: a veteran window (`veteran.ts`) starts only when clearly the better option — its
  * starter value is `VETERAN_STARTER_KEEP` of the rest; off the bench he is worth what he is. */
 const VETERAN_STARTER_KEEP = 0.95;
-const ROT_PIN_FLEX = envVar('ROT_PIN_FLEX') === '1';
+const ROT_PIN_FLEX = (envVar('ROT_PIN_FLEX') ?? '1') === '1';
 function starterOffenseFactor(player: PlayerSpan): number {
   if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));

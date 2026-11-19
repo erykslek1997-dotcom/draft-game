@@ -481,7 +481,7 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2013-2014",
-      "wallabe01-cw-2002-2003"
+      "draymond-15-17"
     ],
     "draftedNames": [
       "lebron james",
@@ -515,10 +515,10 @@
       "steve nash",
       "bill russell",
       "rasheed wallace",
-      "ben wallace"
+      "draymond green"
     ],
-    "expectedPickId": "miller-93-95",
-    "expectedPickLabel": "Reggie Miller | 1993-95"
+    "expectedPickId": "lowryky01-2016-2017",
+    "expectedPickLabel": "Kyle Lowry | 2015-17"
   },
   {
     "seed": 42,
@@ -560,8 +560,8 @@
       "steve nash",
       "bill russell",
       "rasheed wallace",
-      "ben wallace",
-      "eddie jones",
+      "draymond green",
+      "dwyane wade",
       "jalen williams",
       "paul george",
       "klay thompson",
@@ -569,9 +569,9 @@
       "reggie miller",
       "donovan mitchell",
       "kristaps porzingis",
-      "kyle lowry",
+      "al horford",
       "dirk nowitzki",
-      "jason kidd"
+      "kyle lowry"
     ],
     "expectedPickId": "lillada01-2019-2020",
     "expectedPickLabel": "Damian Lillard | 2018-20"
@@ -617,8 +617,8 @@
       "steve nash",
       "bill russell",
       "rasheed wallace",
-      "ben wallace",
-      "eddie jones",
+      "draymond green",
+      "dwyane wade",
       "jalen williams",
       "paul george",
       "klay thompson",
@@ -626,23 +626,23 @@
       "reggie miller",
       "donovan mitchell",
       "kristaps porzingis",
-      "kyle lowry",
-      "dirk nowitzki",
-      "jason kidd",
-      "damian lillard",
-      "andrei kirilenko",
-      "luka doncic",
-      "jayson tatum",
-      "vince carter",
-      "paul pierce",
       "al horford",
-      "draymond green",
-      "chauncey billups",
+      "dirk nowitzki",
+      "kyle lowry",
+      "damian lillard",
+      "evan mobley",
+      "luka doncic",
+      "eddie jones",
+      "jayson tatum",
       "manu ginobili",
-      "jimmy butler"
+      "paul pierce",
+      "danny green",
+      "khris middleton",
+      "chris mullin",
+      "shawn marion"
     ],
-    "expectedPickId": "mullich01-1997-1998",
-    "expectedPickLabel": "Chris Mullin | 1996-98"
+    "expectedPickId": "korver-13-15",
+    "expectedPickLabel": "Kyle Korver | 2013-15"
   },
   {
     "seed": 42,
@@ -650,8 +650,8 @@
     "teamIdx": 0,
     "rosterIds": [
       "jamesle01-cw-2013-2014",
-      "wallabe01-cw-2002-2003",
-      "jonesed02-1998-1999"
+      "draymond-15-17",
+      "wadedw01-cw-2009-2010"
     ],
     "draftedNames": [
       "lebron james",
@@ -685,8 +685,8 @@
       "steve nash",
       "bill russell",
       "rasheed wallace",
-      "ben wallace",
-      "eddie jones",
+      "draymond green",
+      "dwyane wade",
       "jalen williams",
       "paul george",
       "klay thompson",
@@ -694,32 +694,32 @@
       "reggie miller",
       "donovan mitchell",
       "kristaps porzingis",
-      "kyle lowry",
-      "dirk nowitzki",
-      "jason kidd",
-      "damian lillard",
-      "andrei kirilenko",
-      "luka doncic",
-      "jayson tatum",
-      "vince carter",
-      "paul pierce",
       "al horford",
-      "draymond green",
-      "chauncey billups",
-      "manu ginobili",
-      "jimmy butler",
-      "kyle korver",
-      "chris mullin",
-      "dwyane wade",
-      "shane battier",
+      "dirk nowitzki",
+      "kyle lowry",
+      "damian lillard",
       "evan mobley",
-      "og anunoby",
+      "luka doncic",
+      "eddie jones",
+      "jayson tatum",
+      "manu ginobili",
+      "paul pierce",
+      "danny green",
       "khris middleton",
-      "chet holmgren",
+      "chris mullin",
+      "shawn marion",
+      "kyle korver",
+      "jrue holiday",
+      "vince carter",
+      "shane battier",
+      "karl malone",
+      "og anunoby",
+      "ron artest",
+      "andrei kirilenko",
       "mike conley"
     ],
-    "expectedPickId": "irvinky01-2023-2024",
-    "expectedPickLabel": "Kyrie Irving | 2022-24"
+    "expectedPickId": "billuch01-2004-2005",
+    "expectedPickLabel": "Chauncey Billups | 2003-05"
   },
   {
     "seed": 123456,
@@ -1077,9 +1077,9 @@
       "derrick white",
       "shawn marion",
       "gerald wallace",
-      "dan majerle"
+      "marc gasol"
     ],
-    "expectedPickId": "waltobi01-1977-1978",
-    "expectedPickLabel": "Bill Walton | 1976-78"
+    "expectedPickId": "holidjr01-2021-2022",
+    "expectedPickLabel": "Jrue Holiday | 2020-22"
   }
 ]

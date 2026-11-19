@@ -42,6 +42,7 @@ Silnik liczy spacing i rozgrywanie głównie dla piątki. Brak PG z ławki (Paul
 - `testDefensiveHuntability` nie przechodzi (sprzed zmian); `testRotationEditable` — sprawdzić osobno.
 
 ## Już zrobione (2026-11-19)
+- **Rotacja (część pkt 2):** gwiazda może zaczynać na pozycji, którą gra w pełni (Bird na PF → Butler w piątce, Schayes poza nią); dodatek za własną pozycję 18 → 10 (Butler 27 na SF, Williams 11 na SG). Odtwarza oba wzorce użytkownika prawie co do minuty. Piątki 0.551 → **0.559**, SRS 0.843 / 0.840, test rotacji ok.
 - **Atak:** bez dodatku za spójność, limit piłki 0.5, łagodna podłoga gwiazdy 0.15. SRS 0.844 / 0.839, piątki 0.551, atak vs ORtg 0.766 → 0.770. Jordan 63 → 69, Curry 67 → 70, Shaq + Harden 93 → 83.
 - **Reguły z oceny** (`reviewRules.ts`): tłok w pomalowanym, trzech z piłką, obwodowy bez piłki i rzutu, drugi słaby obrońca obwodu, starter poziomu ławki, niestrzelający rozgrywający obok gwiazdy, brak floor generala, + elitarny strzelec z piłką.
 - **Etykiety → dane** w TAL i pick-and-rollu.
