@@ -28,6 +28,11 @@ import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 
 const W = Number(envVar('REVIEW_W') ?? 1);
+// 2026-11-19 (the user, Curry + Wade + Draymond: "zbyt mocny duet żeby to nie działało"): an elite
+// spot-up shooter (Curry) plays off the ball, so he is not a third ball-holder, and beside him a
+// second playmaker is the point forward he needs, not a repeat. A co-star scorer (usage 0.5+) is
+// never an "extra playmaker".
+const REV_STAR = envVar('REV_STAR') !== '0';
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
@@ -37,7 +42,8 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // pressure without a spot-up shot, on a player who holds the ball: Shaq, Embiid, Duncan, Davis,
   // Giannis, Wade.
   const paint = five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45).length;
-  const ball = five.filter((p) => use(p) >= 0.42).length;
+  const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= 90;
+  const ball = five.filter((p) => use(p) >= 0.42 && !offBallStar(p)).length;
   const offBallNoShot = five.filter((p) => !isBig(p) && use(p) < 0.3 && teamSpacingValue(p) < 35).length;
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
   const bench = five.filter((p) => effectiveTalent(p) < 70 || (!isBig(p) && computeOffensiveTalent(p) < 50)).length;
@@ -45,7 +51,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // A second playmaker who can't shoot, beside an on-ball engine (LeBron + Draymond): his passing
   // repeats what the engine already does, and off the ball he doesn't space.
   const engine = five.find((p) => use(p) >= 0.5 && s(p, 'handling', 0) >= 90);
-  const extraPlaymakers = engine ? five.filter((p) => p !== engine && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < 55).length : 0;
+  const extraPlaymakers = engine && !offBallStar(engine) ? five.filter((p) => p !== engine && !(REV_STAR && use(p) >= 0.5) && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < 55).length : 0;
   // 2026-11-19 (the user, Kyrie / Manu / Kawhi / Davis / Nenê: "brakuje floor generala na PG"):
   // nobody organizes — the point guard is no real playmaker (< 88) and no one else is an elite
   // one (95+, a LeBron / Jokić / Magic who runs it from anywhere).

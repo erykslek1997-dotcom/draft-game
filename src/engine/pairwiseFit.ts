@@ -356,6 +356,8 @@ function screenerGravity(player: PlayerSpan, slot: Position): number {
   return Math.max(roll, pop, shortRoll) * (slot === 'PF' || slot === 'C' ? 1 : NON_BIG_SCREENER_SHARE);
 }
 
+const PNR_BEST_LEAD = Number(envVar('PNR_BEST_LEAD') ?? 0.1);
+
 export function mismatchStructureScore(
   starters: PlayerSpan[],
   slots: Position[],
@@ -363,7 +365,15 @@ export function mismatchStructureScore(
 ): number {
   if (starters.length < 5) return 0;
   const ratings = starters.map(initiatorRating);
-  const leadIndex = ratings.indexOf(Math.max(...ratings));
+  // 2026-11-19 (the user, Curry + Wade: "zbyt mocny duet żeby to nie działało"): with two real
+  // initiators the team runs the action through the one it suits — Curry, not the non-shooting
+  // Wade. Every initiator within `PNR_BEST_LEAD` of the top rating is tried; the best structure counts.
+  const top = Math.max(...ratings);
+  const leads = ratings.map((r, i) => (i === ratings.indexOf(top) || (PNR_BEST_LEAD > 0 && r >= top * (1 - PNR_BEST_LEAD)) ? i : -1)).filter((i) => i >= 0);
+  return Math.max(...leads.map((leadIndex) => mismatchForLead(starters, slots, ratings, leadIndex)));
+}
+
+function mismatchForLead(starters: PlayerSpan[], slots: Position[], ratings: number[], leadIndex: number): number {
   const hasBig = slots.some((slot, index) => index !== leadIndex && (slot === 'PF' || slot === 'C'));
   let bestGravity = 0;
   let screenerIndex = -1;
