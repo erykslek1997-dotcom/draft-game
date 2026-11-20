@@ -2333,9 +2333,9 @@ function pickForAiSized(
   // identical to `isPickCapLegal` when `ruleset` is omitted (capLimit === CAP_LIMIT). Named
   // `isCapLegal` (not `capLegal`) to avoid colliding with an existing local `capLegal` array
   // further down this same function.
-  const isCapLegal = (fga: number) => totalFga([...currentFgas, fga]) <= capLimit && topFiveFgaLegal(currentFgas, fga);
+  const isCapLegal = (fga: number) => totalFga([...currentFgas, fga]) <= capLimit && topFiveFgaLegal(currentFgas, fga, capLimit);
   // The five-dearest limit (`TOP5_CAP`): a player who would break it is off the board for this pick.
-  available = available.filter((p) => topFiveFgaLegal(currentFgas, p.fga));
+  available = available.filter((p) => topFiveFgaLegal(currentFgas, p.fga, capLimit));
   const slotsLeft = rosterSize - roster.length;
   const needs = assessNeeds(roster);
   const spent = currentFgas.reduce((s, f) => s + f, 0);

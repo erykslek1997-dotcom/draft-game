@@ -26,8 +26,9 @@ export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 9
  * shared cap-legality math needs to know how many teams are contending for the same pool. */
 export const TEAM_COUNT = 16;
 
-/** 2026-11-20 (the user: "105-110 cap, tylko różnica ma być w ławkach a nie w starting5"): the five
- * dearest players (by FGA) may cost at most `TOP5_CAP` together — the extra cap above 100.9 goes to
- * the bench. Today's drafts: the five dearest cost 76.5 at the median, 80.5 at most. Off (Infinity)
- * unless `TOP5_CAP` is set. */
-export const TOP5_CAP = Number(envVar('TOP5_CAP') ?? Infinity);
+/** 2026-11-20 (the user: "105-110 cap, tylko różnica ma być w ławkach a nie w starting5"; then
+ * "80:30 dla zwykłego trybu", "niewidoczne dla gracza, po prostu ustawienia dla AI"): the AI keeps its
+ * five dearest players within this share of the draft's cap, so the cap above the old 100.9 goes to its
+ * bench. `TOP5_SHARE` (e.g. 0.7273 = 80/110); off (Infinity) unless set. `TOP5_CAP` = an absolute
+ * limit at the normal cap, for the earlier measurements. */
+export const TOP5_SHARE = envVar('TOP5_SHARE') ? Number(envVar('TOP5_SHARE')) : envVar('TOP5_CAP') ? Number(envVar('TOP5_CAP')) / CAP_LIMIT : Infinity;

@@ -4,7 +4,7 @@ import { normalizePlayerName } from '../data/schema';
 
 // The roster constants live in a data-free module so the menu can read them without pulling the
 // position-competence data (and through it the whole player pool) into its first download.
-import { CAP_LIMIT, TEAM_COUNT, TOP5_CAP } from './rosterConstants';
+import { CAP_LIMIT, TEAM_COUNT, TOP5_SHARE } from './rosterConstants';
 export { BENCH_SLOT_COUNT, CAP_LIMIT, ROSTER_SIZE, STARTER_SLOTS, TEAM_COUNT } from './rosterConstants';
 
 const POSITION_ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -137,14 +137,16 @@ export function totalFga(rosterFgas: number[]): number {
 
 /** `capLimit`: the real 100.9 unless a daily sets the day's own cap (2026-10-16). */
 export function isPickCapLegal(currentFgas: number[], candidateFga: number, capLimit: number = CAP_LIMIT): boolean {
-  return totalFga([...currentFgas, candidateFga]) <= capLimit && topFiveFgaLegal(currentFgas, candidateFga);
+  return totalFga([...currentFgas, candidateFga]) <= capLimit;
 }
 
-/** The five dearest players' shots within `TOP5_CAP` (rosterConstants.ts). */
-export function topFiveFgaLegal(currentFgas: number[], candidateFga: number): boolean {
-  if (!Number.isFinite(TOP5_CAP)) return true;
+/** The AI's own budget split (not a rule for the player — 2026-11-20, the user: "niewidoczne dla
+ * gracza, po prostu ustawienia dla AI"): the five dearest players' shots within `TOP5_SHARE` of the
+ * draft's cap (80 of 110 in the normal game; a daily's cap scales it). */
+export function topFiveFgaLegal(currentFgas: number[], candidateFga: number, capLimit: number = CAP_LIMIT): boolean {
+  if (!Number.isFinite(TOP5_SHARE)) return true;
   const top = [...currentFgas, candidateFga].sort((a, b) => b - a).slice(0, 5);
-  return totalFga(top) <= TOP5_CAP;
+  return totalFga(top) <= capLimit * TOP5_SHARE + 1e-9;
 }
 
 /**
