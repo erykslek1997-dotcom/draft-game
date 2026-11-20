@@ -2026,6 +2026,8 @@ export const AI_PLAN = {
   crowdCost: 1.5,
   benchCost: Number(envVar('AI_PLAN_BENCH') ?? 1),
   benchFloor: Number(envVar('AI_PLAN_BENCH_FLOOR') ?? 68),
+  benchMinO: Number(envVar('AI_PLAN_BENCH_MINO') ?? 55),
+  benchOCost: Number(envVar('AI_PLAN_BENCH_O') ?? 0),
   share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => (envVar(k) ?? '0') === '1'),
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
@@ -2099,6 +2101,10 @@ function planPick(
     if (AI_PLAN.benchCost > 0) {
       const reserves = [...team].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(5).filter((p) => p.fga > AI_PLAN.reserveGlueFga);
       for (const p of reserves) short += Math.max(0, AI_PLAN.benchFloor - effectiveTalent(p));
+      // 2026-11-20 (the user: Mbah a Moute, Chuck Hayes — "to nie są gracze na all-time"): a reserve who
+      // brings nothing on offense (O-TAL under `benchMinO`) is a specialist, not a rotation player in an
+      // all-time draft, whatever his defense lifts his TAL to.
+      for (const p of reserves) short += AI_PLAN.benchOCost * Math.max(0, AI_PLAN.benchMinO - computeOffensiveTalent(p));
     }
     return teamScorer!(team) - AI_PLAN.crowdCost * crowd - AI_PLAN.benchCost * short;
   };
@@ -3035,7 +3041,7 @@ function pickForAiSized(
       const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
       for (const role of roles) {
         const pick = available
-          .filter((p) => role(p) && !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
+          .filter((p) => role(p) && (AI_PLAN.benchOCost === 0 || computeOffensiveTalent(p) >= AI_PLAN.benchMinO) && !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
             && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))))
           .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
         if (pick) return pick;
