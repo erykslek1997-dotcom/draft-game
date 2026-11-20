@@ -872,7 +872,7 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
  */
 const BENCH_HARD_CAP = 30;
 const ROT_WEAK_TAL = Number(envVar('ROT_WEAK_TAL') ?? 60);
-const ROT_WEAK_STARTER_MAX = 40;
+const ROT_WEAK_STARTER_MAX = Number(envVar('ROT_WEAK_STARTER_MAX') ?? 40);
 const ROT_WEAK_MAX = Number(envVar('ROT_WEAK_MAX') ?? Infinity);
 /** 2026-11-12 (the user, Fort Worth: Gerald Wallace 36 beside five 36-minute starters — "OBA"): a
  * bench player always plays less than the shortest-playing starter, and never past
