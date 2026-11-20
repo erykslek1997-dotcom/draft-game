@@ -871,6 +871,8 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
  * its starter — was tried and dropped: starters split slots, so it demoted 30-minute starters.)
  */
 const BENCH_HARD_CAP = 30;
+const ROT_WEAK_TAL = Number(envVar('ROT_WEAK_TAL') ?? 60);
+const ROT_WEAK_MAX = Number(envVar('ROT_WEAK_MAX') ?? Infinity);
 /** 2026-11-12 (the user, Fort Worth: Gerald Wallace 36 beside five 36-minute starters — "OBA"): a
  * bench player always plays less than the shortest-playing starter, and never past
  * `BENCH_HARD_CAP`; `BENCH_CAP_FLOOR` keeps a 22-minute starter from squeezing the bench to nothing. */
@@ -888,9 +890,12 @@ export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, Sl
   const cap = benchMinutesCap(shortestStarter);
   // A bench player never takes on a third spot (2026-11-12: Wallace at SG, SF and PF).
   const spotsOf = (id: string) => STARTER_SLOTS.filter((slot) => slots[slot].some((a) => a.playerId === id && a.minutes > 0));
+  // 2026-11-20 (the user: weak reserves at 10+ minutes — "jesteśmy w stanie zbić do 0%?"): a reserve
+  // under `ROT_WEAK_TAL` plays at most `ROT_WEAK_MAX` (off by default); what he loses goes as above.
+  const capOf = (p: PlayerSpan) => (effectiveTalent(p) < ROT_WEAK_TAL ? Math.min(cap, ROT_WEAK_MAX) : cap);
   for (const p of roster) {
     if (starters.has(p.id)) continue;
-    let over = total(p.id) - cap;
+    let over = total(p.id) - capOf(p);
     if (over <= 0) continue;
     // Take from his smallest rows first, so his main backup role stays.
     const rows = STARTER_SLOTS.flatMap((slot) => slots[slot].map((a, i) => ({ slot, a, i }))).filter((r) => r.a.playerId === p.id && r.i > 0).sort((x, y) => x.a.minutes - y.a.minutes);
@@ -898,12 +903,12 @@ export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, Sl
       if (over <= 0) break;
       let give = Math.min(over, r.a.minutes);
       const takers = [
-        ...roster.filter((q) => !starters.has(q.id) && q.id !== p.id && positionFitMultiplier(q, r.slot) > 0 && total(q.id) < cap && new Set([...spotsOf(q.id), r.slot]).size <= 2).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
+        ...roster.filter((q) => !starters.has(q.id) && q.id !== p.id && positionFitMultiplier(q, r.slot) > 0 && total(q.id) < capOf(q) && new Set([...spotsOf(q.id), r.slot]).size <= 2).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)),
         ...[slots[r.slot][0]?.playerId].map((id) => (id ? byId.get(id) : undefined)).filter((q): q is PlayerSpan => !!q),
       ];
       for (const q of takers) {
         if (give <= 0) break;
-        const room = Math.min(ceiling(q), starters.has(q.id) ? MAX_MINUTES_PER_PLAYER : cap) - total(q.id);
+        const room = Math.min(ceiling(q), starters.has(q.id) ? MAX_MINUTES_PER_PLAYER : capOf(q)) - total(q.id);
         const take = Math.max(0, Math.min(give, room));
         if (!take) continue;
         const row = slots[r.slot].find((a) => a.playerId === q.id);
