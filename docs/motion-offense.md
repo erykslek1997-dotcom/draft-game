@@ -30,3 +30,19 @@ Sprawdzenie: atak vs prawdziwy ORtg (`scripts/_offjudge.ts`, dziś 0.767), osobn
 5. https://harvardsportsanalysis.org/2014/04/nba-basketball-the-spurs-and-quantifying-movement
 6. https://bleacherreport.com/articles/2098515-san-antonio-spurs-exemplify-the-beauty-of-team-basketball
 7. https://rdgao.github.io/the-evolution-of-the-san-antonio-spurs/
+
+## Katalog stylów ataku (do rozwijania powoli, styl po stylu)
+Każdy styl: warunki z danych, które silnik już ma (usage, handling, playmaking, spacing / spotUp / pullUp3, rim pressure, roll, post, offBall, D-TAL, zbiórki), mały dodatek gdy pasuje, mała strata gdy się gryzie. Silnik ma już: etykietę stylu w eksporcie („Style: …”), konflikty systemów (helio + post), limit piłki, PnR (`mismatchStructure`).
+
+| Styl | Wzorce | Warunki | Konflikty |
+|---|---|---|---|
+| Motion / Princeton | Spurs 2014, Kings 2002, Pistons 2004 | patrz wyżej | 2+ graczy usage ≥ 0.5 |
+| Heliocentryczny | Harden 2018, Luka, LeBron 2018 | 1 gracz usage ≥ 0.6 + handling ≥ 90, 4 strzelców | drugi gracz z piłką bez rzutu, wysoki tyłem do kosza |
+| Pick-and-roll | Stockton–Malone, Nash–Amar'e, CP3–Chandler | PG handling ≥ 90 + wysoki roll / lob (roll ≥ 70) lub pick-and-pop, 2+ strzelców | dwóch wysokich bez rzutu |
+| Post / inside-out | Shaq 2000, Hakeem 1995, Duncan 2003 | C post ≥ 80 + usage ≥ 0.45, 3+ strzelców wokół | drugi wysoki bez rzutu, helio na obwodzie |
+| Trójkąt | Bulls 1996, Lakers 2001 | 2+ graczy grających tyłem / z łokcia (post lub pm ≥ 70 u wysokich), mądrzy podający na skrzydłach | brak gry tyłem do kosza |
+| Seven seconds / pace | Suns 2005-07 | elitarny PnR PG + 4 strzelców, mała piątka (stretch 4) | dwóch wysokich bez rzutu |
+| Showtime / tranzycja | Lakers 1985-87 | elitarny podający w biegu + finiszerzy (rim ≥ 80) + zbiórki | wolni, bez finiszerów |
+| Izolacje / dribble-drive | Knicks / Thunder | 2+ samodzielnych kreatorów (selfCreation ≥ 85) + spacing | brak rzutu, dwóch na jednej piłce |
+
+Kolejność wdrażania: Motion → Pick-and-roll (część jest) → Post / inside-out → Heliocentryczny → reszta. Każdy osobno, za przełącznikiem, sprawdzany na prawdziwych drużynach danego stylu i na ataku vs ORtg.
