@@ -26,7 +26,8 @@ const CUTTER_SHARE = 0.12;
 const PASSER_AST_PCT = 30;
 
 const pct = (share: number | undefined) => `${Math.round(100 * (share ?? 0))}%`;
-const surname = (name: string) => name.split(' ').slice(-1)[0];
+// 2026-11-20 (testDesk, Norm Van Lier → "Lier"): the desk's own surname rule (Van Lier, Van Horn, Jr. dropped).
+const surname = (name: string) => { const parts = name.replace(/,? (Jr\.|Sr\.|II|III|IV)$/, '').split(' '); const last = parts.length - 1; return last > 0 && /^(Van|Vander|De|Di|Del|Da|La|Le)$/.test(parts[last - 1]) ? `${parts[last - 1]} ${parts[last]}` : parts[last]; };
 
 /** The same roster always reads the same sentence; different rosters read different ones. */
 function pick<T>(team: TeamFeatureSnapshot, variants: T[], salt: string): T {

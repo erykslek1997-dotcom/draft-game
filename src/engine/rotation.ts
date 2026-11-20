@@ -873,7 +873,8 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
 const BENCH_HARD_CAP = 30;
 const ROT_WEAK_TAL = Number(envVar('ROT_WEAK_TAL') ?? 60);
 const ROT_WEAK_STARTER_MAX = Number(envVar('ROT_WEAK_STARTER_MAX') ?? 40);
-const ROT_WEAK_MAX = Number(envVar('ROT_WEAK_MAX') ?? 9);
+/** Applied by the AI's structured rotation only (passed as `weakMax`); the player's rotation keeps its minutes. */
+export const ROT_WEAK_MAX = Number(envVar('ROT_WEAK_MAX') ?? 9);
 /** 2026-11-12 (the user, Fort Worth: Gerald Wallace 36 beside five 36-minute starters — "OBA"): a
  * bench player always plays less than the shortest-playing starter, and never past
  * `BENCH_HARD_CAP`; `BENCH_CAP_FLOOR` keeps a 22-minute starter from squeezing the bench to nothing. */
@@ -882,7 +883,7 @@ export function benchMinutesCap(shortestStarter: number): number {
   if (!Number.isFinite(shortestStarter)) return BENCH_HARD_CAP;
   return Math.max(BENCH_CAP_FLOOR, Math.min(BENCH_HARD_CAP, shortestStarter - 1));
 }
-export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>): void {
+export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, SlotAssignment[]>, weakMax: number = Infinity): void {
   const byId = new Map(roster.map((p) => [p.id, p]));
   const total = (id: string) => STARTER_SLOTS.reduce((m, slot) => m + slots[slot].filter((a) => a.playerId === id).reduce((x, a) => x + a.minutes, 0), 0);
   const ceiling = (p: PlayerSpan) => playableMinutesCap(p, MAX_MINUTES_PER_PLAYER);
@@ -893,7 +894,7 @@ export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, Sl
   const spotsOf = (id: string) => STARTER_SLOTS.filter((slot) => slots[slot].some((a) => a.playerId === id && a.minutes > 0));
   // 2026-11-20 (the user: weak reserves at 10+ minutes — "jesteśmy w stanie zbić do 0%?"): a reserve
   // under `ROT_WEAK_TAL` plays at most `ROT_WEAK_MAX` (off by default); what he loses goes as above.
-  const capOf = (p: PlayerSpan) => (effectiveTalent(p) < ROT_WEAK_TAL ? Math.min(cap, ROT_WEAK_MAX) : cap);
+  const capOf = (p: PlayerSpan) => (effectiveTalent(p) < ROT_WEAK_TAL ? Math.min(cap, weakMax) : cap);
   for (const p of roster) {
     if (starters.has(p.id)) continue;
     let over = total(p.id) - capOf(p);

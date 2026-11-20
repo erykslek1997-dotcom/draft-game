@@ -13,7 +13,7 @@ import { preZoneShootingSkill } from './preZoneShooting';
 import starterShareData from '../data/starterShare.json';
 import type { Rotation } from './types';
 import { envVar } from './env';
-import { capBenchMinutes } from './rotation';
+import { capBenchMinutes, ROT_WEAK_MAX } from './rotation';
 
 /**
  * 2026-11-05, the user's test draft ("każdy ma być na swojej pozycji, oprócz ławkowiczów którzy mogą
@@ -599,7 +599,7 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
   }
   for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((r, i) => i === 0 || r.minutes > 0);
   // The bench under the shortest-playing starter and never past 30 (`benchMinutesCap`).
-  capBenchMinutes(roster, slots);
+  capBenchMinutes(roster, slots, ROT_WEAK_MAX);
   return { slots };
 }
 

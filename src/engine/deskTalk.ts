@@ -369,7 +369,8 @@ const PUSHBACK: Partial<Record<InsightCategory, { praise?: Exchange[]; concern?:
       ['jeremy', '@{who} put Michael anywhere and he fits. this is overthinking', 'This isn’t Michael, Jeremy.', 'nobody is'],['solin', '@{who} put good players out there and let them hoop', 'Good players out of position are average players.', 'nerd']],
   },
 };
-const surnameOf = (name: string) => name.split(' ').slice(-1)[0];
+// 2026-11-20: keeps a "Van" / "De" particle (Norm Van Lier read as "Lier").
+const surnameOf = (name: string) => { const parts = name.replace(/,? (Jr\.|Sr\.|II|III|IV)$/, '').split(' '); const last = parts.length - 1; return last > 0 && /^(Van|Vander|De|Di|Del|Da|La|Le)$/.test(parts[last - 1]) ? `${parts[last - 1]} ${parts[last]}` : parts[last]; };
 
 /** The players a finding names, in the order it names them: its evidence, else the roster names
  * that appear in its sentence. */

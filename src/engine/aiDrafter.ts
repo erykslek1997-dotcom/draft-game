@@ -2339,7 +2339,10 @@ function pickForAiSized(
   // further down this same function.
   const isCapLegal = (fga: number) => totalFga([...currentFgas, fga]) <= capLimit && topFiveFgaLegal(currentFgas, fga, capLimit);
   // The five-dearest limit (`TOP5_CAP`): a player who would break it is off the board for this pick.
-  available = available.filter((p) => topFiveFgaLegal(currentFgas, p.fga, capLimit));
+  {
+    const fits = available.filter((p) => topFiveFgaLegal(currentFgas, p.fga, capLimit));
+    if (fits.length > 0) available = fits;
+  }
   // 2026-11-20 (the user: weak reserves "do 0%?"): nobody under `AI_NO_WEAK` TAL who would play —
   // only glue (≤ 2.5 shots) may be that weak. If that empties the board, the full board stays (0 = off).
   if (AI_NO_WEAK > 0) {
