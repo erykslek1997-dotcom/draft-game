@@ -29,7 +29,7 @@ import { tierContextWithSixthMan } from '../src/engine/sixthMan';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')) as [string, string][]);
 const MICRO = { benchShare: 0.6, minMpg: 18, pts36: 20 };
-const GLUE = { overBox: Number(args.glue ?? 8), minMinutes: 3000, maxTal: 80 };
+const GLUE = { overBox: Number(args.glue ?? 7), minMinutes: 3000, maxTal: 80 };
 const CLUTCH = { tsOver: Number(args.clutch ?? 0.02), minAttempts: 120, shrink: 150 };
 
 const csv = (path: string) => {
@@ -104,10 +104,13 @@ for (const s of draftPool) {
   if (sixth || (bench >= MICRO.benchShare && mpg >= MICRO.minMpg && min && (36 * pts) / min >= MICRO.pts36)) traits.push('Microwave');
   // Glue
   let net = 0, mp = 0, bpm = 0, bmp = 0;
-  for (const y of years) {
+  // 2026-11-20 (the user: Anunoby Glue in 2022-24 only): the seasons either side count at half weight,
+  // so a window does not gain or lose the trait on one noisy on-off year.
+  const glueYears: [number, number][] = [...years.map((y) => [y, 1] as [number, number]), [Math.min(...years) - 1, 0.5], [Math.max(...years) + 1, 0.5]];
+  for (const [y, w] of glueYears) {
     const o = onoff.get(`${name}|${y}`);
     const a = gs.get(`${name}|${y}`);
-    if (o && a?.mp) { net += o.net; mp += o.mp; bpm += a.bpm; bmp += a.mp; }
+    if (o && a?.mp) { net += w * o.net; mp += w * o.mp; bpm += w * a.bpm; bmp += w * a.mp; }
   }
   if (mp >= GLUE.minMinutes && bmp && net / mp - bpm / bmp >= GLUE.overBox && tal < GLUE.maxTal) traits.push('Glue');
   // Clutch

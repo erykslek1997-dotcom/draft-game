@@ -1353,7 +1353,10 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // and the neighbour blend that would otherwise swallow it, and only here — the D-TAL the team
   // scores and the card read — so a player's TAL and tier stay put.
   const blended = Math.max(0, Math.min(100, Math.round(onPositionNeutralDefense(span.primaryPosition, smoothed))));
-  const final = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  // 2026-11-20 (the user: Mbah a Moute, Chuck Hayes, Charlie Ward at 85-89 with no All-Defense): with
+  // award data for the window and no recognition, the hustle bonus and the floors stop at `DT_NOREC_CAP`.
+  const noRecCap = DT_NOREC_CAP < 100 && hasDefenseAwardCoverage(span) && individualDefenseRate(span) === 0 ? DT_NOREC_CAP : 100;
+  const final = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, noRecCap, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
   const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
@@ -1368,6 +1371,7 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
  * `scripts/_dskill.ts`; r with today's D-TAL 0.73-0.81). A window without the skills keeps its D-TAL.
  */
 const DT_SKILL = Number(envVar('DT_SKILL') ?? 0);
+const DT_NOREC_CAP = Number(envVar('DT_NOREC_CAP') ?? 100);
 const SKILL_DEF_SCALE: Record<string, [number, number, number, number]> = {
   PG: [55.0, 20.2, 38.3, 18.9], SG: [49.8, 20.9, 38.0, 18.8], SF: [51.1, 21.2, 40.0, 18.7], PF: [60.4, 14.2, 40.4, 19.2], C: [73.9, 12.7, 49.8, 22.0],
 };
