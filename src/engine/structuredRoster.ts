@@ -306,6 +306,8 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   return { starters, backups: picked.backups, glue, problems };
 }
 
+const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
+const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
 // 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend
 // 40"): nobody plays 48.
@@ -332,8 +334,11 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
   for (const slot of STARTER_SLOTS) {
     const p = s.starters[slot];
     if (!p) continue;
-    slots[slot].push({ playerId: p.id, minutes: STRUCTURE.starterMinutes });
-    left.set(slot, 48 - STRUCTURE.starterMinutes);
+    // 2026-11-20 (the user: reserves at 24-29 minutes; "sprawdź minuty"): `ROT_STAR_MIN` for a star
+    // starter (STRUCTURE_STAR_TAL+), `ROT_START_MIN` for the rest — both 36 by default.
+    const m = effectiveTalent(p) >= STRUCTURE_STAR_TAL ? ROT_STAR_MIN : ROT_START_MIN;
+    slots[slot].push({ playerId: p.id, minutes: m });
+    left.set(slot, 48 - m);
   }
   if (s.slider) {
     // The slider: fewer minutes at home, a stretch at the spot he covers beside that spot's starter.

@@ -3,7 +3,7 @@ import type { Position } from '../data/schema';
 import { envVar } from './env';
 
 /** 2026-11-18 (the user: calibrate on 16 best rosters without the cap): `NO_CAP=1` lifts it (testing only). */
-export const CAP_LIMIT = envVar('NO_CAP') === '1' ? 9999 : 100.9;
+export const CAP_LIMIT = envVar('NO_CAP') === '1' ? 9999 : Number(envVar('CAP') ?? 100.9);
 
 export const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 /**
