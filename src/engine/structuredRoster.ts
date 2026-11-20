@@ -308,6 +308,8 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 
 const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
 const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
+const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 0);
+const NINTH_MINUTES = 10;
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
 // 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend
 // 40"): nobody plays 48.
@@ -578,6 +580,21 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
           }
         }
       }
+    }
+  }
+  // 2026-11-20 (the user: "może być 9 grywalny ławkowicz zamiast glue"): a ninth man who is a real
+  // player (`ROT_NINTH` TAL+, more than glue's shots) takes up to `NINTH_MINUTES` at his own spot from
+  // the backup playing most there, so a two-spot backup is not stuck at 27 minutes (0 = off).
+  if (ROT_NINTH > 0) {
+    for (const g of s.glue) {
+      if (g.fga <= STRUCTURE.glueFga || effectiveTalent(g) < ROT_NINTH) continue;
+      const slot = g.primaryPosition;
+      const starterId = s.starters[slot]?.id;
+      const backup = slots[slot].filter((r) => r.playerId !== starterId && r.minutes > 0).sort((a, b) => b.minutes - a.minutes)[0];
+      if (!backup) continue;
+      const take = Math.min(NINTH_MINUTES, backup.minutes);
+      backup.minutes -= take;
+      slots[slot].push({ playerId: g.id, minutes: take });
     }
   }
   for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((r, i) => i === 0 || r.minutes > 0);

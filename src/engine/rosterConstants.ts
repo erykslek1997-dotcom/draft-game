@@ -25,3 +25,9 @@ export const ROSTER_SIZE = STARTER_SLOTS.length + BENCH_SLOT_COUNT; // 9
 /** Lives here (not draft.ts) so it's available without a circular import wherever the
  * shared cap-legality math needs to know how many teams are contending for the same pool. */
 export const TEAM_COUNT = 16;
+
+/** 2026-11-20 (the user: "105-110 cap, tylko różnica ma być w ławkach a nie w starting5"): the five
+ * dearest players (by FGA) may cost at most `TOP5_CAP` together — the extra cap above 100.9 goes to
+ * the bench. Today's drafts: the five dearest cost 76.5 at the median, 80.5 at most. Off (Infinity)
+ * unless `TOP5_CAP` is set. */
+export const TOP5_CAP = Number(envVar('TOP5_CAP') ?? Infinity);
