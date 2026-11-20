@@ -308,6 +308,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 
 const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
 const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
+const BACKUP_SHIFT = { margin: 5, minutes: Number(envVar('ROT_BACKUP_SHIFT') ?? 10), max: 28, fit: Number(envVar('ROT_BACKUP_FIT') ?? 0.8) };
 const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 60);
 const NINTH_MINUTES = 10;
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
@@ -585,6 +586,29 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
   // 2026-11-20 (the user: "może być 9 grywalny ławkowicz zamiast glue"): a ninth man who is a real
   // player (`ROT_NINTH` TAL+, more than glue's shots) takes up to `NINTH_MINUTES` at his own spot from
   // the backup playing most there, so a two-spot backup is not stuck at 27 minutes (0 = off).
+  // 2026-11-20 (the user's draft review: Payton 81 for 12 minutes beside Nenê 77 for 27): a backup
+  // clearly better (`BACKUP_SHIFT.margin` TAL+) than another takes up to `BACKUP_SHIFT.minutes` of
+  // the weaker one's minutes at a spot he really plays, staying within `BACKUP_SHIFT.max` (0 = off).
+  if (BACKUP_SHIFT.minutes > 0) {
+    const total = (id: string) => STARTER_SLOTS.reduce((m, slot) => m + slots[slot].filter((r) => r.playerId === id).reduce((x, r) => x + r.minutes, 0), 0);
+    const starterIds = new Set(STARTER_SLOTS.map((slot) => s.starters[slot]?.id));
+    const bench = roster.filter((p) => !starterIds.has(p.id) && total(p.id) > 0).sort((a, b) => effectiveTalent(b) - effectiveTalent(a));
+    for (const good of bench) {
+      for (const weak of [...bench].reverse()) {
+        if (effectiveTalent(good) - effectiveTalent(weak) < BACKUP_SHIFT.margin) break;
+        for (const slot of STARTER_SLOTS) {
+          const row = slots[slot].find((r) => r.playerId === weak.id && r.minutes > 0);
+          if (!row || positionFitMultiplier(good, slot) < BACKUP_SHIFT.fit) continue;
+          const take = Math.min(BACKUP_SHIFT.minutes, row.minutes, BACKUP_SHIFT.max - total(good.id));
+          if (take <= 0) continue;
+          row.minutes -= take;
+          const mine = slots[slot].find((r) => r.playerId === good.id);
+          if (mine) mine.minutes += take;
+          else slots[slot].push({ playerId: good.id, minutes: take });
+        }
+      }
+    }
+  }
   if (ROT_NINTH > 0) {
     for (const g of s.glue) {
       if (g.fga <= STRUCTURE.glueFga || effectiveTalent(g) < ROT_NINTH) continue;
