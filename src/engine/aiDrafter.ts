@@ -1991,6 +1991,9 @@ export function completeRosterGreedy(roster: PlayerSpan[], byTalent: PlayerSpan[
  */
 const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
+// 2026-11-20 (the user: weak reserves at 10+ minutes "do 0%?"): a role is filled only by a player of
+// `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
+const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 0);
 const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
 const AI_BENCH_SCORER = envVar('AI_BENCH_SCORER') === '1';
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);
@@ -3044,7 +3047,7 @@ function pickForAiSized(
       const taken = new Set(roster.map((r) => normalizePlayerName(r.playerName)));
       for (const role of roles) {
         const pick = available
-          .filter((p) => role(p) && (AI_PLAN.benchOCost === 0 || computeOffensiveTalent(p) >= AI_PLAN.benchMinO) && !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
+          .filter((p) => role(p) && effectiveTalent(p) >= AI_BENCH_ROLE_MINTAL && (AI_PLAN.benchOCost === 0 || computeOffensiveTalent(p) >= AI_PLAN.benchMinO) && !taken.has(normalizePlayerName(p.playerName)) && p.fga <= room && effectiveTalent(p) < STRUCTURE_STAR_TAL
             && (!structureHoles || (canStillComplete([...roster, p], rosterSize, capLimit - spent - p.fga) && keepsRoles(roster, p))))
           .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
         if (pick) return pick;
