@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
+import { CAP_LIMIT } from '../engine/rosterConstants';
 
 /**
  * 2026-11-12: Mini Draft with friends. A room is a board (its seed) that up to `MAX_PLAYERS` people
@@ -108,7 +109,7 @@ export async function createRoom(nick: string, level: number, kind: RoomKind = '
   const allTime = kind === 'alltime';
   if (!supabase || !(await ensureSession())) return { error: 'offline' };
   const seed = Math.floor(Math.random() * 2 ** 31);
-  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : allTime ? ALLTIME_MAX_PLAYERS : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : allTime ? ALLTIME_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: allTime ? 100.9 : cap, p_rounds: allTime ? 9 : 5 });
+  const { data, error } = await supabase.rpc('mp_create', { p_seed: seed, p_nick: nick, p_level: level, p_max: duel ? 2 : allTime ? ALLTIME_MAX_PLAYERS : MAX_PLAYERS, p_clock: duel ? DUEL_CLOCK_S : allTime ? ALLTIME_CLOCK_S : PICK_CLOCK_S, p_teams: duel ? 2 : 16, p_cap: allTime ? CAP_LIMIT : cap, p_rounds: allTime ? 9 : 5 });
   return error ? { error: errorOf(error.message) } : { code: data as string };
 }
 

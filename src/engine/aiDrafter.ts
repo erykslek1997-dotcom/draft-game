@@ -1993,8 +1993,8 @@ const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 // 2026-11-20 (the user: weak reserves at 10+ minutes "do 0%?"): a role is filled only by a player of
 // `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
-const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 0);
-const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 0);
+const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 62);
+const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 60);
 const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
 const AI_BENCH_SCORER = envVar('AI_BENCH_SCORER') === '1';
 const AI_BENCH_GREEDY = Number(envVar('AI_BENCH_GREEDY') ?? 0);

@@ -293,7 +293,7 @@ const CORE_BEEFS: Beef[] = [
             ? `Your bench is ${c.names(c.read.bench, 2)} and a prayer. Somebody call a doctor. Call two.`
             : 'Your bench is a rumour and a prayer. Somebody call a doctor. Call two.'],
           ['lex', '2017 Warriors. Four All-Stars. 16–1 in the playoffs. Ratio.'],
-          ['natalie', '@Lex the Warriors could pay for that. You have 100.9 caps, same as everyone. Rules are rules.', 'cuts'],
+          ['natalie', '@Lex the Warriors could pay for that. You have 110 caps, same as everyone. Rules are rules.', 'cuts'],
           ['lex', 'Money is for people who can’t win without counting it.'],
           ['natalie', 'So is your bench.'],
         ],

@@ -361,7 +361,7 @@ const PUSHBACK: Partial<Record<InsightCategory, { praise?: Exchange[]; concern?:
   },
   fga: {
     concern: [
-      ['prab', '@{who} stars cost money, Natalie. Kobe cost money', 'Kobe’s team had Pau, my friend.', 'don’t'],['lex', '@{who} stars cost money. deal with it, accountant', 'Nine stars don’t fit under 100.9 caps. That’s the rule.', 'rules are for role players']],
+      ['prab', '@{who} stars cost money, Natalie. Kobe cost money', 'Kobe’s team had Pau, my friend.', 'don’t'],['lex', '@{who} stars cost money. deal with it, accountant', 'Nine stars don’t fit under 110 caps. That’s the rule.', 'rules are for role players']],
   },
   fit: {
     concern: [

@@ -308,7 +308,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 
 const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
 const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
-const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 0);
+const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 60);
 const NINTH_MINUTES = 10;
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
 // 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend

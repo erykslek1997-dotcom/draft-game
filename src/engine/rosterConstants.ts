@@ -3,7 +3,7 @@ import type { Position } from '../data/schema';
 import { envVar } from './env';
 
 /** 2026-11-18 (the user: calibrate on 16 best rosters without the cap): `NO_CAP=1` lifts it (testing only). */
-export const CAP_LIMIT = envVar('NO_CAP') === '1' ? 9999 : Number(envVar('CAP') ?? 100.9);
+export const CAP_LIMIT = envVar('NO_CAP') === '1' ? 9999 : Number(envVar('CAP') ?? 110);
 
 export const STARTER_SLOTS: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
 /**
@@ -31,4 +31,4 @@ export const TEAM_COUNT = 16;
  * five dearest players within this share of the draft's cap, so the cap above the old 100.9 goes to its
  * bench. `TOP5_SHARE` (e.g. 0.7273 = 80/110); off (Infinity) unless set. `TOP5_CAP` = an absolute
  * limit at the normal cap, for the earlier measurements. */
-export const TOP5_SHARE = envVar('TOP5_SHARE') ? Number(envVar('TOP5_SHARE')) : envVar('TOP5_CAP') ? Number(envVar('TOP5_CAP')) / CAP_LIMIT : Infinity;
+export const TOP5_SHARE = envVar('TOP5_SHARE') ? Number(envVar('TOP5_SHARE')) : envVar('TOP5_CAP') ? Number(envVar('TOP5_CAP')) / CAP_LIMIT : 80 / 110;

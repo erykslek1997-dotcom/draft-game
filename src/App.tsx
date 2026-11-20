@@ -88,7 +88,7 @@ const DISPLAY_QUICK_CAP_LIMIT = 70;
 /** Same hand-kept-constant pattern, revived for the mode cards' own "?" popovers below (2026-09-17,
  * user's own ask — a quick-glance rules check without leaving the menu). Kept in sync with
  * `engine/positions.ts`'s real `CAP_LIMIT`/`BENCH_SLOT_COUNT` by the same standing check. */
-const DISPLAY_CAP_LIMIT = 100.9;
+const DISPLAY_CAP_LIMIT = 110;
 const DISPLAY_BENCH_SLOT_COUNT = 4;
 
 /** Same copy as each mode's own in-flow "How to play?" (GameShell.tsx's `DRAFT_HOW_TO_PLAY`,
