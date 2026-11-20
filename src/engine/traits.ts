@@ -1,3 +1,4 @@
+import { envVar } from './env';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import traitData from '../data/playerTraits.json';
@@ -20,7 +21,7 @@ const DATA = traitData as unknown as Record<string, Trait[]>;
 export const CLUTCH_TRAIT = { make: 0.02, starness: 0.8 };
 export const MICROWAVE = { make: 0.015 };
 export const GLUE = { make: 0.004 };
-export const TRAIT_FIT = { veteran: 2, microwave: 2, glue: 2, glueSecond: 1 };
+export const TRAIT_FIT = { veteran: 2, microwave: 2, glue: Number(envVar('TRAIT_GLUE') ?? 2), glueSecond: Number(envVar('TRAIT_GLUE') ?? 2) / 2 };
 
 export function traitsFor(span: PlayerSpan): Trait[] {
   const t = [...(DATA[span.id] ?? [])];

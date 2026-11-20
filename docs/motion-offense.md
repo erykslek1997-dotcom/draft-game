@@ -52,3 +52,6 @@ Kolejność wdrażania: Motion → Pick-and-roll (część jest) → Post / insi
 - **Gra tyłem do kosza (inside-out)** — odrzucony (`OFF_INSIDE_W`, wyłączony): każdy wariant obniża atak vs ORtg (0.768 → 0.765-0.766). Prawdziwe drużyny tego stylu (Rockets 1994, Magic 1995, Spurs 2003) miały 1-2 strzelców i drugiego wysokiego bez rzutu, a silnik i tak ocenia ich atak dobrze — premia za „idealne” otoczenie nie ma oparcia w danych. Kara za dwóch wysokich bez rzutu już jest (reguły z oceny: tłok w pomalowanym).
 - **Heliocentryczny** — włączony (`OFF_HELIO_W=3`): jedna gwiazda z piłką (usage ≥ 0.6, handling ≥ 90), pełny dodatek przy 4 strzelcach wokół, połowa przy 3. Atak vs ORtg 0.7680 → 0.7685 w obu połowach.
 - **Pick-and-roll** — odrzucony (`OFF_PNR_W`, wyłączony): 0.7685 → 0.759-0.765. Parę rozgrywający + wysoki silnik już liczy (`mismatchStructure`), dodatek liczył ją drugi raz.
+- **Showtime** (`OFF_SHOW_W`, wyłączony): bez efektu — na prawdziwych drużynach prawie nikt nie spełnia warunków (podający 92+ i 2-3 kończących z rim pressure 75+); do przemyślenia warunków (zbiórki, tempo).
+- **Izolacje** (`OFF_ISO_W`, wyłączony): wynik mieszany (jedna połowa danych w górę, druga w dół) — szum, odrzucony.
+- Do zrobienia: trójkąt, szybki atak małą piątką (dziś pokrywa się z helio + PnR).

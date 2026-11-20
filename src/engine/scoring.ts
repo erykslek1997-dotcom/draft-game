@@ -1076,7 +1076,7 @@ const OFFENSE_RAW_TOP = Number(envVar('OFF_RAW_TOP') ?? 110);
  */
 const ELITE_ENGINE_FLOOR_ON = envVar('ENGINE_FLOOR') === '1';
 const OFF_FLOOR_W = Number(envVar('OFF_FLOOR_W') ?? 0.15);
-const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0.35);
+const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0.15);
 /** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
 const OFF_COH = Number(envVar('OFF_COH') ?? 0); // 2026-11-19: off — it paid for a second and third elite scorer, the overload the user's review penalises; real ORtg r 0.766 → 0.769 without it.
 const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
@@ -1159,6 +1159,30 @@ export function pnrOffense(five: PlayerSpan[]): { points: number; met: number } 
   return { points: shooters >= PNR.shooters ? PNR.w : 0, met: 2 + (shooters >= PNR.shooters ? 1 : 0) };
 }
 
+/**
+ * 2026-11-20 (docs/motion-offense.md, style 5 — Lakers 1985-87): an elite passer (playmaking 92+) and
+ * three who finish at the rim (rim pressure 75+). `OFF_SHOW_W` raw points, 0 = off.
+ */
+const SHOW = { w: Number(envVar('OFF_SHOW_W') ?? 0), finishers: Number(envVar('OFF_SHOW_FIN') ?? 3) };
+export function showtimeOffense(five: PlayerSpan[]): { points: number; met: number } {
+  if (SHOW.w === 0 || five.length < 5) return { points: 0, met: 0 };
+  const passer = five.find((p) => (playmakingScoreForPlayer(p) ?? 0) >= 92);
+  if (!passer) return { points: 0, met: 0 };
+  const fin = five.filter((p) => p !== passer && rimPressureForFit(p) >= 75).length;
+  return { points: fin >= SHOW.finishers ? SHOW.w : 0, met: fin };
+}
+/**
+ * 2026-11-20 (style 8 — isolation scorers): two or more who create their own shot (self-creation 85+)
+ * with the floor spaced (3+ shooters among the five). `OFF_ISO_W` raw points, 0 = off.
+ */
+const ISO = { w: Number(envVar('OFF_ISO_W') ?? 0) };
+export function isoOffense(five: PlayerSpan[]): { points: number; met: number } {
+  if (ISO.w === 0 || five.length < 5) return { points: 0, met: 0 };
+  const creators = five.filter((p) => (skill(p, 'selfCreation') ?? 0) >= 85).length;
+  const shooters = five.filter((p) => teamSpacingValue(p) >= 55).length;
+  return { points: creators >= 2 && shooters >= 3 ? ISO.w : 0, met: creators };
+}
+
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1182,7 +1206,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points;
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
@@ -1287,6 +1311,30 @@ const DEF_PARTS = { hunt: !DEF_OFF.has('hunt'), cohesion: !DEF_OFF.has('cohesion
  * game / real team DRtg at 1: 0.8577 / 0.8050 / 0.775; 0.5: 0.8582 / 0.8063 / 0.778; 0: 0.8587 / 0.8090 / 0.780. */
 // 2026-11-14, the user ("to co poprawia wprowadzamy"): off.
 const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 0);
+/**
+ * 2026-11-20 (docs/defense-styles.md; the user: "kilka styli które łapią się w def cohesion"): a five
+ * built for one defensive scheme gets `DEF_STYLE.w` raw points for each it fits (the best one counts):
+ *  - drop: a rim protector at D-TAL 85+ and two perimeter defenders at 70+;
+ *  - switch: four starters at D-TAL 70+ and nobody under 60;
+ *  - pressure: three starters with defensive activity 70+;
+ *  - paint: two bigs at D-TAL 75+.
+ * `DEF_STYLE_W` (0 = off); `DEF_STYLE_ONLY` = one style's name to measure it alone.
+ */
+const DEF_STYLE = { w: Number(envVar('DEF_STYLE_W') ?? 0), only: envVar('DEF_STYLE_ONLY') ?? '' };
+export function defenseStyleBonus(five: PlayerSpan[]): number {
+  if (DEF_STYLE.w === 0 || five.length < 5) return 0;
+  const d = (p: PlayerSpan) => computeDefensiveTalent(p);
+  const big = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
+  const styles: Record<string, boolean> = {
+    drop: five.some((p) => big(p) && isRimProtector(p) && d(p) >= 85) && five.filter((p) => !big(p) && d(p) >= 70).length >= 2,
+    switch: five.filter((p) => d(p) >= 70).length >= 4 && five.every((p) => d(p) >= 60),
+    pressure: five.filter((p) => (skill(p, 'activity') ?? 0) >= 70).length >= 3,
+    paint: five.filter((p) => big(p) && d(p) >= 75).length >= 2,
+  };
+  const fits = Object.entries(styles).filter(([k, v]) => v && (!DEF_STYLE.only || k === DEF_STYLE.only));
+  return fits.length > 0 ? DEF_STYLE.w : 0;
+}
+
 export function defenseScore(team: Team): number {
   const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
@@ -1299,7 +1347,8 @@ export function defenseScore(team: Team): number {
   const adjusted =
     linearScore -
     (DEF_PARTS.hunt ? defensiveHuntability(team).penalty : 0) +
-    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0);
+    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0) +
+    defenseStyleBonus(primaryStarters(team).map((a) => a.player));
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
   return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'))));

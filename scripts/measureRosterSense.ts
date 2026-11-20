@@ -51,8 +51,8 @@ for (let d = 0; d < N; d++) {
     if ((bestTal.get(key(p.playerName)) ?? 0) >= 90) falls.push(e.pickNumber - talRank.get(key(p.playerName))!);
   }
   for (const t of s.teams) {
-    // `ROSTER_ROT=ai`: the game's CPU rotation (aiRotation, structured) instead of autoAssignRotation.
-    const rotation = process.env.ROSTER_ROT === 'ai' ? aiRotation(t.roster) : autoAssignRotation(t.roster);
+    // The game's CPU rotation (aiRotation) by default; `ROSTER_ROT=auto` = the old autoAssignRotation read.
+    const rotation = process.env.ROSTER_ROT === 'auto' ? autoAssignRotation(t.roster) : aiRotation(t.roster);
     const starters = new Set(STARTER_SLOTS.map((slot) => rotation.slots[slot][0]?.playerId));
     const minutes = new Map<string, number>();
     for (const slot of STARTER_SLOTS) for (const a of rotation.slots[slot]) minutes.set(a.playerId, (minutes.get(a.playerId) ?? 0) + a.minutes);
