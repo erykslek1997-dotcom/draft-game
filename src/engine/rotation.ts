@@ -872,6 +872,7 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
  */
 const BENCH_HARD_CAP = 30;
 const ROT_WEAK_TAL = Number(envVar('ROT_WEAK_TAL') ?? 60);
+const ROT_WEAK_STARTER_MAX = 40;
 const ROT_WEAK_MAX = Number(envVar('ROT_WEAK_MAX') ?? Infinity);
 /** 2026-11-12 (the user, Fort Worth: Gerald Wallace 36 beside five 36-minute starters — "OBA"): a
  * bench player always plays less than the shortest-playing starter, and never past
@@ -917,6 +918,18 @@ export function capBenchMinutes(roster: PlayerSpan[], slots: Record<Position, Sl
         r.a.minutes -= take;
         give -= take;
         over -= take;
+      }
+      // A weak reserve's leftover with nobody under his ceiling to take it (Prigioni 34, Salley 26):
+      // the slot's starter goes past his tier's minutes, up to `ROT_WEAK_STARTER_MAX`.
+      const sid = slots[r.slot][0]?.playerId;
+      if (give > 0 && capOf(p) < cap && sid && sid !== p.id) {
+        const take = Math.max(0, Math.min(give, ROT_WEAK_STARTER_MAX - total(sid)));
+        if (take > 0) {
+          slots[r.slot][0].minutes += take;
+          r.a.minutes -= take;
+          give -= take;
+          over -= take;
+        }
       }
     }
   }
