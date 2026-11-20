@@ -308,7 +308,7 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
 
 const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
 const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
-const BACKUP_SHIFT = { margin: 5, minutes: Number(envVar('ROT_BACKUP_SHIFT') ?? 0), max: 28 };
+const BACKUP_SHIFT = { margin: 5, minutes: Number(envVar('ROT_BACKUP_SHIFT') ?? 10), max: 28, fit: Number(envVar('ROT_BACKUP_FIT') ?? 0.8) };
 const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 60);
 const NINTH_MINUTES = 10;
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
@@ -598,7 +598,7 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
         if (effectiveTalent(good) - effectiveTalent(weak) < BACKUP_SHIFT.margin) break;
         for (const slot of STARTER_SLOTS) {
           const row = slots[slot].find((r) => r.playerId === weak.id && r.minutes > 0);
-          if (!row || !isRealPositionFit(good, slot)) continue;
+          if (!row || positionFitMultiplier(good, slot) < BACKUP_SHIFT.fit) continue;
           const take = Math.min(BACKUP_SHIFT.minutes, row.minutes, BACKUP_SHIFT.max - total(good.id));
           if (take <= 0) continue;
           row.minutes -= take;
