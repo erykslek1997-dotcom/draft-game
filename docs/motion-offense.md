@@ -46,3 +46,7 @@ Każdy styl: warunki z danych, które silnik już ma (usage, handling, playmakin
 | Izolacje / dribble-drive | Knicks / Thunder | 2+ samodzielnych kreatorów (selfCreation ≥ 85) + spacing | brak rzutu, dwóch na jednej piłce |
 
 Kolejność wdrażania: Motion → Pick-and-roll (część jest) → Post / inside-out → Heliocentryczny → reszta. Każdy osobno, za przełącznikiem, sprawdzany na prawdziwych drużynach danego stylu i na ataku vs ORtg.
+
+## Wyniki
+- **Motion / Princeton** — włączony (`OFF_MOTION_W=4`, 4 z 5 warunków): atak vs ORtg 0.7671 → 0.7680 w obu połowach; Kings 2002 i Cheyenne się kwalifikują, Spurs 2014 nie (ich ruch piłki grał ławką).
+- **Gra tyłem do kosza (inside-out)** — odrzucony (`OFF_INSIDE_W`, wyłączony): każdy wariant obniża atak vs ORtg (0.768 → 0.765-0.766). Prawdziwe drużyny tego stylu (Rockets 1994, Magic 1995, Spurs 2003) miały 1-2 strzelców i drugiego wysokiego bez rzutu, a silnik i tak ocenia ich atak dobrze — premia za „idealne” otoczenie nie ma oparcia w danych. Kara za dwóch wysokich bez rzutu już jest (reguły z oceny: tłok w pomalowanym).

@@ -19,6 +19,7 @@ import {
 import { rimPressure, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
+import { rimPressureForFit } from './rimPressure';
 import { LOW_OFFENSE_BIG_OTAL_CEILING, LOW_USAGE_BIG_FGA_CEILING } from './aiDrafter';
 import { positionCompetence, PARTIAL_POSITION_GRACE_MINUTES } from './positionCompetence';
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
@@ -1103,6 +1104,27 @@ export function motionOffense(five: PlayerSpan[]): { points: number; met: number
   return { points: met >= MOTION.min ? (MOTION.w * (met - MOTION.min + 1)) / (6 - MOTION.min) : 0, met };
 }
 
+/**
+ * 2026-11-20 (docs/motion-offense.md, style 2 — Shaq 2000, Hakeem 1994, Duncan 2003): a paint anchor
+ * (a big with rim pressure 85+, O-TAL 80+, real usage) who draws the double team, and around him
+ * shooters to kick it out to, the other big out of his way. Up to `INSIDE.w` raw points, only with the
+ * anchor and at least `INSIDE.min` of the other conditions (`OFF_INSIDE_W`, 0 = off).
+ */
+const INSIDE = { w: Number(envVar('OFF_INSIDE_W') ?? 0), min: Number(envVar('OFF_INSIDE_MIN') ?? 2), shooters: Number(envVar('OFF_INSIDE_SHOOT') ?? 3) };
+export function insideOutOffense(five: PlayerSpan[]): { points: number; met: number } {
+  if (INSIDE.w === 0 || five.length < 5) return { points: 0, met: 0 };
+  const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
+  const big = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
+  const anchor = five.find((p) => big(p) && rimPressureForFit(p) >= 85 && computeOffensiveTalent(p) >= 80 && use(p) >= 0.4);
+  if (!anchor) return { points: 0, met: 0 };
+  const rest = five.filter((p) => p !== anchor);
+  const met =
+    (rest.filter((p) => teamSpacingValue(p) >= 55).length >= INSIDE.shooters ? 1 : 0) +
+    (rest.filter(big).every((p) => teamSpacingValue(p) >= 40) ? 1 : 0) +
+    (rest.filter((p) => use(p) >= 0.5).length <= 1 ? 1 : 0);
+  return { points: met >= INSIDE.min ? (INSIDE.w * (met - INSIDE.min + 1)) / (4 - INSIDE.min) : 0, met };
+}
+
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1125,7 +1147,8 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   // rarely have such a pair, so the NBA judges barely see it.
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(primaryStarters(team).map((e) => e.player)).points;
+  const fivePlayers = primaryStarters(team).map((e) => e.player);
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
