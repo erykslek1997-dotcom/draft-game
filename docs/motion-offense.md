@@ -50,3 +50,5 @@ Kolejność wdrażania: Motion → Pick-and-roll (część jest) → Post / insi
 ## Wyniki
 - **Motion / Princeton** — włączony (`OFF_MOTION_W=4`, 4 z 5 warunków): atak vs ORtg 0.7671 → 0.7680 w obu połowach; Kings 2002 i Cheyenne się kwalifikują, Spurs 2014 nie (ich ruch piłki grał ławką).
 - **Gra tyłem do kosza (inside-out)** — odrzucony (`OFF_INSIDE_W`, wyłączony): każdy wariant obniża atak vs ORtg (0.768 → 0.765-0.766). Prawdziwe drużyny tego stylu (Rockets 1994, Magic 1995, Spurs 2003) miały 1-2 strzelców i drugiego wysokiego bez rzutu, a silnik i tak ocenia ich atak dobrze — premia za „idealne” otoczenie nie ma oparcia w danych. Kara za dwóch wysokich bez rzutu już jest (reguły z oceny: tłok w pomalowanym).
+- **Heliocentryczny** — włączony (`OFF_HELIO_W=3`): jedna gwiazda z piłką (usage ≥ 0.6, handling ≥ 90), pełny dodatek przy 4 strzelcach wokół, połowa przy 3. Atak vs ORtg 0.7680 → 0.7685 w obu połowach.
+- **Pick-and-roll** — odrzucony (`OFF_PNR_W`, wyłączony): 0.7685 → 0.759-0.765. Parę rozgrywający + wysoki silnik już liczy (`mismatchStructure`), dodatek liczył ją drugi raz.
