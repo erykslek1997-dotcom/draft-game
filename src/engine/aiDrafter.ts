@@ -1993,6 +1993,7 @@ const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 // 2026-11-20 (the user: weak reserves at 10+ minutes "do 0%?"): a role is filled only by a player of
 // `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
+const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 0);
 const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 0);
 const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
 const AI_BENCH_SCORER = envVar('AI_BENCH_SCORER') === '1';
@@ -2339,6 +2340,12 @@ function pickForAiSized(
   const isCapLegal = (fga: number) => totalFga([...currentFgas, fga]) <= capLimit && topFiveFgaLegal(currentFgas, fga, capLimit);
   // The five-dearest limit (`TOP5_CAP`): a player who would break it is off the board for this pick.
   available = available.filter((p) => topFiveFgaLegal(currentFgas, p.fga, capLimit));
+  // 2026-11-20 (the user: weak reserves "do 0%?"): nobody under `AI_NO_WEAK` TAL who would play —
+  // only glue (≤ 2.5 shots) may be that weak. If that empties the board, the full board stays (0 = off).
+  if (AI_NO_WEAK > 0) {
+    const kept = available.filter((p) => p.fga <= 2.5 || effectiveTalent(p) >= AI_NO_WEAK);
+    if (kept.length > 0) available = kept;
+  }
   const slotsLeft = rosterSize - roster.length;
   const needs = assessNeeds(roster);
   const spent = currentFgas.reduce((s, f) => s + f, 0);
