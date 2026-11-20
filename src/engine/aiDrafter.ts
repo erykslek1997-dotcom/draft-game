@@ -2344,7 +2344,10 @@ function pickForAiSized(
   // only glue (≤ 2.5 shots) may be that weak. If that empties the board, the full board stays (0 = off).
   if (AI_NO_WEAK > 0) {
     const kept = available.filter((p) => p.fga <= 2.5 || effectiveTalent(p) >= AI_NO_WEAK);
-    if (kept.length > 0) available = kept;
+    // The floor must not leave a hole the glue then has to start in (Kurt Rambis 39 minutes): when no
+    // player it keeps can still complete the shape, the full board stays.
+    const shapeOk = (list: PlayerSpan[]) => !structureHoles || list.some((p) => canStillComplete([...roster, p], rosterSize, capLimit - currentFgas.reduce((a, b) => a + b, 0) - p.fga));
+    if (kept.length > 0 && shapeOk(kept)) available = kept;
   }
   const slotsLeft = rosterSize - roster.length;
   const needs = assessNeeds(roster);
