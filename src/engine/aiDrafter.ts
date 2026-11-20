@@ -2024,7 +2024,7 @@ export const AI_PLAN = {
   passes: 2,
   warmPasses: Number(envVar('AI_PLAN_WARM') ?? 1),
   crowdCost: 1.5,
-  benchCost: Number(envVar('AI_PLAN_BENCH') ?? 0),
+  benchCost: Number(envVar('AI_PLAN_BENCH') ?? 1),
   benchFloor: Number(envVar('AI_PLAN_BENCH_FLOOR') ?? 68),
   share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => (envVar(k) ?? '0') === '1'),
 };
