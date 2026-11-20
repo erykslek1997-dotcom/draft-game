@@ -2,6 +2,7 @@ import { activeDraftPool, autoFinishDraft, createDraft } from '../src/engine/dra
 import { effectiveTalent } from '../src/engine/grades';
 import { normalizePlayerName } from '../src/data/schema';
 import { autoAssignRotation } from '../src/engine/rotation';
+import { aiRotation } from '../src/engine/finalizeAiRoster';
 import { scoreTeam } from '../src/engine/scoring';
 import { STARTER_SLOTS } from '../src/engine/positions';
 import { AI_PLAN } from '../src/engine/aiDrafter';
@@ -50,7 +51,8 @@ for (let d = 0; d < N; d++) {
     if ((bestTal.get(key(p.playerName)) ?? 0) >= 90) falls.push(e.pickNumber - talRank.get(key(p.playerName))!);
   }
   for (const t of s.teams) {
-    const rotation = autoAssignRotation(t.roster);
+    // `ROSTER_ROT=ai`: the game's CPU rotation (aiRotation, structured) instead of autoAssignRotation.
+    const rotation = process.env.ROSTER_ROT === 'ai' ? aiRotation(t.roster) : autoAssignRotation(t.roster);
     const starters = new Set(STARTER_SLOTS.map((slot) => rotation.slots[slot][0]?.playerId));
     const minutes = new Map<string, number>();
     for (const slot of STARTER_SLOTS) for (const a of rotation.slots[slot]) minutes.set(a.playerId, (minutes.get(a.playerId) ?? 0) + a.minutes);
@@ -59,6 +61,7 @@ for (let d = 0; d < N; d++) {
     five.push(mean(t.roster.filter((p) => starters.has(p.id)).map(effectiveTalent)));
     bench.push(bm ? b.reduce((x, p) => x + effectiveTalent(p) * minutes.get(p.id)!, 0) / bm : 0);
     weak.push(t.roster.some((p) => effectiveTalent(p) < 60 && (minutes.get(p.id) ?? 0) >= 10) ? 1 : 0);
+    if (process.env.WEAK_LOG) for (const p of t.roster) if (effectiveTalent(p) < 60 && (minutes.get(p.id) ?? 0) >= 10) console.log('WEAK', p.playerName, p.spanLabel, effectiveTalent(p).toFixed(0), minutes.get(p.id), starters.has(p.id) ? 'starter' : 'bench');
     const sc = scoreTeam({ ...t, rotation });
     lowFit.push(sc.fitScore < 55 ? 1 : 0);
     lowSpc.push(sc.spacingScore < 55 ? 1 : 0);

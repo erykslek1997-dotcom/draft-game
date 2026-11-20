@@ -255,7 +255,7 @@ const VOICE: Partial<Record<ExpertId, { praise: string[]; concern: string[] }>> 
   },
   natalie: {
     praise: ['{m} That’s how you spend money. Some of you should take notes.', '{m} Under budget AND good. Rare on this desk.'],
-    concern: ['{m} Fraud contract energy.', '{m} Rules are rules. 100.9 caps. Learn to count.'],
+    concern: ['{m} Fraud contract energy.', '{m} Rules are rules. 110 caps. Learn to count.'],
   },
   prab: {
     praise: ['{m} Kobe would sign off on that, my friend.', '{m} That’s a closer. The rest of you wouldn’t know one.'],
@@ -311,7 +311,7 @@ function flavourTakes(read: RosterRead): Take[] {
   else if (read.stars.length === 0) add('lex', -0.5, 'concern', 'Not a single star. A roster built on good vibes. I’ll enjoy watching this one lose. 👏', 'noStars');
   if (read.international.length >= 2) add('zoran', 0.3 + 0.15 * read.international.length, 'praise', `${names(read.international)}! *hand on heart* Finally, a roster that has seen a passport.`, 'international');
   if (read.steal) add('natalie', 0.6, 'praise', `${surname(read.steal)} for ${caps(read.steal)} caps? Somebody call the police. That’s theft.`, 'steal');
-  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 100.9 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. Fraud contract. *closes the laptop very slowly*`, 'overpay');
+  else if (read.overpay) add('natalie', -0.6, 'concern', `Rules are rules: 110 caps. ${surname(read.overpay)} ate ${caps(read.overpay)} of them. Fraud contract. *closes the laptop very slowly*`, 'overpay');
   const variant = (lines: string[]) => lines[read.all.reduce((n, p) => n + p.playerName.length, 0) % lines.length];
   if (read.prePbp.length >= 3) add('onoffsky', -0.45, 'concern', `${names(read.prePbp)}. *adjusts glasses* No play-by-play before 1996. For all I know they’re folklore with a box score.`, 'prePbp');
   else if (read.prePbp.length === 0) add('onoffsky', 0.4, 'praise', 'Every player here has full play-by-play. On/off, lineups, tracking. I am at peace. 🤓', 'fullPbp');

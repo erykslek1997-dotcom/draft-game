@@ -13,7 +13,7 @@ import { preZoneShootingSkill } from './preZoneShooting';
 import starterShareData from '../data/starterShare.json';
 import type { Rotation } from './types';
 import { envVar } from './env';
-import { capBenchMinutes } from './rotation';
+import { capBenchMinutes, ROT_WEAK_MAX } from './rotation';
 
 /**
  * 2026-11-05, the user's test draft ("każdy ma być na swojej pozycji, oprócz ławkowiczów którzy mogą
@@ -306,6 +306,10 @@ function bestBench(starters: Partial<Record<Position, PlayerSpan>>, rest: Player
   return { starters, backups: picked.backups, glue, problems };
 }
 
+const ROT_STAR_MIN = Number(envVar('ROT_STAR_MIN') ?? STRUCTURE.starterMinutes);
+const ROT_START_MIN = Number(envVar('ROT_START_MIN') ?? STRUCTURE.starterMinutes);
+const ROT_NINTH = Number(envVar('ROT_NINTH') ?? 60);
+const NINTH_MINUTES = 10;
 const QUALITY_SHIFT = { margin: 5, minutes: 6, starterFloor: 30, backupMax: 30 };
 // 2026-11-06, the user ("nie może być czegoś takiego jak 'no one else here'", then "GOAT 42, legend
 // 40"): nobody plays 48.
@@ -332,8 +336,11 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
   for (const slot of STARTER_SLOTS) {
     const p = s.starters[slot];
     if (!p) continue;
-    slots[slot].push({ playerId: p.id, minutes: STRUCTURE.starterMinutes });
-    left.set(slot, 48 - STRUCTURE.starterMinutes);
+    // 2026-11-20 (the user: reserves at 24-29 minutes; "sprawdź minuty"): `ROT_STAR_MIN` for a star
+    // starter (STRUCTURE_STAR_TAL+), `ROT_START_MIN` for the rest — both 36 by default.
+    const m = effectiveTalent(p) >= STRUCTURE_STAR_TAL ? ROT_STAR_MIN : ROT_START_MIN;
+    slots[slot].push({ playerId: p.id, minutes: m });
+    left.set(slot, 48 - m);
   }
   if (s.slider) {
     // The slider: fewer minutes at home, a stretch at the spot he covers beside that spot's starter.
@@ -575,9 +582,24 @@ export function structuredRotation(roster: PlayerSpan[]): Rotation {
       }
     }
   }
+  // 2026-11-20 (the user: "może być 9 grywalny ławkowicz zamiast glue"): a ninth man who is a real
+  // player (`ROT_NINTH` TAL+, more than glue's shots) takes up to `NINTH_MINUTES` at his own spot from
+  // the backup playing most there, so a two-spot backup is not stuck at 27 minutes (0 = off).
+  if (ROT_NINTH > 0) {
+    for (const g of s.glue) {
+      if (g.fga <= STRUCTURE.glueFga || effectiveTalent(g) < ROT_NINTH) continue;
+      const slot = g.primaryPosition;
+      const starterId = s.starters[slot]?.id;
+      const backup = slots[slot].filter((r) => r.playerId !== starterId && r.minutes > 0).sort((a, b) => b.minutes - a.minutes)[0];
+      if (!backup) continue;
+      const take = Math.min(NINTH_MINUTES, backup.minutes);
+      backup.minutes -= take;
+      slots[slot].push({ playerId: g.id, minutes: take });
+    }
+  }
   for (const slot of STARTER_SLOTS) slots[slot] = slots[slot].filter((r, i) => i === 0 || r.minutes > 0);
   // The bench under the shortest-playing starter and never past 30 (`benchMinutesCap`).
-  capBenchMinutes(roster, slots);
+  capBenchMinutes(roster, slots, ROT_WEAK_MAX);
   return { slots };
 }
 
