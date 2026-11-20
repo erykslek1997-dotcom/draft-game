@@ -1079,6 +1079,30 @@ const OFF_PAIR_W = Number(envVar('OFF_PAIR_W') ?? 0.35);
 /** 2026-11-18, measuring the supporting cast: the scorers' cohesion bonus and the weak-starter penalty (1 = as is). */
 const OFF_COH = Number(envVar('OFF_COH') ?? 0); // 2026-11-19: off — it paid for a second and third elite scorer, the overload the user's review penalises; real ORtg r 0.766 → 0.769 without it.
 const OFF_WEAK = Number(envVar('OFF_WEAK') ?? 1);
+/**
+ * 2026-11-20 (the user: "5 solidnych all-around graczy… Motion albo Princeton offense"; docs/motion-offense.md):
+ * a five with no heliocentric star where everyone can score, shoot and pass, and a big who passes from
+ * the elbow, runs a read-and-react offense the star-weighted O-TAL does not see. Five conditions, each
+ * worth `MOTION.w / 5` raw points; none without the first (`OFF_MOTION_W`, 0 = off).
+ */
+const MOTION = { min: Number(envVar('OFF_MOTION_MIN') ?? 4), w: Number(envVar('OFF_MOTION_W') ?? 4), heliUse: 0.5, minO: Number(envVar('OFF_MOTION_MINO') ?? 60), spacing: 55, pm: 70, bigPm: 75 };
+export function motionOffense(five: PlayerSpan[]): { points: number; met: number } {
+  if (MOTION.w === 0 || five.length < 5) return { points: 0, met: 0 };
+  const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
+  const pm = (p: PlayerSpan) => playmakingScoreForPlayer(p) ?? 0;
+  if (five.filter((p) => use(p) >= MOTION.heliUse).length > 1) return { points: 0, met: 0 };
+  const big = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
+  // v2 (real system fives — Kings 2002, Spurs 2014 — failed "every starter O-TAL 60+"): the five passes
+  // as a team, three shoot, a big passes from the elbow, and nobody is a dead spot.
+  const met = 1
+    + (five.reduce((a, p) => a + pm(p), 0) / 5 >= MOTION.pm - 5 ? 1 : 0)
+    + (five.filter((p) => teamSpacingValue(p) >= MOTION.spacing).length >= 3 ? 1 : 0)
+    + (five.some((p) => big(p) && pm(p) >= MOTION.bigPm) ? 1 : 0)
+    + (five.every((p) => computeOffensiveTalent(p) >= 50 || teamSpacingValue(p) >= 30 || pm(p) >= 60) ? 1 : 0);
+  // Only a five that meets most of it plays this way (`OFF_MOTION_MIN` of the five).
+  return { points: met >= MOTION.min ? (MOTION.w * (met - MOTION.min + 1)) / (6 - MOTION.min) : 0, met };
+}
+
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1101,7 +1125,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   // rarely have such a pair, so the NBA judges barely see it.
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1);
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(primaryStarters(team).map((e) => e.player)).points;
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
