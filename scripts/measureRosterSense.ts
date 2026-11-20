@@ -61,6 +61,7 @@ for (let d = 0; d < N; d++) {
     five.push(mean(t.roster.filter((p) => starters.has(p.id)).map(effectiveTalent)));
     bench.push(bm ? b.reduce((x, p) => x + effectiveTalent(p) * minutes.get(p.id)!, 0) / bm : 0);
     weak.push(t.roster.some((p) => effectiveTalent(p) < 60 && (minutes.get(p.id) ?? 0) >= 10) ? 1 : 0);
+    if (process.env.WEAK_LOG) for (const p of t.roster) if (effectiveTalent(p) < 60 && (minutes.get(p.id) ?? 0) >= 10) console.log('WEAK', p.playerName, p.spanLabel, effectiveTalent(p).toFixed(0), minutes.get(p.id), starters.has(p.id) ? 'starter' : 'bench');
     const sc = scoreTeam({ ...t, rotation });
     lowFit.push(sc.fitScore < 55 ? 1 : 0);
     lowSpc.push(sc.spacingScore < 55 ? 1 : 0);
