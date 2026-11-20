@@ -30,3 +30,14 @@ Kolejność: Drop (najprostszy, jeden skill + pokrycie) → Switch → Presja �
 6. https://halfcourthoops.substack.com/p/nba-defense-philosophy
 7. https://www.talkbasket.net/204246-the-switchability-era-building-a-defense-without-a-traditional-rim-protector
 8. https://www.nba.com/article/2020/07/08/film-study-sixers-joel-embiid-rim-protections/
+
+## Wyniki (2026-11-20, `scripts/_defjudge.ts`: obrona vs prawdziwy DRtg, 600 drużyn, dziś 0.8103)
+| Styl (+3 pkt) | Obrona vs DRtg |
+|---|---|
+| drop | 0.8099 |
+| switch | 0.8103 (nikt się nie kwalifikuje / już liczone) |
+| presja | 0.8085 |
+| twarda gra pod koszem | 0.8086 |
+| wszystkie | 0.8079 |
+
+Żaden nie pomaga — spójność obrony (`defensiveCohesion`: POA + skrzydło + obręcz, trzy warstwy, zaplecze wysokich) już łapie to, co te style. Zostają wyłączone (`DEF_STYLE_W`). Kierunek na później: zamiast dodatku za styl — kara za styl, który się gryzie (switch z dużym wolnym wysokim, drop bez obrońców obwodu), sprawdzana w symulacji meczów przeciw konkretnemu rywalowi.

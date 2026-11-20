@@ -1311,6 +1311,30 @@ const DEF_PARTS = { hunt: !DEF_OFF.has('hunt'), cohesion: !DEF_OFF.has('cohesion
  * game / real team DRtg at 1: 0.8577 / 0.8050 / 0.775; 0.5: 0.8582 / 0.8063 / 0.778; 0: 0.8587 / 0.8090 / 0.780. */
 // 2026-11-14, the user ("to co poprawia wprowadzamy"): off.
 const DEF_COHESION_SCALE = Number(envVar('DEF_COH') ?? 0);
+/**
+ * 2026-11-20 (docs/defense-styles.md; the user: "kilka styli które łapią się w def cohesion"): a five
+ * built for one defensive scheme gets `DEF_STYLE.w` raw points for each it fits (the best one counts):
+ *  - drop: a rim protector at D-TAL 85+ and two perimeter defenders at 70+;
+ *  - switch: four starters at D-TAL 70+ and nobody under 60;
+ *  - pressure: three starters with defensive activity 70+;
+ *  - paint: two bigs at D-TAL 75+.
+ * `DEF_STYLE_W` (0 = off); `DEF_STYLE_ONLY` = one style's name to measure it alone.
+ */
+const DEF_STYLE = { w: Number(envVar('DEF_STYLE_W') ?? 0), only: envVar('DEF_STYLE_ONLY') ?? '' };
+export function defenseStyleBonus(five: PlayerSpan[]): number {
+  if (DEF_STYLE.w === 0 || five.length < 5) return 0;
+  const d = (p: PlayerSpan) => computeDefensiveTalent(p);
+  const big = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
+  const styles: Record<string, boolean> = {
+    drop: five.some((p) => big(p) && isRimProtector(p) && d(p) >= 85) && five.filter((p) => !big(p) && d(p) >= 70).length >= 2,
+    switch: five.filter((p) => d(p) >= 70).length >= 4 && five.every((p) => d(p) >= 60),
+    pressure: five.filter((p) => (skill(p, 'activity') ?? 0) >= 70).length >= 3,
+    paint: five.filter((p) => big(p) && d(p) >= 75).length >= 2,
+  };
+  const fits = Object.entries(styles).filter(([k, v]) => v && (!DEF_STYLE.only || k === DEF_STYLE.only));
+  return fits.length > 0 ? DEF_STYLE.w : 0;
+}
+
 export function defenseScore(team: Team): number {
   const linearScore = teamDefensiveTalentScore(team);
   // Linear minute-weighting lets an elite anchor conceal several attackable defenders. In a
@@ -1323,7 +1347,8 @@ export function defenseScore(team: Team): number {
   const adjusted =
     linearScore -
     (DEF_PARTS.hunt ? defensiveHuntability(team).penalty : 0) +
-    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0);
+    (DEF_PARTS.cohesion ? defensiveCohesion(team).defenseScoreBonus * DEF_COHESION_SCALE : 0) +
+    defenseStyleBonus(primaryStarters(team).map((a) => a.player));
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
   return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'))));
