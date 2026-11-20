@@ -1,4 +1,28 @@
-# Do naprawy (z przeglądu draftów, 2026-11-19)
+# Do naprawy
+
+## Stan na 2026-11-20 i plan
+**Przyszły tydzień:** ostatnie poprawki wyborów AI, potem algorytm oceny (atak szerokich składów, obrona bez wyróżnień, systemy liderów), na końcu symulacja meczów pod ocenę.
+
+**W grze od 2026-11-20:**
+- Cap 110; AI trzyma piątkę w 80/110 capu (`TOP5_SHARE`, skaluje się w daily) — dla gracza tylko łączny cap.
+- Ławka AI: szablon ról (obwodowy z rzutem/rozgrywaniem, 3&D, broniący wysoki — nie dwóch bez rzutu) od TAL 60; plan płaci za rezerwowych < 68; nikt z minutami < TAL 62; glue tylko przy ciasnym capie.
+- Rotacja AI: grywalny dziewiąty do 10 min; słaby zmiennik (< 60) ≤ 9 min; lepszy zmiennik zabiera słabszemu do 10 min (Payton 12 → 22).
+- Ocena: reguła drugiej piątki (ławka bez strzelca / bez rozgrywającego / dwóch wysokich bez rzutu −1 każde); D-TAL względem pozycji; planer AI powtarzalny.
+- Efekt (12 draftów, rotacja z gry): słabi rezerwowi 10+ min 9% → 1-2%, ławka TAL 69.9 → ~72-73. Sędziowie: SRS 0.841, piątki 0.572, D-TAL 0.829, sim 0.62.
+
+**Zostało — AI:**
+- Zmiennik na dwie pozycje gra 24-30 min (Kyle Anderson 30) — struktura 3 zmienników na 5 pozycji.
+- Starzy gracze z niepewnymi danymi w piątkach (Schayes, Gola).
+- Glue zmuszone do grania przy dziurze w kształcie (Rambis 39 min) — poprawka w `AI_NO_WEAK`, do potwierdzenia na draftach.
+
+**Zostało — ocena:**
+- Atak szerokich składów za nisko (Cheyenne 63-68 vs SGA + Jokić 82-90): skala O-TAL graczy, nie limit piłki (bez limitu 73 vs 85).
+- Obrona bez wyróżnień ponad limitem 84 (Mbah a Moute 89, Hayes 91, Ward 89).
+- Systemy liderów, pojedyncze oceny (Parker 2006-08, Dumars, Rodman).
+- Symulacja meczów nie zna nowych zmian oceny (0.66 → 0.62).
+- Testy: `testDefensiveHuntability` (stary błąd), `testCalls` za wolny.
+
+# Historia (2026-11-19)
 
 Każda zmiana za przełącznikiem → sędziowie + przypadki kontrolne (`scripts/controlCases.ts`, dziś 12/16) + licznik (`scripts/_oddities.ts`) → decyzja użytkownika. Przykłady: `docs/lineup-principles.md`.
 
