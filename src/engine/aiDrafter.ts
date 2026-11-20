@@ -1993,6 +1993,7 @@ const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 // 2026-11-20 (the user: weak reserves at 10+ minutes "do 0%?"): a role is filled only by a player of
 // `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
+const AI_OLD = { points: Number(envVar('AI_OLD') ?? 0), starTal: 85 };
 const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 62);
 const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 60);
 const AI_BENCH_ROLE_D = Number(envVar('AI_BENCH_ROLE_D') ?? 70);
@@ -2111,7 +2112,8 @@ function planPick(
       // all-time draft, whatever his defense lifts his TAL to.
       for (const p of reserves) short += AI_PLAN.benchOCost * Math.max(0, AI_PLAN.benchMinO - computeOffensiveTalent(p));
     }
-    return teamScorer!(team) - AI_PLAN.crowdCost * crowd - AI_PLAN.benchCost * short;
+    const old = AI_OLD.points > 0 ? team.filter((p) => Math.max(...spanEndYears(p.spanLabel)) < 1974 && effectiveTalent(p) < AI_OLD.starTal).length : 0;
+    return teamScorer!(team) - AI_PLAN.crowdCost * crowd - AI_PLAN.benchCost * short - AI_OLD.points * 0.25 * old;
   };
   let best = score([...roster, ...plan]);
   for (let pass = 0; pass < (warm ? AI_PLAN.warmPasses : AI_PLAN.passes); pass++) {
@@ -2804,7 +2806,11 @@ function pickForAiSized(
     // 49 picks in every one of 10 drafts; Artest 79 at need ×3.2 out-valued him): `AI_NEED` scales how
     // far the positional need multiplies talent (1 = as before, 0 = talent alone), scaled back so the
     // average need keeps the value level the other terms were set against.
-    const talentTerm = AI_NEED === 1 ? talent * rampedNeed : talent * (1 + (rampedNeed - 1) * AI_NEED) * (rampedNeed > 0 ? 1 : 0);
+    // 2026-11-20 (the user: Schayes 1951-53, Gola still in AI fives; the team's data-certainty cost only
+    // starts at several such players): a window before 1973-74 under `AI_OLD.starTal` TAL is worth
+    // `AI_OLD.points` TAL less to the AI — the numbers behind him are partly estimated.
+    const oldCut = AI_OLD.points > 0 && Math.max(...spanEndYears(p.spanLabel)) < 1974 && talent < AI_OLD.starTal ? AI_OLD.points : 0;
+    const talentTerm = AI_NEED === 1 ? (talent - oldCut) * rampedNeed : talent * (1 + (rampedNeed - 1) * AI_NEED) * (rampedNeed > 0 ? 1 : 0);
     const fgaCost = p.fga * effectiveFgaPenalty;
     const slotsLeftAfterPick = slotsLeft - 1;
     const capRemainingAfterPick = capLimit - (spent + p.fga);
