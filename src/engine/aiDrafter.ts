@@ -2024,6 +2024,8 @@ export const AI_PLAN = {
   passes: 2,
   warmPasses: Number(envVar('AI_PLAN_WARM') ?? 1),
   crowdCost: 1.5,
+  benchCost: Number(envVar('AI_PLAN_BENCH') ?? 0),
+  benchFloor: Number(envVar('AI_PLAN_BENCH_FLOOR') ?? 68),
   share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => (envVar(k) ?? '0') === '1'),
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
@@ -2089,7 +2091,16 @@ function planPick(
     for (const p of team) counts.set(p.primaryPosition, (counts.get(p.primaryPosition) ?? 0) + 1);
     let crowd = 0;
     for (const n of counts.values()) crowd += Math.max(0, n - 2);
-    return teamScorer!(team) - AI_PLAN.crowdCost * crowd;
+    // 2026-11-19 (the user: Prigioni / Hauser / Hayes playing 27-30 minutes): the plan spent the cap
+    // on the five and left the bench the scraps — a backup who covers two spots plays near 30
+    // minutes. Each reserve (past the five best, glue aside) under `benchFloor` TAL costs
+    // `benchCost` per point short (0 = off).
+    let short = 0;
+    if (AI_PLAN.benchCost > 0) {
+      const reserves = [...team].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(5).filter((p) => p.fga > AI_PLAN.reserveGlueFga);
+      for (const p of reserves) short += Math.max(0, AI_PLAN.benchFloor - effectiveTalent(p));
+    }
+    return teamScorer!(team) - AI_PLAN.crowdCost * crowd - AI_PLAN.benchCost * short;
   };
   let best = score([...roster, ...plan]);
   for (let pass = 0; pass < (warm ? AI_PLAN.warmPasses : AI_PLAN.passes); pass++) {
