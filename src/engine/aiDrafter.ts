@@ -1,5 +1,5 @@
 import { isTwilightWindow } from './veteran';
-import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill, isCreator } from './skills';
+import { isRimProtector, isPerimeterDefender, usageWeight, isSelfCreatorFull, skill, isCreator, dataUsageDemand } from './skills';
 import { isPlusShooter } from './shooting';
 import type { PlayerSpan, Position } from '../data/schema';
 import { positionCompetence, positionCompetenceScore, realSecondaryPositions, FULL_SCORE } from './positionCompetence';
@@ -3223,6 +3223,9 @@ function pickForAiSized(
     // planned pick goes instead, when the roster keeps its roles (0 = off).
     if (planned && AI_STAR_GAP.gap > 0 && roster.length < AI_STAR_GAP.rounds) {
       const star = board
+        // A ball-dominant star only where nobody holds the ball yet — a second one broke rosters (Overall
+        // 81.8 -> 80.7, worst tenth 77.5 -> 71.1).
+        .filter((p) => !((dataUsageDemand(p) ?? 0.3) >= 0.5 && roster.some((r) => (dataUsageDemand(r) ?? 0.3) >= 0.5)))
         .filter((p) => effectiveTalent(p) >= AI_STAR_GAP.tal && effectiveTalent(p) >= effectiveTalent(planned!.pick) + AI_STAR_GAP.gap && p.fga <= capLimit - spent && topFiveFgaLegal(currentFgas, p.fga, capLimit))
         .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
       if (star && (!structureHoles || (keepsRoles(roster, star) && canStillComplete([...roster, star], rosterSize, capLimit - spent - star.fga)))) planned = { ...planned, pick: star };
