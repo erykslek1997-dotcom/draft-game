@@ -16,7 +16,7 @@
 - Glue zmuszone do grania przy dziurze w kształcie (Rambis 39 min) — poprawka w `AI_NO_WEAK`, do potwierdzenia na draftach.
 
 **Zostało — ocena:**
-- Wilt TAL 89 (najlepszy okres 1966-68), Russell 89, West 91 — legendy sprzed 1974 nisko, przez to Wilt idzie w 2. rundzie (jedyny all-timer spadający po poprawce legend; 4 z 60 legend-wyborów po 16. miejscu to wszystko Wilt).
+- ~~Wilt TAL 89~~ — ok według użytkownika (realnie oceniony); legendy po poprawce idą w 1. rundzie.
 - Atak szerokich składów za nisko (Cheyenne 63-68 vs SGA + Jokić 82-90): skala O-TAL graczy, nie limit piłki (bez limitu 73 vs 85).
 - Obrona bez wyróżnień ponad limitem 84 (Mbah a Moute 89, Hayes 91, Ward 89).
 - Systemy liderów, pojedyncze oceny (Parker 2006-08, Dumars, Rodman).
