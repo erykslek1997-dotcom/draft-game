@@ -694,7 +694,7 @@ const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
  */
 const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
-const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0);
+const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0.5);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
 const OFF_BALL_ORDER = envVar('OFF_BALL_ORDER') ?? 'usage';
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {

@@ -16,6 +16,8 @@
 - Glue zmuszone do grania przy dziurze w kształcie (Rambis 39 min) — poprawka w `AI_NO_WEAK`, do potwierdzenia na draftach.
 
 **Zostało — ocena:**
+- Gwiazdy z piłką nieruszone przez 5 rund (Westbrook, Oscar, Harden, Barkley, Malone, Dončić; TAL 91-92) — wymuszenie w AI (`AI_STAR_GAP`) podnosi je, ale drużyny AI tracą (81.8 → 80.7 / 81.6, najsłabsza 10% 77.5 → 71-75). Ocena chyba za mocno karze drugiego / ball-dominant gracza — do sprawdzenia przy skali ataku; gdy ocena je doceni, AI weźmie je samo.
+- ~~Wilt TAL 89~~ — ok według użytkownika (realnie oceniony); legendy po poprawce idą w 1. rundzie.
 - Atak szerokich składów za nisko (Cheyenne 63-68 vs SGA + Jokić 82-90): skala O-TAL graczy, nie limit piłki (bez limitu 73 vs 85).
 - Obrona bez wyróżnień ponad limitem 84 (Mbah a Moute 89, Hayes 91, Ward 89).
 - Systemy liderów, pojedyncze oceny (Parker 2006-08, Dumars, Rodman).
