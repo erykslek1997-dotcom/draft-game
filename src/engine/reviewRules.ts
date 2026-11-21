@@ -35,7 +35,7 @@ const W = Number(envVar('REVIEW_W') ?? 1);
 const REV_STAR = envVar('REV_STAR') !== '0';
 // 2026-11-21 (the user: Porter and Pierce shoot threes, they play off the ball): the spot-up level that takes a
 // player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
-const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 90);
+const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
