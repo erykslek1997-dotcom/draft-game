@@ -50,7 +50,10 @@ export function offBallValue(span: PlayerSpan): number {
 
 export function heliocentricCost(starters: PlayerSpan[]): number {
   // The ball goes to whoever costs the others least without it (a coach's choice).
-  const rows = starters.map((s) => ({ h: helioLoad(s), p: offBallValue(s) }));
+  // 2026-11-21 (HELIO_BIGS, the user: Duncan beside Wade): a post big takes the ball on the block,
+  // not off the dribble, so he does not pay as a second ball-holder.
+  const bigShare = Number(env.HELIO_BIGS ?? 1);
+  const rows = starters.map((s) => ({ h: helioLoad(s) * (s.primaryPosition === 'C' || s.primaryPosition === 'PF' ? bigShare : 1), p: offBallValue(s) }));
   const all = rows.reduce((sum, r) => sum + r.h * (1 - r.p), 0);
   return rows.length < 2 ? 0 : Math.min(...rows.map((r) => all - r.h * (1 - r.p)));
 }
