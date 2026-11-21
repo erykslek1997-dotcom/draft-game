@@ -5,6 +5,7 @@ import { normalizePlayerName } from '../data/schema';
 // The roster constants live in a data-free module so the menu can read them without pulling the
 // position-competence data (and through it the whole player pool) into its first download.
 import { CAP_LIMIT, TEAM_COUNT, TOP5_SHARE } from './rosterConstants';
+import { envVar } from './env';
 export { BENCH_SLOT_COUNT, CAP_LIMIT, ROSTER_SIZE, STARTER_SLOTS, TEAM_COUNT } from './rosterConstants';
 
 const POSITION_ORDER: Position[] = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -146,7 +147,9 @@ export function isPickCapLegal(currentFgas: number[], candidateFga: number, capL
 export function topFiveFgaLegal(currentFgas: number[], candidateFga: number, capLimit: number = CAP_LIMIT): boolean {
   if (!Number.isFinite(TOP5_SHARE)) return true;
   const top = [...currentFgas, candidateFga].sort((a, b) => b - a).slice(0, 5);
-  return totalFga(top) <= capLimit * TOP5_SHARE + 1e-9;
+  // 2026-11-21: keep room for the starters still to come (Anchorage: 76 caps on four, Eric Snow fifth).
+  const floor = Number(envVar('TOP5_SLOT_FLOOR') ?? 0) * (capLimit / 110);
+  return totalFga(top) + Math.max(0, 5 - top.length) * floor <= capLimit * TOP5_SHARE + 1e-9;
 }
 
 /**
