@@ -341,8 +341,12 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
   if (!entry) return 0;
   const below = entry.tal - effectiveTalent(p);
   const share = Math.max(0, Math.min(1, 1 - (below - GREATEST_PEAK_WINDOW.full) / (GREATEST_PEAK_WINDOW.none - GREATEST_PEAK_WINDOW.full)));
-  return GREATEST_PEAK_TIER_BONUS[entry.tier] * share;
+  return (PEAK_BONUS_OVERRIDE.get(normalizePlayerName(p.playerName)) ?? GREATEST_PEAK_TIER_BONUS[entry.tier]) * share;
 }
+/** 2026-11-21 (the user, Shaq at pick 14 behind every tier-2 legend: "Shaq nie powinien spadać tak
+ * nisko" — seen in the mini mode): `AI_SHAQ_BONUS` sets his legend bonus between tier 1 (60) and
+ * tier 2 (35). Off until measured in the normal draft. */
+const PEAK_BONUS_OVERRIDE = new Map<string, number>(envVar('AI_SHAQ_BONUS') ? [[normalizePlayerName("Shaquille O'Neal"), Number(envVar('AI_SHAQ_BONUS'))]] : []);
 /**
  * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?"): the legend
  * bonus went to the peak window only, so Shaq 2000-02 (TAL 96, 1.4 FGA cheaper) gave up 35 points
