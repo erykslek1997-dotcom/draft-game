@@ -341,8 +341,12 @@ function greatestPeakTierBonus(p: PlayerSpan): number {
   if (!entry) return 0;
   const below = entry.tal - effectiveTalent(p);
   const share = Math.max(0, Math.min(1, 1 - (below - GREATEST_PEAK_WINDOW.full) / (GREATEST_PEAK_WINDOW.none - GREATEST_PEAK_WINDOW.full)));
-  return GREATEST_PEAK_TIER_BONUS[entry.tier] * share;
+  return (PEAK_BONUS_OVERRIDE.get(normalizePlayerName(p.playerName)) ?? GREATEST_PEAK_TIER_BONUS[entry.tier]) * share;
 }
+/** 2026-11-21 (the user, Shaq at pick 14 behind every tier-2 legend: "Shaq nie powinien spadać tak
+ * nisko" — seen in the mini mode): `AI_SHAQ_BONUS` sets his legend bonus between tier 1 (60) and
+ * tier 2 (35). Off until measured in the normal draft. */
+const PEAK_BONUS_OVERRIDE = new Map<string, number>(envVar('AI_SHAQ_BONUS') ? [[normalizePlayerName("Shaquille O'Neal"), Number(envVar('AI_SHAQ_BONUS'))]] : []);
 /**
  * 2026-11-04, the user ("Shaq 00-02 jest tańszy, dlaczego AI woli tego droższego?"): the legend
  * bonus went to the peak window only, so Shaq 2000-02 (TAL 96, 1.4 FGA cheaper) gave up 35 points
@@ -1993,6 +1997,7 @@ const STAR_GUARD = { minTal: 96, gap: 5 };
 const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 // 2026-11-20 (the user: weak reserves at 10+ minutes "do 0%?"): a role is filled only by a player of
 // `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
+const AI_LEGEND_ROUNDS = Number(envVar('AI_LEGEND_ROUNDS') ?? 1);
 const AI_OLD = { points: Number(envVar('AI_OLD') ?? 0), starTal: 85 };
 const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 62);
 const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 60);
@@ -3200,6 +3205,15 @@ function pickForAiSized(
       );
       const better = near.filter((p) => flexibility(p) > flexibility(base)).sort((a, b) => flexibility(b) - flexibility(a) || effectiveTalent(b) - effectiveTalent(a))[0];
       if (better) planned = { ...planned, pick: better };
+    }
+    // 2026-11-21 (the user: Shaq at pick 20 in the normal draft; 9-16 unplanned): in the first
+    // `AI_LEGEND_ROUNDS` picks a greatest-peak legend at least as good as the planned pick goes first —
+    // the plan prefers stars that fit it, and the legend would fall past every team (0 = off).
+    if (planned && roster.length < AI_LEGEND_ROUNDS) {
+      const legend = board
+        .filter((p) => GREATEST_PEAK_TIER_BY_NAME.has(normalizePlayerName(p.playerName)) && effectiveTalent(p) >= effectiveTalent(planned!.pick) && p.fga <= capLimit - spent)
+        .sort((a, b) => effectiveTalent(b) - effectiveTalent(a) || greatestPeakTierBonus(b) - greatestPeakTierBonus(a))[0];
+      if (legend && legend.id !== planned.pick.id && (!structureHoles || keepsRoles(roster, legend))) planned = { ...planned, pick: legend };
     }
     // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
     // the board who does, before any pick that breaks it.
