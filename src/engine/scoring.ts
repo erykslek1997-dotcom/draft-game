@@ -692,7 +692,7 @@ const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
  * (shooting, cutting) always counts. `OFF_TOP` adds that much to the best player's weight in the
  * star-weighted blend (30% today), so the star lifts the team more.
  */
-const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.5);
+const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.35);
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0.5);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
