@@ -35,6 +35,10 @@
 4. **Drużyny z Jordanem** — Long Beach 78 (atak 68 przy Jordanie O 99): rozbić na części.
 5. **Automatyczna rotacja gracza** — Cincinnati: Haliburton 7 + 20, Cooper 5 + 5.
 
+6. **Obrona all-defensive niedoceniona (draft 307382012, Cheyenne)** — Wade, Duncan, Horford, Millsap, J. Williams to gracze z All-Defensive, a obrona tylko 78 (11. z 16), spójność 52. Silnik liczy D-TAL niżej niż karta: J. Williams 67 (karta 81), Horford 70 (karta 79). Spójność: eliteShell 0, completeness 0, średnia D 69 (ciągnie Haliburton 23). Sprawdzić: (a) różnica karta vs silnik dla nowszych skrzydłowych / wysokich, (b) czy brak typowego PoA ma tak duży koszt przy Wadzie 80 na obwodzie. Skrypt: `scripts/_chy.ts`.
+7. **Spacing Millsapa 43** — 3P ok. 33% przy 3-4 próbach na mecz; użytkownik: „C+, odrobina spacingu jest”. Sprawdzić skalę spacingu dla wysokich rzucających okazjonalnie.
+8. **Limit piątki AI (Anchorage 1-81)** — `TOP5_SLOT_FLOOR` (rezerwa capów na niewybranych starterów); wynik testu niżej.
+
 ## (stary plan — zastąpiony listą wyżej)
 1. **Ocena vs symulacja** — zmierzyć na 32 drużynach AI (2 drafty), które części oceny symulacja waży inaczej (atak / obrona / ławka / spacing); dostroić jedną albo drugą stronę do prawdziwych wyników (SRS / ORtg / DRtg), nie do siebie nawzajem.
 2. **Skala ataku graczy** — pięciu solidnych vs dwóch po 100; gwiazdy z piłką (Westbrook, Harden, Oscar) za mocno karane jako drugi gracz z piłką.
