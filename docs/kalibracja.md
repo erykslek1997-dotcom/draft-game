@@ -31,6 +31,7 @@
    - **spróbować usunąć kary „systemy” i „dopasowania” (Porter–Shaq) — może wyjdzie na plus.**
    Sprawdzian: sędziowie + Heat 2006, Lakers 2001, Warriors 2017 + ten skład.
    **Zrobione 2026-11-21:** `OFF_BALL_SHOOT` 0 → 0.5 (strzelec z miejsca traci połowę udziału w piłce w limicie piłki; atak vs ORtg 0.7713 → 0.7725 w obu połowach), `REV_OFFBALL_SPOT` 90 → 65 (reguła „trzech z piłką” nie liczy strzelców 65+), kary w Fit „trzy systemy” i „za dużo ról z piłką” wyłączone (`FIT_SYSOVER=0`, `FIT_CROWD=0`; sędziowie bez zmian). Sędziowie: SRS 0.838, piątki 0.572 bez zmian; sim 0.63 → 0.61 (sim tego nie widzi — punkt 1). Skład użytkownika 81.5 → 82.6.
+   Rozkład minut gwiazd: starterzy grają ~36 min, więc dwie gwiazdy są razem ~24-30 z 48 min — liczenie piłki po wspólnych minutach ≈ niższy limit piłki. `OFF_BALL` 0.5 → 0.35: atak vs ORtg 0.7725 → 0.7727, skład użytkownika 82.6 → 82.8 (minimalne) — do pakietu w środę. Prawdziwe rozkładanie gwiazd na zmiany w rotacji (staggering) — osobny pomysł na później.
 4. **Drużyny z Jordanem** — Long Beach 78 (atak 68 przy Jordanie O 99): rozbić na części.
 5. **Automatyczna rotacja gracza** — Cincinnati: Haliburton 7 + 20, Cooper 5 + 5.
 
