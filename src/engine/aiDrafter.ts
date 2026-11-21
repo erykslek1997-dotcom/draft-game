@@ -1999,6 +1999,7 @@ const AI_BENCH_ROLES = Number(envVar('AI_BENCH_ROLES') ?? 4);
 // `AI_BENCH_ROLE_MINTAL`+ TAL; none left, the planner takes the pick (0 = no floor).
 const AI_LEGEND_ROUNDS = Number(envVar('AI_LEGEND_ROUNDS') ?? 1);
 const AI_LEGEND_MARGIN = Number(envVar('AI_LEGEND_MARGIN') ?? 0);
+const AI_STAR_GAP = { gap: Number(envVar('AI_STAR_GAP') ?? 0), tal: 88, rounds: Number(envVar('AI_STAR_ROUNDS') ?? 4) };
 const AI_OLD = { points: Number(envVar('AI_OLD') ?? 0), starTal: 85 };
 const AI_NO_WEAK = Number(envVar('AI_NO_WEAK') ?? 62);
 const AI_BENCH_ROLE_MINTAL = Number(envVar('AI_BENCH_ROLE_MINTAL') ?? 60);
@@ -3215,6 +3216,16 @@ function pickForAiSized(
         .filter((p) => GREATEST_PEAK_TIER_BY_NAME.has(normalizePlayerName(p.playerName)) && effectiveTalent(p) >= effectiveTalent(planned!.pick) - AI_LEGEND_MARGIN && p.fga <= capLimit - spent)
         .sort((a, b) => effectiveTalent(b) - effectiveTalent(a) || greatestPeakTierBonus(b) - greatestPeakTierBonus(a))[0];
       if (legend && legend.id !== planned.pick.id && (!structureHoles || keepsRoles(roster, legend))) planned = { ...planned, pick: legend };
+    }
+    // 2026-11-21 (the user: "Blaylocków itd" — Oscar, Westbrook, Harden, McGrady, Barkley, Malone at TAL
+    // 91-92 undrafted through round five in every draft while TAL 75-85 role players went): in the first
+    // `AI_STAR_GAP.rounds` picks a player of `AI_STAR_GAP.tal`+ TAL who is `AI_STAR_GAP.gap`+ above the
+    // planned pick goes instead, when the roster keeps its roles (0 = off).
+    if (planned && AI_STAR_GAP.gap > 0 && roster.length < AI_STAR_GAP.rounds) {
+      const star = board
+        .filter((p) => effectiveTalent(p) >= AI_STAR_GAP.tal && effectiveTalent(p) >= effectiveTalent(planned!.pick) + AI_STAR_GAP.gap && p.fga <= capLimit - spent && topFiveFgaLegal(currentFgas, p.fga, capLimit))
+        .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+      if (star && (!structureHoles || (keepsRoles(roster, star) && canStillComplete([...roster, star], rosterSize, capLimit - spent - star.fga)))) planned = { ...planned, pick: star };
     }
     // No planned player keeps the shape reachable (the plan itself has a hole): the best player on
     // the board who does, before any pick that breaks it.
