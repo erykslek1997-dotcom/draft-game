@@ -570,7 +570,10 @@ const athleticismBySlot = Object.fromEntries(
  */
 const DEMAND_IDEAL_LOW = 0.8;
 const DEMAND_IDEAL_HIGH = 1.9;
-const DEMAND_CROWDING_COST = 32;
+// 2026-11-21 (the user: "spróbowałbym usunąć systemy i dopasowania"): `FIT_CROWD` / `FIT_SYSOVER` scale
+// the crowded-ball cost and the three-systems penalty (1 = as before), for measuring.
+const DEMAND_CROWDING_COST = 32 * Number(envVar('FIT_CROWD') ?? 1);
+const FIT_SYSOVER = Number(envVar('FIT_SYSOVER') ?? 1);
 const DEMAND_VACUUM_COST = 100;
 function demandBalance(onBallDemand: number, primarySignal: number): number {
   if (onBallDemand < DEMAND_IDEAL_LOW) {
@@ -934,7 +937,7 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   // creationStructure rather than leaving it note-only.
   const helioPost = heliocentricPostConflict(starters, starterEntries.map((entry) => entry.slot), demandByPlayer);
   if (helioPost) notes.push(`${helioPost.lead.playerName} wants an empty paint for his isolations and threes, ${helioPost.post.playerName} wants the ball on the block — two offenses that get in each other's way.`);
-  const systemOverloadPenalty = offensiveSystemOverloadPenalty(starters, demandByPlayer) + (helioPost ? HELIO_POST.penalty : 0);
+  const systemOverloadPenalty = FIT_SYSOVER * (offensiveSystemOverloadPenalty(starters, demandByPlayer) + (helioPost ? HELIO_POST.penalty : 0));
   const creationStructure = Math.round(
     Math.max(
       0,

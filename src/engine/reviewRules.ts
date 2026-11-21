@@ -33,6 +33,9 @@ const W = Number(envVar('REVIEW_W') ?? 1);
 // second playmaker is the point forward he needs, not a repeat. A co-star scorer (usage 0.5+) is
 // never an "extra playmaker".
 const REV_STAR = envVar('REV_STAR') !== '0';
+// 2026-11-21 (the user: Porter and Pierce shoot threes, they play off the ball): the spot-up level that takes a
+// player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
+const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 90);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
@@ -42,7 +45,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // pressure without a spot-up shot, on a player who holds the ball: Shaq, Embiid, Duncan, Davis,
   // Giannis, Wade.
   const paint = five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45).length;
-  const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= 90;
+  const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= REV_OFFBALL_SPOT;
   const ball = five.filter((p) => use(p) >= 0.42 && !offBallStar(p)).length;
   const offBallNoShot = five.filter((p) => !isBig(p) && use(p) < 0.3 && teamSpacingValue(p) < 35).length;
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
