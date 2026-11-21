@@ -1169,7 +1169,7 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
  *   `NEIGHBOUR_WINDOW_SHARE` of the result.
  * The neighbouring windows come from `neighbourWindows.ts` (registered by fit.ts).
  */
-const NEIGHBOUR_WINDOW_SHARE = Number(envVar('DT_NEIGH') ?? 0.25);
+const NEIGHBOUR_WINDOW_SHARE = Number(envVar('DT_NEIGH') ?? 0);
 onNeighbourWindowsRegistered(() => shiftedDefensiveTalentCache.clear());
 
 function neighbourAwareFloor(span: PlayerSpan): number {
