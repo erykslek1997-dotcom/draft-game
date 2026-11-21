@@ -36,6 +36,7 @@
 5. **Automatyczna rotacja gracza** — Cincinnati: Haliburton 7 + 20, Cooper 5 + 5.
 
 6. **Obrona all-defensive niedoceniona (draft 307382012, Cheyenne)** — Wade, Duncan, Horford, Millsap, J. Williams to gracze z All-Defensive, a obrona tylko 78 (11. z 16), spójność 52. Silnik liczy D-TAL niżej niż karta: J. Williams 67 (karta 81), Horford 70 (karta 79). Spójność: eliteShell 0, completeness 0, średnia D 69 (ciągnie Haliburton 23). Sprawdzić: (a) różnica karta vs silnik dla nowszych skrzydłowych / wysokich, (b) czy brak typowego PoA ma tak duży koszt przy Wadzie 80 na obwodzie. Skrypt: `scripts/_chy.ts`.
+   **Zrobione 2026-11-21:** przyczyna — obrona okna mieszana w 25% z sąsiednimi oknami (`DT_NEIGH`): J. Williams 2023-25 ciągnięty w dół przez debiutanckie 2022-24 (39). `DT_NEIGH` 0.25 → 0: obrona vs DRtg 0.8103 → 0.8128 (obie połowy w górę), SRS 0.838 → 0.839, D-TAL 0.829 → 0.833, piątki 0.572 → 0.573. Williams 67 → 76, Horford 70 → 72, Wade 80 → 83; Cheyenne 75.9 → 77.0.
 7. **Spacing Millsapa 43** — 3P ok. 33% przy 3-4 próbach na mecz; użytkownik: „C+, odrobina spacingu jest”. Sprawdzić skalę spacingu dla wysokich rzucających okazjonalnie.
 8. **Limit piątki AI (Anchorage 1-81)** — `TOP5_SLOT_FLOOR` (rezerwa capów na niewybranych starterów); wynik testu niżej.
 
