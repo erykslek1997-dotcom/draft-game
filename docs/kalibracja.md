@@ -21,7 +21,19 @@
 2. **Drużyny z Jordanem znowu nisko** (Long Beach 78, atak 68 przy Jordanie O 99) — Odom 69 w piątce, Russell O 57, spacing 45. Do sprawdzenia: czy to kara za spacing / tłok, czy realnie słaby skład.
 3. **Rotacja Cincinnati 90** — dziwne minuty (Haliburton 7 na PG + 20 na SG, Cooper 5 + 5) — sprawdzić automatyczną rotację gracza.
 
-## Plan na poniedziałek–wtorek
+## Lista na środę 2026-11-25 (ustalona z użytkownikiem 2026-11-21)
+1. **Ocena vs symulacja meczów** — #1 ma 8% na tytuł, #3 (obrona 88) 38%, Curry-team <1%. Dopasować wagi ataku / obrony / ławki / spacingu w sim i ocenie do prawdziwych wyników (SRS / ORtg / DRtg), nie do siebie.
+2. **Skala ataku graczy + gwiazdy z piłką** — pięciu solidnych vs dwóch po 100; Westbrook / Harden / Oscar za mocno karani jako drugi gracz z piłką.
+3. **Nakładające się kary za piłkę** (skład użytkownika Porter / Wade / Pierce / Wembanyama / Shaq: talent 89 — najwyższy w lidze — a 12. miejsce, 81.5). Ten sam problem liczony 5-6 razy: limit piłki w ataku (`OFF_BALL`), „za dużo ról z piłką” w Fit (`demandBalance`, 2.68 > 1.9), trzy systemy naraz (`offensiveSystemOverloadPenalty`), PnR-PG obok gry tyłem (pairing note Porter–Shaq), reguły z oceny (trzech z piłką, tłok w pomalowanym).
+   Uwagi użytkownika:
+   - limit piłki i „za dużo ról” karzą graczy, którzy grają bez piłki (Porter, Pierce rzucają za 3 — portability ok) → udział w piłce zmniejszać rzutem z miejsca (`OFF_BALL_SHOOT`, `BH_SHOOT`), nie liczyć ich jak Westbrooka;
+   - minuty gwiazd rozkładają się na 48 minut, nie grają cały czas razem → koszt piłki liczyć po wspólnych minutach, nie po piątce;
+   - **spróbować usunąć kary „systemy” i „dopasowania” (Porter–Shaq) — może wyjdzie na plus.**
+   Sprawdzian: sędziowie + Heat 2006, Lakers 2001, Warriors 2017 + ten skład.
+4. **Drużyny z Jordanem** — Long Beach 78 (atak 68 przy Jordanie O 99): rozbić na części.
+5. **Automatyczna rotacja gracza** — Cincinnati: Haliburton 7 + 20, Cooper 5 + 5.
+
+## (stary plan — zastąpiony listą wyżej)
 1. **Ocena vs symulacja** — zmierzyć na 32 drużynach AI (2 drafty), które części oceny symulacja waży inaczej (atak / obrona / ławka / spacing); dostroić jedną albo drugą stronę do prawdziwych wyników (SRS / ORtg / DRtg), nie do siebie nawzajem.
 2. **Skala ataku graczy** — pięciu solidnych vs dwóch po 100; gwiazdy z piłką (Westbrook, Harden, Oscar) za mocno karane jako drugi gracz z piłką.
 3. **Drużyny z Jordanem** — rozbić ocenę Long Beach na części.
