@@ -1586,7 +1586,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
 .nt .m2-acct { margin-top: 24px; }
 
 /* 2026-11-13: the board's rounds in one scrolling window (about four rounds tall), not two pages. */
-.nt .bg-rows { position: relative; overflow-x: hidden; max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior: contain; scrollbar-width: thin; }
+/* 2026-11-22 (the phone: "dotyk na boardzie nie działa"): overscroll contain kept a swipe on the rows from reaching the sideways-scrolling board and the page. */
+.nt .bg-rows { position: relative; overflow-x: hidden; max-height: 300px; overflow-y: auto; scroll-behavior: smooth; overscroll-behavior-x: auto; overscroll-behavior-y: auto; touch-action: pan-x pan-y; scrollbar-width: thin; }
 @media (max-width: 600px) { .nt .bg-rows { max-height: 360px; min-width: 100%; width: max-content; } }
 
 /* 2026-11-14 (the phone: "board by można ścisnąć"): the position rides the face's corner, cells shrink,
