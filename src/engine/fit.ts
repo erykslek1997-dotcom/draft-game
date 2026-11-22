@@ -223,7 +223,7 @@ const BALL_DOMINANT_DEMAND_RANGE = 0.4;
 const OFF_BALL_SHOOTING_FULL = 55;
 const OFF_BALL_MIDRANGE_SHARE = 0.25;
 const OFF_BALL_NON_SHOOTER_COST = 14;
-const FIT_OFFBALL_GIVE = FIT_ENV?.FIT_OFFBALL_GIVE === '1';
+const FIT_OFFBALL_GIVE = FIT_ENV?.FIT_OFFBALL_GIVE !== '0';
 /** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
  * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
  * function's own docstring for why. Values and meaning unchanged from where they used to live
