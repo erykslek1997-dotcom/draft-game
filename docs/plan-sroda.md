@@ -9,8 +9,8 @@ Zasada jak zawsze: każda zmiana za przełącznikiem → sędziowie (SRS, sim, D
 | b | Wysocy grający tyłem nie płacą kary helio (`HELIO_BIGS=0`) — Duncan obok Wade'a | SRS 0.839 =, sim 0.61 → 0.62 |
 | c | Próg „trzech z piłką” 0.42 → 0.5 (`REV_BALL_USE`) — J. Williams | (razem z b) |
 | d | „Tłok w pomalowanym” nie łapie obwodowych z półdystansem 90+ (`REV_PAINT=mid`) — Wade + Shaq 2006 | piątki 0.572 = |
-| e | Ławka: bez kary „brak kreatora”, gdy w piątce 2+ kreatorów (`BENCH_STAGGER`) | test w nocy — wynik niżej |
-| f | Dopasowanie par: struktura „gra przez wysokiego w poście” obok pick-and-rolla (`PNR_POST`) | test w nocy — wynik niżej |
+| e | Ławka: bez kary „brak kreatora”, gdy w piątce 2+ kreatorów (`BENCH_STAGGER`) | wynik niżej |
+| f | Dopasowanie par: struktura „gra przez wysokiego w poście” obok pick-and-rolla (`PNR_POST`) | wynik niżej |
 
 Twój skład z draftu 307382012 (Cheyenne): 75.9 → 79.0 przy a-d (15. → 13.).
 
@@ -39,4 +39,19 @@ Twój skład z draftu 307382012 (Cheyenne): 75.9 → 79.0 przy a-d (15. → 13.)
 Punkt odniesienia (2003 / 1997 / 2007) nie zmienia kolejności w drafcie: przesuwa każdą drużynę o tę samą stałą (−0.073 × różnica lat), więc zmienia tylko wyświetlaną liczbę (np. pivot 2016 dałby Ci 0 zamiast −1.0, ale rywalom też +1.0). Liczy się nachylenie (−0.073 pkt na rok) i czy liczyć z ławką. Wyniki nocnych testów nachylenia i wersji z ławką niżej.
 
 ## Wyniki nocnych testów
-(dopisane po teście)
+Punkt odniesienia: obecne ustawienia (SRS 0.839 / sezony 0.837, sim 0.61, D-TAL 0.833, piątki 0.573).
+
+| Wariant | SRS | SRS sezony | sim | piątki | atak vs ORtg | Werdykt |
+|---|---|---|---|---|---|---|
+| e. `BENCH_STAGGER=1` | **0.840** | **0.839** | **0.64** | 0.573 | — | **na plus — do włączenia** |
+| f. `PNR_POST=1` | 0.832 | 0.831 | 0.58 | 0.571 | 0.7732 → 0.7700 | odrzucony |
+| f. `PNR_POST=0.9` | 0.834 | 0.833 | 0.60 | 0.572 | 0.7721 | odrzucony |
+| epoka `ERA_K=0` (bez korekty) | 0.829 | 0.837 | 0.59 | 0.572 | | gorzej — korekta potrzebna |
+| epoka `ERA_K=-0.04` | 0.835 | 0.837 | 0.60 | 0.573 | | gorzej |
+| epoka `ERA_K=-0.1` (mocniej) | **0.842** | 0.837 | 0.61 | **0.574** | | lekko lepiej; Twój skład −1.0 → −1.3 |
+| epoka z ławką `ERA_ROT=1` | 0.839 | 0.837 | 0.61 | 0.573 | | bez różnicy |
+
+Wnioski:
+- **Ławka (e)** — Twoja intuicja się potwierdza: gdy dwóch kreatorów dzieli minuty, druga piątka nie potrzebuje własnego. Wszystkie testy w górę.
+- **Gra przez wysokiego w poście (f)** — dane mówią „nie” (jak wcześniej inside-out): prawdziwe drużyny z graczem w poście i tak dostają dobry atak z innych części oceny. Para Wade–Duncan traci na dopasowaniu par przez brak rzutu obok, nie przez brak samego duetu.
+- **Korekta za epokę** — działa (bez niej SRS 0.829); liczenie z ławką nic nie zmienia; mocniejsza (−0.1) minimalnie lepsza tylko między epokami (SRS w sezonach bez zmian) — zostawiłbym obecną.
