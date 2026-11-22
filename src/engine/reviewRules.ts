@@ -39,6 +39,7 @@ const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
 // 2026-11-21: the usage that makes a ball-holder for the "three with the ball" rule (J. Williams 0.43).
 const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
 const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
+const REV_BENCH_3D = envVar('REV_BENCH_3D') !== '0';
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
@@ -54,7 +55,10 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const ball = five.filter((p) => use(p) >= REV_BALL_USE && !offBallStar(p)).length;
   const offBallNoShot = five.filter((p) => !isBig(p) && use(p) < 0.3 && teamSpacingValue(p) < 35).length;
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
-  const bench = five.filter((p) => effectiveTalent(p) < 70 || (!isBig(p) && computeOffensiveTalent(p) < 50)).length;
+  // 2026-11-22 (REV_BENCH_3D, the user: OG Anunoby beside Nash / Oladipo / Giannis / Wemby): a premium 3-and-D
+  // wing (D-TAL 80+, spacing 55+) is a starter's job done, not a bench player in the five.
+  const threeAndD = (p: PlayerSpan) => REV_BENCH_3D && !isBig(p) && computeDefensiveTalent(p) >= 80 && teamSpacingValue(p) >= 55;
+  const bench = five.filter((p) => effectiveTalent(p) < 70 || (!isBig(p) && computeOffensiveTalent(p) < 50 && !threeAndD(p))).length;
   const eliteShooter = five.some((p) => s(p, 'pullUp3', 0) >= 98 && use(p) >= 0.5);
   // A second playmaker who can't shoot, beside an on-ball engine (LeBron + Draymond): his passing
   // repeats what the engine already does, and off the ball he doesn't space.

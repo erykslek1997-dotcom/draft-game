@@ -1398,6 +1398,7 @@ function namedPeakLift(playerName: string | undefined, value: number): number {
  * much on the side it lands on (O-TAL's scale is ~1.3 per TAL-weighted offense point). */
 const NAMED_SHIFT_SCALE = 1.3;
 const LIFT_FOLLOWS_OD = envVar('LIFT_OD') !== '0';
+const LIFT_SPLIT = envVar('LIFT_SPLIT') === '1';
 
 /**
  * How a named adjustment on this window's displayed TAL splits into O-TAL and D-TAL: by where
@@ -1436,6 +1437,9 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
   // and never more than the lift itself: a star's O / D blend sits under his TAL by nature (Curry,
   // Ray Allen), so the full shortfall moved every tabled star's defense (game judge 0.8112 → 0.7952).
   const move = Math.min(short, shown - engine);
+  // 2026-11-22 (LIFT_SPLIT=1, the user: Bowen's offense D+ vs OG's C- "too small a gap"): the lift goes to the
+  // side that earned it, by the O / D share above, keeping the 60 / 40 blend's total.
+  if (LIFT_SPLIT) { const k = move / (0.6 * share + 0.4 * (1 - share)); return { offense: k * share, defense: k * (1 - share) }; }
   return { offense: move, defense: move };
 }
 registerNamedShift(namedShiftForSpan);
