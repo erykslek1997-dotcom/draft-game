@@ -323,12 +323,16 @@ export function benchOffenseAdjustment(team: Team): number {
  * points for a second unit (reserves at 10+ minutes) with no plus shooter, again for none who
  * creates, and again for two bigs at 10+ minutes who don't space (team spacing under 30). */
 const BENCH_ROLE_W = Number(envVar('BENCH_ROLE_W') ?? 1);
+const BENCH_STAGGER = envVar('BENCH_STAGGER') === '1';
 export function benchRoleAdjustment(team: Team): number {
   if (BENCH_ROLE_W === 0) return 0;
   const bench = benchWithMinutes(team).filter(({ minutes }) => minutes >= BENCH_OFF.minMin).map((x) => x.player);
   if (bench.length === 0) return 0;
   const noShooter = bench.some((p) => isPlusShooter(p)) ? 0 : 1;
-  const noCreator = bench.some((p) => isCreator(p)) ? 0 : 1;
+  // 2026-11-22 (BENCH_STAGGER, the user: "Wade i Haliburton będą się dzielić minutami"): with 2+ creators
+  // in the five, one of them plays beside the second unit, so it needs no creator of its own.
+  const starterCreators = BENCH_STAGGER ? primaryStarters(team).filter((e) => isCreator(e.player)).length : 0;
+  const noCreator = bench.some((p) => isCreator(p)) || starterCreators >= 2 ? 0 : 1;
   const bigs = bench.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && teamSpacingValue(p) < 30).length;
   return -BENCH_ROLE_W * (noShooter + noCreator + Math.max(0, bigs - 1));
 }
@@ -2173,8 +2177,16 @@ export function weakestReserveTalent(team: Team): number | null {
  * version is post-launch). Centred on 2003 so the league's mean Overall barely moves.
  */
 const ERA_PER_YEAR = Number(envVar('ERA_K') ?? -0.073);
-const ERA_PIVOT = 2003;
+const ERA_PIVOT = Number(envVar('ERA_PIVOT') ?? 2003);
+// 2026-11-22 (ERA_ROT=1, the user: "liczone z ławkami czy bez?"): the mean year over the whole rotation by minutes.
+const ERA_ROT = envVar('ERA_ROT') === '1';
 export function eraAdjustment(team: Team): number {
+  if (ERA_ROT) {
+    const rows = allAssignments(team).filter((a) => a.minutes > 0);
+    const m = rows.reduce((s, a) => s + a.minutes, 0);
+    if (!m) return 0;
+    return ERA_PER_YEAR * (rows.reduce((s, a) => s + (Number(a.player.spanLabel.slice(0, 4)) + 2) * a.minutes, 0) / m - ERA_PIVOT);
+  }
   const years = primaryStarters(team).map((e) => Number(e.player.spanLabel.slice(0, 4)) + 2).filter((y) => Number.isFinite(y));
   if (!years.length) return 0;
   const mean = years.reduce((a, b) => a + b, 0) / years.length;
