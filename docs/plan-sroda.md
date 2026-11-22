@@ -2,7 +2,7 @@
 
 Zasada jak zawsze: każda zmiana za przełącznikiem → sędziowie (SRS, sim, D-TAL, piątki, atak vs ORtg, obrona vs DRtg) → na stronę tylko to, co przejdzie i co zaakceptujesz.
 
-## 0. Czeka na Twoje „tak” (sprawdzone, neutralne lub na plus)
+## 0. Wdrożone 2026-11-22 (a-e)
 | # | Zmiana | Wynik testów |
 |---|---|---|
 | a | Rezerwa capów na niewybranych starterów AI (`TOP5_SLOT_FLOOR=8`) — Anchorage 1-81 | średnia AI 82.29 → 82.48, najsłabsza 73.2 → 75.4 |
