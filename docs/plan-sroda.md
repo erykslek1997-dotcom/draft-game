@@ -56,3 +56,15 @@ Wnioski:
 - **Ławka (e)** — Twoja intuicja się potwierdza: gdy dwóch kreatorów dzieli minuty, druga piątka nie potrzebuje własnego. Wszystkie testy w górę.
 - **Gra przez wysokiego w poście (f)** — dane mówią „nie” (jak wcześniej inside-out): prawdziwe drużyny z graczem w poście i tak dostają dobry atak z innych części oceny. Para Wade–Duncan traci na dopasowaniu par przez brak rzutu obok, nie przez brak samego duetu.
 - **Korekta za epokę** — działa (bez niej SRS 0.829); liczenie z ławką nic nie zmienia; mocniejsza (−0.1) minimalnie lepsza tylko między epokami (SRS w sezonach bez zmian) — zostawiłbym obecną.
+
+## Wdrożone 2026-11-22 (po planie)
+- `FIT_OFFBALL_GIVE` — strzelec bez piłki (Curry) oddaje piłkę kreatorowi bez rzutu (Grant Hill): sim 0.64 → 0.66.
+- `OFF_BALL` 0.35 → 0.2 — sędziowie bez zmian, O-TAL mocnych piątek w górę.
+- `REV_BENCH_3D` — 3-and-D premium (D 80+, spacing 55+) nie jest „starterem z ławki”.
+- Poprawka przewijania tablicy draftu na telefonie.
+
+## Otwarte z 2026-11-22
+- `LIFT_SPLIT` (wyłączony): podniesienie karty idzie na stronę, która je zarobiła (Bowen O 49 → 40). Atak vs ORtg 0.7733 → 0.7764, ale obrona 0.8128 → 0.8105, SRS 0.841 → 0.839, sim 0.66 → 0.65 — do decyzji / wariantu.
+- Cincinnati (draft 3836654035) 86.7 przy rotacji 75 i Mullinie ponad limit minut — sprawdzić, czy ocena nie jest zawyżona (chemia +1, eliteShooterCover +1, ballLoad +1).
+- Spacing: uśrednianie z sąsiednimi oknami zostaje (bez niego atak vs ORtg 0.7676); do sprawdzenia ważenie mocniej okien bliższych.
+- Napisy w Fit („3 systemy”, „dwa huby pod koszem” przy Sheedzie, „centrum w poście” przy Howardzie 2009) — błędne teksty.
