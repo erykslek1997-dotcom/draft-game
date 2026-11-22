@@ -36,7 +36,7 @@ Twój skład z draftu 307382012 (Cheyenne): 75.9 → 79.0 przy a-d (15. → 13.)
 - Drużyny z Jordanem (Long Beach 78): rozbić na części.
 
 ## Korekta za epokę — odpowiedź na pytanie
-Punkt odniesienia (2003 / 1997 / 2007) nie zmienia kolejności w drafcie: dodaje każdej drużynie tę samą stałą tylko wtedy, gdy wszystkie mają ten sam średni rok — liczy się nachylenie (−0.073 pkt na rok) i czy liczyć z ławką. Wyniki nocnych testów nachylenia i wersji z ławką niżej.
+Punkt odniesienia (2003 / 1997 / 2007) nie zmienia kolejności w drafcie: przesuwa każdą drużynę o tę samą stałą (−0.073 × różnica lat), więc zmienia tylko wyświetlaną liczbę (np. pivot 2016 dałby Ci 0 zamiast −1.0, ale rywalom też +1.0). Liczy się nachylenie (−0.073 pkt na rok) i czy liczyć z ławką. Wyniki nocnych testów nachylenia i wersji z ławką niżej.
 
 ## Wyniki nocnych testów
 (dopisane po teście)
