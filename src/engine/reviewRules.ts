@@ -36,6 +36,9 @@ const REV_STAR = envVar('REV_STAR') !== '0';
 // 2026-11-21 (the user: Porter and Pierce shoot threes, they play off the ball): the spot-up level that takes a
 // player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
 const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
+// 2026-11-21: the usage that makes a ball-holder for the "three with the ball" rule (J. Williams 0.43).
+const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
+const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
@@ -44,9 +47,11 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // The post skill reads a zone, not post-ups (Nash 97, Shaq 9), so the paint is read as rim
   // pressure without a spot-up shot, on a player who holds the ball: Shaq, Embiid, Duncan, Davis,
   // Giannis, Wade.
-  const paint = five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45).length;
+  // 2026-11-21 (REV_PAINT: 1 = as before, 'mid' = a guard / wing with an elite mid-range zone (post 90+:
+  // Wade, Westbrook) scores before the paint, 0 = the rule off; the user: Wade beside Shaq won 2006).
+  const paint = REV_PAINT === '0' ? 0 : five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45 && !(REV_PAINT === 'mid' && !isBig(p) && s(p, 'post', 0) >= 90)).length;
   const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= REV_OFFBALL_SPOT;
-  const ball = five.filter((p) => use(p) >= 0.42 && !offBallStar(p)).length;
+  const ball = five.filter((p) => use(p) >= REV_BALL_USE && !offBallStar(p)).length;
   const offBallNoShot = five.filter((p) => !isBig(p) && use(p) < 0.3 && teamSpacingValue(p) < 35).length;
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
   const bench = five.filter((p) => effectiveTalent(p) < 70 || (!isBig(p) && computeOffensiveTalent(p) < 50)).length;

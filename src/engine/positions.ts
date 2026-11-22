@@ -148,7 +148,7 @@ export function topFiveFgaLegal(currentFgas: number[], candidateFga: number, cap
   if (!Number.isFinite(TOP5_SHARE)) return true;
   const top = [...currentFgas, candidateFga].sort((a, b) => b - a).slice(0, 5);
   // 2026-11-21: keep room for the starters still to come (Anchorage: 76 caps on four, Eric Snow fifth).
-  const floor = Number(envVar('TOP5_SLOT_FLOOR') ?? 0) * (capLimit / 110);
+  const floor = Number(envVar('TOP5_SLOT_FLOOR') ?? 8) * (capLimit / 110);
   return totalFga(top) + Math.max(0, 5 - top.length) * floor <= capLimit * TOP5_SHARE + 1e-9;
 }
 

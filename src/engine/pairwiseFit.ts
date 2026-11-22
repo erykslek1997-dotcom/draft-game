@@ -370,8 +370,22 @@ export function mismatchStructureScore(
   // Wade. Every initiator within `PNR_BEST_LEAD` of the top rating is tried; the best structure counts.
   const top = Math.max(...ratings);
   const leads = ratings.map((r, i) => (i === ratings.indexOf(top) || (PNR_BEST_LEAD > 0 && r >= top * (1 - PNR_BEST_LEAD)) ? i : -1)).filter((i) => i >= 0);
-  return Math.max(...leads.map((leadIndex) => mismatchForLead(starters, slots, ratings, leadIndex)));
+  const pnr = Math.max(...leads.map((leadIndex) => mismatchForLead(starters, slots, ratings, leadIndex)));
+  // 2026-11-22 (PNR_POST, 0 = off; the user, Wade + Duncan: "co jest złego w tym duecie"): a team can
+  // run its half-court through a post hub instead of a pick-and-roll — a big with a real post game,
+  // shooters around him — and the better of the two structures counts.
+  if (PNR_POST <= 0) return pnr;
+  const spacing = starters.map(teamSpacingValue);
+  const post = Math.max(0, ...starters.map((p, i) => {
+    if (slots[i] !== 'PF' && slots[i] !== 'C') return 0;
+    const postSkill = skill(p, 'post') ?? 0;
+    if (postSkill < 75) return 0;
+    const around = spacing.filter((_, j) => j !== i);
+    return (postSkill * (1 - SURROUNDING_SPACING_WEIGHT) + (around.reduce((a, b) => a + b, 0) / around.length) * SURROUNDING_SPACING_WEIGHT) * PNR_POST;
+  }));
+  return Math.max(pnr, Math.round(Math.min(100, post)));
 }
+const PNR_POST = Number(envVar('PNR_POST') ?? 0);
 
 function mismatchForLead(starters: PlayerSpan[], slots: Position[], ratings: number[], leadIndex: number): number {
   const hasBig = slots.some((slot, index) => index !== leadIndex && (slot === 'PF' || slot === 'C'));
