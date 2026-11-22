@@ -323,7 +323,7 @@ export function benchOffenseAdjustment(team: Team): number {
  * points for a second unit (reserves at 10+ minutes) with no plus shooter, again for none who
  * creates, and again for two bigs at 10+ minutes who don't space (team spacing under 30). */
 const BENCH_ROLE_W = Number(envVar('BENCH_ROLE_W') ?? 1);
-const BENCH_STAGGER = envVar('BENCH_STAGGER') === '1';
+const BENCH_STAGGER = envVar('BENCH_STAGGER') !== '0';
 export function benchRoleAdjustment(team: Team): number {
   if (BENCH_ROLE_W === 0) return 0;
   const bench = benchWithMinutes(team).filter(({ minutes }) => minutes >= BENCH_OFF.minMin).map((x) => x.player);

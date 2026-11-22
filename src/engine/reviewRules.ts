@@ -37,8 +37,8 @@ const REV_STAR = envVar('REV_STAR') !== '0';
 // player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
 const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
 // 2026-11-21: the usage that makes a ball-holder for the "three with the ball" rule (J. Williams 0.43).
-const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.42);
-const REV_PAINT = envVar('REV_PAINT') ?? '1';
+const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
+const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
 
