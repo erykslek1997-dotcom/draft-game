@@ -23,16 +23,20 @@ Twój skład z draftu 307382012 (Cheyenne): 75.9 → 79.0 przy a-d (15. → 13.)
 - Westbrook / Harden / Oscar jako drugi gracz z piłką; pięciu solidnych vs dwóch po 100.
 - Krok: sprawdzić wagę `selfCreation` i `mismatchStructure` w ataku vs ORtg; wariant „najlepsza z dróg tworzenia” (sam / PnR / post / ruch piłki).
 
-## 3. Obrona i spacing graczy
+## 3. Ocena mocniej na BPM (punkt odniesienia niżej)
+- BPM z tych samych okien (0.907) bije silnik (0.855) na 600 drużynach.
+- Krok: rozłożyć silnik na części (TAL, O/D, struktura, korekty) i sprawdzić, która obniża trafność względem BPM; wariant: dla okien 1974+ TAL/Overall z większym udziałem BPM / wpływu, przed 1974 jak teraz. Mierzyć `scripts/_baseline.ts` + sędziowie; uczciwie też na prognozie (bez sezonu drużyny).
+
+## 4. Obrona i spacing graczy
 - Spójność obrony przy braku typowego PoA (Cheyenne 62 przy połowie All-Defensive).
 - Spacing wysokich rzucających okazjonalnie (Millsap 43, „C+”).
 
-## 4. Automatyczna rotacja gracza
+## 5. Automatyczna rotacja gracza
 - Chalmers 24 min na PG przy Haliburtonie 24 + 10 na SG; Cincinnati Haliburton 7 + 20, Cooper 5 + 5.
 - Draft użytkownika 2026-11-22 (Stockton / Kobe / Marion / Horford / Walton): rotacja użytkownika Marion 19 SF + 17 PF, Majerle 29, Hayes tylko 12 na C daje 87.4 zamiast 86.5 z automatu (ławka 83 → 87, spacing 68 → 71, obrona 82 → 83). Automat nie próbuje przesunąć startera na drugą pozycję, żeby zrobić miejsce lepszemu rezerwowemu (`scripts/_rotu.ts`).
 - Krok: starter gra pełne minuty na swojej pozycji, rezerwowy dostaje resztę; porównać z rotacją AI.
 
-## 5. Drobne
+## 6. Drobne
 - Napis „3 systemy naraz” w opisie dopasowania — kara wyłączona, tekst został → usunąć.
 - Drużyny z Jordanem (Long Beach 78): rozbić na części.
 
