@@ -12,6 +12,7 @@ import {
   type ShadowRoleProfile,
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
+import { offBallValue } from './heliocentric';
 import { pairwiseFitNotes, mismatchStructureScore, offensiveSystemOverloadPenalty, heliocentricPostConflict, HELIO_POST } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
@@ -222,6 +223,7 @@ const BALL_DOMINANT_DEMAND_RANGE = 0.4;
 const OFF_BALL_SHOOTING_FULL = 55;
 const OFF_BALL_MIDRANGE_SHARE = 0.25;
 const OFF_BALL_NON_SHOOTER_COST = 14;
+const FIT_OFFBALL_GIVE = FIT_ENV?.FIT_OFFBALL_GIVE !== '0';
 /** Hoisted out of `fitScore`'s body (2026-09-16) and exported so `scoring.ts`'s `offenseScore`
  * blend can apply the SAME "elite playmaking engine" gate to its own raw-spacing term — see that
  * function's own docstring for why. Values and meaning unchanged from where they used to live
@@ -1162,7 +1164,9 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   let offBallPenalty = 0;
   const offBallLiabilities: string[] = [];
   for (const i of perimeterIndices) {
-    const other = Math.max(0, ...perimeterIndices.filter((j) => j !== i).map((j) => ballDominance[j]));
+    // 2026-11-22 (FIT_OFFBALL_GIVE=1, the user: Curry + Grant Hill): a ball-dominant teammate who is
+    // also a real off-ball threat (Curry) can hand the ball over, so he only counts by what he would lose.
+    const other = Math.max(0, ...perimeterIndices.filter((j) => j !== i).map((j) => ballDominance[j] * (FIT_OFFBALL_GIVE ? 1 - offBallValue(starters[j]) : 1)));
     const three = computeSpacing(starters[i]);
     const offBallShooting = three + OFF_BALL_MIDRANGE_SHARE * Math.max(0, teamSpacingValue(starters[i]) - three);
     const shortfall = clamp((OFF_BALL_SHOOTING_FULL - offBallShooting) / OFF_BALL_SHOOTING_FULL, 0, 1);
