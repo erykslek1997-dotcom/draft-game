@@ -68,3 +68,16 @@ Wnioski:
 - Cincinnati (draft 3836654035) 86.7 przy rotacji 75 i Mullinie ponad limit minut — sprawdzić, czy ocena nie jest zawyżona (chemia +1, eliteShooterCover +1, ballLoad +1).
 - Spacing: uśrednianie z sąsiednimi oknami zostaje (bez niego atak vs ORtg 0.7676); do sprawdzenia ważenie mocniej okien bliższych.
 - Napisy w Fit („3 systemy”, „dwa huby pod koszem” przy Sheedzie, „centrum w poście” przy Howardzie 2009) — błędne teksty.
+
+## Punkt odniesienia (2026-11-22, `scripts/_baseline.ts`, 600 prawdziwych drużyn, korelacja z SRS)
+| Metoda | r |
+|---|---|
+| silnik — Overall | 0.855 |
+| silnik — sam talent | 0.846 |
+| BPM z tych samych okien, równe wagi (top-8) | **0.907** |
+| BPM z okien, prawdziwe minuty | 0.919 |
+| BPM z okien bez sezonu drużyny (prognoza), równe wagi | 0.735 |
+| BPM z okien bez sezonu drużyny, prawdziwe minuty | 0.759 |
+| BPM z tego sezonu, prawdziwe minuty (ściąga) | 0.974 |
+
+Wniosek: zwykły BPM z tych samych okien bije silnik o ~0.05. Największa dźwignia: więcej BPM / wpływu w TAL i Overall (sprawdzić, które części silnika odejmują trafność). Uwaga: przed 1974 BPM nie ma — silnik musi działać też tam.
