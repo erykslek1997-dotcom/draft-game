@@ -183,18 +183,20 @@ export function PlayerTable({
   return (
     <table className="plist">
       <colgroup>
-        <col style={{ width: 52 }} />
+        {/* 2026-11-25 (UX review): the fixed columns were 826px of an ~884px list at 1280, so a name
+            got ~60px ("Tra…", "Stev…"); they are trimmed so the name keeps ~170px */}
+        <col style={{ width: 48 }} />
         <col />
-        {at && <col className="c-hide" style={{ width: 96 }} />}
-        <col className="c-hide" style={{ width: 118 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        {!at && <col className="c-hide" style={{ width: 58 }} />}
+        {at && <col className="c-hide" style={{ width: 100 }} />}
+        <col className="c-hide" style={{ width: at ? 76 : 110 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        {!at && <col className="c-hide" style={{ width: 52 }} />}
+        <col style={{ width: 78 }} />
+        {at && <col className="c-hide c-mid" style={{ width: 166 }} />}
+        {(at || onStar) && <col className="c-hide" style={{ width: 30 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide c-mid" style={{ width: 172 }} />}
-        {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
-        <col style={{ width: 96 }} />
       </colgroup>
       <thead>
         <tr>
@@ -268,7 +270,7 @@ export function PlayerTable({
                     {naturalPosition(s.playerName)}
                     {!at && <span className="mt-y"> · {maskYears(s.playerName, s.spanLabel)}</span>}
                   </b>{' '}
-                  {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i>· {roles.join(' · ')}</i>}
+                  {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i title={roles.join(' · ')}>· {roles[0]}</i>}
                   {/* the phone's one line under the name: position · years · pts / reb / ast */}
                   {/* the phone's line under the name, in three even columns: position · years · his line */}
                   <span className="mst">
@@ -294,7 +296,7 @@ export function PlayerTable({
                   )}
                 </td>
               )}
-              <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`}>{r.tier}</td>
+              <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`} title={r.tier}>{r.tier}</td>
               <td className="num c-hide c-mid">{s.box.ppg.toFixed(1)}</td>
               <td className="num c-hide c-mid">{s.box.rpg.toFixed(1)}</td>
               <td className="num c-hide c-mid">{s.box.apg.toFixed(1)}</td>
@@ -304,8 +306,12 @@ export function PlayerTable({
                 <td className="g c-hide c-mid">
                   {/* a dash in each column until a scout opens the cards (the user, 2026-11-12: "„–” zanim
                       wciśniemy scouta"); the row opens his window, where the scout is */}
+                  {/* 2026-11-25 (UX review): five dashes read as five empty columns; one word says why */}
+                  {!r.grades ? (
+                    <span className="unsc" title={scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}>not scouted</span>
+                  ) : (
                   <span
-                    className={`cols g5${r.grades ? '' : ' unscouted'}`}
+                    className="cols g5"
                     title={r.grades ? undefined : scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}
                   >
                     {(r.grades ? [r.grades.off, r.grades.def, r.grades.sht, r.grades.ply, r.grades.reb] : ['–', '–', '–', '–', '–']).map((v, i) => (
@@ -314,6 +320,7 @@ export function PlayerTable({
                       </span>
                     ))}
                   </span>
+                  )}
                 </td>
               )}
               {(at || onStar) && (

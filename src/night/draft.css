@@ -319,3 +319,37 @@
 .nt .plist tr.leaving td { animation: plist-leave 0.9s ease-in forwards; }
 .nt .plist tr.leaving .draft { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .nt .plist tr.leaving td { animation: none; opacity: 0.3; } }
+
+/* 2026-11-25 (UX review, Primeball plan 1 + 2a) */
+/* the column names stay in view while the list scrolls (the page scrolls, so top: 0 holds) */
+.nt .plist:not(.spans):not(.roster) thead th { position: sticky; top: 0; z-index: 2; background: var(--bg); box-shadow: inset 0 -1px 0 var(--rule); }
+/* a player just taken fades to "gone", not to nothing: a fully clear row read as a hole in the list */
+@keyframes plist-leave-dim { from { opacity: 1; } to { opacity: 0.25; } }
+.nt .plist tr.leaving td { animation-name: plist-leave-dim; }
+/* the scouting letters: column names a touch smaller so OFF DEF SHT PLY REB never run together */
+.nt .plist th .cols.g5 { font-size: 11px; letter-spacing: 0.02em; }
+.nt .plist th.g, .nt .plist td.g { padding-left: 8px; }
+/* the search box shrinks with the row instead of pushing the page wider than the screen */
+.nt .ptabs .search { min-width: 0; }
+/* the phone list keeps its narrow face and Draft columns while others pick too, so the line under
+   a name (position · years · pts/reb/ast) never clips between your picks */
+@media (max-width: 600px) {
+  .nt .plist:not(.roster):not(.spans) col:first-child { width: 40px !important; }
+  .nt .plist:not(.roster):not(.spans) col:last-child { width: 64px !important; }
+  .nt .plist:not(.roster):not(.spans) col:nth-last-child(4) { width: 66px !important; }
+}
+
+/* 2026-11-25 (UX review, Primeball plan 2a+) */
+.nt .plist td.g .unsc { display: block; text-align: center; font: italic 500 12px var(--sans); color: var(--ink4); }
+@media (min-width: 601px) {
+  /* before your first pick the nine empty slots take a short row, so the list starts higher */
+  .nt .slots.compact:not(:has(.filled)) .slot { height: 64px; font-size: 26px; }
+  .nt .bench:not(:has(.filled)) .b { min-height: 32px; padding: 4px 10px; font-size: 12px; }
+  /* the side column's buttons step back: the pick is made in the list */
+  .nt .game > aside .actions { gap: 8px; }
+  .nt .game > aside .actions .btn.line, .nt .game > aside .actions .btn.off { padding: 9px; font-size: 15px; }
+}
+.nt .rs-key { display: none; }
+@media (max-width: 600px) { .nt .rs-key { display: block; margin: -4px 0 8px; font: italic 500 12px var(--sans); color: var(--ink3); } }
+/* 2026-11-25 (UX review): a smaller drum on a laptop, so the draft order under it fits the first screen */
+@media (min-width: 601px) { .nt .drum { max-width: 500px; } }
