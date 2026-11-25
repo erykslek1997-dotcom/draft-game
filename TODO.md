@@ -538,6 +538,10 @@ Kolejność (dopisane do planu, po punkcie 2, przed zmianą nazwy):
 2c. [ ] **Dock na phone** taki sam w drafcie i w drużynie; klik w pusty slot rotacji → lista z filtrem tej pozycji; legenda skrótów OFF/DEF/SHT/PLY (tooltip lub „?”).
 2d. [ ] **Po daily:** procent graczy z tym samym wyborem + licznik do następnego daily (wymaga zapisu wyborów w Supabase).
 2e. [ ] **Kolejka draftu + auto-pick z kolejki** (gwiazdki → kolejka z kolejnością); feedback „co zmienił pick” (fit/spacing/obrona). Większe — po zmianie nazwy.
+2f. [ ] **Pomysły z Draft Dawg** (draftdawg.app; ich all-time draft liczy na ratingach z NBA 2K — inna skala niż nasz rating peaku, więc nasz silnik zostaje przewagą):
+   - tryb „pass & play”: 1–4 osoby na jednym telefonie, bez logowania i online (5 albo 8 rund);
+   - daily z losowym tematem rundy („gracz z lat 80.”, „center”, „bez All-Star”), wybór musi pasować do tematu;
+   - (do rozważenia) daily z celem liczbowym („suma ppg peaków = 120”), bez bieżącej sumy w trakcie.
 
 ## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
 
