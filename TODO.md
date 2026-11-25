@@ -506,7 +506,7 @@ Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rot
 - [ ] Znaki: USPTO (PRIMEBALL, PRIME BALL; klasy 9 i 41) i TMview (UE/PL); konsultacja prawna — „Prime” a NBA na Amazon Prime Video.
 
 **Kolejność prac (od najprostszego):**
-1. [ ] **Ucięte nazwiska na liście draftu (desktop 1280 px)** — „Shai…”, „Dirk…”: kolumna nazwiska za wąska, obok dużo miejsca na statystyki i puste kolumny. Zrzut przed/po.
+1. [x] **Ucięte nazwiska na liście draftu (desktop 1280 px)** — „Shai…”, „Dirk…”: kolumna nazwiska za wąska, obok dużo miejsca na statystyki i puste kolumny. Zrzut przed/po.
 2. [ ] **Czerwień tylko jako alarm** — w menu czerwone kropki-ikony przy Mini Draft i Duel oraz czerwona kreska nad „Today's dailies”; zgodnie z brand bookiem czerwień = „on the clock” / ważne zero. W menu złoto albo krem.
 3. [ ] **Plakat: krótki statline zamiast samego ppg** (jak na liście draftu „31.8/10.9/4.2”), jeśli mieści się na karcie (niski priorytet).
 4. [ ] **Zmiana nazwy w grze na Primeball** — po sprawdzeniu domen: `src/brand.ts`, tytuł strony, plakaty i karty udostępniania (masthead „Draftverse”, znak „D”), teksty „Copy result”.
@@ -533,7 +533,7 @@ Podobne gry i co z nich brać:
 - **Ogólnie:** brak kolejki/auto-picku (przy timerze online gracz traci pick); brak informacji „co dał ten pick” po wyborze.
 
 Kolejność (dopisane do planu, po punkcie 2, przed zmianą nazwy):
-2a. [ ] **Lista draftu:** sticky nagłówek, usunięta pusta przerwa (desktop + phone), ukryte puste kolumny, przycisk „Draft” w wierszu na desktopie, statline na phone bez ucinania. (Razem z punktem 1.)
+2a. [x] **Lista draftu:** sticky nagłówek, usunięta pusta przerwa (desktop + phone), ukryte puste kolumny, przycisk „Draft” w wierszu na desktopie, statline na phone bez ucinania. (Razem z punktem 1.) — zrobione 2026-11-25: węższe stałe kolumny (nazwisko ~150 px zamiast ~60), przypięty nagłówek, zdjęty gracz gaśnie do 25% zamiast znikać (nie robi dziury), wyszukiwarka nie poszerza strony (było 1291 px), na phone wąskie kolumny także między pickami. Puste „–” w ocenach zostają — to niezescoutowani gracze (mechanika), a przycisk Draft znika celowo, gdy wybiera ktoś inny.
 2b. [ ] **Menu:** jedno główne CTA (daily Draw Five w złocie), „reroll the day” tylko w dev, czas trwania trybów także na phone.
 2c. [ ] **Dock na phone** taki sam w drafcie i w drużynie; klik w pusty slot rotacji → lista z filtrem tej pozycji; legenda skrótów OFF/DEF/SHT/PLY (tooltip lub „?”).
 2d. [ ] **Po daily:** procent graczy z tym samym wyborem + licznik do następnego daily (wymaga zapisu wyborów w Supabase).

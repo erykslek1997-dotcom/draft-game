@@ -183,18 +183,20 @@ export function PlayerTable({
   return (
     <table className="plist">
       <colgroup>
-        <col style={{ width: 52 }} />
+        {/* 2026-11-25 (UX review): the fixed columns were 826px of an ~884px list at 1280, so a name
+            got ~60px ("Tra…", "Stev…"); they are trimmed so the name keeps ~170px */}
+        <col style={{ width: 48 }} />
         <col />
-        {at && <col className="c-hide" style={{ width: 96 }} />}
-        <col className="c-hide" style={{ width: 118 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        <col className="c-hide c-mid" style={{ width: 58 }} />
-        {!at && <col className="c-hide" style={{ width: 58 }} />}
+        {at && <col className="c-hide" style={{ width: 100 }} />}
+        <col className="c-hide" style={{ width: at ? 76 : 110 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        <col className="c-hide c-mid" style={{ width: 48 }} />
+        {!at && <col className="c-hide" style={{ width: 52 }} />}
+        <col style={{ width: 78 }} />
+        {at && <col className="c-hide c-mid" style={{ width: 166 }} />}
+        {(at || onStar) && <col className="c-hide" style={{ width: 30 }} />}
         <col style={{ width: 84 }} />
-        {at && <col className="c-hide c-mid" style={{ width: 172 }} />}
-        {(at || onStar) && <col className="c-hide" style={{ width: 34 }} />}
-        <col style={{ width: 96 }} />
       </colgroup>
       <thead>
         <tr>
@@ -294,7 +296,7 @@ export function PlayerTable({
                   )}
                 </td>
               )}
-              <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`}>{r.tier}</td>
+              <td className={`tier c-hide${TOP_TIERS.has(r.tier) ? ' top' : ''}`} title={r.tier}>{r.tier}</td>
               <td className="num c-hide c-mid">{s.box.ppg.toFixed(1)}</td>
               <td className="num c-hide c-mid">{s.box.rpg.toFixed(1)}</td>
               <td className="num c-hide c-mid">{s.box.apg.toFixed(1)}</td>
