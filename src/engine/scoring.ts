@@ -2088,18 +2088,21 @@ const QUALITY_FIT_SPLIT = 0.5;
 // 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
 // 2026-11-25 (`W_TAL` / `W_BENCH` / `W_FIT` / `W_OFF` / `W_DEF`, multipliers, measurement): the weights audit.
 const WM = (k: string) => Number(envVar(k) ?? 1);
-const QUALITY_TALENT_WEIGHT = (0.271 / 0.441) * WM('W_TAL');
-const QUALITY_BENCH_WEIGHT = (0.17 / 0.441) * WM('W_BENCH');
+// Normalised: the multipliers change the shares, not the scale (the bucket keeps its sum).
+const Q_SUM = (0.271 * WM('W_TAL') + 0.17 * WM('W_BENCH')) / 0.441;
+const QUALITY_TALENT_WEIGHT = (0.271 / 0.441) * WM('W_TAL') / Q_SUM;
+const QUALITY_BENCH_WEIGHT = (0.17 / 0.441) * WM('W_BENCH') / Q_SUM;
 const QUALITY_ROTATION_WEIGHT = 0;
-const FIT_COHERENCE_WEIGHT = (0.18 / 0.52) * WM('W_FIT');
+const F_SUM = (0.18 * WM('W_FIT') + (0.13 + Number(envVar('OD_SHIFT') ?? 0)) * WM('W_OFF') + (0.21 - Number(envVar('OD_SHIFT') ?? 0)) * WM('W_DEF')) / 0.52;
+const FIT_COHERENCE_WEIGHT = (0.18 / 0.52) * WM('W_FIT') / F_SUM;
 // 2026-10-29 (audit follow-up step 2, `scripts/measureDefenseLean.ts`; the user: "Fair"): real teams
 // leaning to defense (Defense 8+ over Offense) beat their Overall by 0.63 SRS inside their decade.
 // 0.04 of the composite moved from Offense to Defense: that miss 0.63 -> 0.23 (offense-leaning
 // -0.05 -> 0.02), Overall vs real SRS r 0.7725 -> 0.7756, vs the bench leagues' mechanics margin R²
 // 0.559 -> 0.581 (0.06 gave 0.7761 / 0.580). Was .17 / .17.
 const OD_SHIFT = Number(envVar('OD_SHIFT') ?? 0);
-const FIT_OFFENSE_WEIGHT = ((0.13 + OD_SHIFT) / 0.52) * WM('W_OFF');
-const FIT_DEFENSE_WEIGHT = ((0.21 - OD_SHIFT) / 0.52) * WM('W_DEF');
+const FIT_OFFENSE_WEIGHT = ((0.13 + OD_SHIFT) / 0.52) * WM('W_OFF') / F_SUM;
+const FIT_DEFENSE_WEIGHT = ((0.21 - OD_SHIFT) / 0.52) * WM('W_DEF') / F_SUM;
 
 /** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
  * renormalising the rest of its half. Unset, nothing changes. */
