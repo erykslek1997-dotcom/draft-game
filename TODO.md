@@ -1993,3 +1993,7 @@ Sędziowie na końcu nocy: real 0,8589 / gra 0,8059 / obrona drużyn (real DRtg)
 ## Season Profile (2026-11-25, later)
 - Branch only, not deployed: anchors from drafted teams, label at a display gap of ±12 (scripts/_sprof*.ts).
 - Idea: add the players' individual playoff impact (playoffImpactForSpan) to the PO formula and test it on 317 real playoff teams (scripts/_sprof.ts).
+
+## After 20:00 (2026-11-25), with the TAL correction
+1. Horry 2001-03, D 86, starter on the #1 team: check whether his D-TAL is too high (role players with an inflated D).
+2. Pre-line spacing (Chenier 1973-75, B+ at TS 48.6%): add era-relative efficiency to the twins estimate (scripts/estimateSpacing.ts, honesty test). Also check the cap price of high-volume, average-efficiency scorers (Chenier at 20.5).
