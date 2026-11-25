@@ -234,7 +234,7 @@ function rates(span: PlayerSpan) {
   return r;
 }
 /** Largest share by which a team's shooting is nudged toward the engine's margin. */
-const MAX_NUDGE = 0.3;
+const MAX_NUDGE = Number(envVar('LIVE_NUDGE') ?? 0.3);
 /** A usage-driven change in true shooting moves three-point accuracy about two-thirds as much. */
 const THREE_PCT_PER_TS = 0.67;
 /**
@@ -1433,6 +1433,12 @@ export function playTeamGame(
 export interface TeamPairing {
   prepared: PreparedGame;
   weakLinks: [string | null, string | null];
+}
+
+/** Measurement only: the mechanics' margin, the nudge and the margin the nudged game expects. */
+export function pairingDebug(a: Team, b: Team, margin: number): { mech: number; nudge: number; realized: number } {
+  const p = prepareRosters([rosterFromTeam(a), rosterFromTeam(b)], margin, true);
+  return { mech: p.setup.gapAt(0), nudge: p.nudge, realized: p.setup.gapAt(p.nudge) };
 }
 
 export function prepareTeamPairing(a: Team, b: Team, margin: number, weakLinks?: [string | null, string | null]): TeamPairing {

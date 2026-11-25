@@ -1,3 +1,4 @@
+import { envVar } from './env';
 import type { Team } from './types';
 import { projectedNetRating } from './netRatingProjection';
 import { fitScore } from './fit';
@@ -101,7 +102,7 @@ export type StyleClashKey = 'rim' | 'spacing' | 'star' | 'glass';
  * in the playoffs.
  */
 export type MatchupContext = 'single' | 'season' | 'playoffs';
-const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5, playoffs: 1 };
+const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5 * Number(envVar('MU_STYLE') ?? 1), playoffs: Number(envVar('MU_STYLE') ?? 1) };
 
 /**
  * Pairwise matchup projection — "how would roster A actually do against roster B," the one large
@@ -205,7 +206,8 @@ const MARGIN_STD_DEV = 13.822;
 // 2026-09-30, engine calibration session 1 (the user: two teams at overall 83 held 33% and 19%
 // title odds): 0.7 still let the net-rating regression — which leans on projected DRTG — swing the
 // title race between teams the ranking calls even. 0.85 keeps it as texture only.
-const OVERALL_MARGIN_WEIGHT = 0.85;
+const OVERALL_MARGIN_WEIGHT = Number(envVar('MU_OVR_W') ?? 0.85);
+const MU_MISMATCH = Number(envVar('MU_MISMATCH') ?? 1);
 const OVERALL_POINTS_PER_UNIT = 1.0;
 // 2026-10-02, stage 2: in league play one overall point was worth ~1 point of margin, so seasons
 // bunched around 41-41 (best team ~50 wins, worst ~30) and #1 vs #8 was close to a coin flip.
@@ -299,8 +301,7 @@ export function projectMatchup(
   const marginA =
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +
-    mismatchForA -
-    mismatchForB +
+    MU_MISMATCH * (mismatchForA - mismatchForB) +
     styleMargin;
   const gameWinProbA = gameWinProbability(marginA);
   const seriesWinProbA = seriesWinProbability(gameWinProbA);
