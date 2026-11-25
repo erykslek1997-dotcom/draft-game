@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reel B7 summary</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;family=JetBrains+Mono:wght@700&amp;display=swap">
+<style>body{margin:0}a{color:#F2C14E}</style>
+</helmet>
+<div style="width: 540px; height: 960px; box-sizing: border-box; background: #1C1420; border: 6px solid #F2C14E; outline: 4px solid #0F0A12; outline-offset: -14px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: VT323, monospace; color: #F1E6D2; position: relative">
+  <div style="font-family: 'Press Start 2P', monospace; font-size: 20px; text-shadow: 3px 3px 0 #0F0A12">WHO WENT INSTEAD?</div>
+
+  <div style="margin-top: 22px; width: 480px; display: flex; flex-direction: column; gap: 14px">
+
+    <sc-for list="{{years}}" as="yr" hint-placeholder-count="3">
+      <div style="background: #2A1E33; border: 4px solid #0F0A12; box-shadow: 5px 5px 0 #0F0A12; padding: 10px 10px 8px">
+        <div style="display: grid; grid-template-columns: 124px repeat(5, minmax(0, 1fr)); align-items: end; padding-bottom: 6px">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 13px; color: #F2C14E">{{yr.y}}</span>
+          <span style="text-align: right; font-family: 'Press Start 2P', monospace; font-size: 7px; color: #B8A88F; line-height: 1.4">PANTH.<br>RATING</span>
+          <span style="text-align: right; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #B8A88F">PTS</span>
+          <span style="text-align: right; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #B8A88F">REB</span>
+          <span style="text-align: right; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #B8A88F">AST</span>
+          <span style="text-align: right; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #B8A88F">BPM</span>
+        </div>
+        <sc-for list="{{yr.rows}}" as="r" hint-placeholder-count="2">
+          <div style="display: grid; grid-template-columns: 124px repeat(5, minmax(0, 1fr)); align-items: center; height: 46px; box-sizing: border-box; padding: 0 2px; border-top: 1px solid #3A2B44; background: {{r.bg}}">
+            <div style="display: flex; flex-direction: column; line-height: 1">
+              <span style="font-family: 'Press Start 2P', monospace; font-size: 8px; color: {{r.tagc}}">{{r.tag}}</span>
+              <span style="font-size: 22px; color: {{r.namec}}; margin-top: 3px">{{r.n}}</span>
+            </div>
+            <span style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 18px; color: {{r.c0}}">{{r.v0}}</span>
+            <span style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: {{r.c1}}">{{r.v1}}</span>
+            <span style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: {{r.c2}}">{{r.v2}}</span>
+            <span style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: {{r.c3}}">{{r.v3}}</span>
+            <span style="text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 17px; color: {{r.c4}}">{{r.v4}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top: 20px; background: #2A1E33; border: 3px solid #0F0A12; padding: 10px 18px; font-size: 26px">The voters picked points.</div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: repeating-linear-gradient(45deg, rgba(192,96,58,0.10) 0 10px, transparent 10px 20px); border-top: 2px dashed rgba(192,96,58,0.5); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #C0603A">platform UI zone</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":540,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var Y = [
+      ['1987', [['W. Davis', [55, 23.6, 3.1, 4.6, 1.2]], ['Blackman', [53, 20.9, 3.5, 3.3, 0.8]], ['Harper', [74, 16.0, 2.6, 7.9, 5.2], 1]]],
+      ['1989', [['D. Ellis', [69, 27.5, 4.2, 2.0, 2.5]], ['Harper', [76, 17.3, 2.8, 7.0, 3.2], 1]]],
+      ['1990', [['Blackman', [50, 19.4, 3.5, 3.6, 0.8]], ['Harper', [77, 18.0, 3.0, 7.4, 4.6], 1]]]
+    ];
+    var fmt = function (i, v) { return i === 0 ? String(v) : (i === 4 ? (v > 0 ? '+' : '') + v.toFixed(1) : v.toFixed(1)); };
+    return { years: Y.map(function (y) {
+      var best = [0, 1, 2, 3, 4].map(function (i) { return Math.max.apply(null, y[1].map(function (p) { return p[1][i]; })); });
+      var rows = y[1].slice(); 
+      return { y: y[0], rows: rows.map(function (p) {
+        if (!p) return { n: '', tag: '', tagc: 'transparent', namec: 'transparent', bg: 'transparent', v0: '', v1: '', v2: '', v3: '', v4: '', c0: '', c1: '', c2: '', c3: '', c4: '' };
+        var h = !!p[2], o = { n: p[0], tag: h ? 'NOT PICKED' : 'ALL-STAR', tagc: h ? '#C0603A' : '#7FA35A',
+          namec: h ? '#F2C14E' : '#F1E6D2', bg: h ? 'rgba(242,193,78,0.08)' : 'transparent' };
+        p[1].forEach(function (v, i) { o['v' + i] = fmt(i, v); o['c' + i] = v === best[i] ? '#F2C14E' : '#F1E6D2'; });
+        return o;
+      }) };
+    }) };
+  }
+}
+</script>
+</body>
+</html>
