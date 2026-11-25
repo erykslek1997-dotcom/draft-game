@@ -1,0 +1,317 @@
+[
+ {
+  "name": "Bernard King",
+  "window": "1983-85",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Scoring-focused forward; coverage centers entirely on offense, no defensive honors; generally viewed as indifferent/average defender.",
+  "sources": [
+   "https://basketball.realgm.com/article/227128/Bernard-King-The-NBAs-Invisible-Genius"
+  ]
+ },
+ {
+  "name": "Kevin McHale",
+  "window": "1986-88",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive First Team 1986, 1987, 1988; long-armed post defender and shot blocker.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Kevin_McHale_(basketball)",
+   "https://www.nba.com/history/legends/profiles/kevin-mchale"
+  ]
+ },
+ {
+  "name": "Terry Porter",
+  "window": "1989-91",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Strong, solid two-way point guard; no defensive honors; sources focus on offense and leadership.",
+  "sources": [
+   "https://www.oregonencyclopedia.org/articles/porter-terry/"
+  ]
+ },
+ {
+  "name": "Mark Price",
+  "window": "1988-90",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Small offensive point guard; no defensive reputation found; generally regarded as a defensive weakness due to size.",
+  "sources": [
+   "https://www.nba.com/player/899/mark-price"
+  ]
+ },
+ {
+  "name": "Elgin Baylor",
+  "window": "1959-61",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Coverage is offense/rebounding; Tom Heinsohn praised him as a defender among comparable forwards, but little else.",
+  "sources": [
+   "https://www.espn.com/classic/biography/s/Baylor_Elgin.html",
+   "https://www.nba.com/history/legends/profiles/elgin-baylor"
+  ]
+ },
+ {
+  "name": "Mookie Blaylock",
+  "window": "1993-95",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive First Team 1994 and 1995; ~2.5 steals per game, pesky ball hawk.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Mookie_Blaylock",
+   "https://www.nba.com/news/atlanta-hawks-single-season-steals-per-game-leaders"
+  ]
+ },
+ {
+  "name": "Marques Johnson",
+  "window": "1978-80",
+  "level": 3,
+  "confidence": "low",
+  "summary": "All-NBA scorer; no All-Defensive honors; defense not a theme in coverage.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Marques_Johnson"
+  ]
+ },
+ {
+  "name": "Alvin Robertson",
+  "window": "1985-87",
+  "level": 5,
+  "confidence": "high",
+  "summary": "1986 DPOY, steals leader 1986 and 1987, All-Defensive 2nd 1986 and 1st 1987.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Alvin_Robertson",
+   "https://vault.si.com/vault/1986/04/21/the-spur-of-the-moment"
+  ]
+ },
+ {
+  "name": "Bobby Jones",
+  "window": "1976-78",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive First Team every year 1977-84; defense was his Hall of Fame calling card.",
+  "sources": [
+   "https://www.nba.com/sixers/history/case-enshrinement-defense-became-jones-calling-card",
+   "https://en.wikipedia.org/wiki/Bobby_Jones_(basketball,_born_1951)"
+  ]
+ },
+ {
+  "name": "Bob Lanier",
+  "window": "1973-75",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Big body who 'dominated the middle on defense'; 3.0 blocks per game in 1973-74; no All-Defensive selections in window.",
+  "sources": [
+   "https://www.encyclopedia.com/education/news-wires-white-papers-and-books/lanier-bob",
+   "https://www.nba.com/news/detroit-pistons-single-season-blocks-per-game-leaders"
+  ]
+ },
+ {
+  "name": "Artis Gilmore",
+  "window": "1976-78",
+  "level": 4,
+  "confidence": "high",
+  "summary": "ABA All-Defensive regular; NBA All-Defensive 2nd team 1978; elite shot blocker (11 blocks game).",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/artis-gilmore",
+   "https://en.wikipedia.org/wiki/Artis_Gilmore"
+  ]
+ },
+ {
+  "name": "Larry Nance",
+  "window": "1987-89",
+  "level": 4,
+  "confidence": "high",
+  "summary": "All-Defensive First Team 1989; renowned shot-blocking forward.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Larry_Nance",
+   "https://www.clevelandsportshall.com/nance-larry/"
+  ]
+ },
+ {
+  "name": "Bob Pettit",
+  "window": "1958-60",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Sources focus on scoring/rebounding and relentless effort; nothing specific on defense.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/bob-pettit"
+  ]
+ },
+ {
+  "name": "Grant Hill",
+  "window": "1994-96",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Athletic, willing defender; rookie said he needed to improve defense; later assigned to guard Anthony Mason; no honors.",
+  "sources": [
+   "https://vault.si.com/vault/1996/01/22/grant-hill-settles-into-a-role-tyus-edney-buoys-the-kings-sir-charles-would-moveto-the-right-address",
+   "https://www.mitchalbom.com/rookie-lessons-learned-hill-needs-room-to-breathe/"
+  ]
+ },
+ {
+  "name": "Shaquille O'Neal",
+  "window": "1993-95",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Intimidating rim presence (blocks) but young, not known for defensive intelligence; no All-Defensive honors.",
+  "sources": [
+   "https://bleacherreport.com/articles/49931-a-look-into-the-past-present-and-future-of-shaquille-o-neal"
+  ]
+ },
+ {
+  "name": "Tiny Archibald",
+  "window": "1971-73",
+  "level": 2,
+  "confidence": "high",
+  "summary": "NBA.com: defense 'spotty', struggled as defender; Kings let teammates handle defense.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/nate-archibald",
+   "https://csmonitor.com/1981/0421/042125.html"
+  ]
+ },
+ {
+  "name": "Adrian Dantley",
+  "window": "1979-81",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "Critics charged he neither played defense nor ran the floor.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/adrian-dantley"
+  ]
+ },
+ {
+  "name": "Walter Davis",
+  "window": "1977-79",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Smooth scoring wing; one retrospective references solid defense; no honors.",
+  "sources": [
+   "https://wikipedia.com/wiki/Walter_Davis_(basketball)"
+  ]
+ },
+ {
+  "name": "Joe Dumars",
+  "window": "1990-92",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive 1st 1990, 1992, 2nd 1991; Jordan called him the best defender he faced.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Joe_Dumars",
+   "https://basketball-reference.com/awards/all_defense.html"
+  ]
+ },
+ {
+  "name": "Sleepy Floyd",
+  "window": "1985-87",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Offensive guard; no defensive reputation in sources.",
+  "sources": [
+   "https://en.wikipedia.com/wiki/Sleepy_Floyd"
+  ]
+ },
+ {
+  "name": "Tim Hardaway",
+  "window": "1990-92",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Run TMC era with little team defense; Nelson confronted him on defense; quick hands but no honors.",
+  "sources": [
+   "https://slamonline.com/?p=565988",
+   "https://en.wikipedia.org/wiki/Run_TMC"
+  ]
+ },
+ {
+  "name": "Hersey Hawkins",
+  "window": "1989-91",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Steady ~1.7-1.8 steals per game; no defensive write-ups or honors.",
+  "sources": [
+   "https://wikipedia.com/wiki/Hersey_Hawkins"
+  ]
+ },
+ {
+  "name": "Elvin Hayes",
+  "window": "1973-75",
+  "level": 4,
+  "confidence": "high",
+  "summary": "All-Defensive Second Team 1974 and 1975; ~3 blocks per game in 1974.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Elvin_Hayes",
+   "https://www.nba.com/history/legends/profiles/elvin-hayes"
+  ]
+ },
+ {
+  "name": "Dominique Wilkins",
+  "window": "1985-87",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "Rapped for little interest in defense; left his man early to run; improved somewhat by 1988.",
+  "sources": [
+   "https://proof.csmonitor.com/1988/0311/pwilk.html",
+   "https://vault.si.com/vault/1991/03/04/a-hawk-soars-higher-dominique-wilkins-of-atlanta-is-having-the-best-year-of-his-long-career"
+  ]
+ },
+ {
+  "name": "Brad Daugherty",
+  "window": "1990-92",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Skilled offensive center; teammate Hot Rod Williams said at times he wasn't there on defense; average.",
+  "sources": [
+   "https://www.nba.com/cavaliers/news/where_hotrod_111103.html"
+  ]
+ },
+ {
+  "name": "Alex English",
+  "window": "1981-83",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Self-described decent defender in Moe's run-and-gun system; no honors.",
+  "sources": [
+   "https://gazette.com/2026/02/22/ex-nuggets-star-alex-english-remembers-doug-moe-as-a-great-coach-and-friend/"
+  ]
+ },
+ {
+  "name": "Shawn Kemp",
+  "window": "1993-95",
+  "level": 4,
+  "confidence": "low",
+  "summary": "Athletic shot blocker (~2 blocks) on aggressive Sonics defenses, but foul-prone.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Shawn_Kemp"
+  ]
+ },
+ {
+  "name": "Dikembe Mutombo",
+  "window": "1994-96",
+  "level": 5,
+  "confidence": "high",
+  "summary": "1995 DPOY, blocks leader 1994-96, 1994 upset of Sonics.",
+  "sources": [
+   "https://www.upi.com/Archives/1995/05/01/Mutombo-named-NBA-Defensive-Player-of-the-Year/7557799300800/",
+   "https://en.wikipedia.org/wiki/Dikembe_Mutombo"
+  ]
+ },
+ {
+  "name": "Paul Arizin",
+  "window": "1954-56",
+  "level": 3,
+  "confidence": "low",
+  "summary": "NBA.com profile calls him a 'tough defender', otherwise sources center on scoring.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/paul-arizin"
+  ]
+ },
+ {
+  "name": "Phil Chenier",
+  "window": "1973-75",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Scoring guard; no defensive descriptions found.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Phil_Chenier"
+  ]
+ }
+]
