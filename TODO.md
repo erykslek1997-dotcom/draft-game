@@ -493,6 +493,28 @@ Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rot
 | 🏅 | Nagrody za levele + profil | Tytuły na tabelach, ramka logo, karta gracza, odznaki; pasek Home · Profile · Settings w menu. |
 | 📱 | Dolny pasek: reszta | Draw Five, sezon All-Time, turniej Mini. |
 
+## Primeball — plan (2026-11-25)
+
+**Decyzja:** nazwa robocza gry i kanału = **Primeball** (hasło „Every player at his peak.”, podtytuł „All-time fantasy basketball”). Brand book: artefakt „Primeball” na claude.ai (Design System, prywatny — udostępnić przez Share). Pantheon odłożony (`docs/pantheon/`).
+
+**Zrobione 2026-11-25:** brand book (pozycjonowanie, głos, kolory z tokenów gry, typografia, odstępy, ruch, rolki, tabela kontrastu); ciemniejsze `--cgold` / `--cgreen` na karcie (PR #395, WCAG 4,5:1); plakat sezonu — pozycja raz, wartości profilu wyrównane pod etykietami (PR #396).
+
+**Po stronie Eryka (przed zmianą nazwy w grze):**
+- [ ] Domeny: primeball.com / .gg / .app, zapas playprimeball.com.
+- [ ] Konta @primeball (YouTube, TikTok, Instagram, X), zapas @playprimeball.
+- [ ] App Store / Google Play: „Primeball”.
+- [ ] Znaki: USPTO (PRIMEBALL, PRIME BALL; klasy 9 i 41) i TMview (UE/PL); konsultacja prawna — „Prime” a NBA na Amazon Prime Video.
+
+**Kolejność prac (od najprostszego):**
+1. [ ] **Ucięte nazwiska na liście draftu (desktop 1280 px)** — „Shai…”, „Dirk…”: kolumna nazwiska za wąska, obok dużo miejsca na statystyki i puste kolumny. Zrzut przed/po.
+2. [ ] **Czerwień tylko jako alarm** — w menu czerwone kropki-ikony przy Mini Draft i Duel oraz czerwona kreska nad „Today's dailies”; zgodnie z brand bookiem czerwień = „on the clock” / ważne zero. W menu złoto albo krem.
+3. [ ] **Plakat: krótki statline zamiast samego ppg** (jak na liście draftu „31.8/10.9/4.2”), jeśli mieści się na karcie (niski priorytet).
+4. [ ] **Zmiana nazwy w grze na Primeball** — po sprawdzeniu domen: `src/brand.ts`, tytuł strony, plakaty i karty udostępniania (masthead „Draftverse”, znak „D”), teksty „Copy result”.
+5. [ ] **Brand book: komponenty z podglądem** 1:1 z CSS gry — przycisk, karta zawodnika, kratka boardu, chip, wiersz listy.
+6. [ ] **Znak graficzny + zasady logo** (min. rozmiar, pole ochronne, wersja na jasnym, czego nie robić); awatar / ikona / favicon 32–512 px.
+7. [ ] **Mocny kolor marki do contentu** (test: pomarańcz piłki ~#F26B2A vs turkus/limonka; unikać niebieskiego — Amazon Prime) na miniaturkach, znaku i banerze; gra zostaje przy złocie.
+8. [ ] **Szablony contentu**: miniaturka YouTube, plansze rolki (tytuł, karta, wykres, karta końcowa), baner, awatar. Zależą od 6 i 7.
+
 ## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
 
 **Skąd gra:** liga „all-time draft” grana przez znajomych od 2019 roku — start 16 osób, szczyt 32, dziś znów 16. Gra wyrosła z kilku lat prawdziwego draftowania, nie z pomysłu na aplikację. To jest historia założycieli i główny wyróżnik.
