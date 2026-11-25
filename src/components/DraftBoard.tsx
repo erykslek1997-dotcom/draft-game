@@ -1268,6 +1268,8 @@ export default function DraftBoard({
           )}
           <section>
             <H3 note="off · def · shooting · playmaking · rebounding">Roster</H3>
+            {/* 2026-11-25 (UX review): the phone hides the heading note, so the grade letters get their key here */}
+            <p className="rs-key">OFF offense · DEF defense · SHT shooting · PLY playmaking · REB rebounding</p>
             <table className="plist roster">
               <colgroup>
                 <col style={{ width: 44 }} />
@@ -1345,7 +1347,7 @@ export default function DraftBoard({
                                   ['REB', g.reb],
                                 ] as const
                               ).map(([k, v]) => (
-                                <span key={k}>
+                                <span key={k} title={{ OFF: 'Offense', DEF: 'Defense', SHT: 'Shooting', PLY: 'Playmaking', REB: 'Rebounding' }[k]}>
                                   {k} <b className={gradeTone(v)}>{v}</b>
                                 </span>
                               ))}
@@ -1419,6 +1421,8 @@ export default function DraftBoard({
           <PhoneDock
             tabs={[
               ...(!state.complete ? [{ label: 'Draft', onClick: () => setActiveTab('draft') }] : []),
+              // 2026-11-25 (UX review): the same tabs as on the draft (Draft · Board · Team), so the bar doesn't change under the thumb
+              ...(!state.complete ? [{ label: 'Board', onClick: () => { setBoardShown(true); setActiveTab('draft'); } }] : []),
               { label: `Team ${humanTeam.roster.length}/${ROSTER_SIZE}`, on: true, onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
               ...(state.complete || canSubmit ? [{ label: '▶ Season', go: true, onClick: () => submitRef.current?.() }] : []),
             ]}
@@ -1583,7 +1587,8 @@ export default function DraftBoard({
                 only the hard limit — what this pick may cost and still leave enough for the rest. */}
             {/* 2026-11-05, the playtest ("dałbym ile mamy caps albo jakoś to zaznaczyć"): what's left, and
                 the list marks in red whoever this pick can't afford */}
-            <b>{fmtCaps(humanBudget.capLeft)} caps left</b> · up to {fmtCaps(humanBudget.maxThisPick)} on this pick, over it in red.{!open.length && ' Your five is set; this one is for the bench.'}
+            {/* 2026-11-25 (UX review): the short form; the over-budget caps still show in red in the list */}
+            <b>{fmtCaps(humanBudget.capLeft)} caps left</b> · max {fmtCaps(humanBudget.maxThisPick)} this pick.{!open.length && ' Your five is set; this one is for the bench.'}
           </Prompt>
         ) : studying ? (
           <div className="study">

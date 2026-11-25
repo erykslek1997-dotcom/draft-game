@@ -936,7 +936,8 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .m2-note b { font-style: normal; color: var(--ink2); font-weight: 600; }
   .howto-tabs { margin: 12px 0 4px; }
 }
-@media (max-width: 600px) { .nt .m2-row { grid-template-columns: 26px minmax(0, 1fr) auto; } .nt .m2-row em { display: none; } }
+/* 2026-11-25 (UX review): the phone keeps each mode's length too */
+@media (max-width: 600px) { .nt .m2-modes .m2-row { grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 10px; } .nt .m2-row em { display: inline; white-space: nowrap; } }
 /* React glue for the rotation editor */
 .nt {
   .nt-rot { display: flex; flex-direction: column; gap: 24px; }
