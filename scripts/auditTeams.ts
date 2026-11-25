@@ -7,6 +7,13 @@ import { spanEndYears } from '../src/engine/era';
 import { autoAssignRotation } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
 import { computeTalent } from '../src/engine/talent';
+import { computeOffensiveTalent } from '../src/engine/talent';
+import { computeDefensiveTalent } from '../src/engine/defensiveTalent';
+import { displayTalentForSpan, tierContextFor } from '../src/engine/grades';
+import { usageForSpan } from '../src/engine/usageLookup';
+import { computeSpacing } from '../src/engine/spacing';
+import { realSpan } from '../src/engine/realAdvancedLookup';
+
 import type { Team } from '../src/engine/types';
 
 /**
@@ -140,6 +147,27 @@ console.log(`\nPlayers whose teams most MISSED the engine (SRS points per full-m
 order.slice(0, 25).forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
 console.log('\nPlayers whose teams most BEAT the engine:');
 order.slice(-25).reverse().forEach((p) => console.log(`  ${p.v.toFixed(2).padStart(6)}  ${p.nm} (${p.w.toFixed(1)})`));
+
+// 2026-11-25 (TAL audit): what the players' misses follow — weighted correlation of the ridge value with
+// each player's mean card features over his covered windows.
+{
+  const feats: Record<string, (sp: PlayerSpan) => number> = {
+    TAL: (sp) => computeTalent(sp), 'O-TAL': (sp) => computeOffensiveTalent(sp), 'D-TAL': (sp) => computeDefensiveTalent(sp),
+    'D minus O': (sp) => computeDefensiveTalent(sp) - computeOffensiveTalent(sp), 'card lift': (sp) => displayTalentForSpan(tierContextFor(sp)) - computeTalent(sp),
+    'usage': (sp) => usageForSpan(sp)?.usgPct ?? NaN, 'spacing': (sp) => computeSpacing(sp), 'BPM': (sp) => realSpan(sp)?.bpm ?? NaN, 'OBPM': (sp) => realSpan(sp)?.obpm ?? NaN, 'DBPM': (sp) => realSpan(sp)?.dbpm ?? NaN,
+  };
+  const spansOf = new Map<string, PlayerSpan[]>();
+  for (const x of rows) for (const sp of x.spans) spansOf.set(sp.playerName, [...(spansOf.get(sp.playerName) ?? []), sp]);
+  const line: string[] = [];
+  for (const [f, fn] of Object.entries(feats)) {
+    const xs: number[] = [], ys: number[] = [], ws: number[] = [];
+    for (const p of order) { const vals = (spansOf.get(p.nm) ?? []).map(fn).filter(Number.isFinite); if (!vals.length) continue; xs.push(vals.reduce((a, c) => a + c, 0) / vals.length); ys.push(p.v); ws.push(p.w); }
+    const W = ws.reduce((a, c) => a + c, 0), mx = xs.reduce((a, c, i) => a + c * ws[i], 0) / W, my = ys.reduce((a, c, i) => a + c * ws[i], 0) / W;
+    let sxy = 0, sxx = 0, syy = 0; xs.forEach((x, i) => { sxy += ws[i] * (x - mx) * (ys[i] - my); sxx += ws[i] * (x - mx) ** 2; syy += ws[i] * (ys[i] - my) ** 2; });
+    line.push(`${f} ${(sxy / Math.sqrt(sxx * syy)).toFixed(2)}`);
+  }
+  console.log(`\nPlayer misses follow (r, + = engine underrates players high in it): ${line.join(' | ')}`);
+}
 
 // Era check: SRS is measured against the team's own league, Overall on one all-time scale. If the
 // later leagues are simply stronger, the same Overall is worth less SRS there and the era gap is

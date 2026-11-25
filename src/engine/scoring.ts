@@ -7,7 +7,7 @@ import { ballHandlerCost } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
-import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact, computeTalent } from './talent';
 import { isPlusShooter } from './shooting';
 import {
   isShootingAnomalyPlayer,
@@ -276,8 +276,12 @@ export function talentOnDefenseScale(talent: number): number {
 }
 
 const TAL_P = Number(envVar('TAL_P') ?? 1);
+const TAL_LIFT = Number(envVar('TAL_LIFT') ?? 1);
 export function talentScore(team: Team): number {
-  const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
+  // 2026-11-25 (`TAL_LIFT`, 1 = the card's number; the TAL audit: players whose card is lifted over the
+  // engine's TAL — named floors, holds, the All-Star floor — have teams below what Overall says, r -0.20).
+  const tal = (p: PlayerSpan) => (TAL_LIFT === 1 ? effectiveTalent(p) : computeTalent(p) + TAL_LIFT * (effectiveTalent(p) - computeTalent(p)));
+  const starterTals = primaryStarters(team).map((entry) => tal(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;
   // 2026-11-25 (`TAL_P`, 1 = the plain average; Wednesday item 2: beside Curry, Iverson 80 and Durant 97
   // as the second star read 1.7 Overall apart): a power mean, so the stars weigh more than the fifth starter.
