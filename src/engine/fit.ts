@@ -167,6 +167,7 @@ const LAYER_TIE_BREAK = 0.01;
  * .099 / .037 / .13.
  */
 const FIT_ENV = processEnv;
+export const FIT_BOTTLENECK = Number(FIT_ENV?.FIT_BOTTLENECK ?? 0);
 const FIT_DROP = new Set((FIT_ENV?.FIT_DROP ?? '').split(',').filter(Boolean));
 /** Spacing's weight back in Fit (`FIT_SPC`, measurement; the pruned Fit has none). */
 const FIT_SPACING_SHARE = Number(FIT_ENV?.FIT_SPC ?? 0);
@@ -1140,7 +1141,9 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   // begins below 60 on the team Spacing score (2026-09-30: was 75 on the old, higher-reading
   // compatibility scale) and tops out at 18 points, so poor spacing matters without zeroing every
   // historically non-modern lineup.
-  const spacingBottleneckPenalty = (options.bottleneckScale ?? 1) * Math.min(
+  // 2026-11-25 (`FIT_BOTTLENECK`, 0 = off; the audit: without it real SRS 0.845 -> 0.852, lineups 0.571 -> 0.569):
+  // spacing is already read by the offense, the pick-and-roll structure and the pairings.
+  const spacingBottleneckPenalty = (options.bottleneckScale ?? FIT_BOTTLENECK) * Math.min(
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );
