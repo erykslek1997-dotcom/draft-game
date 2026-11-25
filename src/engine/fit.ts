@@ -167,6 +167,7 @@ const LAYER_TIE_BREAK = 0.01;
  * .099 / .037 / .13.
  */
 const FIT_ENV = processEnv;
+const FIT_DROP = new Set((FIT_ENV?.FIT_DROP ?? '').split(',').filter(Boolean));
 /** Spacing's weight back in Fit (`FIT_SPC`, measurement; the pruned Fit has none). */
 const FIT_SPACING_SHARE = Number(FIT_ENV?.FIT_SPC ?? 0);
 /** Share of the dropped parts' old weights brought back (`FIT_RESTORE`, measurement). */
@@ -1230,7 +1231,9 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   const interiorRelief = paintScorers.length >= 2
     ? 0
     : spacingBottleneckPenalty * INTERIOR_BOTTLENECK_RELIEF * interiorStrength(rimPressureTeamComponent, reboundingBalance, sizeCoverage);
-  const score = Math.round(clamp(weightedScore - spacingBottleneckPenalty - paintOverlapPenalty - offBallPenalty - shotFirstOverlapPenalty + interiorRelief + threeAndDCredit));
+  // 2026-11-25 (`FIT_DROP`, comma list, measurement only).
+  const fd = (n: string, v: number) => (FIT_DROP.has(n) ? 0 : v);
+  const score = Math.round(clamp(weightedScore - fd('bottleneck', spacingBottleneckPenalty) - fd('paint', paintOverlapPenalty) - fd('offBall', offBallPenalty) - fd('shotFirst', shotFirstOverlapPenalty) + fd('interior', interiorRelief) + fd('threeAndD', threeAndDCredit)));
   if (spacingBottleneckPenalty >= 2) {
     notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
   }

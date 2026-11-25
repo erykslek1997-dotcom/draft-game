@@ -28,6 +28,7 @@ import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 
 const W = Number(envVar('REVIEW_W') ?? 1);
+const REV_DROP = (envVar('REV_DROP') ?? '').split(',').filter(Boolean);
 // 2026-11-19 (the user, Curry + Wade + Draymond: "zbyt mocny duet żeby to nie działało"): an elite
 // spot-up shooter (Curry) plays off the ball, so he is not a third ball-holder, and beside him a
 // second playmaker is the point forward he needs, not a repeat. A co-star scorer (usage 0.5+) is
@@ -88,5 +89,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
 export function reviewAdjustment(five: PlayerSpan[]): number {
   if (W === 0 || five.length < 5) return 0;
   const h = reviewRuleHits(five);
+  // 2026-11-25 (`REV_DROP`, comma list, measurement only): leave out the named rules.
+  for (const k of REV_DROP) h[k] = 0;
   return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter - h.extraPlaymaker - h.noFloorGeneral);
 }

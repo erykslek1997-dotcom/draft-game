@@ -2320,6 +2320,7 @@ function benchShare(team: Team): number {
 }
 
 const TRAITS_ON = envVar('TRAITS') !== '0';
+const OVR_DROP = new Set((envVar('OVR_DROP') ?? '').split(',').filter(Boolean));
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
@@ -2336,31 +2337,31 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const traitFit = TRAITS_ON ? traitFitBonus(team).fit : 0;
   if (traitFit) fit = { ...fit, score: Math.min(100, fit.score + traitFit) };
   const rotation = rotationScore(team);
+  // 2026-11-25 (`OVR_DROP`, comma list, measurement only): leave out the named Overall terms.
+  const d = (name: string, f: () => number) => (OVR_DROP.has(name) ? 0 : f());
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
     teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
-    (SC_DROP === 'ballLoad' ? 0 : ballLoadAdjustment(team)) +
-    // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
-    // game plays it, so the team's number carries it too.
-    liftAdjustment(team) +
-    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
-    // for the five on the floor; the team's number takes it for the starters.
-    (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
-    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team)) +
+    (SC_DROP === 'ballLoad' ? 0 : d('ballLoad', () => ballLoadAdjustment(team))) +
+    // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts).
+    d('lift', () => liftAdjustment(team)) +
+    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts).
+    (SC_DROP === 'handler' ? 0 : d('handler', () => ballHandlerAdjustment(team))) +
+    (SC_DROP === 'certainty' ? 0 : d('certainty', () => dataCertaintyAdjustment(team))) +
     // 2026-11-06: starters who really played (and won) together (chemistry.ts).
-    chemistryAdjustment(team) +
+    d('chem', () => chemistryAdjustment(team)) +
     // 2026-11-06: two players who live on the ball, the second one poor without it (heliocentric.ts).
-    heliocentricAdjustment(team) +
+    d('helio', () => heliocentricAdjustment(team)) +
     // 2026-11-11: the weakest reserve's card number (see BENCH_FLOOR).
-    benchFloorAdjustment(team) +
+    d('benchFloor', () => benchFloorAdjustment(team)) +
     // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
-    eraAdjustment(team) +
-    // 2026-11-18: the user's review rules (reviewRules.ts; REVIEW_W, off by default).
-    reviewAdjustment(primaryStarters(team).map((a) => a.player)) +
+    d('era', () => eraAdjustment(team)) +
+    // 2026-11-18: the user's review rules (reviewRules.ts).
+    d('review', () => reviewAdjustment(primaryStarters(team).map((a) => a.player))) +
     // 2026-11-19: the second unit's offense (see BENCH_OFF).
-    benchOffenseAdjustment(team) +
-    benchRoleAdjustment(team) +
-    bpmAdjustment(team);
+    d('benchOff', () => benchOffenseAdjustment(team)) +
+    d('benchRole', () => benchRoleAdjustment(team)) +
+    d('bpm', () => bpmAdjustment(team));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
