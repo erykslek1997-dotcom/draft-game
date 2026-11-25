@@ -1997,3 +1997,11 @@ Sędziowie na końcu nocy: real 0,8589 / gra 0,8059 / obrona drużyn (real DRtg)
 ## After 20:00 (2026-11-25), with the TAL correction
 1. Horry 2001-03, D 86, starter on the #1 team: check whether his D-TAL is too high (role players with an inflated D).
 2. Pre-line spacing (Chenier 1973-75, B+ at TS 48.6%): add era-relative efficiency to the twins estimate (scripts/estimateSpacing.ts, honesty test). Also check the cap price of high-volume, average-efficiency scorers (Chenier at 20.5).
+
+## Overnight 2026-11-25: TAL — defense specialists vs scorers
+The user: "nie może być tak że specjalista defensywny jest wywyższany, a ofensywny znacznie zaniżany … jak ktoś nie potrafi nawet rzucać z rogu po prostu nie gra".
+- Today: defenders (D-O >= 30) sit +5.3 TAL over APBR RAPM, balanced -1.4, scorers +2.9 (scripts/_defover.ts).
+- The defense credit in TAL is limited by offense and shooting: full only with decent O-TAL and a spacing floor. Modern windows only; pre-line windows have no three.
+- Check whether specialists' D-TAL is itself inflated (vs D-RAPM).
+- Gates: r(TAL, RAPM) >= 0.683, defenders' bias ~0, SRS >= 0.877, honest forecast >= 0.671, AI rosters. Behind knobs, not deployed.
+- TAL_OD (TAL as a linear O/D formula) was rejected: forecast 0.651.
