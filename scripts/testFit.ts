@@ -6,7 +6,7 @@ import {
   shadowRoleProfileForDiagnostics,
   SPACING_BOTTLENECK_FLOOR,
   SPACING_BOTTLENECK_MAX_PENALTY,
-  SPACING_BOTTLENECK_SCALE,
+  SPACING_BOTTLENECK_SCALE, FIT_BOTTLENECK,
 } from '../src/engine/fit';
 import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { scoreTeam } from '../src/engine/scoring';
@@ -145,7 +145,8 @@ for (const [label, result] of [['cramped', crampedResult], ['balanced', balanced
   // Fit is not fully compensatory: a bounded spacing bottleneck (see fit.ts) subtracts from the
   // weighted blend before the final score, so "the documented component blend" now means that
   // penalty too, not just the five weighted components.
-  const spacingBottleneckPenalty = Math.min(
+  // 2026-11-25: scaled by `FIT_BOTTLENECK` (0 = off by default).
+  const spacingBottleneckPenalty = FIT_BOTTLENECK * Math.min(
     SPACING_BOTTLENECK_MAX_PENALTY,
     Math.max(0, (SPACING_BOTTLENECK_FLOOR - result.components.spacingCompatibility) * SPACING_BOTTLENECK_SCALE),
   );

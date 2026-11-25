@@ -2086,18 +2086,20 @@ const QUALITY_FIT_SPLIT = 0.5;
 // vs the game 0.736 -> 0.747, vs the bench leagues' margin R² 0.57 -> 0.58 (0.89 -> 0.92 a point).
 // 2026-11-05, the night session: Rotation dropped from Overall (off: SRS 0.811 -> 0.816, game 0.776 ->
 // 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
-const QUALITY_TALENT_WEIGHT = 0.271 / 0.441;
-const QUALITY_BENCH_WEIGHT = 0.17 / 0.441;
+// 2026-11-25 (`W_TAL` / `W_BENCH` / `W_FIT` / `W_OFF` / `W_DEF`, multipliers, measurement): the weights audit.
+const WM = (k: string) => Number(envVar(k) ?? 1);
+const QUALITY_TALENT_WEIGHT = (0.271 / 0.441) * WM('W_TAL');
+const QUALITY_BENCH_WEIGHT = (0.17 / 0.441) * WM('W_BENCH');
 const QUALITY_ROTATION_WEIGHT = 0;
-const FIT_COHERENCE_WEIGHT = 0.18 / 0.52;
+const FIT_COHERENCE_WEIGHT = (0.18 / 0.52) * WM('W_FIT');
 // 2026-10-29 (audit follow-up step 2, `scripts/measureDefenseLean.ts`; the user: "Fair"): real teams
 // leaning to defense (Defense 8+ over Offense) beat their Overall by 0.63 SRS inside their decade.
 // 0.04 of the composite moved from Offense to Defense: that miss 0.63 -> 0.23 (offense-leaning
 // -0.05 -> 0.02), Overall vs real SRS r 0.7725 -> 0.7756, vs the bench leagues' mechanics margin R²
 // 0.559 -> 0.581 (0.06 gave 0.7761 / 0.580). Was .17 / .17.
 const OD_SHIFT = Number(envVar('OD_SHIFT') ?? 0);
-const FIT_OFFENSE_WEIGHT = (0.13 + OD_SHIFT) / 0.52;
-const FIT_DEFENSE_WEIGHT = (0.21 - OD_SHIFT) / 0.52;
+const FIT_OFFENSE_WEIGHT = ((0.13 + OD_SHIFT) / 0.52) * WM('W_OFF');
+const FIT_DEFENSE_WEIGHT = ((0.21 - OD_SHIFT) / 0.52) * WM('W_DEF');
 
 /** Night-session measurement only (`scripts/_ablate.ts`): `SC_DROP=<part>` drops one part of Overall,
  * renormalising the rest of its half. Unset, nothing changes. */
