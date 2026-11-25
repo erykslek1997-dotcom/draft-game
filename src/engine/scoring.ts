@@ -1142,6 +1142,7 @@ export function insideOutOffense(five: PlayerSpan[]): { points: number; met: num
  * shooters around him reach `HELIO.shooters` (`OFF_HELIO_W`, 0 = off).
  */
 const HELIO = { w: Number(envVar('OFF_HELIO_W') ?? 3), use: 0.6, shooters: Number(envVar('OFF_HELIO_SHOOT') ?? 4), spacing: 55 };
+const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 4);
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
   if (HELIO.w === 0 || five.length < 5) return { points: 0, met: 0 };
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
@@ -1149,6 +1150,9 @@ export function helioOffense(five: PlayerSpan[]): { points: number; met: number 
   if (engines.length !== 1) return { points: 0, met: 0 };
   const shooters = five.filter((p) => p !== engines[0] && teamSpacingValue(p) >= HELIO.spacing).length;
   const share = Math.max(0, shooters - (HELIO.shooters - 2)) / 2;
+  // 2026-11-25 (`OFF_HELIO_NEG`, 0 = off; the user: LeBron + Marion + Russell + Alvin Robertson): the other side —
+  // a heliocentric engine with at most one shooter around him (real ORtg 0.55 under the engine's read, 73 teams).
+  if (HELIO_NEG && shooters <= 1) return { points: -HELIO_NEG * (2 - shooters) / 2, met: shooters };
   return { points: HELIO.w * Math.min(1, share), met: shooters };
 }
 
@@ -2316,6 +2320,7 @@ function benchShare(team: Team): number {
 }
 
 const TRAITS_ON = envVar('TRAITS') !== '0';
+const OVR_DROP = new Set((envVar('OVR_DROP') ?? '').split(',').filter(Boolean));
 export function scoreTeam(team: Team): ScoreBreakdown {
   const talent = talentScore(team);
   const benchDepth = benchDepthScore(team);
@@ -2332,31 +2337,31 @@ export function scoreTeam(team: Team): ScoreBreakdown {
   const traitFit = TRAITS_ON ? traitFitBonus(team).fit : 0;
   if (traitFit) fit = { ...fit, score: Math.min(100, fit.score + traitFit) };
   const rotation = rotationScore(team);
+  // 2026-11-25 (`OVR_DROP`, comma list, measurement only): leave out the named Overall terms.
+  const d = (name: string, f: () => number) => (OVR_DROP.has(name) ? 0 : f());
   const overallExact =
     teamQualityScore(talent, benchDepth, rotation.score) * QUALITY_FIT_SPLIT +
     teamFitCompositeScore(fit.score, offense, defense) * (1 - QUALITY_FIT_SPLIT) +
-    (SC_DROP === 'ballLoad' ? 0 : ballLoadAdjustment(team)) +
-    // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts) — the live
-    // game plays it, so the team's number carries it too.
-    liftAdjustment(team) +
-    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts) — the game plays it
-    // for the five on the floor; the team's number takes it for the starters.
-    (SC_DROP === 'handler' ? 0 : ballHandlerAdjustment(team)) +
-    (SC_DROP === 'certainty' ? 0 : dataCertaintyAdjustment(team)) +
+    (SC_DROP === 'ballLoad' ? 0 : d('ballLoad', () => ballLoadAdjustment(team))) +
+    // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts).
+    d('lift', () => liftAdjustment(team)) +
+    // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts).
+    (SC_DROP === 'handler' ? 0 : d('handler', () => ballHandlerAdjustment(team))) +
+    (SC_DROP === 'certainty' ? 0 : d('certainty', () => dataCertaintyAdjustment(team))) +
     // 2026-11-06: starters who really played (and won) together (chemistry.ts).
-    chemistryAdjustment(team) +
+    d('chem', () => chemistryAdjustment(team)) +
     // 2026-11-06: two players who live on the ball, the second one poor without it (heliocentric.ts).
-    heliocentricAdjustment(team) +
+    d('helio', () => heliocentricAdjustment(team)) +
     // 2026-11-11: the weakest reserve's card number (see BENCH_FLOOR).
-    benchFloorAdjustment(team) +
+    d('benchFloor', () => benchFloorAdjustment(team)) +
     // 2026-11-11: partial decade-drift correction (see ERA_PER_YEAR).
-    eraAdjustment(team) +
-    // 2026-11-18: the user's review rules (reviewRules.ts; REVIEW_W, off by default).
-    reviewAdjustment(primaryStarters(team).map((a) => a.player)) +
+    d('era', () => eraAdjustment(team)) +
+    // 2026-11-18: the user's review rules (reviewRules.ts).
+    d('review', () => reviewAdjustment(primaryStarters(team).map((a) => a.player))) +
     // 2026-11-19: the second unit's offense (see BENCH_OFF).
-    benchOffenseAdjustment(team) +
-    benchRoleAdjustment(team) +
-    bpmAdjustment(team);
+    d('benchOff', () => benchOffenseAdjustment(team)) +
+    d('benchRole', () => benchRoleAdjustment(team)) +
+    d('bpm', () => bpmAdjustment(team));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

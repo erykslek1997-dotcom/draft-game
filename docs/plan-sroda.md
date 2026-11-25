@@ -138,3 +138,10 @@ Ta sama piątka obok Curry'ego 2015-17 (Battier / Horford / Gobert + ławka), zm
 - White 2022-24: 60 → 64; Caruso 57 → 56, Millsap 43 → 42, Ray Allen / Reggie bez zmian.
 - Do włączenia (decyzja użytkownika).
 - Spójność obrony bez typowego PoA — nie zdążyłem w tej sesji.
+
+### Draft 518664666 (2026-11-25, po sesji)
+- Raleigh (AI): LeBron + Lowry + Alvin Robertson (spacing 18) + Marion + Russell — `OFF_HELIO_NEG` (gwiazda z piłką, ≤ 1 strzelec obok): na 600 prawdziwych drużynach takie składy zdobywają 0.55 / 100 mniej niż mówi silnik (73 drużyny). k=4: atak vs ORtg 0.7771 → 0.7783, reszta bez zmian.
+- Fort Worth (użytkownik, 12.): obrona 77 przy surowej obronie rotacji 90.2 (wyżej niż #1). Przyczyna: zbiórki i faule (`teamGlass`) −6.3 (Sioux Falls +8.1). Ta część była dopasowana do symulacji, nie do prawdziwych wyników.
+- `DEF_OFF=glass`: obrona vs DRtg 0.8133 → **0.8300** (obie połowy), SRS 0.841 → 0.845, SRS sezony 0.840 → 0.841, piątki 0.570 → 0.571, prognoza vs SRS 0.8680 → 0.8711; sim R² (sama mechanika) 0.66 → 0.61 — gra i tak dociąga mecz do prognozy (r 1.000).
+- Osobno: bez zbiórek 0.8236, bez fauli 0.8211, oba 0.8300.
+- Fort Worth z oboma zmianami: 82.7 → 83.9, 12. → 4.
