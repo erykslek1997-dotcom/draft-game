@@ -20,7 +20,11 @@ export interface TeammateLift {
 
 export function teammateLift(span: PlayerSpan): TeammateLift {
   const row = DATA[span.id];
-  return row ? { lift: row[0] / 1000, realMates: row[1] / 1000 } : { lift: 0, realMates: 0 };
+  if (!row) return { lift: 0, realMates: 0 };
+  // 2026-11-25 (`LIFT_MIN`, 0 = every lift; the user: league-wide it may not show, for Curry it may): only the
+  // lift past this threshold counts (TS fraction; 0.008 = Curry's +0.8), the rest reads 0 — elite lifts only.
+  const lift = row[0] / 1000;
+  return { lift: LIFT_MIN > 0 ? Math.max(0, lift - LIFT_MIN) : lift, realMates: LIFT_MIN > 0 ? 0 : row[1] / 1000 };
 }
 
 /**
@@ -52,6 +56,7 @@ const LIFT_ENV = processEnv;
  * teams (LeBron 2012-14 -2.4 TS). Off by default — `scale` 0 here turns it off in the game and in
  * Overall alike; `LIFT_SCALE=1` brings it back for a measurement.
  */
+const LIFT_MIN = Number(LIFT_ENV?.LIFT_MIN ?? 0);
 export const LIFT_TUNING = { scale: Number(LIFT_ENV?.LIFT_SCALE ?? 0), ref: 0.0034, pointsPerTs: 196, threes: 0.3, realMatesShare: Number(LIFT_ENV?.LIFT_RM ?? 1), overall: Number(LIFT_ENV?.LIFT_OVR ?? 1) };
 
 /** Each player's shooting shift (TS as a fraction) from the four beside him, in the five's order. */
