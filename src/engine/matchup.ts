@@ -102,7 +102,7 @@ export type StyleClashKey = 'rim' | 'spacing' | 'star' | 'glass';
  * in the playoffs.
  */
 export type MatchupContext = 'single' | 'season' | 'playoffs';
-const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5 * Number(envVar('MU_STYLE') ?? 1), playoffs: Number(envVar('MU_STYLE') ?? 1) };
+const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5 * Number(envVar('MU_STYLE') ?? 0), playoffs: Number(envVar('MU_STYLE') ?? 0) };
 
 /**
  * Pairwise matchup projection — "how would roster A actually do against roster B," the one large
