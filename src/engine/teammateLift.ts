@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import liftData from '../data/teammateLift.json';
@@ -19,6 +20,7 @@ export interface TeammateLift {
 }
 
 export function teammateLift(span: PlayerSpan): TeammateLift {
+  if (ERA_MASK) return { lift: 0, realMates: 0 };
   const row = DATA[span.id];
   if (!row) return { lift: 0, realMates: 0 };
   // 2026-11-25 (`LIFT_MIN`, 0 = every lift; the user: league-wide it may not show, for Curry it may): only the

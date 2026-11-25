@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
@@ -29,6 +30,7 @@ interface RaptorRow {
 const raptor = raptorData as RaptorRow[];
 
 export function buildRaptorYearMap(): Map<string, Map<number, number>> {
+  if (ERA_MASK) return new Map();
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of raptor) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;

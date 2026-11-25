@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { spanEndYears } from './era';
@@ -28,6 +29,7 @@ const players = (data as unknown as { players: Record<string, Record<string, (nu
 const cache = new Map<string, PbpSpan | null>();
 
 export function pbpForSpan(span: PlayerSpan): PbpSpan | null {
+  if (ERA_MASK) return null;
   const hit = cache.get(span.id);
   if (hit !== undefined) return hit;
   const seasons = players[normalizePlayerName(span.playerName)];

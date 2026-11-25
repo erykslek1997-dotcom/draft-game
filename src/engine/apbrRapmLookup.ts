@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { spanEndYears } from './era';
@@ -12,6 +13,7 @@ const byName = new Map<string, Record<string, [number, number, number, number]>>
 for (const [name, seasons] of Object.entries(data as unknown as Record<string, Record<string, [number, number, number, number]>>)) byName.set(normalizePlayerName(name), seasons);
 const cache = new Map<string, { o: number; d: number; net: number; poss: number } | null>();
 export function apbrRapmForSpan(span: PlayerSpan): { o: number; d: number; net: number; poss: number } | null {
+  if (ERA_MASK) return null;
   const hit = cache.get(span.id);
   if (hit !== undefined) return hit;
   const seasons = byName.get(normalizePlayerName(span.playerName));

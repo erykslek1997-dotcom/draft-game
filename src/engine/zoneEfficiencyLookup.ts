@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
@@ -22,6 +23,7 @@ interface ZoneRow {
 const zone = zoneData as ZoneRow[];
 
 export function buildZoneYearMap(): Map<string, Map<number, ZoneRow>> {
+  if (ERA_MASK) return new Map();
   const byNameYear = new Map<string, Map<number, ZoneRow>>();
   for (const r of zone) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;

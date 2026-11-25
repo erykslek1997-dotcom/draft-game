@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 
 import { resolveSourceName } from '../data/sourceNameResolver';
 // .pool.json is matchupDefense.json trimmed to only players who ever appear in draftPool.json,
@@ -32,6 +33,7 @@ interface MatchupDefenseRow {
 const matchupDefense = matchupDefenseData as MatchupDefenseRow[];
 
 export function buildMatchupDefenseYearMap(): Map<string, Map<number, number>> {
+  if (ERA_MASK) return new Map();
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of matchupDefense) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;

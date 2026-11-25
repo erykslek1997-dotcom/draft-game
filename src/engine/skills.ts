@@ -1,3 +1,5 @@
+import { ERA_MASK } from './eraMask';
+import skillsMaskedData from '../data/skillsMasked.json';
 /**
  * 2026-11-18 (the user: archetypes rebuilt for this engine from the data): skills 0-100 for windows
  * from 1996-97 on (`scripts/buildSkills.ts` → `skills.json`, era percentiles). Engine rules move from a
@@ -17,9 +19,11 @@ const SKILLS = skillsData as Record<string, Record<string, number>>;
  * no skills before 1996-97 (every rule keeps its label there). */
 const SKILL_PRE = envVar('SKILL_PRE') !== '0';
 const PRE = skillsPreData as Record<string, Record<string, number>>;
+const MASKED = skillsMaskedData as Record<string, Record<string, number>>;
 export type Skill = 'selfCreation' | 'handling' | 'rimPressure' | 'post' | 'roll' | 'spotUp' | 'pullUp3' | 'stretch' | 'offBall' | 'offGlass' | 'rimProtect' | 'pointOfAttack' | 'activity' | 'help' | 'defGlass';
 /** A window's skill (0-100), or null before 1996-97 / without the data. */
 export function skill(span: { id: string }, key: Skill): number | null {
+  if (ERA_MASK && MASKED[span.id]) return MASKED[span.id][key] ?? null;
   return SKILLS[span.id]?.[key] ?? (SKILL_PRE ? PRE[span.id]?.[key] ?? null : null);
 }
 

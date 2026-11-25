@@ -70,6 +70,7 @@ const pre = all.filter((w) => ys(w.s).length && Math.max(...ys(w.s)) < 1997 && w
 const THREE_SKILLS = new Set(['spotUp', 'pullUp3', 'stretch']);
 const SKILLS = [...new Set(Object.values(SK).flatMap((r) => Object.keys(r)))];
 const out: Record<string, Record<string, number>> = {};
+const masked: Record<string, Record<string, number>> = {};
 const report: string[] = [];
 for (const key of SKILLS) {
   const train = (f: (w: W) => boolean, which: 'box' | 'adv') => { const t = post.filter((w) => w[which] && SK[w.s.id][key] !== undefined && f(w)); return t.length > 100 ? wls(t.map((w) => w[which]!), t.map((w) => SK[w.s.id][key])) : null; };
@@ -78,6 +79,17 @@ for (const key of SKILLS) {
   report.push(`${key.padEnd(14)} hold-out r  A ${hold('adv')}  B ${hold('box')}`);
   const bA = train(() => true, 'adv'), bB = train(() => true, 'box');
   const predict = (w: W) => (w.adv && bA ? dot(bA, w.adv) : w.box && bB ? dot(bB, w.box) : null);
+  // 2026-11-25 (the era test): every 1997+ window's skill as the box-era model would read it — fitted on the
+  // other half of the 1997+ windows (before / from 2007), no bridge, model A (box + BBRef advanced).
+  {
+    const early = (w: W) => Math.max(...ys(w.s)) < 2007;
+    const bEarly = train(early, 'adv'), bLate = train((w) => !early(w), 'adv');
+    const mv = post.filter((w) => w.adv).map((w) => ({ w, v: dot(early(w) ? bLate! : bEarly!, w.adv!) }));
+    for (const { w, v } of mv) {
+      const peers = mv.filter((q) => Math.abs(q.w.m - w.m) <= 3 && q.w.mpg >= 15).map((q) => q.v);
+      if (peers.length >= 30) (masked[w.s.id] ??= {})[key] = Math.round((100 * peers.filter((x) => x < v).length) / peers.length);
+    }
+  }
   // bridge
   const res = new Map<string, number[]>();
   for (const w of post) { const v = SK[w.s.id][key], p = predict(w); if (v === undefined || p === null) continue; const k = normalizePlayerName(w.s.playerName); res.set(k, [...(res.get(k) ?? []), v - p]); }
@@ -94,6 +106,7 @@ for (const key of SKILLS) {
   }
 }
 writeFileSync(resolve(import.meta.dirname, '../src/data/skillsPre.json'), JSON.stringify(out));
+writeFileSync(resolve(import.meta.dirname, '../src/data/skillsMasked.json'), JSON.stringify(masked));
 console.log(report.join('\n'));
 console.log(`${Object.keys(out).length} pre-1997 windows written`);
 const show = ['Magic Johnson 1986-88', 'Larry Bird 1985-87', 'Michael Jordan 1990-92', 'Hakeem Olajuwon 1992-94', 'John Stockton 1988-90', 'Dennis Rodman 1991-93', 'Bill Russell 1961-63', 'Wilt Chamberlain 1966-68', 'Jerry West 1965-67', 'Oscar Robertson 1963-65', 'Reggie Miller 1993-95', 'Scottie Pippen 1993-95', 'Kareem Abdul-Jabbar 1975-77', 'Walt Frazier 1970-72'];
