@@ -2215,6 +2215,23 @@ const DEFENSE_CREDIT_MAX_LIFT = 12;
  * knob, the positive defense credit scaled by `DEF_CREDIT_SCALE` (1 = as before). */
 const DEF_CREDIT_SCALE = Number(envVar('DEF_CREDIT_SCALE') ?? 1);
 const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
+/**
+ * 2026-11-25 overnight (the user: "nie może być tak że specjalista defensywny jest wywyższany, a
+ * ofensywny znacznie zaniżany … jak ktoś nie potrafi nawet rzucać z rogu po prostu nie gra"): the
+ * positive defense credit gated by offense — none at O-TAL `DEF_GATE_O0`, full from `DEF_GATE_O1`
+ * (O1 0 = off) — and, for windows from 1980 on, cut to `DEF_GATE_SPC_MULT` for a non-shooter
+ * (spacing under `DEF_GATE_SPC`; 0 = off). Measurement knobs (scripts/_defover.ts, /tmp/defres.py).
+ */
+const DEF_GATE_O0 = Number(envVar('DEF_GATE_O0') ?? 40);
+const DEF_GATE_O1 = Number(envVar('DEF_GATE_O1') ?? 0);
+const DEF_GATE_SPC = Number(envVar('DEF_GATE_SPC') ?? 0);
+const DEF_GATE_SPC_MULT = Number(envVar('DEF_GATE_SPC_MULT') ?? 0.5);
+function defenseCreditGate(span: PlayerSpan, otal: number): number {
+  let g = 1;
+  if (DEF_GATE_O1 > DEF_GATE_O0) g *= clamp01((otal - DEF_GATE_O0) / (DEF_GATE_O1 - DEF_GATE_O0));
+  if (DEF_GATE_SPC > 0 && Math.max(...spanEndYears(span.spanLabel)) >= 1980 && computeSpacing(span) < DEF_GATE_SPC) g *= DEF_GATE_SPC_MULT;
+  return g;
+}
 const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
 /** First season (end year) with steals and blocks in the box score. */
 const DEFENSE_CREDIT_STOCKS_FROM = 1974;
@@ -2240,7 +2257,7 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
     if (spanEndYears(span.spanLabel)[0] < DEFENSE_CREDIT_STOCKS_FROM) return 0;
     return (lift / 2) * clamp01((tal - 40) / 10);
   }
-  lift = Math.min(lift * DEF_CREDIT_SCALE, DEFENSE_CREDIT_MAX_LIFT * DEF_CREDIT_SCALE);
+  lift = Math.min(lift * DEF_CREDIT_SCALE, DEFENSE_CREDIT_MAX_LIFT * DEF_CREDIT_SCALE) * defenseCreditGate(span, otal);
   if (otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
   return lift;
 }
