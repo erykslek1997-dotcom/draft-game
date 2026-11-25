@@ -277,6 +277,7 @@ export function talentOnDefenseScale(talent: number): number {
 
 const TAL_P = Number(envVar('TAL_P') ?? 1);
 const TAL_LIFT = Number(envVar('TAL_LIFT') ?? 1);
+const TAL_CAP = Number(envVar('TAL_CAP') ?? 100);
 export function talentScore(team: Team): number {
   // 2026-11-25 (`TAL_LIFT`, 1 = the card's number; the TAL audit: players whose card is lifted over the
   // engine's TAL — named floors, holds, the All-Star floor — have teams below what Overall says, r -0.20).
@@ -290,7 +291,9 @@ export function talentScore(team: Team): number {
     : Math.pow(starterTals.reduce((sum, t) => sum + Math.pow(Math.max(0, t), TAL_P), 0) / starterTals.length, 1 / TAL_P);
   const weakestStarter = Math.min(...starterTals);
   const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
-  return Math.round(Math.max(0, Math.min(100, average - floorPenalty)));
+  // 2026-11-25 (`TAL_CAP`, 100 = as before; Curry vs Stockton beside Jordan + LeBron: an all-star five's mean
+  // TAL passes 100 and the cap erased a 5-point TAL difference).
+  return Math.round(Math.max(0, Math.min(TAL_CAP, average - floorPenalty)));
 }
 
 /**
