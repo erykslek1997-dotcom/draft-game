@@ -383,6 +383,11 @@ kolejnych tygodni; ważne, żeby pozostałe elementy planu przechodziły zgodnie
 | 7 | Zapas na poprawki (dawniej launch — przesunięty) |
 | 8/9–12 | Elastycznie: nowe opcje gry, poprawki z testów ludzi, dopracowanie; launch po Nowym Roku (ok. tydzień 12, połowa stycznia 2027) |
 
+### Przed launchem: sezon 2026-27 (Eryk 2026-11-25)
+- Dodać okna z sezonem 2026-27 do puli (statystyki BBRef / NBA.com, jak przy 2025-26) — najlepiej po jego końcu albo co najmniej po połowie (w listopadzie ~21% meczów, za dużo szumu).
+- pbpstats: API ma już 2026-27 (na żywo) — dopisać sezon w `scripts/fetchPbpstats.sh` (pętla `seq 2000 2025` → 2026), potem `scripts/buildPbpPlayer.ts`.
+- Po dodaniu: przebudować percentyle (`npm run build:runtime-percentiles`), dane runtime, regresja AI, sędziowie.
+
 ### Lista bezpieczeństwa i produkcji przed launchem (Eryk 2026-10-30: „to, na czym się nie znam”)
 Każdy punkt ma tydzień i właściciela (C = Claude, E = Eryk). Przed launchem (tydz. 6) przejść całą listę jeszcze raz.
 
