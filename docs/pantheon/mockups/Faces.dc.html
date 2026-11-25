@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Legend face cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;family=JetBrains+Mono:wght@700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE08A}
+</style>
+</helmet>
+<div style="width: 1200px; height: 600px; box-sizing: border-box; background: #1C1420; color: #F1E6D2; font-family: VT323, monospace; padding: 40px 48px; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="font-family: 'Press Start 2P', monospace; font-size: 16px; color: #F2C14E">LEGEND FACE CARDS · 24×24</div>
+    <div style="font-size: 20px; color: #B8A88F">Stylised busts: real skin tones, one signature trait each.</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="4">
+      <div style="background: #E8DCC4; color: #1C1420; border: 4px solid #0F0A12; box-shadow: 6px 6px 0 #0F0A12">
+        <div style="height: 300px; background: {{p.bg}}; display: flex; align-items: flex-end; justify-content: center; position: relative; overflow: hidden">
+          <svg width="240" height="240" viewBox="0 0 24 24" shape-rendering="crispEdges" role="img" aria-label="{{p.alt}}">
+            <sc-for list="{{p.px}}" as="r" hint-placeholder-count="200">
+              <rect x="{{r.x}}" y="{{r.y}}" width="1" height="1" fill="{{r.f}}"></rect>
+            </sc-for>
+          </svg>
+          <span style="position: absolute; top: 10px; left: 10px; background: #0F0A12; color: #F2C14E; font-family: 'Press Start 2P', monospace; font-size: 10px; padding: 5px 7px">{{p.pos}}</span>
+          <span style="position: absolute; top: 10px; right: 10px; background: #F2C14E; color: #1C1420; border: 2px solid #0F0A12; font-family: 'JetBrains Mono', monospace; font-size: 15px; padding: 2px 6px">{{p.num}}</span>
+        </div>
+        <div style="padding: 12px; display: flex; flex-direction: column; gap: 4px">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 11px">{{p.name}}</span>
+          <span style="font-size: 18px; color: #5A4A3A">{{p.trait}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var base = [
+      '........................',
+      '........HHHHHHHH........',
+      '.......HHHHHHHHHH.......',
+      '......HHHHHHHHHHHH......',
+      '......HSSSSSSSSSSH......',
+      '......SSSSSSSSSSSS......',
+      '.....sSSKKSSSSKKSSs.....',
+      '.....sSSWESSSSEWSSs.....',
+      '.....sSSSSSSSSSSSSs.....',
+      '.....sSSSSSssSSSSSs.....',
+      '......SSSSSssSSSSS......',
+      '......SSSSSSSSSSSS......',
+      '......SSSSMMMMSSSS......',
+      '.......SSSSSSSSSS.......',
+      '........SSSSSSSS........',
+      '.........ssssss.........',
+      '.........SSSSSS.........',
+      '.....JJJJjSSSSjJJJJ.....',
+      '...SSJJJJjjSSjjJJJJSS...',
+      '..SSSJJJJJJjjJJJJJJSSS..',
+      '..SSSjJJJJJJJJJJJJjSSS..',
+      '.SSSSjJJJJJJJJJJJJjSSSS.',
+      '.SSSSjJJJJJJJJJJJJjSSSS.',
+      '.SSSSjJJJJJJJJJJJJjSSSS.'
+    ];
+    var people = [
+      { name: 'NIKOLA JOKIC', pos: 'C', num: '15', bg: '#5C8FC9', trait: 'Curly crop, stubble, wide frame',
+        alt: 'Pixel bust: light skin, curly brown hair, stubble, navy jersey',
+        pal: { S: '#F0C8A0', s: '#D9A57E', H: '#4A2E1C', h: '#6B4428', b: '#C79A75', K: '#4A2E1C', W: '#FFFFFF', E: '#3B5B7A', M: '#B0645A', J: '#0E2240', j: '#FEC524' },
+        rows: { 0: '........h.h.hh.h........', 1: '.......hHHhHHhHHh.......', 2: '......HHhHHHHHhHHH......', 3: '.....HHHHHhHHHHHHHH.....', 4: '.....HHSSSSSSSSSSHH.....', 12: '......SbSSMMMMSSbS......', 13: '.......SbbbbbbbbS.......', 14: '........bbbbbbbb........' } },
+      { name: 'KAREEM ABDUL-JABBAR', pos: 'C', num: '33', bg: '#7FA35A', trait: 'Goggles, close crop',
+        alt: 'Pixel bust: dark skin, close-cropped hair, clear goggles, gold jersey',
+        pal: { S: '#6B4226', s: '#50301A', H: '#1A1210', K: '#1A1210', W: '#FFFFFF', E: '#1A1210', M: '#3A1F12', G: '#2A2A2E', g: '#A9C6D9', J: '#FDB927', j: '#552583' },
+        rows: { 0: '........................', 1: '........................', 2: '.......HHHHHHHHHH.......', 3: '......HHHHHHHHHHHH......', 4: '......SSSSSSSSSSSS......', 7: '.....GGggggGGggggGG.....', 8: '.....sGggggGGggggGs.....' } },
+      { name: 'DENNIS RODMAN', pos: 'PF', num: '91', bg: '#C0603A', trait: 'Dyed hair, nose ring, earrings',
+        alt: 'Pixel bust: dark skin, bright dyed spiky hair, nose ring, red jersey',
+        pal: { S: '#5A3720', s: '#43281A', K: '#2A1A10', W: '#FFFFFF', E: '#1A1210', M: '#3A1F12', R: '#7FD35A', Y: '#F2C14E', P: '#E83B8C', C: '#3BB0E8', o: '#F2C14E', J: '#B0202E', j: '#0F0A12', H: '#7FD35A' },
+        rows: { 0: '.......R.Y.P.C.R.Y......', 1: '.......RRYYPPCCRRY......', 2: '......RRYYPPCCRRYY......', 3: '......RRYYPPCCRRYY......', 4: '......SSSSSSSSSSSS......', 9: '.....sSSSSSssSSSSSs.....', 10: '.....oSSSSSoSSSSSSo.....' } },
+      { name: 'LEBRON JAMES', pos: 'SF', num: '23', bg: '#9C7A3C', trait: 'Headband, full beard',
+        alt: 'Pixel bust: dark skin, white headband, full beard, wine jersey',
+        pal: { S: '#7A4A2E', s: '#5E3822', H: '#1A1210', D: '#F1E6D2', d: '#C9BBA0', B: '#1E1410', K: '#1A1210', W: '#FFFFFF', E: '#1A1210', M: '#5A2E22', J: '#6F263D', j: '#FFB81C' },
+        rows: { 1: '........................', 2: '........HHHHHHHH........', 3: '......DDDDDDDDDDDD......', 4: '......dSSSSSSSSSSd......', 10: '......BSSSSssSSSSB......', 11: '......BBSSSSSSSSBB......', 12: '......BBBBMMMMBBBB......', 13: '.......BBBBBBBBBB.......', 14: '........BBBBBBBB........' } }
+    ];
+    var players = people.map(function (p) {
+      var px = [];
+      for (var y = 0; y < 24; y++) {
+        var row = p.rows[y] !== undefined ? p.rows[y] : base[y];
+        for (var x = 0; x < 24; x++) {
+          var c = row.charAt(x);
+          if (c === '.') continue;
+          var f = p.pal[c] || p.pal.S;
+          px.push({ x: x, y: y, f: f });
+        }
+      }
+      return { name: p.name, pos: p.pos, num: p.num, bg: p.bg, trait: p.trait, alt: p.alt, px: px };
+    });
+    return { players: players };
+  }
+}
+</script>
+</body>
+</html>
