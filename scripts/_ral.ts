@@ -1,0 +1,11 @@
+import { draftPool } from '../src/data/draftPool';
+import { aiRotation } from '../src/engine/finalizeAiRoster';
+import { STARTER_SLOTS } from '../src/engine/positions';
+import { scoreTeam } from '../src/engine/scoring';
+const want = [['Chris Paul','2015-17'],['Gilbert Arenas','2004-06'],['Manu Ginóbili','2006-08'],['Shane Battier','2005-07'],['OG Anunoby','2021-23'],['Robert Horry','2001-03'],['Nenê','2009-11'],['Kareem Abdul-Jabbar','1975-77']];
+const roster = want.map(([n, w]) => draftPool.find((p) => p.playerName === n && p.spanLabel === w)!);
+const rot = aiRotation(roster);
+console.log(STARTER_SLOTS.map((s) => `${s} ${roster.find((p) => p.id === rot.slots[s][0]?.playerId)?.playerName}`).join(', '), '| Overall', scoreTeam({ id: 'R', name: 'R', draftSlot: 1, isHuman: false, roster, rotation: rot }).overallExact.toFixed(2));
+import { bestPrimaryAssignment } from '../src/engine/rotation';
+const b = bestPrimaryAssignment(roster);
+console.log('bestPrimary', Object.entries(b.assignment).map(([k, p]) => `${k} ${p!.playerName}`).join(', '));
