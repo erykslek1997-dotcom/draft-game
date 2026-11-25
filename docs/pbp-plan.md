@@ -50,3 +50,13 @@
 - Dane: 1216 graczy, 98% okien 2000+; usage zgodne z NBA.com r 1.000.
 - 11 cech × waga ±1 (z-score ważony minutami rotacji): wszystkie w ±0.003 SRS / prognozy (bez zmian 0.877 / 0.671). On/off: SRS 0.881 / prognoza 0.667 (wiedza z tego samego sezonu).
 - Wniosek: jako osobne składniki oceny nic nie wnoszą — box już to niesie. Używać punktowo: opisy / role graczy i decyzje AI (rzut po podaniu vs z kozła, strefy), mechanika meczu (straty w akcji, faule, strefy), wąskie reguły (ulga strzelca bez piłki z realnego % asyst zamiast skilla).
+
+## Test ery (2026-11-25, `ERA_MASK=1`): drużyny 1997+ liczone „jak w latach 1974-96”
+| | pełne dane | jak 1974-96 |
+|---|---|---|
+| SRS (527 drużyn 1997+) | 0.877 | 0.871 |
+| prognoza | 0.681 | 0.665 |
+| atak vs ORtg | 0.7918 | 0.7852 |
+| **obrona vs DRtg** | **0.8300** | **0.7972** |
+- Pomosty tracą mało w ataku i w całości (−0.006 SRS); najwięcej w obronie (−0.033): dane nowej ery (DARKO, RAPTOR, obrona ze śledzenia, „help”) niosą obronę, której box nie widzi; skill „help” z box ma hold-out r 0.44-0.68.
+- Wniosek: przebudowa dla starszych graczy — obrona (most D-TAL z box + BBRef advanced na 1997+), nie atak.
