@@ -131,3 +131,10 @@ Ta sama piątka obok Curry'ego 2015-17 (Battier / Horford / Gobert + ławka), zm
 - Za to druga gwiazda prawie nie rusza oceny: 17 TAL różnicy (Iverson → Durant) = 1.7 Overall.
 - `TAL_P` (średnia potęgowa talentu piątki, gwiazdy ważą więcej): p=6 przesuwa wszystkich o ~+0.6, różnice bez zmian; SRS 0.855 → 0.853, prognoza 0.623 → 0.635 (szum). Wyłączony.
 - Dane nie mówią, że gwiazdy ważą za mało: w teście SRS drużyny z liderem 80-87 są niedoceniane (+1.09), a z gwiazdą 95+ lekko przeceniane (−0.22). Do decyzji, czy to kwestia „odczucia gracza”, nie trafności.
+
+### 4. Rzut: większa waga lat późniejszych (`SPC_RECENT`)
+- Uśrednianie rzutu z sąsiednimi oknami: okna późniejsze × (1 + k), wcześniejsze × (1 − k).
+- k = 0.3: atak vs ORtg 0.7733 → **0.7771** (obie połowy w górę), obrona 0.8128 → 0.8133, SRS sezony 0.839 → 0.840, reszta bez zmian. k = 0.6 tyle samo, k = −0.3 gorzej.
+- White 2022-24: 60 → 64; Caruso 57 → 56, Millsap 43 → 42, Ray Allen / Reggie bez zmian.
+- Do włączenia (decyzja użytkownika).
+- Spójność obrony bez typowego PoA — nie zdążyłem w tej sesji.

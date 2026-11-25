@@ -488,6 +488,7 @@ function tierForPoints(span: PlayerSpan, points: number): SpacingTier {
  * whose percentage dipped a few points (Terry Porter 1995-97 15 -> 57); real shooters barely move
  * (Reggie Miller 94, Glen Rice 93, Tim Hardaway 72). Every spacing consumer reads this.
  */
+const SPC_RECENT = Number(envVar('SPC_RECENT') ?? 0);
 const SMOOTH_WEIGHT_BY_DISTANCE: readonly number[] = (envVar('SPC_SMOOTH') ?? '0.34,0.2,0.1,0.03').split(',').map(Number);
 const SHORTENED_LINE_SMOOTH_DISCOUNT = 0.9;
 
@@ -553,7 +554,8 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
   for (let shift = -reach; shift <= reach; shift++) {
     const window = shift === 0 ? span : neighbourWindow(span, shift);
     if (!window) continue;
-    const w = SMOOTH_WEIGHT_BY_DISTANCE[Math.abs(shift)] * (1 - SHORTENED_LINE_SMOOTH_DISCOUNT * shortenedLineShare(window));
+    // 2026-11-25 (`SPC_RECENT`, 0 = symmetric; the user: Derrick White grew into a shooter): later windows weigh more.
+    const w = SMOOTH_WEIGHT_BY_DISTANCE[Math.abs(shift)] * (1 + Math.sign(shift) * SPC_RECENT) * (1 - SHORTENED_LINE_SMOOTH_DISCOUNT * shortenedLineShare(window));
     sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
     weight += w;
   }
