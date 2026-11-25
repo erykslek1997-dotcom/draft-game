@@ -27,8 +27,8 @@ const OFFENSIVE_GLASS_POINTS = 0.6 / POINTS_PER_SCORE_POINT;
 const FOUL_POINTS = 0.4 / POINTS_PER_SCORE_POINT;
 /** No single one of these moves a score further than this. */
 const MAX_Z = 2.5;
-const GLASS_DREB = Number(envVar('GLASS_DREB') ?? 1);
-const GLASS_FOUL = Number(envVar('GLASS_FOUL') ?? 1);
+const GLASS_DREB = Number(envVar('GLASS_DREB') ?? 0);
+const GLASS_FOUL = Number(envVar('GLASS_FOUL') ?? 0);
 
 export interface TeamGlass {
   /** Defensive and offensive rebounds per 36 summed over a five, and the five's foul index. */

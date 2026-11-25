@@ -1142,7 +1142,7 @@ export function insideOutOffense(five: PlayerSpan[]): { points: number; met: num
  * shooters around him reach `HELIO.shooters` (`OFF_HELIO_W`, 0 = off).
  */
 const HELIO = { w: Number(envVar('OFF_HELIO_W') ?? 3), use: 0.6, shooters: Number(envVar('OFF_HELIO_SHOOT') ?? 4), spacing: 55 };
-const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 0);
+const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 4);
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
   if (HELIO.w === 0 || five.length < 5) return { points: 0, met: 0 };
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
