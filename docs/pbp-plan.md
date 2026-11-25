@@ -45,3 +45,8 @@
 - Justin Jacobs: stinty odtwarzane ręcznie z wideo, 1969-70 … 1995-96; 2068 z ~12 600 meczów (16%), 9 sezonów opublikowanych (1969-70, 1979-80, 1984-85, 1987-88 … 1992-93), np. 1987-88 189 / 943 meczów.
 - Tabele jako obrazki (zrzuty ekranu), bez pliku; „dane będą szerzej dostępne, gdy projekt będzie pełniejszy”, zakładka „Data and Consulting”.
 - Na teraz nieużywalne (za mała próba, brak plików). Wrócić, gdy autor udostępni dane — narzędzia (lookup + `OVR_BPM_SRC`) są gotowe.
+
+## Test cech pbpstats jako składnika Overall (2026-11-25, `scripts/_pbpgrid.sh`, `reports/pbpgrid.txt`)
+- Dane: 1216 graczy, 98% okien 2000+; usage zgodne z NBA.com r 1.000.
+- 11 cech × waga ±1 (z-score ważony minutami rotacji): wszystkie w ±0.003 SRS / prognozy (bez zmian 0.877 / 0.671). On/off: SRS 0.881 / prognoza 0.667 (wiedza z tego samego sezonu).
+- Wniosek: jako osobne składniki oceny nic nie wnoszą — box już to niesie. Używać punktowo: opisy / role graczy i decyzje AI (rzut po podaniu vs z kozła, strefy), mechanika meczu (straty w akcji, faule, strefy), wąskie reguły (ulga strzelca bez piłki z realnego % asyst zamiast skilla).
