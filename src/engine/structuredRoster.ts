@@ -195,7 +195,7 @@ export function bigThreat(p: PlayerSpan): boolean {
  * Williams 2017-19 13%; Manu 2006-08 40% and Crawford 2008-10 45% pass.
  */
 const IRL_ROLE = { benchBelow: 0.3 };
-const OFFPOS = { on: (envVar('STRUCT_OFFPOS') ?? '0') === '1', share: 0.5, otherShare: 0.8, fit: 0.95 };
+const OFFPOS = { on: (envVar('STRUCT_OFFPOS') ?? '1') === '1', share: 0.5, otherShare: 0.8, fit: 0.95 };
 const IRL = starterShareData as unknown as Record<string, [number, number]>;
 export function starterShareIrl(p: PlayerSpan): number | undefined {
   const share = IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[0];
