@@ -2,7 +2,8 @@ import { Fragment, memo, useEffect, useRef, useState, type KeyboardEvent as Reac
 import { maskName } from './bombMask';
 import type { PlayerSpan, Position } from '../data/schema';
 import { isRealPositionFit, STARTER_SLOTS, isPositionEligible } from '../engine/positions';
-import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, autoAssignRotation, suggestBasicRotation } from '../engine/rotation';
+import { GAME_MINUTES, MAX_MINUTES_PER_PLAYER, suggestBasicRotation } from '../engine/rotation';
+import { playerAutoRotation } from '../engine/rotationSearch';
 import { playableMinutesCap } from '../engine/rotationRoleMinutes';
 import type { Rotation, SlotAssignment } from '../engine/types';
 
@@ -102,7 +103,7 @@ function buildInitialRows(
   rosterComplete = true,
   seedStrategy: 'optimal' | 'basic' = 'optimal',
 ): RowsBySlot {
-  const autoSeed = () => (seedStrategy === 'basic' ? suggestBasicRotation(roster) : autoAssignRotation(roster));
+  const autoSeed = () => (seedStrategy === 'basic' ? suggestBasicRotation(roster) : playerAutoRotation(roster));
   const source = rosterComplete ? (seed ?? autoSeed()) : { slots: {} as Record<Position, SlotAssignment[]> };
   const result = {} as RowsBySlot;
   for (const slot of STARTER_SLOTS) {

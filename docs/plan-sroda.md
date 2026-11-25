@@ -100,3 +100,15 @@ Wniosek: zwykły BPM z tych samych okien bije silnik o ~0.05. Największa dźwig
 - Uczciwa prognoza (`PRIOR=1`, okna sprzed sezonu, 114 drużyn): silnik 0.623, BPM 0.629 — remis.
 - Poprawka BPM w Overall (`OVR_BPM`, różnica BPM vs BPM wynikający z TAL, ważona minutami): prognoza 0.623 → 0.618 (k=4) / 0.606 (k=8); w teście na tych samych sezonach 0.855 → 0.877 — zysk pozorny. Zostaje wyłączona.
 - Wniosek: silnik w uczciwym teście jest na poziomie BPM; nie ma tu dźwigni.
+
+### 6. Notatki w dopasowaniu (`NOTES_FIX`, tylko tekst)
+- „Dwa huby pod koszem” tylko gdy obaj nie rzucają (spacing < 30) — Sheed 2000-02 (47) już nie.
+- „Centrum kotwiczący w poście” nie dla elitarnych rollerów (roll 85+) — Howard 2009 (92) już nie.
+- „3 systemy naraz” nie pokazuje się, skoro kara jest wyłączona.
+- Sędziowie bez zmian (to tylko tekst).
+
+### 5. Automatyczna rotacja gracza (`ROT_SEARCH`, `src/engine/rotationSearch.ts`)
+- Od automatycznej rotacji: kroki po 6 minut (minuty rezerwowego innemu graczowi na tej pozycji; albo starter przesuwa minuty na drugą pozycję, a ktoś przejmuje jego), dopóki Overall rośnie. Starter zostaje pierwszy na swojej pozycji i nie traci minut łącznie; limity minut obowiązują przy dodawaniu.
+- Skład użytkownika (Stockton / Kobe / Marion / Horford / Walton): 86.7 → **87.8** (Marion 20 SF + 18 PF, Majerle 34, Hayes 6) — ręczna rotacja użytkownika dawała 87.4.
+- 48 składów z lig testowych (`scripts/_rotsearch.ts`): średnio +0.71, mediana +0.52, max +2.6, poprawa w 33/48; czas średnio 56 ms, max 227 ms.
+- Podpięte pod: start edytora rotacji (zamiast autoAssignRotation) i auto-wysłanie rotacji, gdy kończy się czas. AI bez zmian (ma własną rotację).
