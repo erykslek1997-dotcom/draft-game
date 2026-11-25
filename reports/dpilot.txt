@@ -1,0 +1,3 @@
+r(label,gap)=0.82 r(label,full)=0.83 r(label,mask)=0.44
+r(mask,full)=0.76
+mask+label r=0.94 a=0.74 b=13.56

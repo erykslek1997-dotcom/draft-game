@@ -195,8 +195,9 @@ export function bigThreat(p: PlayerSpan): boolean {
  * Williams 2017-19 13%; Manu 2006-08 40% and Crawford 2008-10 45% pass.
  */
 const IRL_ROLE = { benchBelow: 0.3 };
+const OFFPOS = { on: (envVar('STRUCT_OFFPOS') ?? '1') === '1', share: 0.5, otherShare: 0.8, fit: 0.95 };
 const IRL = starterShareData as unknown as Record<string, [number, number]>;
-function starterShareIrl(p: PlayerSpan): number | undefined {
+export function starterShareIrl(p: PlayerSpan): number | undefined {
   const share = IRL[`${normalizePlayerName(p.playerName)}|${p.spanLabel}`]?.[0];
   return share === undefined || share < 0 ? undefined : share;
 }
@@ -239,6 +240,20 @@ function readStructureUncached(roster: PlayerSpan[]): StructuredRoster {
     if (best) starters[slot] = best;
     if (best && !shoots(best)) shooterIssues.push(`non-shooter ${best.playerName} starts at ${slot}`);
     if (best && !startedIrl(best)) shooterIssues.push(`${best.playerName} came off the bench in real life (${Math.round(starterShareIrl(best)! * 100)}% starts)`);
+  }
+  // 2026-11-25 (the user: Horry 2001-03 — 30% starts, O 46 — starting PF on the top team; "nie był
+  // starterem irl, tylko impact graczem na kilkanaście minut"): a natural starter who started under
+  // `OFFPOS.share` of his real games gives the spot to a better player from another position who
+  // plays it (fit `OFFPOS.fit`+), started `OFFPOS.otherShare`+ in real life and starts nowhere else.
+  if (OFFPOS.on) for (const slot of STARTER_SLOTS) {
+    const cur = starters[slot];
+    const share = cur ? starterShareIrl(cur) : undefined;
+    if (cur && (share === undefined || share >= OFFPOS.share || effectiveTalent(cur) >= STRUCTURE_STAR_TAL)) continue;
+    const taken = new Set(Object.values(starters).map((p) => p!.id));
+    const alt = roster
+      .filter((p) => !taken.has(p.id) && p.primaryPosition !== slot && positionFitMultiplier(p, slot) >= OFFPOS.fit && (starterShareIrl(p) ?? 1) >= OFFPOS.otherShare && (!cur || effectiveTalent(p) > effectiveTalent(cur)))
+      .sort((a, b) => effectiveTalent(b) - effectiveTalent(a))[0];
+    if (alt) starters[slot] = alt;
   }
   const used = new Set(Object.values(starters).map((p) => p!.id));
   const rest = roster.filter((p) => !used.has(p.id));

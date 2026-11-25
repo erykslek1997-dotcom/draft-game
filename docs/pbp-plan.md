@@ -50,3 +50,49 @@
 - Dane: 1216 graczy, 98% okien 2000+; usage zgodne z NBA.com r 1.000.
 - 11 cech × waga ±1 (z-score ważony minutami rotacji): wszystkie w ±0.003 SRS / prognozy (bez zmian 0.877 / 0.671). On/off: SRS 0.881 / prognoza 0.667 (wiedza z tego samego sezonu).
 - Wniosek: jako osobne składniki oceny nic nie wnoszą — box już to niesie. Używać punktowo: opisy / role graczy i decyzje AI (rzut po podaniu vs z kozła, strefy), mechanika meczu (straty w akcji, faule, strefy), wąskie reguły (ulga strzelca bez piłki z realnego % asyst zamiast skilla).
+
+## Test ery (2026-11-25, `ERA_MASK=1`): drużyny 1997+ liczone „jak w latach 1974-96”
+| | pełne dane | jak 1974-96 |
+|---|---|---|
+| SRS (527 drużyn 1997+) | 0.877 | 0.871 |
+| prognoza | 0.681 | 0.665 |
+| atak vs ORtg | 0.7918 | 0.7852 |
+| **obrona vs DRtg** | **0.8300** | **0.7972** |
+- Pomosty tracą mało w ataku i w całości (−0.006 SRS); najwięcej w obronie (−0.033): dane nowej ery (DARKO, RAPTOR, obrona ze śledzenia, „help”) niosą obronę, której box nie widzi; skill „help” z box ma hold-out r 0.44-0.68.
+- Wniosek: przebudowa dla starszych graczy — obrona (most D-TAL z box + BBRef advanced na 1997+), nie atak.
+
+## Defense reputation test (2026-11-25)
+
+Question: can written defensive reputation (web sources) recover what the box-score bridge loses on defense for pre-1997 players?
+
+- **Pilot, 30 extreme gaps from 1997+.** Labels came from model knowledge, not web search. Label vs mask gap: r 0.82. Mask alone vs true D-TAL: r 0.76. Mask plus label: r 0.94, at 13.6 points per level. Inflated by the selection.
+- **Random 40 from 1997+, web-searched.** Gap sd 4.3. Mask vs true D-TAL: r 0.98. Label vs gap: r 0.42, about 1.7 points per level. Mask plus label stays at r 0.983, so no gain. The pilot coefficient overshoots (r 0.95).
+- **150 key pre-1997 players, web-searched** (`src/data/raw/defRep`, `src/data/defRep.json`). Knob `DEF_REP_W` / `DEF_REP_MODE` in `defensiveTalent.ts`, off. Defense judge, 541 pre-1997 team-seasons, real DRtg:
+
+| Variant | pre-1997 |
+|---|---|
+| base | 0.8658 |
+| extreme W=2 | 0.8641 |
+| extreme W=4 | 0.8617 |
+| all W=1 | 0.8638 |
+| all W=2 | 0.8660 |
+| all W=4 | 0.8640 |
+
+Conclusion: rejected. The engine's pre-1997 defense already tracks real DRtg (0.866, higher than 1997+), and reputation adds nothing beyond noise. The knob stays off.
+
+## O-TAL from pbp (2026-11-25, TAL rebuild)
+
+What the engine's raw offense misses on 445 real team-seasons 2001+ (scripts/_otalres.ts), from pbpstats:
+- Plus: rim rate and finishing, self-made twos, putbacks.
+- Minus: turnovers, long twos.
+
+Out-of-sample r between halves was 0.36 / 0.48 on the residual. Knob `OTAL_PBP` (talent.ts), off.
+
+| OTAL_PBP | Offense vs ORtg, same windows | Honest, prior windows (n 139) | Forecast Overall, PRIOR=1 |
+|---|---|---|---|
+| 0 | 0.7918 | 0.668 | 0.671 |
+| 2 | 0.8011 | 0.671 | — |
+| 4 | 0.8085 | 0.662 | 0.673 |
+| 6 | 0.8140 | 0.660 | 0.671 |
+
+Rejected: the same in-sample artifact as BPM / RAPM. The data describes the season it measured but does not carry to the next one. `_offjudge.ts` now takes PRIOR=1.

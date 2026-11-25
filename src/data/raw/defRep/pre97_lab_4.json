@@ -1,0 +1,309 @@
+[
+ {
+  "name": "Doug Collins",
+  "window": "1975-77",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Scorer-first 6-6 shooting guard; no defensive honors; sources discuss offense, team defensive lapses in 1977 Finals not attributed to him.",
+  "sources": [
+   "https://www.wikipedia.org/wiki/1976-77_Philadelphia_76ers_season"
+  ]
+ },
+ {
+  "name": "Larry Foust",
+  "window": "1954-56",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Strong rebounding center on Fort Wayne teams SI called the tightest defense in the league (1955); individual defense not described.",
+  "sources": [
+   "https://vault.si.com/vault/1955/01/24/halfway-point-in-pro-basketball"
+  ]
+ },
+ {
+  "name": "Charlie Scott",
+  "window": "1972-74",
+  "level": 2,
+  "confidence": "low",
+  "summary": "High-volume scorer in Phoenix; no sources praise his defense; reputation as gunner.",
+  "sources": [
+   "https://en.wikipedia.com/wiki/Charlie_Scott_(basketball)"
+  ]
+ },
+ {
+  "name": "Sidney Wicks",
+  "window": "1972-74",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Talented scorer/rebounder on poor Blazers teams; reputation for weak defensive effort, no defensive honors; little direct written evidence found.",
+  "sources": [
+   "https://www.nba.com/player/78520/sidney-wicks"
+  ]
+ },
+ {
+  "name": "George Yardley",
+  "window": "1957-59",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Hall of Fame bio calls him offensive-minded; scoring champion; rebounds well but no defensive praise.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/George_Yardley"
+  ]
+ },
+ {
+  "name": "Terrell Brandon",
+  "window": "1994-96",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Active hands (1.6-1.8 spg) in Fratello's slow, league-best points-allowed scheme; small PG, not known as stopper.",
+  "sources": [
+   "https://www.wikipedia.org/wiki/1995-96_Cleveland_Cavaliers_season"
+  ]
+ },
+ {
+  "name": "Jeff Hornacek",
+  "window": "1988-90",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Smart, steady guard with good hands; contemporary pieces focus on his shooting; not considered a stopper.",
+  "sources": [
+   "https://vault.si.com/vault/1990/05/28/nba-playoffs-desert-heat-kevin-johnson-and-jeff-hornacek-are-an-opponent-wilting-duo-that-has-phoenix-vying-for-an-nba-title"
+  ]
+ },
+ {
+  "name": "Bob Kauffman",
+  "window": "1971-73",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "1971 SI piece says defense was his one weakness, with Randy Smith covering for him.",
+  "sources": [
+   "https://vault.si.com/vault/1971/11/22/fortunes-of-a-new-tough-cookie"
+  ]
+ },
+ {
+  "name": "Clifford Robinson",
+  "window": "1994-96",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Versatile, long frontcourt defender with ~1 blk/1 stl; later All-Defensive (2000, 2002) but not in this window.",
+  "sources": [
+   "https://www.nba.com/news/trail-blazers-cliff-robinson-dies"
+  ]
+ },
+ {
+  "name": "Tree Rollins",
+  "window": "1979-81",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Elite shot blocker (~3 bpg) anchoring Fratello-era-precursor Hawks defense; All-Defensive honors came 1983-84.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Tree_Rollins"
+  ]
+ },
+ {
+  "name": "Danny Ainge",
+  "window": "1986-88",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Scrappy, aggressive guard; assigned to Magic in 1987 Finals; never All-Defensive; viewed as competent pest rather than stopper.",
+  "sources": [
+   "https://www.mitchalbom.com/?p=9248"
+  ]
+ },
+ {
+  "name": "Horace Grant",
+  "window": "1990-92",
+  "level": 4,
+  "confidence": "high",
+  "summary": "Aggressive interior/help defender key to first three-peat; mobile in Bulls traps; All-Defensive honors started 1993.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Horace_Grant",
+   "https://pippenainteasy.com/2019/03/18/chicago-bulls-best-defenders-all-time/5"
+  ]
+ },
+ {
+  "name": "Willie Naulls",
+  "window": "1959-61",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Scoring/rebounding forward on bad Knicks teams; no defensive praise in sources.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Willie_Naulls"
+  ]
+ },
+ {
+  "name": "Mitch Richmond",
+  "window": "1994-96",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Doc Rivers (SI 1995): 'and he plays defense'; Jordan reportedly called him his toughest opponent; strong physical two-way SG.",
+  "sources": [
+   "https://vault.si.com/vault/1995/12/04/prime-mime-mitch-richmond-of-the-kings-can-mimic-anyone-but-on-the-floor-hes-best-playing-himself",
+   "https://www.nba.com/kings/blog/kings-qa-mitch-richmond"
+  ]
+ },
+ {
+  "name": "Byron Scott",
+  "window": "1987-89",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Led champion Lakers in steals 1988 (1.9); described as good defender with quick switches and help; no honors.",
+  "sources": [
+   "https://wikipedia.com/wiki/Byron_Scott",
+   "https://www.wikipedia.com/wiki/1989_NBA_Finals"
+  ]
+ },
+ {
+  "name": "Bill Sharman",
+  "window": "1954-56",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Celtics shooting guard known for shooting; pre-Russell Celtics weak defensively; no specific defensive accounts.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Bill_Sharman"
+  ]
+ },
+ {
+  "name": "Dick Van Arsdale",
+  "window": "1968-70",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Physical, hard-nosed on-ball defender per recollections; All-Defensive 2nd team came later (1974).",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Dick_Van_Arsdale",
+   "https://www.phoenixnewtimes.com/news/what-phoenix-suns-dick-van-arsdale-meant-arizona-franchise-20822810"
+  ]
+ },
+ {
+  "name": "Micheal Williams",
+  "window": "1990-92",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Pesky ballhawk; ~2.9 spg in 1991-92, second in NBA; All-Defensive honors per Wikipedia summary.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Micheal_Williams"
+  ]
+ },
+ {
+  "name": "Nick Anderson",
+  "window": "1993-95",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Magic's primary wing defender, drew Jordan assignment in 1995 and famously stripped him; solid perimeter defender.",
+  "sources": [
+   "https://www.nba.com/magic/date-magic-history-nick-anderson-steals-ball-michael-jordan-20200507"
+  ]
+ },
+ {
+  "name": "Walt Bellamy",
+  "window": "1961-63",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "Huge scorer but contemporaries said he couldn't play defense well; criticized for lack of intensity/hustle.",
+  "sources": [
+   "https://www.espn.com/blog/truehoop/post/_/id/63724/the-strange-great-career-of-walt-bellamy",
+   "https://www.realtime1960s.com/post/bellamy-of-bullets-fined-for-lack-of-hustle"
+  ]
+ },
+ {
+  "name": "Rolando Blackman",
+  "window": "1984-86",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Primarily scorer; Jordan reportedly called him a good defender; disciplined, never fouled out; later Mavs defensive coordinator.",
+  "sources": [
+   "https://www.oocities.org/tzovas/nbastars/blackman_rolando.html"
+  ]
+ },
+ {
+  "name": "Larry Costello",
+  "window": "1958-60",
+  "level": 4,
+  "confidence": "low",
+  "summary": "Two-way PG known for defensive steadiness and hustle; evidence mostly from later career.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Larry_Costello"
+  ]
+ },
+ {
+  "name": "Vlade Divac",
+  "window": "1993-95",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Entered league as horrible defender, improved; savvy charge-taker/flopper, decent shot blocker; not a stopper.",
+  "sources": [
+   "https://www.espn.com/nba/playoffs2002/columns/stein_marc/1385994.html"
+  ]
+ },
+ {
+  "name": "Dale Ellis",
+  "window": "1987-89",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "Pure shooter; Motta questioned his defense; not regarded as defender.",
+  "sources": [
+   "https://vault.si.com/vault/1987/05/04/the-joy-of-getting-even-seattle-guard-dale-ellis-went-back-to-dallas-and-settled-an-old-score"
+  ]
+ },
+ {
+  "name": "Larry Kenon",
+  "window": "1977-79",
+  "level": 3,
+  "confidence": "low",
+  "summary": "Run-and-gun Spurs forward with good steals; claimed his defense was overlooked; Spurs were a poor defensive team.",
+  "sources": [
+   "https://vault.si.com/vault/1979/05/14/muy-loco-down-in-san-antone-larry-kenon-and-fellow-spur-egos-have-enfevered-a-win-starved-populace"
+  ]
+ },
+ {
+  "name": "Bob Love",
+  "window": "1970-72",
+  "level": 4,
+  "confidence": "high",
+  "summary": "All-Defensive Second Team 1972 on Motta's defense-first Bulls.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Bob_Love"
+  ]
+ },
+ {
+  "name": "Wes Unseld",
+  "window": "1970-72",
+  "level": 4,
+  "confidence": "high",
+  "summary": "Defensive toughness, positional strength and rebounding anchored Bullets; widely praised defensively though undersized.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/wes-unseld",
+   "https://vault.si.com/vault/1974/11/18/a-quiet-man-makes-the-bullets-zing"
+  ]
+ },
+ {
+  "name": "Paul Westphal",
+  "window": "1976-78",
+  "level": 3,
+  "confidence": "low",
+  "summary": "All-NBA scorer; known for offense; no defensive honors in window (earlier Celtics reputation as quick defender).",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Paul_Westphal"
+  ]
+ },
+ {
+  "name": "Buck Williams",
+  "window": "1981-83",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Relentless rebounder and physical interior defender from rookie year; All-Defensive honors came later (1988-92).",
+  "sources": [
+   "https://vault.si.com/vault/1982/02/01/net-worth-better-by-a-buck"
+  ]
+ },
+ {
+  "name": "Robert Horry",
+  "window": "1994-96",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Long, versatile forward used to bolster Rockets team defense; held his own vs Horace Grant in 1995 Finals; good help/blocks.",
+  "sources": [
+   "https://heavy.com/?p=5550243",
+   "https://spacecityscoop.com/2020/05/03/houston-rockets-robert-horry-outplay-horace-grant-finals"
+  ]
+ }
+]

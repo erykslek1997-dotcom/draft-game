@@ -1,3 +1,4 @@
+import { pbpForSpan } from './pbpLookup';
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
@@ -2388,6 +2389,32 @@ function onPositionNeutralOffense(position: string, value: number): number {
   const [a, b] = OTAL_POSITION_FIT[position] ?? [1, 0];
   return value + OTAL_POSITION_SHARE * (a * value + b - value);
 }
+/**
+ * 2026-11-25 (TAL rebuild, offense; scripts/_otalres.ts + .py): what the engine's offense misses on
+ * 445 real team-seasons 2001+, from pbpstats: rim attempts and finishing, self-made twos, putbacks
+ * (plus), turnovers and long twos (minus). Weights from even/odd season fits (out of sample r 0.36 /
+ * 0.48 on the residual), z-scored on the pool's players, summed and scaled to about one sd.
+ * `OTAL_PBP` = O-TAL points per unit (0 = off). No pbp (before 2000-01) = 0.
+ */
+const OTAL_PBP = Number(envVar('OTAL_PBP') ?? 0);
+const OTAL_PBP_FEATURES: [keyof ReturnType<typeof pbpShape>, number, number, number][] = [
+  ['rimRate', 0.3252, 0.1572, 1.4], ['rimPct', 0.6096, 0.0643, 1.3], ['longMidRate', 0.2096, 0.1329, -0.4],
+  ['selfMade2', 0.4689, 0.176, 1.85], ['tov', 2.8622, 0.9246, -2.4], ['putback', 1.0598, 1.0187, 1.25],
+];
+function pbpShape(p: NonNullable<ReturnType<typeof pbpForSpan>>) {
+  const fga = p.atRimFga + p.shortMidFga + p.longMidFga + p.corner3Fga + p.arc3Fga;
+  return { rimRate: fga ? p.atRimFga / fga : 0, rimPct: p.atRimFga ? p.atRimFgm / p.atRimFga : 0, longMidRate: fga ? p.longMidFga / fga : 0,
+    selfMade2: 1 - (p.assisted2s || 0), tov: (100 * p.turnovers) / p.offPoss, putback: (100 * p.putbackPts) / p.offPoss };
+}
+export function otalPbpAdjustment(span: PlayerSpan): number {
+  if (!OTAL_PBP) return 0;
+  const p = pbpForSpan(span);
+  if (!p || !p.offPoss) return 0;
+  const x = pbpShape(p);
+  let z = 0;
+  for (const [k, mu, sd, w] of OTAL_PBP_FEATURES) z += (w * (x[k] - mu)) / sd;
+  return OTAL_PBP * Math.max(-3, Math.min(3, z / 3.5));
+}
 export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = offensiveTalentCache.get(span.id);
@@ -2396,7 +2423,7 @@ export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span) + otalPbpAdjustment(span);
   const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalentBase))));
   offensiveTalentCache.set(span.id, result);
   return result;
@@ -2426,7 +2453,7 @@ export function computeUncappedOffensiveTalentBase(rawSpan: PlayerSpan): number 
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span) + otalPbpAdjustment(span);
   const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalentBase)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;

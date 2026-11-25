@@ -1,0 +1,11 @@
+import { draftPool } from '../src/data/draftPool';
+import { autoAssignRotation } from '../src/engine/rotation';
+import { scoreTeam } from '../src/engine/scoring';
+import { fitScore } from '../src/engine/fit';
+import { seasonProfile } from '../src/engine/seasonProfile';
+const want = [['LeBron James','2012-14'],['Reggie Miller','1993-95'],['Paul George','2012-14'],['Brook Lopez','2019-21'],['Tyrese Haliburton','2023-25'],['Alex Caruso','2022-24'],['George Hill','2012-14'],['Chet Holmgren','2023-25'],['Marc Gasol','2011-13']];
+const roster = want.map(([n, w]) => draftPool.find((p) => p.playerName === n && p.spanLabel === w)!);
+const team = { id: 'CIN', name: 'CIN', draftSlot: 2, isHuman: true, roster, rotation: autoAssignRotation(roster) };
+console.log(seasonProfile(scoreTeam(team), fitScore(team)));
+const f = fitScore(team), b = scoreTeam(team);
+console.log({ tal: b.talentScore, off: b.offenseScore, def: b.defenseScore, fit: b.fitScore, champ: f.components.championshipStructure, creation: f.components.creationStructure, spc: f.components.spacingCompatibility, sw: f.inputs.switchability, weak: f.inputs.defensiveWeakLinkIsHuntable, res: f.inputs.defensiveWeakLinkResistance });

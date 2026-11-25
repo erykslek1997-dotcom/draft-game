@@ -1,0 +1,326 @@
+[
+ {
+  "name": "Michael Jordan",
+  "window": "1987-89",
+  "level": 5,
+  "confidence": "high",
+  "summary": "1988 DPOY and All-Defensive 1st Team 1988-89; snubbed 1987 but elite ball-hawk; some modern skeptics of the DPOY.",
+  "sources": [
+   "https://www.deseret.com/1988/5/14/18766026/michael-jordan-named-top-defender-mark-eaton-is-2nd",
+   "https://www.si.com/nba/bulls/old-school/michael-jordan-was-ticked-off-after-being-left-off-the-all-defensive-team-in-1987"
+  ]
+ },
+ {
+  "name": "David Robinson",
+  "window": "1993-95",
+  "level": 5,
+  "confidence": "high",
+  "summary": "1992 DPOY; All-Defensive 2nd 1994, 1st 1995; premier shot-blocking, mobile center.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/David_Robinson"
+  ]
+ },
+ {
+  "name": "Kareem Abdul-Jabbar",
+  "window": "1971-73",
+  "level": 4,
+  "confidence": "low",
+  "summary": "Pre-All-Defensive-1st era for him (first honors 1974); dominant length and rim deterrent per retrospectives, but defense less emphasized than scoring; blocks not yet tracked.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/1971%E2%80%9372_Milwaukee_Bucks_season",
+   "https://wikipedia.com/wiki/List_of_career_achievements_by_Kareem_Abdul-Jabbar"
+  ]
+ },
+ {
+  "name": "Magic Johnson",
+  "window": "1989-91",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "No All-Defensive honors; described as too slow to stay with quick guards (1989 Finals vs Pistons); size and team-defense IQ helped in Dunleavy's defensive 1990-91 scheme.",
+  "sources": [
+   "https://vault.si.com/vault/1989/06/05/simply-perfect-the-lakers-unbeaten-for-six-weeks-emphasized-defense-to-stun-phoenix-and-earn-a-shot-at-their-third-straight-title",
+   "https://wikipedia.com/wiki/1990-91_Los_Angeles_Lakers_season"
+  ]
+ },
+ {
+  "name": "Larry Bird",
+  "window": "1985-87",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "All-Defensive 2nd 1982-84 but none in 1985-87; smart team/help defender with good hands, limited lateral quickness against quick forwards; mocked by Barkley as poor defender.",
+  "sources": [
+   "https://basketball-reference.com/awards/all_defense.html",
+   "https://thesportsrush.com/nba-news-having-disrespected-larry-birds-jersey-a-year-prior-charles-barkley-took-painful-shots-at-the-celtics-legends-defense-ill-only-be-the-2nd-worst-defensive-player/"
+  ]
+ },
+ {
+  "name": "Hakeem Olajuwon",
+  "window": "1992-94",
+  "level": 5,
+  "confidence": "high",
+  "summary": "DPOY 1993 and 1994; All-Defensive 1st; MVP/DPOY/FMVP 1994; trophy now named for him.",
+  "sources": [
+   "https://www.nba.com/news/defensive-player-of-the-year-houston-rockets"
+  ]
+ },
+ {
+  "name": "Scottie Pippen",
+  "window": "1994-96",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive 1st Team 1994-96 (8 straight); long arms, quick feet, guarded every position.",
+  "sources": [
+   "https://www.espn.com/nba/player/bio/_/id/663/scottie-pippen",
+   "https://britannica.com/biography/Scottie-Pippen"
+  ]
+ },
+ {
+  "name": "John Stockton",
+  "window": "1990-92",
+  "level": 4,
+  "confidence": "high",
+  "summary": "All-Defensive 2nd Team 1991, 1992; steals leader 1992; pesky, physical, smart; size limits.",
+  "sources": [
+   "https://www.espn.com/nba/player/bio/_/id/812/john-stockton",
+   "https://www.spokesman.com/stories/1995/may/16/stockton-again-defensive-pick/"
+  ]
+ },
+ {
+  "name": "Oscar Robertson",
+  "window": "1961-63",
+  "level": 3,
+  "confidence": "low",
+  "summary": "No All-Defensive teams yet; sources mention toughness and tenacious, physical defense but reputation is overwhelmingly offensive.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/oscar-robertson",
+   "https://vault.si.com/vault/2013/03/06/4-oscar-robertson"
+  ]
+ },
+ {
+  "name": "Charles Barkley",
+  "window": "1989-91",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "Never All-Defensive; widely viewed as inconsistent/low-effort defender relying on rebounding and occasional blocks/steals; discipline issues 1989-90.",
+  "sources": [
+   "https://www.yardbarker.com/nba/articles/charles_barkley_blamed_his_lack_of_discipline_in_the_1989_90_season_on_hanging_around_with_rick_mahorn_im_guilty_by_association/s1_17617_41460893",
+   "https://www.nba.com/history/legends/profiles/charles-barkley"
+  ]
+ },
+ {
+  "name": "Jerry West",
+  "window": "1965-67",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Pre-All-Defensive era; later 5 straight All-Defensive selections from 1969; NBA profile cites tenacious defense, quick hands.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/jerry-west",
+   "https://www.espn.com/nba/player/bio/_/id/4151/jerry-west"
+  ]
+ },
+ {
+  "name": "Karl Malone",
+  "window": "1992-94",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "No All-Defensive honors 1992-94 (2nd 1988, 1st 1997-99); strong, physical post defender and good team defender, though not yet honored in this window.",
+  "sources": [
+   "https://www.espn.com/nba/player/bio/_/id/501/karl-malone",
+   "https://www.landofbasketball.com/awards/all_defensive_teams_year.htm"
+  ]
+ },
+ {
+  "name": "Bill Russell",
+  "window": "1961-63",
+  "level": 5,
+  "confidence": "high",
+  "summary": "Consensus greatest defender ever; Wooden: 'greatest defensive man I've ever seen'; shot-blocking/tip-blocking anchor of Celtics dynasty.",
+  "sources": [
+   "https://fivethirtyeight.com/features/bill-russells-trailblazing-legacy-is-secure-even-if-stats-cant-measure-it",
+   "https://www.britannica.com/print/article/513174"
+  ]
+ },
+ {
+  "name": "Wilt Chamberlain",
+  "window": "1966-68",
+  "level": 5,
+  "confidence": "high",
+  "summary": "Hannum refocused him on defense/rebounding in 1967 title season; dominant shot blocker (6 blocks in 4th qtr of clinching Finals game).",
+  "sources": [
+   "https://www.nba.com/watch/video/1967-wilt-leads-76ers",
+   "https://www.Wikipedia.com/wiki/Wilt_Chamberlain"
+  ]
+ },
+ {
+  "name": "Walt Frazier",
+  "window": "1970-72",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive 1st Team 1969-75 including all three seasons; famed quick hands and steals.",
+  "sources": [
+   "https://basketball-reference.com/awards/all_defense.html",
+   "https://www.nba.com/news/all-time-all-nba-defensive-first-team-new-york-knicks"
+  ]
+ },
+ {
+  "name": "Moses Malone",
+  "window": "1981-83",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "All-Defensive 1st Team 1983 (only first-team nod), 2nd 1979; strong rebounding/positional defender, less noted as rim protector in 1981-82.",
+  "sources": [
+   "https://www.nba.com/sixers/76ers-alumni/moses-malone"
+  ]
+ },
+ {
+  "name": "Clyde Drexler",
+  "window": "1988-90",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Never All-Defensive; high steal totals and 8th in 1988 DPOY voting, but reputation as gambling, offense-first defender.",
+  "sources": [
+   "https://www.nba.com/news/portland-trail-blazers-single-season-steals-per-game-leaders",
+   "https://vault.si.com/vault/1990/06/11/clyde-the-glide-in-overdrive"
+  ]
+ },
+ {
+  "name": "Patrick Ewing",
+  "window": "1988-90",
+  "level": 4,
+  "confidence": "high",
+  "summary": "All-Defensive 2nd Team 1988 and 1989; elite shot blocker (3+ bpg).",
+  "sources": [
+   "https://www.espn.com/nba/player/bio/_/id/237/patrick-ewing",
+   "https://www.nba.com/news/new-york-knicks-single-season-blocks-per-game-leaders"
+  ]
+ },
+ {
+  "name": "Julius Erving",
+  "window": "1979-81",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Ranked among Sixers' top defenders; credited for help-side blocks and steals; no All-Defensive in window.",
+  "sources": [
+   "https://www.nbcsportsphiladelphia.com/nba/the-10-best-defenders-in-sixers-history/325075/?amp=1",
+   "https://thesixersense.com/2021/08/01/sixers-top-5-defenders-history/2"
+  ]
+ },
+ {
+  "name": "Bill Walton",
+  "window": "1976-78",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive 1st Team 1977 and 1978; led league in blocks 1977; anchor of title team.",
+  "sources": [
+   "https://www.nba.com/history/legends/profiles/bill-walton",
+   "https://www.britannica.com/biography/Bill-Walton"
+  ]
+ },
+ {
+  "name": "Gary Payton",
+  "window": "1994-96",
+  "level": 5,
+  "confidence": "high",
+  "summary": "'The Glove'; All-Defensive 1st 1994-96; 1996 DPOY, first PG to win.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Gary_Payton",
+   "https://www.spokesman.com/stories/1996/may/08/stealing-seattles-spotlight/"
+  ]
+ },
+ {
+  "name": "John Havlicek",
+  "window": "1970-72",
+  "level": 5,
+  "confidence": "high",
+  "summary": "All-Defensive 1st Team 1972 (and 2nd 1970-71 era); relentless, tireless two-way wing.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/John_Havlicek",
+   "https://www.espn.com/nba/history/awards/_/year/1972"
+  ]
+ },
+ {
+  "name": "Isiah Thomas",
+  "window": "1983-85",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "High steals (2.5 spg 1984) and intensity, but no All-Defensive; noted gambler, coach wanted more defense.",
+  "sources": [
+   "https://www.nba.com/news/history-nba-legend-isiah-thomas"
+  ]
+ },
+ {
+  "name": "Rick Barry",
+  "window": "1973-75",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Led NBA in steals 1975, played passing lanes superbly, but defense sometimes criticized as less than intense; no All-Defensive.",
+  "sources": [
+   "https://api-hub.nba.com/news/history-nba-legend-rick-barry",
+   "https://www.Wikipedia.org/wiki/1974-75_NBA_season"
+  ]
+ },
+ {
+  "name": "Anfernee Hardaway",
+  "window": "1994-96",
+  "level": 4,
+  "confidence": "medium",
+  "summary": "Long-armed, versatile; SI: often guarded forwards; solid defense on Jordan; no All-Defensive.",
+  "sources": [
+   "https://vault.si.com/vault/1995/02/09/6-anfernee-hardaway",
+   "https://www.si.com/nba/bulls/onsi/old-school/anfernee-hardaway-on-his-battles-against-the-1995-96-chicago-bulls"
+  ]
+ },
+ {
+  "name": "Kevin Johnson",
+  "window": "1989-91",
+  "level": 3,
+  "confidence": "low",
+  "summary": "No All-Defensive; decent steals, quick; sources focus on offense; defense not specifically praised or criticized.",
+  "sources": [
+   "https://vault.si.com/vault/1990/05/28/nba-playoffs-desert-heat-kevin-johnson-and-jeff-hornacek-are-an-opponent-wilting-duo-that-has-phoenix-vying-for-an-nba-title"
+  ]
+ },
+ {
+  "name": "Bob McAdoo",
+  "window": "1973-75",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Shot blocker (3.3 bpg 1974) per SI, but Braves were last in team defense; considered offense-first.",
+  "sources": [
+   "https://vault.si.com/vault/1974/03/18/mcadoo-about-something-boffo-in-buffalo",
+   "https://Www.Wikipedia.org/wiki/1973-74_NBA_season"
+  ]
+ },
+ {
+  "name": "Chris Mullin",
+  "window": "1988-90",
+  "level": 2,
+  "confidence": "low",
+  "summary": "Below-average athlete on a Run TMC team with bottom-tier defense; decent hands but generally regarded as a defensive weak link.",
+  "sources": [
+   "https://hoopsanalyst.com/the-run-tmc-faq/"
+  ]
+ },
+ {
+  "name": "Reggie Miller",
+  "window": "1993-95",
+  "level": 3,
+  "confidence": "medium",
+  "summary": "Mixed: coach called him underrated defender who drew top scorers; SI noted liabilities as defender; slight frame.",
+  "sources": [
+   "https://www.nba.com/pacers/news/miller-hall-fame",
+   "https://vault.si.com/vault/2000/05/22/heroic-measures-having-bulked-up-his-body-well-a-little-and-embellished-his-game-reggie-miller-is-trying-to-carry-the-pacers-to-their-first-finals-appearance"
+  ]
+ },
+ {
+  "name": "George Gervin",
+  "window": "1978-80",
+  "level": 2,
+  "confidence": "medium",
+  "summary": "SI 1978: defense a 'mere bagatelle' for Spurs; scorer reputation; some opponents called him underrated.",
+  "sources": [
+   "https://vault.si.com/vault/1978/03/06/iceman-cometh-and-scoreth-san-antonios-spurs-are-burning-up-the-nba-central-and-the-main-reason-is-ultra-cool-guard-george-gervin",
+   "https://www.slamonline.com/?p=128631"
+  ]
+ }
+]
