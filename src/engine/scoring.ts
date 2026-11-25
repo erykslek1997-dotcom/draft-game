@@ -1142,6 +1142,7 @@ export function insideOutOffense(five: PlayerSpan[]): { points: number; met: num
  * shooters around him reach `HELIO.shooters` (`OFF_HELIO_W`, 0 = off).
  */
 const HELIO = { w: Number(envVar('OFF_HELIO_W') ?? 3), use: 0.6, shooters: Number(envVar('OFF_HELIO_SHOOT') ?? 4), spacing: 55 };
+const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 0);
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
   if (HELIO.w === 0 || five.length < 5) return { points: 0, met: 0 };
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
@@ -1149,6 +1150,9 @@ export function helioOffense(five: PlayerSpan[]): { points: number; met: number 
   if (engines.length !== 1) return { points: 0, met: 0 };
   const shooters = five.filter((p) => p !== engines[0] && teamSpacingValue(p) >= HELIO.spacing).length;
   const share = Math.max(0, shooters - (HELIO.shooters - 2)) / 2;
+  // 2026-11-25 (`OFF_HELIO_NEG`, 0 = off; the user: LeBron + Marion + Russell + Alvin Robertson): the other side —
+  // a heliocentric engine with at most one shooter around him (real ORtg 0.55 under the engine's read, 73 teams).
+  if (HELIO_NEG && shooters <= 1) return { points: -HELIO_NEG * (2 - shooters) / 2, met: shooters };
   return { points: HELIO.w * Math.min(1, share), met: shooters };
 }
 
