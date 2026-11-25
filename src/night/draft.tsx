@@ -270,7 +270,7 @@ export function PlayerTable({
                     {naturalPosition(s.playerName)}
                     {!at && <span className="mt-y"> · {maskYears(s.playerName, s.spanLabel)}</span>}
                   </b>{' '}
-                  {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i>· {roles.join(' · ')}</i>}
+                  {r.ruleNote ? <i className="rule-tag">· {r.ruleNote}</i> : r.taken ? <i className="rule-tag">· {r.taken}</i> : roles.length > 0 && <i title={roles.join(' · ')}>· {roles[0]}</i>}
                   {/* the phone's one line under the name: position · years · pts / reb / ast */}
                   {/* the phone's line under the name, in three even columns: position · years · his line */}
                   <span className="mst">
@@ -306,8 +306,12 @@ export function PlayerTable({
                 <td className="g c-hide c-mid">
                   {/* a dash in each column until a scout opens the cards (the user, 2026-11-12: "„–” zanim
                       wciśniemy scouta"); the row opens his window, where the scout is */}
+                  {/* 2026-11-25 (UX review): five dashes read as five empty columns; one word says why */}
+                  {!r.grades ? (
+                    <span className="unsc" title={scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}>not scouted</span>
+                  ) : (
                   <span
-                    className={`cols g5${r.grades ? '' : ' unscouted'}`}
+                    className="cols g5"
                     title={r.grades ? undefined : scoutsLeft > 0 ? `Not scouted yet · open him to scout (${scoutsLeft} left)` : 'Not scouted'}
                   >
                     {(r.grades ? [r.grades.off, r.grades.def, r.grades.sht, r.grades.ply, r.grades.reb] : ['–', '–', '–', '–', '–']).map((v, i) => (
@@ -316,6 +320,7 @@ export function PlayerTable({
                       </span>
                     ))}
                   </span>
+                  )}
                 </td>
               )}
               {(at || onStar) && (
