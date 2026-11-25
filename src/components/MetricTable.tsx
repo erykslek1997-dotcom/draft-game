@@ -13,6 +13,8 @@ export interface MetricRowData {
   note?: string;
   /** What the number column shows in place of the value ("44%"). */
   shown?: string;
+  /** 2026-11-25: shown for reading only — not part of the score (dimmed, "info" in the third column). */
+  info?: boolean;
 }
 
 const TOP = 4;
@@ -32,10 +34,10 @@ export function MetricTable({ rows }: { rows: MetricRowData[] }) {
           const top = r.rank !== undefined && r.rank <= TOP;
           const bottom = r.rank !== undefined && r.of !== undefined && r.rank > r.of - TOP;
           return (
-            <tr key={r.label} className={cx(top && 'good', bottom && 'weak')} title={r.hint}>
+            <tr key={r.label} className={cx(top && 'good', bottom && 'weak', r.info && 'info')} title={r.info ? `${r.hint ?? ''} Informational: not part of the score.`.trim() : r.hint}>
               <td className="l">{r.label}</td>
               <td className="v">{r.shown ?? v}</td>
-              <td className="b">{r.rank !== undefined ? `${top ? '▲ ' : bottom ? '▼ ' : ''}#${r.rank}` : (r.note ?? '')}</td>
+              <td className="b">{r.rank !== undefined ? `${top ? '▲ ' : bottom ? '▼ ' : ''}#${r.rank}` : (r.note ?? (r.info ? 'info' : ''))}</td>
               <td>
                 <div className="bar">
                   <i style={{ width: `${v}%` }} />

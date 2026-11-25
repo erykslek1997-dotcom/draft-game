@@ -1600,3 +1600,4 @@ h3 .seg button.on { background: var(--ink); color: var(--bg); }
   .nt .bg-cell.clock small { font-size: 11px; }
   .nt .bg-cell.clock b { font-size: 14px; }
 }
+.mtab tr.info { opacity: 0.55; }

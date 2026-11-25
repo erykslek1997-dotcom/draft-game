@@ -588,10 +588,10 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
           <MetricTable
             rows={[
               { label: 'O-TAL', value: offenseScale(offenseDetail.otal), hint: 'Team offensive talent.' },
-              { label: 'Creation', value: offenseScale(fit.components.creationStructure), hint: 'Half-court shot creation the roster can generate on its own.' },
-              { label: 'Rim pressure', value: offenseScale(fit.components.rimPressureTeam), hint: 'How much the five collectively bends a defense at the rim.' },
+              { label: 'Creation', value: offenseScale(fit.components.creationStructure), hint: 'Half-court shot creation the roster can generate on its own.' , info: true },
+              { label: 'Rim pressure', value: offenseScale(fit.components.rimPressureTeam), hint: 'How much the five collectively bends a defense at the rim.' , info: true },
               { label: 'Playmaking', value: offenseScale(offenseDetail.playmaking), hint: 'Passing and table-setting: how well the roster creates shots for others, not just for itself.' },
-              { label: 'Title structure', value: fit.components.championshipStructure, hint: "How closely the roster's shape matches real championship rosters." },
+              { label: 'Title structure', value: fit.components.championshipStructure, hint: "How closely the roster's shape matches real championship rosters." , info: true },
             ]}
           />
         </section>
@@ -601,10 +601,10 @@ function ScoreDetails({ team, breakdown, fit, field }: { team: Team; breakdown: 
             rows={[
               { label: 'D-TAL', value: defenseTalent, hint: 'Team defensive talent: the minutes-weighted D-TAL the Defense score starts from, before hunting risk and team structure.' },
               { label: 'Role coverage', value: fit.components.defensiveRoleCoverage, hint: 'Whether someone covers each defensive job (point of attack, wing, rim) — not how well; that is the Defense score.' },
-              { label: 'Switchability', value: fit.components.switchability, hint: 'How freely the roster can switch across a screen without a mismatch.' },
+              { label: 'Switchability', value: fit.components.switchability, hint: 'How freely the roster can switch across a screen without a mismatch.' , info: true },
               { label: 'Hunt resistance', value: fit.components.huntResistance, hint: 'How well the roster hides its weakest defender in a playoff series.' },
-              { label: 'Rebounding', value: fit.components.reboundingBalance, hint: 'Two-way rebounding balance.' },
-              { label: 'Size', value: fit.components.sizeCoverage, hint: 'Functional positional size across the lineup.' },
+              { label: 'Rebounding', value: fit.components.reboundingBalance, hint: 'Two-way rebounding balance.' , info: true },
+              { label: 'Size', value: fit.components.sizeCoverage, hint: 'Functional positional size across the lineup.' , info: true },
             ]}
           />
           {weakDefenders.length > 0 && (
