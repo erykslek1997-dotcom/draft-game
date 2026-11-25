@@ -1,0 +1,171 @@
+{
+ "v": 3,
+ "attachments": {},
+ "boards": {
+  "Faces.dc.html": {
+   "h": 600,
+   "title": "Legend face cards",
+   "w": 1200,
+   "x": 1280,
+   "y": 4720
+  },
+  "Legends.dc.html": {
+   "h": 560,
+   "title": "Legend sprites · option 2",
+   "w": 1200,
+   "x": 0,
+   "y": 4720
+  },
+  "Main.dc.html": {
+   "h": 844,
+   "title": "A · Greek vase",
+   "w": 390,
+   "x": 0,
+   "y": 0
+  },
+  "Neo.dc.html": {
+   "h": 844,
+   "title": "6 · Neo-Greek minimal (game UI)",
+   "w": 390,
+   "x": 0,
+   "y": 1290
+  },
+  "Pixel.dc.html": {
+   "h": 844,
+   "title": "B · Pixel art",
+   "w": 390,
+   "x": 470,
+   "y": 0
+  },
+  "PixelGreek.dc.html": {
+   "h": 844,
+   "title": "C · Pixel × Greek (menu)",
+   "w": 390,
+   "x": 0,
+   "y": 2580
+  },
+  "ReelB3a.dc.html": {
+   "h": 960,
+   "title": "Reel B3 · phase 1 (stats spoken)",
+   "w": 540,
+   "x": 0,
+   "y": 5760
+  },
+  "ReelB3b.dc.html": {
+   "h": 960,
+   "title": "Reel B3 · phase 2 (chart)",
+   "w": 540,
+   "x": 620,
+   "y": 5760
+  },
+  "ReelB7.dc.html": {
+   "h": 960,
+   "title": "Reel B7 · who went instead (bars)",
+   "w": 540,
+   "x": 1240,
+   "y": 5760
+  },
+  "Statue.dc.html": {
+   "h": 720,
+   "title": "2 · Statue (YouTube thumbnail)",
+   "w": 1280,
+   "x": 470,
+   "y": 1290
+  },
+  "StyleSheet.dc.html": {
+   "h": 1720,
+   "title": "Style sheet v1",
+   "w": 1200,
+   "x": 470,
+   "y": 2580
+  },
+  "Logo.dc.html": {
+   "x": 0,
+   "y": 7020,
+   "w": 1400,
+   "h": 820,
+   "title": "Logo / key visual concepts"
+  },
+  "LogoAD.dc.html": {
+   "x": 0,
+   "y": 7960,
+   "w": 1400,
+   "h": 760,
+   "title": "Logo A + D (combined)"
+  }
+ },
+ "createdOnFiles": {
+  "at": "2026-11-18T12:00:00Z",
+  "v": 1
+ },
+ "designSystems": [],
+ "launch": {
+  "view": "canvas"
+ },
+ "notes": {
+  "cmp": {
+   "kind": "title1",
+   "maxW": 860,
+   "text": "Pantheon Hardwood — vase vs pixel",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "cmp2": {
+   "kind": "title1",
+   "maxW": 1750,
+   "text": "Round 2 — neo-Greek UI + statue thumbnails",
+   "w": 240,
+   "x": 0,
+   "y": 990
+  },
+  "cmp3": {
+   "kind": "title1",
+   "maxW": 1670,
+   "text": "Round 3 — pixel × Greek + style sheet",
+   "w": 240,
+   "x": 0,
+   "y": 2280
+  },
+  "cmp4": {
+   "kind": "title1",
+   "maxW": 2480,
+   "text": "Legend sprites → face cards",
+   "w": 240,
+   "x": 0,
+   "y": 4420
+  },
+  "cmp5": {
+   "kind": "title1",
+   "maxW": 1780,
+   "text": "Harper reel · B3 + B7 layout",
+   "w": 240,
+   "x": 0,
+   "y": 5460
+  },
+  "cmp6": {
+   "x": 0,
+   "y": 6720,
+   "text": "Logo / key visual",
+   "kind": "title1",
+   "maxW": 1400
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Pixel.dc.html",
+  "Neo.dc.html",
+  "Statue.dc.html",
+  "PixelGreek.dc.html",
+  "StyleSheet.dc.html",
+  "Legends.dc.html",
+  "Faces.dc.html",
+  "ReelB3a.dc.html",
+  "ReelB3b.dc.html",
+  "ReelB7.dc.html",
+  "Logo.dc.html",
+  "LogoAD.dc.html"
+ ],
+ "pages": [],
+ "title": "Pantheon Hardwood style test"
+}

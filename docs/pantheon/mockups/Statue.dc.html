@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Statue-style thumbnail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&amp;family=Inter:wght@600;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#D9B25F}a:hover{color:#F0CF86}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0E0E10; color: #F2EEE6; font-family: Inter, sans-serif; display: flex; overflow: hidden; position: relative">
+  <svg width="640" height="720" viewBox="0 0 640 720" role="img" aria-label="Marble bust with a crack across it" style="display: block; flex-shrink: 0">
+    <defs>
+      <radialGradient id="mb" cx="42%" cy="30%" r="75%">
+        <stop offset="0" stop-color="#FFFFFF"></stop>
+        <stop offset="0.45" stop-color="#D9D6D0"></stop>
+        <stop offset="1" stop-color="#6F6C68"></stop>
+      </radialGradient>
+      <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+        <stop offset="0" stop-color="#3A3328"></stop>
+        <stop offset="1" stop-color="#0E0E10"></stop>
+      </radialGradient>
+    </defs>
+    <rect width="640" height="720" fill="url(#glow)"></rect>
+    <path d="M70 720 C90 590 170 540 250 520 L250 470 C200 440 185 380 188 300 C190 200 250 140 320 140 C390 140 450 200 452 300 C455 380 440 440 390 470 L390 520 C470 540 550 590 570 720 Z" fill="url(#mb)"></path>
+    <path d="M250 470 C290 490 350 490 390 470" fill="none" stroke="#8E8A84" stroke-width="3"></path>
+    <path d="M262 290 C280 280 300 282 312 292 M330 292 C342 282 362 280 380 290" fill="none" stroke="#7C7873" stroke-width="5" stroke-linecap="round"></path>
+    <path d="M322 300 L314 360 L330 364" fill="none" stroke="#8E8A84" stroke-width="3"></path>
+    <path d="M292 405 C310 414 334 414 352 405" fill="none" stroke="#7C7873" stroke-width="4" stroke-linecap="round"></path>
+    <path d="M340 140 L330 210 L352 250 L326 320 L346 370 L320 460 L338 540 L316 640" fill="none" stroke="#1A1714" stroke-width="4"></path>
+    <path d="M352 250 L384 268 M326 320 L296 334 M338 540 L372 556" fill="none" stroke="#1A1714" stroke-width="2.5"></path>
+    <text x="320" y="640" text-anchor="middle" font-family="Cinzel, serif" font-weight="900" font-size="64" fill="#6F6C68" letter-spacing="10" opacity="0.75">24</text>
+  </svg>
+
+  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding: 0 70px 0 10px">
+    <div style="font-family: Cinzel, serif; font-weight: 700; font-size: 26px; letter-spacing: 8px; color: {{accent}}">THE PANTHEON FILES</div>
+    <div style="font-family: Cinzel, serif; font-weight: 900; font-size: 96px; line-height: 0.95">KOBE'S<br>DEFENSE</div>
+    <div style="display: inline-flex; align-self: flex-start; background: {{accent}}; color: #0E0E10; font-weight: 800; font-size: 64px; padding: 4px 22px; transform: rotate(-2deg)">OVERRATED?</div>
+    <div style="display: flex; gap: 28px; margin-top: 16px">
+      <div style="display: flex; flex-direction: column"><span style="font-weight: 800; font-size: 44px">12×</span><span style="font-size: 18px; color: #B9B2A5; font-weight: 600">ALL-DEFENSE</span></div>
+      <div style="width: 2px; background: #3A3630"></div>
+      <div style="display: flex; flex-direction: column"><span style="font-weight: 800; font-size: 44px; color: #E06B4F">−1</span><span style="font-size: 18px; color: #B9B2A5; font-weight: 600">DARKO DEFENSE</span></div>
+    </div>
+  </div>
+
+  <div style="position: absolute; right: 36px; bottom: 28px; display: flex; align-items: center; gap: 10px">
+    <svg width="34" height="27" viewBox="0 0 30 24" aria-hidden="true"><path d="M1 6 L15 1 L29 6 Z" fill="#F2EEE6"></path><rect x="3" y="8" width="2.4" height="12" fill="#F2EEE6"></rect><rect x="8.6" y="8" width="2.4" height="12" fill="#F2EEE6"></rect><rect x="14.2" y="8" width="2.4" height="12" fill="{{accent}}"></rect><rect x="19.8" y="8" width="2.4" height="12" fill="#F2EEE6"></rect><rect x="25.4" y="8" width="2.4" height="12" fill="#F2EEE6"></rect><rect x="1" y="21" width="28" height="2" fill="#F2EEE6"></rect></svg>
+    <span style="font-family: Cinzel, serif; font-weight: 700; font-size: 20px; letter-spacing: 4px">PANTHEON</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#D9B25F","options":["#D9B25F","#E06B4F","#F2EEE6"]},"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#D9B25F' };
+  }
+}
+</script>
+</body>
+</html>
