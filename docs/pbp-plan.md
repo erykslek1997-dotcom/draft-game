@@ -40,3 +40,8 @@
 - Pobrane `scripts/fetchApbrRapm.sh`: 46 plików, 1996-97 … 2018-19, sezon + play-offy (`src/data/raw/apbrRapm`), scalone do `src/data/apbrRapm.json`, lookup `src/engine/apbrRapmLookup.ts` (pokrycie 5025 / 5088 okien 1997-2019).
 - Test (`OVR_BPM_SRC=rapm OVR_BPM=k`, różnica RAPM vs RAPM wynikający z TAL, ważona minutami): SRS 0.877 → 0.880 / 0.882 / 0.885 (k=1/2/4), prognoza 0.671 → 0.671 / 0.671 / 0.669.
 - Wniosek: jak przy BPM — zysk tylko w teście na tych samych sezonach (RAPM zna wynik drużyny), w uczciwej prognozie zero. Silnik już niesie to, co RAPM wie z innych sezonów. nbarapm (2019-2026) nie jest wart wysiłku.
+
+## Squared Statistics — Historical RAPM (sprawdzone 2026-11-25)
+- Justin Jacobs: stinty odtwarzane ręcznie z wideo, 1969-70 … 1995-96; 2068 z ~12 600 meczów (16%), 9 sezonów opublikowanych (1969-70, 1979-80, 1984-85, 1987-88 … 1992-93), np. 1987-88 189 / 943 meczów.
+- Tabele jako obrazki (zrzuty ekranu), bez pliku; „dane będą szerzej dostępne, gdy projekt będzie pełniejszy”, zakładka „Data and Consulting”.
+- Na teraz nieużywalne (za mała próba, brak plików). Wrócić, gdy autor udostępni dane — narzędzia (lookup + `OVR_BPM_SRC`) są gotowe.
