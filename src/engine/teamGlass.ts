@@ -1,3 +1,4 @@
+import { envVar } from './env';
 import type { Team } from './types';
 import { allAssignments } from './rotation';
 import { defenderProfile } from './liveDefense';
@@ -26,6 +27,8 @@ const OFFENSIVE_GLASS_POINTS = 0.6 / POINTS_PER_SCORE_POINT;
 const FOUL_POINTS = 0.4 / POINTS_PER_SCORE_POINT;
 /** No single one of these moves a score further than this. */
 const MAX_Z = 2.5;
+const GLASS_DREB = Number(envVar('GLASS_DREB') ?? 1);
+const GLASS_FOUL = Number(envVar('GLASS_FOUL') ?? 1);
 
 export interface TeamGlass {
   /** Defensive and offensive rebounds per 36 summed over a five, and the five's foul index. */
@@ -61,7 +64,8 @@ export function teamGlass(team: Team): TeamGlass {
     dreb,
     oreb,
     foul,
-    defensePoints: DEFENSIVE_GLASS_POINTS * z(dreb, REFERENCE_FIVE.dreb) - FOUL_POINTS * z(foul, REFERENCE_FIVE.foul),
+    // 2026-11-25 (`GLASS_DREB` / `GLASS_FOUL`, shares of the Defense score's parts): measured on real DRtg.
+    defensePoints: GLASS_DREB * DEFENSIVE_GLASS_POINTS * z(dreb, REFERENCE_FIVE.dreb) - GLASS_FOUL * FOUL_POINTS * z(foul, REFERENCE_FIVE.foul),
     offensePoints: OFFENSIVE_GLASS_POINTS * z(oreb, REFERENCE_FIVE.oreb),
   };
 }
