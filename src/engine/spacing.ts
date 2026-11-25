@@ -534,12 +534,13 @@ const PRE_LINE_TWINS = preLineTwinsData as Record<string, number>;
  * midrange read, but before the line their spacing is the twins' estimate. */
 const PRE_LINE_TWIN_OVER_HAND = new Set(['tiny archibald', 'earl monroe']);
 /** 2026-11-25 (the user: Chenier 1973-75 Shooting B+ at TS 48.6%): measurement knob, off. The twins'
- * estimate scaled by efficiency against the era's position-adjusted TS: x (1 + PRELINE_TS x gap). */
-const PRELINE_TS = Number(envVar('PRELINE_TS') ?? 0);
+ * estimate scaled by efficiency against the era's position-adjusted TS: x (1 + PRELINE_TS x gap). On at 5
+ * (the user: estimated players must not jump ahead of proven ones); no judge covers 1974-79 teams. */
+const PRELINE_TS = Number(envVar('PRELINE_TS') ?? 5);
 function preLineTsScale(span: PlayerSpan): number {
   if (!PRELINE_TS) return 1;
   const gap = span.box.tsPct - positionAdjustedTsBaseline(span.primaryPosition, span.fga, span.spanLabel);
-  return Math.max(0.3, Math.min(1.3, 1 + PRELINE_TS * gap));
+  return Math.max(0.3, Math.min(1, 1 + PRELINE_TS * gap)); // only down: an estimate never climbs past its twins
 }
 function preLinePoints(span: PlayerSpan): number {
   if (Math.max(...spanEndYears(span.spanLabel)) > LAST_SEASON_WITHOUT_THE_LINE) return 0;

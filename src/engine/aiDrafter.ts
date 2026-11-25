@@ -2041,6 +2041,11 @@ export const AI_PLAN = {
   benchFloor: Number(envVar('AI_PLAN_BENCH_FLOOR') ?? 68),
   benchMinO: Number(envVar('AI_PLAN_BENCH_MINO') ?? 55),
   benchOCost: Number(envVar('AI_PLAN_BENCH_O') ?? 0),
+  /** 2026-11-25 (the user: Horry 2001-03, O 46, starting PF on the top team — "nie był starterem irl,
+   * tylko impact graczem na kilkanaście minut"): each of the five best (by TAL) with O-TAL under
+   * `startMinO` costs `startOCost` per point short (0 = off). */
+  startMinO: Number(envVar('AI_PLAN_START_MINO') ?? 50),
+  startOCost: Number(envVar('AI_PLAN_START_O') ?? 0),
   share: ['AI_PLAN_SHARE', 'JOINT'].some((k) => (envVar(k) ?? '0') === '1'),
 };
 /** Each team's plan from its last turn (normalized names), by draft and team (`planPick`). */
@@ -2118,6 +2123,10 @@ function planPick(
       // brings nothing on offense (O-TAL under `benchMinO`) is a specialist, not a rotation player in an
       // all-time draft, whatever his defense lifts his TAL to.
       for (const p of reserves) short += AI_PLAN.benchOCost * Math.max(0, AI_PLAN.benchMinO - computeOffensiveTalent(p));
+    }
+    if (AI_PLAN.startOCost > 0) {
+      const five = [...team].sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, 5);
+      for (const p of five) short += (AI_PLAN.startOCost / Math.max(AI_PLAN.benchCost, 1e-9)) * Math.max(0, AI_PLAN.startMinO - computeOffensiveTalent(p));
     }
     const old = AI_OLD.points > 0 ? team.filter((p) => Math.max(...spanEndYears(p.spanLabel)) < 1974 && effectiveTalent(p) < AI_OLD.starTal).length : 0;
     return teamScorer!(team) - AI_PLAN.crowdCost * crowd - AI_PLAN.benchCost * short - AI_OLD.points * 0.25 * old;
