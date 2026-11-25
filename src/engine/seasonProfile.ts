@@ -7,8 +7,6 @@ export interface SeasonProfileResult {
   regularSeason: number;
   playoffs: number;
   label: SeasonProfileLabel;
-  rawRegularSeason?: number;
-  rawPlayoffs?: number;
   explanation: string;
 }
 
@@ -31,17 +29,8 @@ export function calibrateSeasonProfileScore(value: number, anchors: SeasonProfil
   return Math.round(clamp(interpolate(value, anchors.p90, anchors.elite, 90, 100)));
 }
 
-/**
- * 2026-11-25 (the user's draft 3971144868: RS 97 / PO 69, 'Regular-season machine' for a LeBron team):
- * the anchors were set on real team-seasons, but drafted all-time teams sit near the RS ceiling (deep
- * benches, Rotation 100), so RS read 93 on average against PO 80 and a quarter of AI teams got the
- * machine label. Anchors now from the raw scores of 48 AI-drafted teams (scripts/_sprof2.ts), so a
- * typical drafted team reads 75 on both. Against real playoff teams 1997+ (scripts/_sprof.ts) the
- * PO-RS gap carries a small real signal beyond SRS (r 0.16 with series wins over SRS).
- */
-const REGULAR_SEASON_ANCHORS: SeasonProfileAnchors = { p10: 80.2, median: 83.4, p90: 85.2, elite: 87 };
-const PLAYOFF_ANCHORS: SeasonProfileAnchors = { p10: 70.1, median: 79.5, p90: 81.9, elite: 84.5 };
-const LABEL_GAP = 12;
+const REGULAR_SEASON_ANCHORS: SeasonProfileAnchors = { p10: 67, median: 75, p90: 81, elite: 87 };
+const PLAYOFF_ANCHORS: SeasonProfileAnchors = { p10: 66, median: 76, p90: 82, elite: 86 };
 
 /**
  * Descriptive RS/PO split. It does not affect Overall, matchup odds or AI drafting.
@@ -76,12 +65,12 @@ export function seasonProfile(breakdown: ScoreBreakdown, fit: FitScoreResult): S
 
   const regularSeason = calibrateSeasonProfileScore(rawRegularSeason, REGULAR_SEASON_ANCHORS);
   const playoffs = calibrateSeasonProfileScore(rawPlayoffs, PLAYOFF_ANCHORS);
-  const delta = playoffs - regularSeason;
-  const label: SeasonProfileLabel = regularSeason < 50 && playoffs < 50
+  const delta = rawPlayoffs - rawRegularSeason;
+  const label: SeasonProfileLabel = rawRegularSeason < 60 && rawPlayoffs < 60
     ? 'Fragile in both phases'
-    : delta >= LABEL_GAP
+    : delta >= 6
       ? 'Playoff riser'
-      : delta <= -LABEL_GAP
+      : delta <= -6
         ? 'Regular-season machine'
         : 'Balanced contender';
   const explanation = label === 'Playoff riser'
@@ -91,5 +80,5 @@ export function seasonProfile(breakdown: ScoreBreakdown, fit: FitScoreResult): S
       : label === 'Fragile in both phases'
         ? 'Neither the depth for the regular season nor a clear playoff identity.'
         : 'Keeps most of its value when the playoff rotation shortens.';
-  return { regularSeason, playoffs, label, explanation, rawRegularSeason, rawPlayoffs };
+  return { regularSeason, playoffs, label, explanation };
 }
