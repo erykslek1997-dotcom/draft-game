@@ -585,7 +585,7 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // 2026-11-12 (measuring, the offense judge — real ORtg against the league, 600 team-seasons: the
 // Offense blend r 0.619, team O-TAL alone 0.768): `OFF_MIX` moves that share of the spacing,
 // playmaking and mismatch weights onto O-TAL.
-const OFF_MIX = Number(envVar('OFF_MIX') ?? 0);
+const OFF_MIX = Number(envVar('OFF_MIX') ?? 0.5);
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
@@ -2087,7 +2087,9 @@ const QUALITY_FIT_SPLIT = 0.5;
 // 2026-11-05, the night session: Rotation dropped from Overall (off: SRS 0.811 -> 0.816, game 0.776 ->
 // 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
 // 2026-11-25 (`W_TAL` / `W_BENCH` / `W_FIT` / `W_OFF` / `W_DEF`, multipliers, measurement): the weights audit.
-const WM = (k: string) => Number(envVar(k) ?? 1);
+// 2026-11-25 defaults from the audit (scripts/_weights.sh; SRS 0.852 -> 0.862, lineups 0.569 -> 0.579, offense 0.7783 -> 0.7913).
+const WM_DEFAULT: Record<string, number> = { W_TAL: 1.5, W_BENCH: 1, W_FIT: 0.5, W_OFF: 1.5, W_DEF: 0.75 };
+const WM = (k: string) => Number(envVar(k) ?? WM_DEFAULT[k] ?? 1);
 // Normalised: the multipliers change the shares, not the scale (the bucket keeps its sum).
 const Q_SUM = (0.271 * WM('W_TAL') + 0.17 * WM('W_BENCH')) / 0.441;
 const QUALITY_TALENT_WEIGHT = (0.271 / 0.441) * WM('W_TAL') / Q_SUM;
