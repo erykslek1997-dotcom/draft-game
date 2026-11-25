@@ -9,3 +9,11 @@ console.log(STARTER_SLOTS.map((s) => `${s} ${roster.find((p) => p.id === rot.slo
 import { bestPrimaryAssignment } from '../src/engine/rotation';
 const b = bestPrimaryAssignment(roster);
 console.log('bestPrimary', Object.entries(b.assignment).map(([k, p]) => `${k} ${p!.playerName}`).join(', '));
+import { autoAssignRotation } from '../src/engine/rotation';
+const ar = autoAssignRotation(roster);
+for (const s of STARTER_SLOTS) console.log(s, ar.slots[s].map((a) => `${roster.find((p) => p.id === a.playerId)!.playerName} ${a.minutes}`).join(' / '));
+import { readStructure } from '../src/engine/structuredRoster';
+const st = readStructure(roster);
+console.log('struct starters', Object.entries(st.starters).map(([k, p]) => `${k} ${(p as any)?.playerName}`).join(', '), 'slider', st.slider?.player.playerName);
+import { starterShareIrl } from '../src/engine/structuredRoster';
+for (const p of roster) console.log(p.playerName, starterShareIrl(p));
