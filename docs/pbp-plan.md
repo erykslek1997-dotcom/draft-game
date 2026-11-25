@@ -79,3 +79,20 @@ Question: can written defensive reputation (web sources) recover what the box-sc
 | all W=4 | 0.8640 |
 
 Conclusion: rejected. The engine's pre-1997 defense already tracks real DRtg (0.866, higher than 1997+), and reputation adds nothing beyond noise. The knob stays off.
+
+## O-TAL from pbp (2026-11-25, TAL rebuild)
+
+What the engine's raw offense misses on 445 real team-seasons 2001+ (scripts/_otalres.ts), from pbpstats:
+- Plus: rim rate and finishing, self-made twos, putbacks.
+- Minus: turnovers, long twos.
+
+Out-of-sample r between halves was 0.36 / 0.48 on the residual. Knob `OTAL_PBP` (talent.ts), off.
+
+| OTAL_PBP | Offense vs ORtg, same windows | Honest, prior windows (n 139) | Forecast Overall, PRIOR=1 |
+|---|---|---|---|
+| 0 | 0.7918 | 0.668 | 0.671 |
+| 2 | 0.8011 | 0.671 | — |
+| 4 | 0.8085 | 0.662 | 0.673 |
+| 6 | 0.8140 | 0.660 | 0.671 |
+
+Rejected: the same in-sample artifact as BPM / RAPM. The data describes the season it measured but does not carry to the next one. `_offjudge.ts` now takes PRIOR=1.
