@@ -7,7 +7,7 @@ import { ballHandlerCost } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
-import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact } from './talent';
+import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact, computeTalent } from './talent';
 import { isPlusShooter } from './shooting';
 import {
   isShootingAnomalyPlayer,
@@ -276,8 +276,13 @@ export function talentOnDefenseScale(talent: number): number {
 }
 
 const TAL_P = Number(envVar('TAL_P') ?? 1);
+const TAL_LIFT = Number(envVar('TAL_LIFT') ?? 1);
+const TAL_CAP = Number(envVar('TAL_CAP') ?? 100);
 export function talentScore(team: Team): number {
-  const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
+  // 2026-11-25 (`TAL_LIFT`, 1 = the card's number; the TAL audit: players whose card is lifted over the
+  // engine's TAL — named floors, holds, the All-Star floor — have teams below what Overall says, r -0.20).
+  const tal = (p: PlayerSpan) => (TAL_LIFT === 1 ? effectiveTalent(p) : computeTalent(p) + TAL_LIFT * (effectiveTalent(p) - computeTalent(p)));
+  const starterTals = primaryStarters(team).map((entry) => tal(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;
   // 2026-11-25 (`TAL_P`, 1 = the plain average; Wednesday item 2: beside Curry, Iverson 80 and Durant 97
   // as the second star read 1.7 Overall apart): a power mean, so the stars weigh more than the fifth starter.
@@ -286,7 +291,9 @@ export function talentScore(team: Team): number {
     : Math.pow(starterTals.reduce((sum, t) => sum + Math.pow(Math.max(0, t), TAL_P), 0) / starterTals.length, 1 / TAL_P);
   const weakestStarter = Math.min(...starterTals);
   const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
-  return Math.round(Math.max(0, Math.min(100, average - floorPenalty)));
+  // 2026-11-25 (`TAL_CAP`, 100 = as before; Curry vs Stockton beside Jordan + LeBron: an all-star five's mean
+  // TAL passes 100 and the cap erased a 5-point TAL difference).
+  return Math.round(Math.max(0, Math.min(TAL_CAP, average - floorPenalty)));
 }
 
 /**
@@ -1143,6 +1150,19 @@ export function insideOutOffense(five: PlayerSpan[]): { points: number; met: num
  */
 const HELIO = { w: Number(envVar('OFF_HELIO_W') ?? 3), use: 0.6, shooters: Number(envVar('OFF_HELIO_SHOOT') ?? 4), spacing: 55 };
 const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 4);
+/**
+ * 2026-11-25 (`OFF_TWO_POST`, 0 = off; the user: Kidd + Barkley + Embiid — two bigs who want the ball on the
+ * block): two frontcourt starters who live on the ball (usage `TWO_POST_USE`+, shooting or not) cost raw offense points.
+ */
+const TWO_POST = Number(envVar('OFF_TWO_POST') ?? 4);
+const TWO_POST_USE = Number(envVar('OFF_TWO_POST_USE') ?? 0.5);
+function twoPostOffense(five: PlayerSpan[]): number {
+  if (!TWO_POST) return 0;
+  // Real cases (scripts/_twopost.ts): Spurs 1990 Cummings + Robinson -2.1, Pelicans 2018 Davis + Cousins -1.0 ORtg
+  // under the engine's read — two in 600 teams, because coaches don't build it; the user: "nie bez powodu tak się nie gra".
+  const n = new Set(five.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && (dataUsageDemand(p) ?? 0.3) >= TWO_POST_USE).map((p) => p.id)).size;
+  return n >= 2 ? -TWO_POST : 0;
+}
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
   if (HELIO.w === 0 || five.length < 5) return { points: 0, met: 0 };
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
@@ -1221,7 +1241,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points;
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };

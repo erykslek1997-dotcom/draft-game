@@ -145,3 +145,9 @@ Ta sama piątka obok Curry'ego 2015-17 (Battier / Horford / Gobert + ławka), zm
 - `DEF_OFF=glass`: obrona vs DRtg 0.8133 → **0.8300** (obie połowy), SRS 0.841 → 0.845, SRS sezony 0.840 → 0.841, piątki 0.570 → 0.571, prognoza vs SRS 0.8680 → 0.8711; sim R² (sama mechanika) 0.66 → 0.61 — gra i tak dociąga mecz do prognozy (r 1.000).
 - Osobno: bez zbiórek 0.8236, bez fauli 0.8211, oba 0.8300.
 - Fort Worth z oboma zmianami: 82.7 → 83.9, 12. → 4.
+
+## 2026-11-25 wieczór — przegląd kar / wag / skali TAL
+- Przegląd kar (`scripts/_audit.sh`, 32 elementy po kolei): szkodził tylko „wąskie gardło spacingu” (wyłączony, SRS 0.845 → 0.852). Reguła ławki: szybki test na minus, pełny — trzyma piątki (bez niej 0.571 → 0.560) → zostaje. Pomagają: korekta za epokę, minimum ławki, chemia.
+- Przegląd wag (`scripts/_weights.sh`, znormalizowane): talent ×1.5, fit ×0.5, atak ×1.5, obrona ×0.75, OFF_MIX 0.5 — wdrożone (SRS 0.852 → 0.862, piątki 0.569 → 0.579, atak 0.7783 → 0.7913). Dalsze przesunięcia (atak ×2, obrona ×0.5, talent ×2, OFF_MIX 0.8) ±0.002 — plateau.
+- Spójność obrony: waga 0 (od 14.11) i poza Fit — tylko liczba w eksporcie; realnie liczy się pokrycie ról (sam dobiera PoA / skrzydło / obręcz).
+- Skala TAL (`auditTeams` pełny, ridge na graczach): przeceniani defensywni gracze ról (Holiday, Horford, Horry, Bowen, Draymond, Bridges, Lopez, Haslem), niedoceniani kreatorzy (Reggie, Grant Hill, CP3, Dirk, KG, Westbrook, Nash). Cechy: „podniesienie karty” r −0.20, D−O −0.14, OBPM +0.12. Próby: `TAL_LIFT` (bez podniesień w talencie) gorzej (0.875 → 0.869); `LIFT_SPLIT` / `LIFT_OD=0` neutralne; `DT_RECOG` 0.5 / 0 neutralne. Wniosek: w obecnym modelu brak prostej dźwigni — błędy są indywidualne; dalej tylko przebudowa surowych składników TAL (osobny projekt).
