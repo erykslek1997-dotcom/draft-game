@@ -1150,6 +1150,17 @@ export function insideOutOffense(five: PlayerSpan[]): { points: number; met: num
  */
 const HELIO = { w: Number(envVar('OFF_HELIO_W') ?? 3), use: 0.6, shooters: Number(envVar('OFF_HELIO_SHOOT') ?? 4), spacing: 55 };
 const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 4);
+/**
+ * 2026-11-25 (`OFF_TWO_POST`, 0 = off; the user: Kidd + Barkley + Embiid — two bigs who want the ball on the
+ * block): two frontcourt starters who live on the ball (usage 0.45+) without a spot-up shot (< 50) cost raw
+ * offense points.
+ */
+const TWO_POST = Number(envVar('OFF_TWO_POST') ?? 0);
+function twoPostOffense(five: PlayerSpan[]): number {
+  if (!TWO_POST) return 0;
+  const n = five.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && (dataUsageDemand(p) ?? 0.3) >= 0.45 && (skill(p, 'spotUp') ?? 50) < 50).length;
+  return n >= 2 ? -TWO_POST : 0;
+}
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
   if (HELIO.w === 0 || five.length < 5) return { points: 0, met: 0 };
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
@@ -1228,7 +1239,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points;
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
