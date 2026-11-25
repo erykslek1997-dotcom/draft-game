@@ -125,7 +125,8 @@ check(guards[0] === 0, 'hiding: the weakest defender (Nash) is hidden on Bowen')
 
 const glassy = teamGlass(five(['Chris Paul|2014-16', 'Klay Thompson|2014-16', 'Dennis Rodman|1993-95', 'Kevin Love|2009-11', 'Moses Malone|1978-80'], 'glass'));
 const small = teamGlass(five(['Chris Paul|2014-16', 'Klay Thompson|2014-16', 'Kyle Korver|2014-16', 'Peja Stojaković|2002-04', 'Dirk Nowitzki|2005-07'], 'small'));
-check(glassy.defensePoints > small.defensePoints + 3 && glassy.offensePoints > small.offensePoints + 3, 'game -> engine: the engine credits the glass the game plays (Defense and Offense)');
+// 2026-11-25: team glass left the Defense score (GLASS_DREB / GLASS_FOUL 0 — real DRtg 0.8133 -> 0.8300); Offense keeps it.
+check(glassy.offensePoints > small.offensePoints + 3, 'game -> engine: the engine credits the offensive glass the game plays');
 
 // 3. League averages (one league's season).
 const season = simulateLiveSeason(leagues[0].teams.map((t, i) => teamOf(t.ids, `s${i}`)), 'two-way');
