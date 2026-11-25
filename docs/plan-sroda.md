@@ -112,3 +112,22 @@ Wniosek: zwykły BPM z tych samych okien bije silnik o ~0.05. Największa dźwig
 - Skład użytkownika (Stockton / Kobe / Marion / Horford / Walton): 86.7 → **87.8** (Marion 20 SF + 18 PF, Majerle 34, Hayes 6) — ręczna rotacja użytkownika dawała 87.4.
 - 48 składów z lig testowych (`scripts/_rotsearch.ts`): średnio +0.71, mediana +0.52, max +2.6, poprawa w 33/48; czas średnio 56 ms, max 227 ms.
 - Podpięte pod: start edytora rotacji (zamiast autoAssignRotation) i auto-wysłanie rotacji, gdy kończy się czas. AI bez zmian (ma własną rotację).
+
+### 2. Gwiazdy z piłką jako druga opcja (`scripts/_star2.ts`)
+Ta sama piątka obok Curry'ego 2015-17 (Battier / Horford / Gobert + ławka), zmienia się druga gwiazda:
+
+| Druga gwiazda | TAL | Overall |
+|---|---|---|
+| Durant 2012-14 | 97 | 84.6 |
+| Kawhi 2015-17 | 95 | 84.6 |
+| Wade 2008-10 | 95 | 84.3 |
+| Oscar 1962-64 | 91 | 83.5 |
+| Klay 2014-16 | 85 | 83.1 |
+| Iverson 2000-02 | 80 | 82.9 |
+| Westbrook 2015-17 | 92 | 82.8 |
+| Harden 2017-19 | 92 | 82.3 |
+
+- Kary za piłkę są już małe (drugi gracz z piłką +0.5 dla wszystkich, helio 0) — Westbrook / Harden nie są „karani” osobno.
+- Za to druga gwiazda prawie nie rusza oceny: 17 TAL różnicy (Iverson → Durant) = 1.7 Overall.
+- `TAL_P` (średnia potęgowa talentu piątki, gwiazdy ważą więcej): p=6 przesuwa wszystkich o ~+0.6, różnice bez zmian; SRS 0.855 → 0.853, prognoza 0.623 → 0.635 (szum). Wyłączony.
+- Dane nie mówią, że gwiazdy ważą za mało: w teście SRS drużyny z liderem 80-87 są niedoceniane (+1.09), a z gwiazdą 95+ lekko przeceniane (−0.22). Do decyzji, czy to kwestia „odczucia gracza”, nie trafności.

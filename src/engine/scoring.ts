@@ -275,10 +275,15 @@ export function talentOnDefenseScale(talent: number): number {
   return Math.max(0, Math.min(100, TALENT_DISPLAY_AT_MEAN + (talent - TALENT_RAW_MEAN) * TALENT_DISPLAY_PER_POINT));
 }
 
+const TAL_P = Number(envVar('TAL_P') ?? 1);
 export function talentScore(team: Team): number {
   const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;
-  const average = starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length;
+  // 2026-11-25 (`TAL_P`, 1 = the plain average; Wednesday item 2: beside Curry, Iverson 80 and Durant 97
+  // as the second star read 1.7 Overall apart): a power mean, so the stars weigh more than the fifth starter.
+  const average = TAL_P === 1
+    ? starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length
+    : Math.pow(starterTals.reduce((sum, t) => sum + Math.pow(Math.max(0, t), TAL_P), 0) / starterTals.length, 1 / TAL_P);
   const weakestStarter = Math.min(...starterTals);
   const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
   return Math.round(Math.max(0, Math.min(100, average - floorPenalty)));
