@@ -57,7 +57,7 @@ const LIFT_ENV = processEnv;
  * Overall alike; `LIFT_SCALE=1` brings it back for a measurement.
  */
 const LIFT_MIN = Number(LIFT_ENV?.LIFT_MIN ?? 0);
-export const LIFT_TUNING = { scale: Number(LIFT_ENV?.LIFT_SCALE ?? 0), ref: 0.0034, pointsPerTs: 196, threes: 0.3, realMatesShare: Number(LIFT_ENV?.LIFT_RM ?? 1), overall: Number(LIFT_ENV?.LIFT_OVR ?? 1) };
+export const LIFT_TUNING = { scale: Number(LIFT_ENV?.LIFT_SCALE ?? 1), ref: 0.0034, pointsPerTs: 196, threes: 0.3, realMatesShare: Number(LIFT_ENV?.LIFT_RM ?? 1), overall: Number(LIFT_ENV?.LIFT_OVR ?? 1) };
 
 /** Each player's shooting shift (TS as a fraction) from the four beside him, in the five's order. */
 export function fiveLiftShifts(five: PlayerSpan[]): number[] {
