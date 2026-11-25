@@ -2043,6 +2043,19 @@ function namedTalPenalty(span: PlayerSpan): number {
   return NAMED_TAL_PENALTY.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0;
 }
 
+/**
+ * 2026-11-25 (the user: "czy TAL nie powinien być powiązany z O-TAL i D-TAL"), quick version for review:
+ * TAL = k x (O-TAL + TAL_OD_R x D-TAL) + c, on the current TAL's mean and spread (1997+ windows:
+ * k 0.8045, c -12.05 at R 0.65 — the D/O ratio APBR RAPM gives). Today's TAL reads 0.83 O + 0.42 D.
+ * `TAL_OD=1` turns it on (off by default).
+ */
+const TAL_OD = (envVar('TAL_OD') ?? '0') === '1';
+const TAL_OD_R = Number(envVar('TAL_OD_R') ?? 0.65);
+const TAL_OD_K = Number(envVar('TAL_OD_K') ?? 0.8045);
+const TAL_OD_C = Number(envVar('TAL_OD_C') ?? -12.05);
+function talentFromOD(span: PlayerSpan): number {
+  return Math.max(0, Math.min(100, Math.round(TAL_OD_K * (computeOffensiveTalentBase(span) + TAL_OD_R * computeDefensiveTalentBase(span)) + TAL_OD_C)));
+}
 export function computeTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = talentCache.get(span.id);
@@ -2073,7 +2086,7 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + defenseCreditLift(span, reduced);
   const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span) - oldSchoolPointPenalty(span, credited);
   const resumed = lifted + roleResumeAdjustment(span, lifted);
-  const result = Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : Math.min(resumed, smallRoleCap(span)))));
+  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : Math.min(resumed, smallRoleCap(span)))));
   talentCache.set(span.id, result);
   return result;
 }
