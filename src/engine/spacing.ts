@@ -1,7 +1,7 @@
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { pullUpLevel, selfCreatorLevel } from './skills';
 import { normalizePlayerName } from '../data/schema';
-import { eraScaledThreePA, spanEndYears } from './era';
+import { eraScaledThreePA, positionAdjustedTsBaseline, spanEndYears } from './era';
 import { players } from '../data/players';
 import { draftPool } from '../data/draftPool';
 import { preZoneShootingSkill, onPreZoneHandList } from './preZoneShooting';
@@ -533,10 +533,18 @@ const PRE_LINE_TWINS = preLineTwinsData as Record<string, number>;
 /** 2026-11-11 (the user: Archibald and Monroe "tak jak bliźniaki"): on the hand list for the
  * midrange read, but before the line their spacing is the twins' estimate. */
 const PRE_LINE_TWIN_OVER_HAND = new Set(['tiny archibald', 'earl monroe']);
+/** 2026-11-25 (the user: Chenier 1973-75 Shooting B+ at TS 48.6%): measurement knob, off. The twins'
+ * estimate scaled by efficiency against the era's position-adjusted TS: x (1 + PRELINE_TS x gap). */
+const PRELINE_TS = Number(envVar('PRELINE_TS') ?? 0);
+function preLineTsScale(span: PlayerSpan): number {
+  if (!PRELINE_TS) return 1;
+  const gap = span.box.tsPct - positionAdjustedTsBaseline(span.primaryPosition, span.fga, span.spanLabel);
+  return Math.max(0.3, Math.min(1.3, 1 + PRELINE_TS * gap));
+}
 function preLinePoints(span: PlayerSpan): number {
   if (Math.max(...spanEndYears(span.spanLabel)) > LAST_SEASON_WITHOUT_THE_LINE) return 0;
   const twin = PRE_LINE_TWINS[span.id];
-  if (twin !== undefined && (!onPreZoneHandList(span) || PRE_LINE_TWIN_OVER_HAND.has(normalizePlayerName(span.playerName)))) return (twin * PRE_LINE_SHARE * MAX_SPACING_POINTS) / 100;
+  if (twin !== undefined && (!onPreZoneHandList(span) || PRE_LINE_TWIN_OVER_HAND.has(normalizePlayerName(span.playerName)))) return (twin * PRE_LINE_SHARE * preLineTsScale(span) * MAX_SPACING_POINTS) / 100;
   const skill = preZoneShootingSkill(span);
   if (!skill) return 0;
   const share = PRE_LINE_FULL.has(normalizePlayerName(span.playerName)) ? 1 : PRE_LINE_SHARE;

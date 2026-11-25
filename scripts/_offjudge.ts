@@ -29,3 +29,4 @@ for (const g of Object.values(Object.groupBy(rows, (r) => String(r.end)))) { con
 const corr = (x: number[], y: number[]) => { const mx = mean(x), my = mean(y); let a = 0, b = 0, c = 0; x.forEach((v, i) => { a += (v - mx) * (y[i] - my); b += (v - mx) ** 2; c += (y[i] - my) ** 2; }); return a / Math.sqrt(b * c); };
 const r = (f: (x: { end: number }) => boolean) => { const g = rows.filter(f); return corr(g.map((x) => x.o), g.map((x) => x.real)).toFixed(4); };
 console.log(`offense r all ${r(() => true)} even ${r((x) => x.end % 2 === 0)} odd ${r((x) => x.end % 2 === 1)} (n ${rows.length})`);
+console.log(`y74-79 ${r((x) => x.end <= 1979)} y80-90 ${r((x) => x.end >= 1980 && x.end <= 1990)}`);
