@@ -27,6 +27,7 @@ import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { displayTalentForSpan, effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { realSpan } from './realAdvancedLookup';
 import { apbrRapmForSpan } from './apbrRapmLookup';
+import { pbpForSpan } from './pbpLookup';
 import { draftPool } from '../data/draftPool';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
@@ -2252,6 +2253,50 @@ function bpmImplied(span: PlayerSpan): number {
   }
   return bpmLine.a + bpmLine.b * effectiveTalent(span);
 }
+/**
+ * 2026-11-25 (`PBP_FEAT` + `PBP_W`, measurement; docs/pbp-plan.md): one pbpstats feature, minutes-weighted
+ * over the rotation and z-scored over the pool's 2000+ spans, as Overall points. Spans without play-by-play
+ * read the pool mean (0).
+ */
+const PBP_FEAT = envVar('PBP_FEAT') ?? '';
+const PBP_W = Number(envVar('PBP_W') ?? 0);
+const pbpFeature = (s: PlayerSpan): number | null => {
+  const b = pbpForSpan(s);
+  if (!b || b.minutes < 500) return null;
+  const per36 = (v: number) => (v / b.minutes) * 36;
+  switch (PBP_FEAT) {
+    case 'atRim': return per36(b.atRimFga);
+    case 'atRimShare': return b.atRimFga / Math.max(1, b.atRimFga + b.shortMidFga + b.longMidFga + b.corner3Fga + b.arc3Fga);
+    case 'liveTo': return -per36(b.liveBallTurnovers);
+    case 'assisted': return (b.assisted2s + b.assisted3s) / 2;
+    case 'selfMade': return 1 - (b.assisted2s + b.assisted3s) / 2;
+    case 'corner3': return per36(b.corner3Fga);
+    case 'threeAcc': return (b.corner3Fgm + b.arc3Fgm) / Math.max(1, b.corner3Fga + b.arc3Fga);
+    case 'longMidAcc': return b.longMidFga >= 50 ? b.longMidFgm / b.longMidFga : null;
+    case 'onOff': return b.onOffRtg - b.onDefRtg;
+    case 'foulsDrawn': return per36(b.foulsDrawn2 + b.foulsDrawn3 + b.nonShootingDrawn);
+    case 'fouls': return -per36(b.fouls);
+    default: return null;
+  }
+};
+let pbpStats: { m: number; s: number } | null = null;
+export function pbpAdjustment(team: Team): number {
+  if (!PBP_W || !PBP_FEAT) return 0;
+  if (!pbpStats) {
+    const v = draftPool.map(pbpFeature).filter((x): x is number => x !== null && Number.isFinite(x));
+    const m = v.reduce((a, b) => a + b, 0) / v.length;
+    pbpStats = { m, s: Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1 };
+  }
+  let sum = 0, min = 0;
+  for (const a of allAssignments(team)) {
+    if (a.minutes <= 0) continue;
+    const v = pbpFeature(a.player);
+    sum += (v === null || !Number.isFinite(v) ? 0 : (v - pbpStats.m) / pbpStats.s) * a.minutes;
+    min += a.minutes;
+  }
+  return min ? PBP_W * sum / min : 0;
+}
+
 export function bpmAdjustment(team: Team): number {
   if (!OVR_BPM) return 0;
   let sum = 0, min = 0;
@@ -2391,7 +2436,8 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-19: the second unit's offense (see BENCH_OFF).
     d('benchOff', () => benchOffenseAdjustment(team)) +
     d('benchRole', () => benchRoleAdjustment(team)) +
-    d('bpm', () => bpmAdjustment(team));
+    d('bpm', () => bpmAdjustment(team)) +
+    pbpAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =
