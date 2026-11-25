@@ -631,8 +631,9 @@ const DEFENSE_TUNING = {
   three: 0.045,
   threeRate: 0.08,
   tov: 0.05,
-  reb: 0.1,
-  foul: 0.65,
+  // 2026-11-25 (`SIM_REB` / `SIM_FOUL`; the score dropped team glass — measured against the game judge).
+  reb: Number(envVar('SIM_REB') ?? 0.1),
+  foul: Number(envVar('SIM_FOUL') ?? 0.65),
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
