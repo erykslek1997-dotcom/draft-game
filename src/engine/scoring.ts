@@ -26,6 +26,7 @@ import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCre
 import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { displayTalentForSpan, effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { realSpan } from './realAdvancedLookup';
+import { apbrRapmForSpan } from './apbrRapmLookup';
 import { draftPool } from '../data/draftPool';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
@@ -2239,11 +2240,13 @@ export function eraAdjustment(team: Team): number {
  * the blend is better — so the engine keeps its own read and BPM corrects it.
  */
 const OVR_BPM = Number(envVar('OVR_BPM') ?? 0);
+// 2026-11-25 (`OVR_BPM_SRC=rapm`): the same correction from APBRmetrics single-season RAPM (1997-2019).
+const BPM_SRC = envVar('OVR_BPM_SRC') ?? 'bpm';
 let bpmLine: { a: number; b: number } | null = null;
 function bpmImplied(span: PlayerSpan): number {
   if (!bpmLine) {
     let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
-    for (const p of draftPool) { const y = realSpan(p)?.bpm; if (typeof y !== 'number' || !Number.isFinite(y)) continue; const x = effectiveTalent(p); n++; sx += x; sy += y; sxx += x * x; sxy += x * y; }
+    for (const p of draftPool) { const y = BPM_SRC === 'rapm' ? apbrRapmForSpan(p)?.net : realSpan(p)?.bpm; if (typeof y !== 'number' || !Number.isFinite(y)) continue; const x = effectiveTalent(p); n++; sx += x; sy += y; sxx += x * x; sxy += x * y; }
     const b = n > 1 ? (n * sxy - sx * sy) / (n * sxx - sx * sx) : 0;
     bpmLine = { a: n ? (sy - b * sx) / n : 0, b };
   }
@@ -2254,7 +2257,7 @@ export function bpmAdjustment(team: Team): number {
   let sum = 0, min = 0;
   for (const a of allAssignments(team)) {
     if (a.minutes <= 0) continue;
-    const y = realSpan(a.player)?.bpm;
+    const y = BPM_SRC === 'rapm' ? apbrRapmForSpan(a.player)?.net : realSpan(a.player)?.bpm;
     const r = typeof y === 'number' && Number.isFinite(y) ? Math.max(-6, Math.min(6, y - bpmImplied(a.player))) : 0;
     sum += r * a.minutes; min += a.minutes;
   }

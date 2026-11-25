@@ -35,3 +35,8 @@
 3. Punkty 1-3 jako część przebudowy TAL (surowe składniki ataku), każdy osobno przez sędziów.
 4. Punkty 4-5 przy mechanice meczu (razem z oczekującym wariantem `SIM_A_OTAL` 3.5 + `SIM_FOUL` 0.3).
 5. Punkty 6-7 na końcu (najwięcej szumu / brak pewności, czy są dane dla graczy).
+
+## RAPM (APBRmetrics, 2026-11-25)
+- Pobrane `scripts/fetchApbrRapm.sh`: 46 plików, 1996-97 … 2018-19, sezon + play-offy (`src/data/raw/apbrRapm`), scalone do `src/data/apbrRapm.json`, lookup `src/engine/apbrRapmLookup.ts` (pokrycie 5025 / 5088 okien 1997-2019).
+- Test (`OVR_BPM_SRC=rapm OVR_BPM=k`, różnica RAPM vs RAPM wynikający z TAL, ważona minutami): SRS 0.877 → 0.880 / 0.882 / 0.885 (k=1/2/4), prognoza 0.671 → 0.671 / 0.671 / 0.669.
+- Wniosek: jak przy BPM — zysk tylko w teście na tych samych sezonach (RAPM zna wynik drużyny), w uczciwej prognozie zero. Silnik już niesie to, co RAPM wie z innych sezonów. nbarapm (2019-2026) nie jest wart wysiłku.
