@@ -106,10 +106,11 @@ function Profile({ prof }: { prof: PosterData['prof'] }) {
         <div key={p.label} className={`pp${p.tone ? ` ${p.tone}` : ''}`}>
           <span>{p.label}</span>
           <b>
-            {/* red and green always with a sign (the rule; playtest 2026-10-22) */}
-            {/* the sign in its own fixed slot, so 71 and 86 line up with or without one */}
-            <em className="pp-s">{p.tone === 'lo' ? '▼' : p.tone === 'hi' ? '▲' : ''}</em>
+            {/* red and green always with a sign (the rule; playtest 2026-10-22). The sign follows the
+                number (2026-11-25, the user: values must line up under their labels), so every value
+                starts at the label's left edge with or without one. */}
             {p.value}
+            {p.tone && <em className="pp-s">{p.tone === 'lo' ? '▼' : '▲'}</em>}
             {p.tone === 'lo' ? <span className="visually-hidden"> weak</span> : p.tone === 'hi' ? <span className="visually-hidden"> best</span> : null}
           </b>
           <i>
@@ -164,7 +165,8 @@ function Poster({ d }: { d: PosterData }) {
                   {span.primaryPosition} · {maskYears(span.playerName, span.spanLabel)}
                 </small>
                 <em>{numLabel(num, d.unit)}</em>
-                {min != null && <span className="po-m">{span.primaryPosition.split('/')[0]} · {Math.round(min)} min</span>}
+                {/* minutes alone: the position is already on the line above (2026-11-25, the user: too much text) */}
+                {min != null && <span className="po-m">{Math.round(min)} min</span>}
               </div>
             ))}
       </div>

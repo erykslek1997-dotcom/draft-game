@@ -493,6 +493,56 @@ Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rot
 | 🏅 | Nagrody za levele + profil | Tytuły na tabelach, ramka logo, karta gracza, odznaki; pasek Home · Profile · Settings w menu. |
 | 📱 | Dolny pasek: reszta | Draw Five, sezon All-Time, turniej Mini. |
 
+## Primeball — plan (2026-11-25)
+
+**Decyzja:** nazwa robocza gry i kanału = **Primeball** (hasło „Every player at his peak.”, podtytuł „All-time fantasy basketball”). Brand book: artefakt „Primeball” na claude.ai (Design System, prywatny — udostępnić przez Share). Pantheon odłożony (`docs/pantheon/`).
+
+**Zrobione 2026-11-25:** brand book (pozycjonowanie, głos, kolory z tokenów gry, typografia, odstępy, ruch, rolki, tabela kontrastu); ciemniejsze `--cgold` / `--cgreen` na karcie (PR #395, WCAG 4,5:1); plakat sezonu — pozycja raz, wartości profilu wyrównane pod etykietami (PR #396).
+
+**Po stronie Eryka (przed zmianą nazwy w grze):**
+- [ ] Domeny: primeball.com / .gg / .app, zapas playprimeball.com.
+- [ ] Konta @primeball (YouTube, TikTok, Instagram, X), zapas @playprimeball.
+- [ ] App Store / Google Play: „Primeball”.
+- [ ] Znaki: USPTO (PRIMEBALL, PRIME BALL; klasy 9 i 41) i TMview (UE/PL); konsultacja prawna — „Prime” a NBA na Amazon Prime Video.
+
+**Kolejność prac (od najprostszego):**
+1. [ ] **Ucięte nazwiska na liście draftu (desktop 1280 px)** — „Shai…”, „Dirk…”: kolumna nazwiska za wąska, obok dużo miejsca na statystyki i puste kolumny. Zrzut przed/po.
+2. [ ] **Czerwień tylko jako alarm** — w menu czerwone kropki-ikony przy Mini Draft i Duel oraz czerwona kreska nad „Today's dailies”; zgodnie z brand bookiem czerwień = „on the clock” / ważne zero. W menu złoto albo krem.
+3. [ ] **Plakat: krótki statline zamiast samego ppg** (jak na liście draftu „31.8/10.9/4.2”), jeśli mieści się na karcie (niski priorytet).
+4. [ ] **Zmiana nazwy w grze na Primeball** — po sprawdzeniu domen: `src/brand.ts`, tytuł strony, plakaty i karty udostępniania (masthead „Draftverse”, znak „D”), teksty „Copy result”.
+5. [ ] **Brand book: komponenty z podglądem** 1:1 z CSS gry — przycisk, karta zawodnika, kratka boardu, chip, wiersz listy.
+6. [ ] **Znak graficzny + zasady logo** (min. rozmiar, pole ochronne, wersja na jasnym, czego nie robić); awatar / ikona / favicon 32–512 px.
+7. [ ] **Mocny kolor marki do contentu** (test: pomarańcz piłki ~#F26B2A vs turkus/limonka; unikać niebieskiego — Amazon Prime) na miniaturkach, znaku i banerze; gra zostaje przy złocie.
+8. [ ] **Szablony contentu**: miniaturka YouTube, plansze rolki (tytuł, karta, wykres, karta końcowa), baner, awatar. Zależą od 6 i 7.
+
+**Przegląd UX/UI (2026-11-25) — podobne gry i ścieżka gracza:**
+
+Podobne gry i co z nich brać:
+- **82-0 Challenge (Team Builder)** — najbliższy konkurent: daily z tymi samymi losowaniami dla wszystkich, jedna próba dziennie, tryb z ukrytymi statystykami („HoopIQ”). Brać: *jedno* wyraźne daily na górze menu, wynik do udostępnienia jednym kliknięciem, opcjonalny tryb „bez liczb” jako wyzwanie.
+- **Immaculate Grid / HoopGrids** (Sports Reference) — ta sama plansza dla wszystkich o stałej godzinie, wynik + „rarity” (jak rzadki był twój wybór). Brać: po daily pokazać „X% graczy wybrało tego samego zawodnika” i licznik do następnego daily.
+- **Poeltl** — każda próba daje kolorową informację zwrotną (zielone/żółte pola). Brać: przy wyborze w drafcie krótka informacja „co zmienił ten pick” (fit, spacing, obrona) zamiast samej liczby.
+- **Sleeper / ESPN draft room** — standard pokoju draftu: kolejka (queue) zamiast tylko gwiazdek, auto-pick z kolejki gdy kończy się czas, przypięty nagłówek tabeli, filtr pozycji obok wyszukiwarki, „best available” na pierwszym ekranie.
+- **Basketball GM** — gęste tabele, ale zawsze z przypiętymi nagłówkami i sortowaniem po kliknięciu kolumny. Brać: sortowanie przez kliknięcie nagłówka kolumny.
+
+Ścieżka gracza (zrzuty 1280 i 390 px, All-Time Draft: menu → loteria → draft → board → drużyna):
+- **Menu:** 4 tryby równej wagi + 4 dailies niżej — nowy gracz nie wie, od czego zacząć. Daily „Draw Five” powinno być głównym CTA (złoty przycisk, jedno na widok); reszta trybów pod spodem. Link „Testing · reroll the day” widoczny dla graczy — ukryć za flagą dev. Na phone brak czasu trwania trybów (desktop ma „5 min / 30 min”).
+- **Loteria:** ok, czytelna; na desktopie siatka „Draft order #1–#16” wychodzi pod fałdę — zmniejszyć kulę albo siatkę w dwóch rzędach po 8 obok.
+- **Draft, desktop:** (a) nagłówek tabeli znika po przewinięciu — przypiąć (sticky); (b) pusta przerwa (~70 px) w środku listy; (c) nazwiska ucięte do 3–4 liter (punkt 1 planu); (d) 5 kolumn z samymi „-” zajmuje miejsce — ukryć puste albo oddać szerokość nazwisku; (e) brak widocznego przycisku „Draft” w wierszu — tylko gwiazdka; (f) przyciski w lewej kolumnie („Show draft board / Phone the desk / Team”) mają równą wagę — główna akcja niejasna.
+- **Draft, phone:** pusta przerwa pod nagłówkiem „PLAYER / CAPS” (jak na desktopie — prawdopodobnie ten sam spacer wirtualnej listy); statline ucięty („29.5/11.4/10.…”) — skrócić do pts/reb/ast bez okresu albo mniejszą czcionką; czerwony pasek „On the clock” — dobrze (czerwień = alarm).
+- **Drużyna, phone:** dock ma 2 zakładki (Draft, Team), a w drafcie 4 (Your pick, Board, Team, Desk) — ujednolicić, żeby dock się nie zmieniał; puste sloty rotacji „Choose a starter” bez przejścia do listy z filtrem pozycji — klik powinien otwierać draft z filtrem PG/SG…; skróty „OFF S DEF B+ SHT A PLY A” bez legendy.
+- **Ogólnie:** brak kolejki/auto-picku (przy timerze online gracz traci pick); brak informacji „co dał ten pick” po wyborze.
+
+Kolejność (dopisane do planu, po punkcie 2, przed zmianą nazwy):
+2a. [ ] **Lista draftu:** sticky nagłówek, usunięta pusta przerwa (desktop + phone), ukryte puste kolumny, przycisk „Draft” w wierszu na desktopie, statline na phone bez ucinania. (Razem z punktem 1.)
+2b. [ ] **Menu:** jedno główne CTA (daily Draw Five w złocie), „reroll the day” tylko w dev, czas trwania trybów także na phone.
+2c. [ ] **Dock na phone** taki sam w drafcie i w drużynie; klik w pusty slot rotacji → lista z filtrem tej pozycji; legenda skrótów OFF/DEF/SHT/PLY (tooltip lub „?”).
+2d. [ ] **Po daily:** procent graczy z tym samym wyborem + licznik do następnego daily (wymaga zapisu wyborów w Supabase).
+2e. [ ] **Kolejka draftu + auto-pick z kolejki** (gwiazdki → kolejka z kolejnością); feedback „co zmienił pick” (fit/spacing/obrona). Większe — po zmianie nazwy.
+2f. [ ] **Pomysły z Draft Dawg** (draftdawg.app; ich all-time draft liczy na ratingach z NBA 2K — inna skala niż nasz rating peaku, więc nasz silnik zostaje przewagą):
+   - tryb „pass & play”: 1–4 osoby na jednym telefonie, bez logowania i online (5 albo 8 rund);
+   - daily z losowym tematem rundy („gracz z lat 80.”, „center”, „bez All-Star”), wybór musi pasować do tematu;
+   - (do rozważenia) daily z celem liczbowym („suma ppg peaków = 120”), bez bieżącej sumy w trakcie.
+
 ## Marka i nazwa — brief roboczy (2026-10-24, do tygodnia 5; Eryk przygotowuje wcześniej)
 
 **Skąd gra:** liga „all-time draft” grana przez znajomych od 2019 roku — start 16 osób, szczyt 32, dziś znów 16. Gra wyrosła z kilku lat prawdziwego draftowania, nie z pomysłu na aplikację. To jest historia założycieli i główny wyróżnik.
