@@ -1,3 +1,4 @@
+import { BRAND, BRAND_SLUG } from '../brand';
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { recordDraft } from '../online/career';
 import { RunSummary } from './RunSummary';
@@ -1010,7 +1011,7 @@ export default function ResultsScreen({ teams, history, onRestart, onRematch: re
     if (!daily || !humanRanked) return;
     // No names: the same draft is everyone's today.
     const lines = [
-      `Draftverse Daily · ${daily.mode === 'bomb' ? 'The Bomb' : 'All-Time'} · ${daily.day}`,
+      `${BRAND} Daily · ${daily.mode === 'bomb' ? 'The Bomb' : 'All-Time'} · ${daily.day}`,
       daily.bomb ? `${daily.cap} caps · 💣 round ${daily.bomb.round}${bomb?.named ? (daily.bomb.gem ? ' · a gem' : ' · a role player') : ''}` : `${daily.cap} caps · ${daily.title}`,
       `Draft: ${ordinal(humanRanked.rank)} / ${ranked.length} · ${humanRanked.breakdown.overall}`,
     ];
@@ -1535,7 +1536,7 @@ function FullExportButton({ build, seed, seasonReady }: { build: () => string; s
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `draftverse-${seed}.txt`;
+    link.download = `${BRAND_SLUG}-${seed}.txt`;
     link.click();
     URL.revokeObjectURL(url);
     try {
@@ -1547,7 +1548,7 @@ function FullExportButton({ build, seed, seasonReady }: { build: () => string; s
   }
   return (
     <button type="button" className="btn line team-export-btn" onClick={handle} disabled={!seasonReady} title="Every pick, every team's scores and report, the season and the playoffs, as one text file">
-      {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved draftverse-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
+      {!seasonReady ? 'Export the draft (season still simulating…)' : state === 'done' ? `✓ Saved ${BRAND_SLUG}-${seed}.txt (also copied)` : 'Export the whole draft (testing)'}
     </button>
   );
 }

@@ -1,4 +1,4 @@
-# Draftverse — instrukcja obsługi kodu
+# Primeball — instrukcja obsługi kodu
 
 Ta instrukcja wyjaśnia, co jest czym w kodzie gry i jak to działa: od kliknięcia w menu, przez
 draft i ocenę drużyny, po ekran wyników. Jest pisana dla człowieka, nie dla kompilatora — szczegóły
@@ -20,7 +20,7 @@ implementacji są w kodzie, tutaj jest obraz całości i powody decyzji.
 
 ## Czym jest gra w jednym akapicie
 
-Draftverse to przeglądarkowa gra o budowaniu drużyny NBA z graczy wszystkich epok. Gracz wybiera
+Primeball (dawniej Draftverse) to przeglądarkowa gra o budowaniu drużyny NBA z graczy wszystkich epok. Gracz wybiera
 zawodników — każdy w konkretnym okresie kariery (np. „Kobe Bryant 2007-09”) — i musi zmieścić się
 w limicie **capów**, czyli sumie rzutów na mecz jego zawodników. Potem silnik ocenia drużynę tak,
 jak ocenia się prawdziwy skład: talent, atak, obronę, rozstawienie na parkiecie, dopasowanie
