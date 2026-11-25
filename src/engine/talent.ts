@@ -2197,6 +2197,10 @@ const DEFENSE_CREDIT_WEIGHT: Record<'L' | 'M' | 'H', Record<'G' | 'W' | 'B', num
 const DEFENSE_CREDIT_FADE_FROM = 70;
 const DEFENSE_CREDIT_FADE_TO = 90;
 const DEFENSE_CREDIT_MAX_LIFT = 12;
+/** 2026-11-25 (the user: after the offense weight went up, are defenders' TAL too high? scripts/_defover.ts:
+ * windows with D-TAL 30+ over O-TAL sit +5.3 TAL over their APBR RAPM, balanced ones -1.4): measurement
+ * knob, the positive defense credit scaled by `DEF_CREDIT_SCALE` (1 = as before). */
+const DEF_CREDIT_SCALE = Number(envVar('DEF_CREDIT_SCALE') ?? 1);
 const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
 const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
 /** First season (end year) with steals and blocks in the box score. */
@@ -2223,7 +2227,7 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
     if (spanEndYears(span.spanLabel)[0] < DEFENSE_CREDIT_STOCKS_FROM) return 0;
     return (lift / 2) * clamp01((tal - 40) / 10);
   }
-  lift = Math.min(lift, DEFENSE_CREDIT_MAX_LIFT);
+  lift = Math.min(lift * DEF_CREDIT_SCALE, DEFENSE_CREDIT_MAX_LIFT * DEF_CREDIT_SCALE);
   if (otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
   return lift;
 }
