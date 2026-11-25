@@ -298,6 +298,15 @@ Bowenem, eksport 1425223907). Sprawdzone i odrzucone: słaby spacing → więcej
 - LeBron 2008-10 w Cleveland czytany jako szczyt kariery, ponad Miami — dziura architektoniczna
   (sygnał czysto defensywny); nazwany wyjątek odrzucony.
 - Systemowe niedoszacowanie PG/C sprzed 1997 (Russell, Cousy…) — realne, wymaga osobnej sesji.
+- **Curry jako strzelec bez piłki obok gwiazd** (2026-11-25, `scripts/_curry.ts`): luki w modelu usage nie ma.
+  Piątka Curry / Jordan / LeBron / Garnett / Robinson + ławka Murray / Bridges / Covington / Rollins: Curry 85.2,
+  Stockton w jego miejsce 85.8, Westbrook 79.5, Ray Allen 2000-02 82.8, Klay 83.0; Curry sam w słabej obsadzie 65.8
+  vs Westbrook 63.7. Limit piłki i drugi gracz z piłką kosztują Curry'ego tyle co Stocktona (−0.8); strzelec
+  z miejsca już ma ulgę (`OFF_BALL_SHOOT` 0.5, `REV_OFFBALL_SPOT`, `FIT_OFFBALL_GIVE`). Różnicę robią:
+  5 pkt TAL jednego gracza = 1 pkt średniej talentu piątki, spłaszczenie ataku na górze skali (surowy +2.1 →
+  ocena +1), lepsza obrona Stocktona (+2) i korekta za epokę (−0.35). Próby: `TAL_CAP` 110 (talent piątki ucięty
+  na 100 — przy tej piątce 100.8 vs 99.8) i `OFF_BALL_SHOOT=1` — sędziowie bez zmian (SRS 0.875, prognoza
+  0.652 / 0.651, piątki 0.579, atak 0.7913 / 0.7910). Obie wyłączone; bez zmiany silnika regresja niepotrzebna.
 
 ### Polityka: ręczna kalibracja „greatest peaks” (ustalone 2026-09-06)
 
