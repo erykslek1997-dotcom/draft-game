@@ -85,3 +85,18 @@ Wnioski:
 | BPM z tego sezonu, prawdziwe minuty (ściąga) | 0.974 |
 
 Wniosek: zwykły BPM z tych samych okien bije silnik o ~0.05. Największa dźwignia: więcej BPM / wpływu w TAL i Overall (sprawdzić, które części silnika odejmują trafność). Uwaga: przed 1974 BPM nie ma — silnik musi działać też tam.
+
+## Wyniki sesji 2026-11-25
+
+### 1. Ocena vs symulacja
+- Sezon zasadniczy: mecz w grze dokładnie trzyma się prognozy silnika (`scripts/_nudge.ts`: gra vs cel r 1.000, dociąganie nigdy nie dochodzi do limitu). Sędzia „sim R² 0.66” mierzy samą mechanikę, którą gra i tak dociąga do prognozy.
+- Szanse na tytuł liczy prognoza play-off: 0.85 × różnica Overall + 0.15 × net rating + dopasowanie w obronie + **zderzenie stylów (w play-offach z pełną wagą)**.
+- Na 568 prawdziwych drużynach (`scripts/_mu.ts`): prognoza play-off vs SRS 0.8634, bez zderzenia stylów 0.8680 (= sama ocena). Na 316 prawdziwych drużynach z play-offów (1997+) wygrane serie: z nim 0.5015, bez 0.4997 — bez znaczenia.
+- W ligach AI (`scripts/_title.ts`, top-8): drużyna z niższą oceną faworytem serii w 16% par, bez zderzenia stylów 7%, bez niego i bez net rating 0%.
+- Propozycja: `MU_STYLE=0` (połowa rozjazdów ocena–szanse znika, dane bez straty). Decyzja użytkownika.
+
+### 3. BPM
+- Przewaga BPM (0.907 vs 0.855) to w dużej mierze konstrukcja BPM: jego poprawka drużynowa wiąże sumę BPM z wynikiem drużyny w tym samym sezonie, a okna lat zawierają oceniany sezon.
+- Uczciwa prognoza (`PRIOR=1`, okna sprzed sezonu, 114 drużyn): silnik 0.623, BPM 0.629 — remis.
+- Poprawka BPM w Overall (`OVR_BPM`, różnica BPM vs BPM wynikający z TAL, ważona minutami): prognoza 0.623 → 0.618 (k=4) / 0.606 (k=8); w teście na tych samych sezonach 0.855 → 0.877 — zysk pozorny. Zostaje wyłączona.
+- Wniosek: silnik w uczciwym teście jest na poziomie BPM; nie ma tu dźwigni.

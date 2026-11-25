@@ -33,15 +33,17 @@ for (const s of draftPool) {
   const k = normalizePlayerName(s.playerName);
   byName.set(k, [...(byName.get(k) ?? []), s]);
 }
+// PRIOR=1: a forecast — the window ending the season before (nothing from the team's own season).
+const PRIOR = process.env.PRIOR === '1';
 const spanFor = (name: string, endYear: number) =>
   (byName.get(normalizePlayerName(name)) ?? [])
-    .filter((s) => spanEndYears(s.spanLabel).includes(endYear))
+    .filter((s) => PRIOR ? Math.max(...spanEndYears(s.spanLabel)) < endYear && Math.max(...spanEndYears(s.spanLabel)) >= endYear - 3 : spanEndYears(s.spanLabel).includes(endYear))
     .sort((a, b) => {
       const mid = (s: PlayerSpan) => {
         const ys = spanEndYears(s.spanLabel);
         return Math.abs(ys[Math.floor(ys.length / 2)] - endYear);
       };
-      return mid(a) - mid(b);
+      return PRIOR ? Math.max(...spanEndYears(b.spanLabel)) - Math.max(...spanEndYears(a.spanLabel)) : mid(a) - mid(b);
     })[0];
 const roster = readFileSync(resolve(import.meta.dirname, '../src/data/raw/playerSeasonTeams.csv'), 'utf8').trim().split(/\r?\n/).slice(1).map((l) => {
   const m = l.match(/^(\d+),(.*),(\d{4}),(.*),(\d+),(\d+)$/);
@@ -93,3 +95,13 @@ console.log(`window BPM, real minutes   ${r(rows.map((x) => teamVal(x, (s) => wi
 console.log(`window BPM w/o that season, equal  ${r(rows.map((x) => teamVal(x, (s) => winBpm(s, x.end), false)))}`);
 console.log(`window BPM w/o that season, minutes ${r(rows.map((x) => teamVal(x, (s) => winBpm(s, x.end), true)))}`);
 console.log(`same-season BPM, real minutes (cheat) ${r(rows.map((x) => teamVal(x, ownBpm(x), true)))}`);
+// How far a blend of the engine and window BPM gets (z-scores, equal top-8 weights).
+const z = (v: number[]) => { const m = mean(v), s = Math.sqrt(mean(v.map((x) => (x - m) ** 2))); return v.map((x) => (x - m) / s); };
+const zo = z(rows.map((x) => x.ovr)), zb = z(rows.map((x) => teamVal(x, (s) => winBpm(s), false))), zt = z(rows.map((x) => x.tal));
+for (const w of [0.25, 0.5, 1, 2]) console.log(`Overall + ${w} x BPM  ${r(zo.map((v, i) => v + w * zb[i]))}   Talent + ${w} x BPM ${r(zt.map((v, i) => v + w * zb[i]))}`);
+// Which players' TAL disagrees most with their window BPM (by position-free regression)?
+const all = rows.flatMap((x) => x.spans);
+const uniq = [...new Map(all.map((s) => [s.id, s])).values()].filter((s) => winBpm(s) !== undefined);
+const tl = uniq.map((s) => computeTalent(s)), bp = uniq.map((s) => winBpm(s)!);
+console.log(`players ${uniq.length}: r(TAL, window BPM) ${corr(tl, bp).toFixed(3)}`);
+for (const w of [0.5, 1, 2]) console.log(`Overall + ${w} x Talent  ${r(zo.map((v, i) => v + w * zt[i]))}`);
