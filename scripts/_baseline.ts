@@ -76,6 +76,8 @@ const corr = (xs: number[], ys: number[]) => {
   xs.forEach((x, i) => { a += (x - mx) * (ys[i] - my); b += (x - mx) ** 2; c += (ys[i] - my) ** 2; });
   return a / Math.sqrt(b * c);
 };
+// YEAR_FROM: only team-seasons ending in or after that year (the era test).
+if (process.env.YEAR_FROM) rows.splice(0, rows.length, ...rows.filter((x) => x.end >= Number(process.env.YEAR_FROM)));
 const r = (xs: number[]) => corr(xs, rows.map((x) => x.srs)).toFixed(3);
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
 const winBpm = (s: PlayerSpan, skip?: number) => {

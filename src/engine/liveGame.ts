@@ -631,8 +631,9 @@ const DEFENSE_TUNING = {
   three: 0.045,
   threeRate: 0.08,
   tov: 0.05,
-  reb: 0.1,
-  foul: 0.65,
+  // 2026-11-25 (`SIM_REB` / `SIM_FOUL`; the score dropped team glass — measured against the game judge).
+  reb: Number(envVar('SIM_REB') ?? 0.1),
+  foul: Number(envVar('SIM_FOUL') ?? 0.3),
   refRim: 1.26,
   /** A player's real percentages already hold his breaks and putbacks; the half court gives back
    * what the game now adds there, so his season lands on his own numbers. */
@@ -1248,7 +1249,7 @@ const ANCHOR_TUNING = {
   // engine's Offense showed none of it): x2.5. Real SRS 0.827 → 0.844, real ORtg 0.717 → 0.773, game vs
   // engine R² 0.68 kept; x3.5 SRS 0.847 but R² 0.66, x5 R² 0.60. Overload / usage cost / second handler /
   // the scorer terms moved the miss by 0.01-0.09 at most.
-  otal: 0.0016 * Number(envVar('SIM_A_OTAL') ?? 2.5),
+  otal: 0.0016 * Number(envVar('SIM_A_OTAL') ?? 3.5),
   /** FG points per point of two-point % above his position's drafted average (negative: the box
    * score's efficiency counts for less). */
   two: -0.0025 * Number(envVar('SIM_A_TWO') ?? 1),

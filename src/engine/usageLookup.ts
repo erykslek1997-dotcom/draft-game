@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
@@ -46,6 +47,7 @@ for (const row of rows) {
  * proxy signal for those.
  */
 export function usageForSpan(span: PlayerSpan): UsageSpanValue | null {
+  if (ERA_MASK) return null;
   const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
   if (!yearMap) return null;
   const matched = spanEndYears(span.spanLabel)

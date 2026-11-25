@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
@@ -46,6 +47,7 @@ interface YearEntry {
 
 /** name -> season end year -> {rate, makes} for one field. */
 export function buildSelfCreationYearMap(field: SelfCreationField): Map<string, Map<number, YearEntry>> {
+  if (ERA_MASK) return new Map();
   const minMakes = field === 'unassisted3Pt' ? MIN_THREES_MADE_FOR_RATE : MIN_FIELD_GOALS_MADE_FOR_RATE;
   const byNameYear = new Map<string, Map<number, YearEntry>>();
   for (const r of rows) {

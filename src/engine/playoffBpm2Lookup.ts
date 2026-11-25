@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import { normalizePlayerName } from '../data/schema';
 import { resolveSourceName } from '../data/sourceNameResolver';
@@ -60,6 +61,7 @@ function statusWeight(status: string): number {
  * both the aggregate and the disclosed reliability than observed rows.
  */
 export function playoffBpm2ForSpan(span: PlayerSpan): PlayoffBpm2SpanValue | null {
+  if (ERA_MASK) return null;
   const yearMap = byNameYear.get(normalizePlayerName(span.playerName));
   if (!yearMap) return null;
   const matched = spanEndYears(span.spanLabel)

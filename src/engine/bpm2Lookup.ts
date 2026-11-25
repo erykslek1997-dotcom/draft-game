@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import { resolveSourceName } from '../data/sourceNameResolver';
 // .pool.json is bpm2.json trimmed to only players who ever appear in draftPool.json, same
 // pattern as darkoLookup.ts/raptorLookup.ts/matchupDefenseLookup.ts's own trims.
@@ -36,6 +37,7 @@ interface Bpm2Row {
 const bpm2 = bpm2Data as Bpm2Row[];
 
 export function buildBpm2YearMap(field: 'dbpm' | 'bpm' = 'dbpm'): Map<string, Map<number, number>> {
+  if (ERA_MASK) return new Map();
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of bpm2) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;

@@ -1,3 +1,4 @@
+import { ERA_MASK } from './eraMask';
 import { resolveSourceName } from '../data/sourceNameResolver';
 // .pool.json is darko.json trimmed to only players who ever appear in draftPool.json
 // (scripts/trimReferenceDataToPool.ts, 2026-07-30) — this is a pure per-span lookup at runtime
@@ -22,6 +23,7 @@ interface DarkoRow {
 const darko = darkoData as DarkoRow[];
 
 export function buildDarkoYearMap(field: 'dpm' | 'ddpm'): Map<string, Map<number, number>> {
+  if (ERA_MASK) return new Map();
   const byNameYear = new Map<string, Map<number, number>>();
   for (const r of darko) {
     const endYear = parseInt(r.season.slice(0, 4), 10) + 1;
