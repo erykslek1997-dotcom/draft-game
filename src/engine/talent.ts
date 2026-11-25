@@ -1909,7 +1909,7 @@ export function rawUncappedTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const baseScaled = talentScaled(span, 1.0);
   const baseTal = Math.max(0, Math.min(100, Math.round(softCapTalent(baseScaled))));
-  const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
+  const scaled = talentScaled(span, TD('usage') ? 1.0 : usageOffenseScaleTapered(span, baseTal));
   // Same post-pipeline bridge `computeTalent` applies — kept here so the GOAT-tier "100+" gate
   // reads a consistent raw number. GOAT-tier spans sit at rank-gap ~0 anyway, so this is ~a no-op
   // in practice, included for consistency rather than effect.
@@ -2050,6 +2050,11 @@ function namedTalPenalty(span: PlayerSpan): number {
  * `TAL_OD=1` turns it on (off by default).
  */
 const TAL_OD = (envVar('TAL_OD') ?? '0') === '1';
+/** 2026-11-25 overnight (the user: "wszystkie bramki jakie mamy"): measurement knob, a comma list of
+ * TAL pipeline steps to switch off — usage, bridge, ceiling, named, reduced, credit, lowusage,
+ * oldschool, resume, smallcap. */
+const TAL_DROP = new Set((envVar('TAL_DROP') ?? '').split(',').filter(Boolean));
+const TD = (k: string) => TAL_DROP.has(k);
 const TAL_OD_R = Number(envVar('TAL_OD_R') ?? 0.65);
 const TAL_OD_K = Number(envVar('TAL_OD_K') ?? 0.8045);
 const TAL_OD_C = Number(envVar('TAL_OD_C') ?? -12.05);
@@ -2074,19 +2079,19 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   // `rawUncappedTalent`) — the bridge is a post-pipeline defensive rank correction, deliberately
   // outside the two-pass gate it would otherwise be able to move (see `dtalBridgeCorrection`).
   const scaled = talentScaled(span, usageOffenseScaleTapered(span, baseTal));
-  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + dtalBridgeCorrection(span)))));
-  const capped = Math.max(0, Math.round(ENGINE_BLOCKS_OFF ? finalTal : applyGradeCeiling(finalTal, ceiling)) - namedTalPenalty(span));
+  const finalTal = Math.max(0, Math.min(100, Math.round(softCapTalent(scaled + (TD('bridge') ? 0 : dtalBridgeCorrection(span))))));
+  const capped = Math.max(0, Math.round(ENGINE_BLOCKS_OFF || TD('ceiling') ? finalTal : applyGradeCeiling(finalTal, ceiling)) - (TD('named') ? 0 : namedTalPenalty(span)));
   // A smaller role next to a star with efficiency held reads toward the player's own earlier
   // level (`reducedRole.ts` — Bosh in Miami). The reference window never qualifies itself, so this
   // recursion is one level deep.
   // The reduced-role reference reads the other window BEFORE its defense credit, so the credit
   // below is applied once, not compounded through the reference.
-  const reduced = Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
+  const reduced = TD('reduced') ? capped : Math.round(liftForReducedRole(span, capped, talentBeforeDefenseCredit));
   preCreditCache.set(span.id, reduced);
-  const credited = reduced + defenseCreditLift(span, reduced);
-  const lifted = credited + lowUsageLift(span, credited) + namedTalLift(span) - oldSchoolPointPenalty(span, credited);
-  const resumed = lifted + roleResumeAdjustment(span, lifted);
-  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : Math.min(resumed, smallRoleCap(span)))));
+  const credited = reduced + (TD('credit') ? 0 : defenseCreditLift(span, reduced));
+  const lifted = credited + (TD('lowusage') ? 0 : lowUsageLift(span, credited)) + (TD('named') ? 0 : namedTalLift(span)) - (TD('oldschool') ? 0 : oldSchoolPointPenalty(span, credited));
+  const resumed = lifted + (TD('resume') ? 0 : roleResumeAdjustment(span, lifted));
+  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : (TD('smallcap') ? resumed : Math.min(resumed, smallRoleCap(span))))));
   talentCache.set(span.id, result);
   return result;
 }
