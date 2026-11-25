@@ -128,8 +128,10 @@ export function pairwiseFitNotes(
 
   // 1. Two post-up hubs sharing the frontcourt — both operate from the block, the paint clogs
   //    and neither one spaces the floor for the other.
+  // 2026-11-25 (NOTES_FIX, the user: Sheed 2000-02 shot threes): a post scorer who spaces (team spacing
+  // 30+) does not clog the block.
   const postHubs = starters.filter(
-    (p, i) => p.offensiveArchetype === 'Post Scorer' && (slots[i] === 'PF' || slots[i] === 'C'),
+    (p, i) => p.offensiveArchetype === 'Post Scorer' && (slots[i] === 'PF' || slots[i] === 'C') && (!NOTES_FIX || spacing[i] < 30),
   );
   if (postHubs.length >= 2) {
     notes.push(
@@ -166,7 +168,9 @@ export function pairwiseFitNotes(
       // a high-post passing big (Gasol, Sabonis, Jokić-type) is a real pick-and-roll partner even
       // without a jumper — the tension is with a pure block-scorer who neither pops nor reads.
       (playmakingScoreForPlayer(p) ?? 0) < POST_CENTER_PASSING_EXEMPTION &&
-      teamSpacingValue(p) < POST_CENTER_FACE_UP_FLOOR,
+      teamSpacingValue(p) < POST_CENTER_FACE_UP_FLOOR &&
+      // 2026-11-25 (NOTES_FIX, the user: Howard 2009 was a roll man): an elite roll man is the right partner.
+      (!NOTES_FIX || (skill(p, 'roll') ?? 0) < 85),
   );
   if (pgLead && postCenter) {
     notes.push(
@@ -188,7 +192,8 @@ export function pairwiseFitNotes(
   // 5. The starting five wants to run several different offenses — off-ball motion, a post-up,
   //    a pick-and-roll and an iso creator all demanding primacy at once ("gra do kilku bramek").
   const systems = offensiveSystemBuckets(starters, demandByPlayer);
-  if (systems.length >= 3) {
+  // 2026-11-25 (NOTES_FIX): the system-overload penalty is off (`FIT_SYSOVER=0`), so its note goes too.
+  if (systems.length >= 3 && !(NOTES_FIX && Number(envVar('FIT_SYSOVER') ?? 0) === 0)) {
     notes.push(
       `The starting five commits to ${systems.length} different offensive systems at once (${systems.map((s) => STYLE_LABEL[s]).join(', ')}) — no single one gets enough reps to become the identity.`,
     );
@@ -302,6 +307,7 @@ export function offensiveSystemOverloadPenalty(starters: PlayerSpan[], demandByP
  * archetype, part for any other big) or pop gravity (his real spacing value), whichever is larger.
  */
 const SURROUNDING_SPACING_WEIGHT = 0.4;
+const NOTES_FIX = envVar('NOTES_FIX') !== '0';
 const ROLL_SCREENER_ARCHETYPES: readonly OffensiveArchetype[] = ['Roll & Cut Big', 'Versatile Big', 'Post Scorer'];
 const OFF_ARCHETYPE_ROLL_SHARE = 0.6;
 const UNTAGGED_POP_SHARE = 0.85;

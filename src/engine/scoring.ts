@@ -25,6 +25,8 @@ import { positionCompetence, PARTIAL_POSITION_GRACE_MINUTES } from './positionCo
 import { buildSelfCreationYearMap, measuredSelfCreationForSpan } from './selfCreationLookup';
 import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { displayTalentForSpan, effectiveTalent, overallTierForSpan, tierRank } from './grades';
+import { realSpan } from './realAdvancedLookup';
+import { draftPool } from '../data/draftPool';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
 import {
@@ -273,10 +275,15 @@ export function talentOnDefenseScale(talent: number): number {
   return Math.max(0, Math.min(100, TALENT_DISPLAY_AT_MEAN + (talent - TALENT_RAW_MEAN) * TALENT_DISPLAY_PER_POINT));
 }
 
+const TAL_P = Number(envVar('TAL_P') ?? 1);
 export function talentScore(team: Team): number {
   const starterTals = primaryStarters(team).map((entry) => effectiveTalent(entry.player) * durabilityValueFactor(entry.player));
   if (starterTals.length === 0) return 0;
-  const average = starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length;
+  // 2026-11-25 (`TAL_P`, 1 = the plain average; Wednesday item 2: beside Curry, Iverson 80 and Durant 97
+  // as the second star read 1.7 Overall apart): a power mean, so the stars weigh more than the fifth starter.
+  const average = TAL_P === 1
+    ? starterTals.reduce((sum, t) => sum + t, 0) / starterTals.length
+    : Math.pow(starterTals.reduce((sum, t) => sum + Math.pow(Math.max(0, t), TAL_P), 0) / starterTals.length, 1 / TAL_P);
   const weakestStarter = Math.min(...starterTals);
   const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
   return Math.round(Math.max(0, Math.min(100, average - floorPenalty)));
@@ -2193,6 +2200,36 @@ export function eraAdjustment(team: Team): number {
   return ERA_PER_YEAR * (mean - ERA_PIVOT);
 }
 
+/**
+ * 2026-11-25 (`OVR_BPM`, 0 = off; Wednesday calibration item 3): what the players' real BPM over their
+ * windows says beyond their TAL. Each rotation player's window BPM against the BPM his TAL implies
+ * (one line fitted over the pool), weighted by minutes; no BPM (before 1973-74) counts as agreeing.
+ * On a forecast (windows before the season, scripts/_baseline.ts PRIOR=1) the engine and BPM tie and
+ * the blend is better — so the engine keeps its own read and BPM corrects it.
+ */
+const OVR_BPM = Number(envVar('OVR_BPM') ?? 0);
+let bpmLine: { a: number; b: number } | null = null;
+function bpmImplied(span: PlayerSpan): number {
+  if (!bpmLine) {
+    let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (const p of draftPool) { const y = realSpan(p)?.bpm; if (typeof y !== 'number' || !Number.isFinite(y)) continue; const x = effectiveTalent(p); n++; sx += x; sy += y; sxx += x * x; sxy += x * y; }
+    const b = n > 1 ? (n * sxy - sx * sy) / (n * sxx - sx * sx) : 0;
+    bpmLine = { a: n ? (sy - b * sx) / n : 0, b };
+  }
+  return bpmLine.a + bpmLine.b * effectiveTalent(span);
+}
+export function bpmAdjustment(team: Team): number {
+  if (!OVR_BPM) return 0;
+  let sum = 0, min = 0;
+  for (const a of allAssignments(team)) {
+    if (a.minutes <= 0) continue;
+    const y = realSpan(a.player)?.bpm;
+    const r = typeof y === 'number' && Number.isFinite(y) ? Math.max(-6, Math.min(6, y - bpmImplied(a.player))) : 0;
+    sum += r * a.minutes; min += a.minutes;
+  }
+  return min ? OVR_BPM * sum / min : 0;
+}
+
 export function benchFloorAdjustment(team: Team): number {
   const weakest = weakestReserveTalent(team);
   return weakest === null ? 0 : BENCH_FLOOR.per * (weakest - BENCH_FLOOR.ref);
@@ -2318,7 +2355,8 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     reviewAdjustment(primaryStarters(team).map((a) => a.player)) +
     // 2026-11-19: the second unit's offense (see BENCH_OFF).
     benchOffenseAdjustment(team) +
-    benchRoleAdjustment(team);
+    benchRoleAdjustment(team) +
+    bpmAdjustment(team);
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

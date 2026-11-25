@@ -23,6 +23,7 @@ import {
 } from '../engine/draft';
 import { aiWorkerClient } from './aiWorkerClient';
 import { autoAssignRotation } from '../engine/rotation';
+import { playerAutoRotation } from '../engine/rotationSearch';
 import { spanOptionsFor } from '../engine/spanOptimizer';
 import { aiRotation, finalizeAiRoster } from '../engine/finalizeAiRoster';
 import { setAiDraftDebug } from '../engine/aiDrafter';
@@ -479,7 +480,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
       if (draftState.complete) {
         const human = draftState.teams.find((t) => t.isHuman);
         setAutoFinishing(false);
-        if (human) handleSubmitTeam(human.roster, autoAssignRotation(human.roster));
+        if (human) handleSubmitTeam(human.roster, playerAutoRotation(human.roster));
         return;
       }
       const next = autoFinishDraft(draftState, AUTO_FINISH_CHUNK);
@@ -620,7 +621,7 @@ export default function GameShell({ mode, commissionerMode, humanTeamName, onExi
     const timeUp = rotationLeft === 0;
     if (!mySubmitted && !timeUp) return;
     if (waitingFor.length > 0 && !timeUp) return;
-    const mine = mySubmitted ?? { roster: human.roster, rotation: autoAssignRotation(human.roster) };
+    const mine = mySubmitted ?? { roster: human.roster, rotation: playerAutoRotation(human.roster) };
     if (!mySubmitted) mp.sendFinal({ roster: mine.roster.map((p) => p.id), rotation: mine.rotation });
     const teams = draftState.teams.map((t, i) => {
       if (t.isHuman) return { ...t, roster: mine.roster, rotation: mine.rotation };
