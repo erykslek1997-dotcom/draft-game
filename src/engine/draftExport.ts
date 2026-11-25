@@ -1,3 +1,4 @@
+import { BRAND } from '../brand';
 import type { DraftHistoryEntry, Team } from './types';
 import type { BoxLineStats } from './liveGame';
 import type { LivePlayoffResult, LiveSeasonResult, SeasonPlayerLine } from './liveSeason';
@@ -40,7 +41,7 @@ export function exportFullDraft(input: {
   const out: string[] = [];
   const h = (title: string) => out.push('', `==== ${title} ${'='.repeat(Math.max(4, 70 - title.length))}`, '');
 
-  out.push(`DRAFTVERSE · FULL DRAFT EXPORT · seed ${seed} · ${teams.length} teams · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`);
+  out.push(`${BRAND.toUpperCase()} · FULL DRAFT EXPORT · seed ${seed} · ${teams.length} teams · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`);
   out.push(`You: ${teams.find((t) => t.isHuman)?.name ?? '—'}`);
 
   // 1. The draft, pick by pick.

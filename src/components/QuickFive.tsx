@@ -1,3 +1,4 @@
+import { BRAND } from '../brand';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { newDraftId, recordDraft } from '../online/career';
 import { RunSummary } from './RunSummary';
@@ -869,7 +870,7 @@ function QuickResults({
   const [dailyCopied, setDailyCopied] = useState(false);
   async function copyDailyResult() {
     if (!daily) return;
-    const lines = [`Draftverse Daily · Mini · ${daily.day}`, `${daily.cap} caps · ${daily.title}`];
+    const lines = [`${BRAND} Daily · Mini · ${daily.day}`, `${daily.cap} caps · ${daily.title}`];
     if (tourneyResult) {
       const r = tourneyResult;
       lines.push(`Draft ${ordinal(humanRank)} / ${TEAM_COUNT} · ${human.score.composite}`, r.out === null ? `🏆 Champions · #${r.seed} seed` : `🏀 ${MINI_ROUNDS[r.out]} · #${r.seed} seed`, r.games.map((g) => (g.won ? '✅' : '❌')).join(''));
