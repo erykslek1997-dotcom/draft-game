@@ -603,9 +603,9 @@ const OFF_GUARD_W = Number(envVar('OFF_GUARD_W') ?? 0);
  * the scale — the best starter's selfCreation skill, (v - `CREATOR_MID`) / 10, clamped to ±1. 1997+
  * skills only (no skill = 0). Measurement knob, 0 = off.
  */
-const CREATOR_W = Number(envVar('CREATOR_W') ?? 0);
+const CREATOR_W = Number(envVar('CREATOR_W') ?? 1);
 const CREATOR_MID = Number(envVar('CREATOR_MID') ?? 90);
-function creatorAdjustment(team: Team): number {
+export function creatorAdjustment(team: Team): number {
   if (!CREATOR_W) return 0;
   const v = primaryStarters(team).map((e) => skill(e.player, 'selfCreation')).filter((x): x is number => x !== null);
   if (!v.length) return 0;
