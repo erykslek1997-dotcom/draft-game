@@ -118,7 +118,7 @@ for (const w of [0.5, 1, 2]) console.log(`Overall + ${w} x Talent  ${r(zo.map((v
 if (process.env.STARTEST) {
   const { effectiveTalent } = await import('../src/engine/grades');
   const ys = rows.map((x) => x.srs);
-  const feats = rows.map((x) => { const t = x.spans.slice(0, 5).map((s) => effectiveTalent(s)).sort((a, b) => b - a); return { mean: mean(t), top: t[0], second: t[1], ovr: x.ovr }; });
+  const feats = rows.map((x) => { const t = x.spans.slice(0, 5).map((s) => effectiveTalent(s)).sort((a, b) => b - a); return { mean: mean(t), top: t[0], second: t[1], min: t[t.length - 1], ovr: x.ovr }; });
   const ols = (cols: number[][]) => { // least squares with intercept, returns coefficients and r
     const X = cols[0].map((_, i) => [1, ...cols.map((c) => c[i])]); const k = X[0].length;
     const A = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => X.reduce((s, r) => s + r[a] * r[b], 0)));
@@ -129,5 +129,7 @@ if (process.env.STARTEST) {
   console.log('SRS ~ mean TAL            ', JSON.stringify(ols([feats.map((f) => f.mean)])));
   console.log('SRS ~ mean + top TAL      ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top)])));
   console.log('SRS ~ mean + top + second ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.second)])));
+  console.log('SRS ~ mean + weakest      ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.min)])));
+  console.log('SRS ~ mean + top + weakest', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.min)])));
   console.log('SRS ~ Overall + top TAL   ', JSON.stringify(ols([feats.map((f) => f.ovr), feats.map((f) => f.top)])));
 }

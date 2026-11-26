@@ -49,3 +49,8 @@ liniowo w piątce gwiazd, czego prawdziwe drużyny nie sprawdzają. Następny kr
   Współczynniki (Overall + najlepszy): najlepszy gracz +0.070 SRS na punkt TAL ponad to, co daje przez Overall.
 - LeBron w tej samej piątce: TAL 88 -> 105 zmienia Overall o ~0.2-1 pkt (1/5 średniej), a fit/O/D różnią się o ±3-5.
 Wniosek: najlepszy gracz powinien ważyć więcej (dowód poza próbą); dziś jego TAL ginie w średniej.
+
+## Weak link (2026-11-26, STARTEST): obie końcówki ważą więcej niż środek
+Prognoza (114): średnia+najlepszy+najsłabszy r 0.720 (średnia 0.672); współczynniki: średnia 0.090,
+najlepszy 0.107, najsłabszy 0.109 SRS/pkt TAL. SRS (600): średnia+najsłabszy 0.873, najsłabszy 0.062.
+Silnik dziś: kara tylko gdy najsłabszy starter < 70 TAL (0.6 pkt/pkt), plus huntability w obronie i słaby atakujący starter.
