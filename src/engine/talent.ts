@@ -1,3 +1,4 @@
+import { apbrRapmForSpan } from './apbrRapmLookup';
 import { pbpForSpan } from './pbpLookup';
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
@@ -2061,6 +2062,23 @@ const BIG_REB_W = Number(envVar('BIG_REB_W') ?? 0.6);
 const BIG_REB_REF = Number(envVar('BIG_REB_REF') ?? 7.7);
 const BIG_BLK_W = Number(envVar('BIG_BLK_W') ?? 0);
 const BIG_BLK_REF = Number(envVar('BIG_BLK_REF') ?? 1.05);
+/**
+ * 2026-11-26 (the user: Hassan Whiteside 2014-16 at 75 is odd — option C, "stats over impact"): where APBR
+ * RAPM covers the window (1997-2019, 3,000+ possessions) and TAL sits more than `TAL_RAPM_GAP` points
+ * from the TAL its RAPM implies (reverse fit on 4,643 windows: TAL 54.44 at RAPM +0.607, 0.0632 RAPM per
+ * TAL point), TAL moves `TAL_RAPM_W` of the excess toward it. Measurement knob, 0 = off.
+ */
+const TAL_RAPM_W = Number(envVar('TAL_RAPM_W') ?? 0);
+const TAL_RAPM_GAP = Number(envVar('TAL_RAPM_GAP') ?? 10);
+function rapmPull(span: PlayerSpan, tal: number): number {
+  if (!TAL_RAPM_W) return 0;
+  const r = apbrRapmForSpan(span);
+  if (!r || r.poss < 3000) return 0;
+  const implied = 54.44 + (r.net - 0.607) / 0.0632;
+  const gap = implied - tal;
+  const excess = Math.sign(gap) * Math.max(0, Math.abs(gap) - TAL_RAPM_GAP);
+  return TAL_RAPM_W * excess;
+}
 function bigBoxAdjustment(span: PlayerSpan): number {
   if ((!BIG_REB_W && !BIG_BLK_W) || (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF')) return 0;
   if (Math.min(...spanEndYears(span.spanLabel)) < 1980) return 0;
@@ -2107,7 +2125,8 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + (TD('credit') ? 0 : defenseCreditLift(span, reduced));
   const lifted = credited + (TD('lowusage') ? 0 : lowUsageLift(span, credited)) + (TD('named') ? 0 : namedTalLift(span)) - (TD('oldschool') ? 0 : oldSchoolPointPenalty(span, credited));
   const resumed = lifted + (TD('resume') ? 0 : roleResumeAdjustment(span, lifted));
-  const boxed = resumed + bigBoxAdjustment(span);
+  const boxed0 = resumed + bigBoxAdjustment(span);
+  const boxed = boxed0 + rapmPull(span, boxed0);
   const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? boxed : (TD('smallcap') ? boxed : Math.min(boxed, smallRoleCap(span))))));
   talentCache.set(span.id, result);
   return result;
