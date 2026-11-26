@@ -2111,3 +2111,12 @@ GRAVITY=1 (teammateLift z gravity.json od 2000-01 zamiast lift−realMates), wyn
 - K 3000 gorzej (game 0.699), K 12000 mniej źle (0.712). Wszystkie sędziowie spadają → zostaje wyłączone.
 Powód prawdopodobny: miara tylko od 2000 (gracze sprzed nie mają korekty → niespójność er) i on/off dzieli zasługi między gwiazdy (Klay≈Curry).
 Pomysł na później: użyć gravity tylko jako zamiennika realMates w lift (nie całego lift) albo jako lekkiego dodatku do obecnej formuły.
+
+## Curry vs Stockton — trzy pomysły (2026-11-26), reports/ideagrid1.txt, ideagrid2.txt
+Baza: SRS 0.876, game 0.740, prognoza 0.677, Stockton 92.2 / Curry 89.3, najlepsza piątka ze Stocktonem.
+- OFF_SOFTCAP=0.5: game 0.747 (↑), reszta bez zmian, AI 30/30; Curry +0.2 — darmowa poprawa, kandydat do wdrożenia.
+- OFF_SOFTCAP=1: game 0.741, ofensywa vs ORtg 0.787 (↓) — za mocno.
+- FIT_DRC=0.5: game 0.734 (↓0.006), prognoza 0.676; Stockton wypada z najlepszej piątki (Magic 8/8).
+- GRAVITY_MIX 0.3/0.5: wszystko w dół (game 0.730/0.723).
+- Wszystkie trzy razem: game 0.731, prognoza 0.670 — nie.
+Do sprawdzenia: OFF_SOFTCAP=0.5 + FIT_DRC=0.5.
