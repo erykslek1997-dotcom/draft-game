@@ -1,0 +1,8 @@
+== REV_BALL_SRC=share
+   SRS 0.876  prior 0.678
+   TARGET FIVES 10/17 A1<B5 (-7.1) A2<B5 (-2.5) A3<B5 (-7.9) A3<B6 (-0.2) A4<B5 (-4.9) A1<C8 (-0.1) A3<C8 (-1.0)
+   TOP CHECK 41/56, shortfall -38.7
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5 FIT_TWO_PG=15 LIFT_CAP=1 REV_BALL_SRC=share
+   SRS 0.873  prior 0.689
+   TARGET FIVES 16/17 A3<B5 (-2.3)
+   TOP CHECK 44/56, shortfall -11.7

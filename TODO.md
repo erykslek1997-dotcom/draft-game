@@ -2104,3 +2104,26 @@ Stockton zostaje w najlepszej piątce (Stockton, Kawhi, Bird, KG, Kareem). Na tl
 - Skuteczność tych samych kolegów z graczem i bez, w tym samym sezonie, z odjęciem jego własnych rzutów.
 - Zastąpi „dał minus dostał” od 2000-01.
 - Sędziowie: prognoza, SRS, mechanika, najlepsza piątka.
+
+## Gravity z pbp on/off (2026-11-26) — NIE wdrożone
+GRAVITY=1 (teammateLift z gravity.json od 2000-01 zamiast lift−realMates), wyniki reports/gravgrid.txt:
+- K 6000: SRS r 0.876→0.867, game r 0.740→0.703, prognoza 0.677→0.656; Curry 89.3→90.6, Stockton 92.2→91.4.
+- K 3000 gorzej (game 0.699), K 12000 mniej źle (0.712). Wszystkie sędziowie spadają → zostaje wyłączone.
+Powód prawdopodobny: miara tylko od 2000 (gracze sprzed nie mają korekty → niespójność er) i on/off dzieli zasługi między gwiazdy (Klay≈Curry).
+Pomysł na później: użyć gravity tylko jako zamiennika realMates w lift (nie całego lift) albo jako lekkiego dodatku do obecnej formuły.
+
+## Curry vs Stockton — trzy pomysły (2026-11-26), reports/ideagrid1.txt, ideagrid2.txt
+Baza: SRS 0.876, game 0.740, prognoza 0.677, Stockton 92.2 / Curry 89.3, najlepsza piątka ze Stocktonem.
+- OFF_SOFTCAP=0.5: game 0.747 (↑), reszta bez zmian, AI 30/30; Curry +0.2 — darmowa poprawa, kandydat do wdrożenia.
+- OFF_SOFTCAP=1: game 0.741, ofensywa vs ORtg 0.787 (↓) — za mocno.
+- FIT_DRC=0.5: game 0.734 (↓0.006), prognoza 0.676; Stockton wypada z najlepszej piątki (Magic 8/8).
+- GRAVITY_MIX 0.3/0.5: wszystko w dół (game 0.730/0.723).
+- Wszystkie trzy razem: game 0.731, prognoza 0.670 — nie.
+Do sprawdzenia: OFF_SOFTCAP=0.5 + FIT_DRC=0.5.
+
+## Szczyt rankingu — pakiet wdrożony (2026-11-26, docs/top-end-plan.md)
+Zmiany: usunięte reguły eliteShooterCover/noFloorGeneral/secondWeakPerim; W_FIT 0.5→0.25, W_OFF 1.5→2.25;
+STAR_W 0.27 (najlepszy starter ponad 95); OFF_SOFTCAP 0.5; FIT_TWO_PG 15; LIFT_CAP 1; REV_BALL_SRC share.
+Sędziowie: SRS 0.876→0.873, prognoza 0.677→0.689, gra 0.740→0.745, atak/ORtg 0.794. Piątki 9/17→16/17, pary 40/56→44/56.
+Najlepsza piątka: Magic, Jordan, Bird, LeBron, KG. AI picks re-bless (6/30).
+Dalej: Curry > Stockton o 2+ (dziś Stockton +0.6), LeBron > Durant, A3 vs B5 (decyzja użytkownika), pozostałe pary.

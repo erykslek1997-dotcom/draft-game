@@ -1,0 +1,11 @@
+comp2.json n 600 r(ovr) 0.873  ovr+spacing 0.877  spacing worth -0.074 Overall per spacing point
+   talent 0.850  talent+spacing 0.851   r(spacing,srs) 0.342  r(spacing,talent) 0.444  spacing sd 22.7
+   spacing 0-50: n 450  SRS left over vs Overall +0.12
+   spacing 50-70: n 111  SRS left over vs Overall -0.29
+   spacing 70-85: n  28  SRS left over vs Overall -0.87
+   spacing 85-101: n  11  SRS left over vs Overall +0.12
+compP2.json n 114 r(ovr) 0.689  ovr+spacing 0.697  spacing worth -0.088 Overall per spacing point
+   talent 0.619  talent+spacing 0.622   r(spacing,srs) 0.153  r(spacing,talent) 0.338  spacing sd 24.7
+   spacing 0-50: n  76  SRS left over vs Overall +0.20
+   spacing 50-70: n  23  SRS left over vs Overall -0.12
+   spacing 70-85: n  10  SRS left over vs Overall -1.04

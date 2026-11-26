@@ -2,6 +2,9 @@ import { ERA_MASK } from './eraMask';
 import type { PlayerSpan } from '../data/schema';
 import type { Team } from './types';
 import liftData from '../data/teammateLift.json';
+import gravityData from '../data/gravity.json';
+import { normalizePlayerName } from '../data/schema';
+import { spanEndYears } from './era';
 import { processEnv } from './env';
 
 /**
@@ -19,14 +22,39 @@ export interface TeammateLift {
   realMates: number;
 }
 
+/**
+ * 2026-11-26 (the user: "co gdyby policzyć to np on offami z pbp"; the old lift minus "real teammates" read
+ * Curry -1.7, LeBron -2.1, Nash -1.6 and was circular — Klay's lift measured on Curry, then taken from Curry):
+ * `GRAVITY=1` reads, for windows with play-by-play (2000-01 on), how much better the same team's teammates
+ * shot with him on than the team with him off, the bench share taken out (scripts/buildGravity.ts), averaged
+ * over the window's seasons by minutes and shrunk toward 0 by minutes / (minutes + `GRAVITY_K`); no
+ * real-teammates subtraction. Older windows keep the old reading.
+ */
+const GRAVITY = processEnv?.GRAVITY === '1';
+const GRAVITY_K = Number(processEnv?.GRAVITY_K ?? 6000);
+const GRAVITY_SCALE = Number(processEnv?.GRAVITY_SCALE ?? 1);
+// 2026-11-26 (`GRAVITY_MIX`, 0 = off): a light blend instead of the full swap — the old lift-minus-teammates
+// net keeps (1 - mix) of its weight, the pbp gravity takes the rest.
+const GRAVITY_MIX = Number(processEnv?.GRAVITY_MIX ?? 0);
+const GRAV = gravityData as unknown as Record<string, Record<string, [number, number]>>;
+function gravityFor(span: PlayerSpan): number | null {
+  const seasons = GRAV[normalizePlayerName(span.playerName)];
+  if (!seasons) return null;
+  let sum = 0, min = 0;
+  for (const y of spanEndYears(span.spanLabel)) { const r = seasons[String(y)]; if (r) { sum += r[0] * r[1]; min += r[1]; } }
+  return min ? (GRAVITY_SCALE * (sum / min) * min) / (min + GRAVITY_K) : null;
+}
 export function teammateLift(span: PlayerSpan): TeammateLift {
   if (ERA_MASK) return { lift: 0, realMates: 0 };
+  if (GRAVITY) { const g = gravityFor(span); if (g !== null) return { lift: g, realMates: 0 }; }
   const row = DATA[span.id];
   if (!row) return { lift: 0, realMates: 0 };
   // 2026-11-25 (`LIFT_MIN`, 0 = every lift; the user: league-wide it may not show, for Curry it may): only the
   // lift past this threshold counts (TS fraction; 0.008 = Curry's +0.8), the rest reads 0 — elite lifts only.
   const lift = row[0] / 1000;
-  return { lift: LIFT_MIN > 0 ? Math.max(0, lift - LIFT_MIN) : lift, realMates: LIFT_MIN > 0 ? 0 : row[1] / 1000 };
+  const out = { lift: LIFT_MIN > 0 ? Math.max(0, lift - LIFT_MIN) : lift, realMates: LIFT_MIN > 0 ? 0 : row[1] / 1000 };
+  if (GRAVITY_MIX > 0) { const g = gravityFor(span); if (g !== null) return { lift: (1 - GRAVITY_MIX) * out.lift + GRAVITY_MIX * g, realMates: (1 - GRAVITY_MIX) * out.realMates }; }
+  return out;
 }
 
 /**
@@ -101,4 +129,10 @@ const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsP
  * it, and one game's margin still gets exactly `teamLiftPoints`.
  */
 const LIFT_POINTS_PER_OVERALL = 0.85;
-export const liftAdjustment = (team: Team) => (LIFT_TUNING.overall * teamLiftPoints(team)) / LIFT_POINTS_PER_OVERALL;
+// 2026-11-26 (`LIFT_CAP`, Overall points, 0 = no cap; top-end plan): real teams spread the term ~±0.8 (sd), but a
+// five of drafted lifters added theirs up to +5.5 — far past anything a real team showed. Past the cap, a tenth.
+const LIFT_CAP = Number(LIFT_ENV?.LIFT_CAP ?? 1);
+export const liftAdjustment = (team: Team) => {
+  const v = (LIFT_TUNING.overall * teamLiftPoints(team)) / LIFT_POINTS_PER_OVERALL;
+  return LIFT_CAP > 0 && Math.abs(v) > LIFT_CAP ? Math.sign(v) * (LIFT_CAP + (Math.abs(v) - LIFT_CAP) * 0.1) : v;
+};

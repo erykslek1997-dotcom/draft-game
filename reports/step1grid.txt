@@ -1,0 +1,32 @@
+== X=0
+   SRS 0.876  prior 0.677
+   TARGET FIVES 9/17 A1<B5 (-9.7) A1<B6 (-1.0) A2<B5 (-4.5) A3<B5 (-9.7) A3<B6 (-1.1) A4<B5 (-6.4) A1<C8 (-1.4) A
+   TOP CHECK 40/56, shortfall -40.2
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim
+   SRS 0.877  prior 0.682
+   TARGET FIVES 9/17 A1<B5 (-9.7) A1<B6 (-1.0) A2<B5 (-4.5) A3<B5 (-9.7) A3<B6 (-1.1) A4<B5 (-6.4) A1<C8 (-0.4) A
+   TOP CHECK 40/56, shortfall -43.2
+== W_FIT=0.25
+   SRS 0.878  prior 0.680
+   TARGET FIVES 9/17 A1<B5 (-9.3) A1<B6 (-0.3) A2<B5 (-3.8) A3<B5 (-9.5) A3<B6 (-0.5) A4<B5 (-6.3) A1<C8 (-1.1) A
+   TOP CHECK 41/56, shortfall -38.3
+== W_FIT=0
+   SRS 0.881  prior 0.683
+   TARGET FIVES 11/17 A1<B5 (-8.7) A2<B5 (-2.8) A3<B5 (-9.2) A4<B5 (-6.2) A1<C8 (-0.7) A3<C8 (-1.2)
+   TOP CHECK 40/56, shortfall -35.7
+== W_OFF=2.25
+   SRS 0.876  prior 0.682
+   TARGET FIVES 9/17 A1<B5 (-9.8) A1<B6 (-0.7) A2<B5 (-4.4) A3<B5 (-9.5) A3<B6 (-0.4) A4<B5 (-6.3) A1<C8 (-1.1) A
+   TOP CHECK 40/56, shortfall -39.5
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25
+   SRS 0.878  prior 0.689
+   TARGET FIVES 12/17 A1<B5 (-9.5) A1<B6 (-0.1) A2<B5 (-3.8) A3<B5 (-9.3) A4<B5 (-6.2)
+   TOP CHECK 40/56, shortfall -41.0
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27
+   SRS 0.874  prior 0.694
+   TARGET FIVES 13/17 A1<B5 (-7.8) A2<B5 (-2.4) A3<B5 (-9.0) A4<B5 (-4.9)
+   TOP CHECK 41/56, shortfall -24.3
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5
+   SRS 0.874  prior 0.694
+   TARGET FIVES 13/17 A1<B5 (-6.4) A2<B5 (-2.1) A3<B5 (-8.4) A4<B5 (-4.6)
+   TOP CHECK 41/56, shortfall -16.4

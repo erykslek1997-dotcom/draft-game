@@ -1,0 +1,12 @@
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5 LIFT_CAP=3
+   SRS 0.874  prior 0.693
+   TARGET FIVES 14/17 A1<B5 (-4.1) A3<B5 (-6.1) A4<B5 (-2.3)
+   TOP CHECK 42/56, shortfall -15.3
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5 LIFT_CAP=2
+   SRS 0.873  prior 0.692
+   TARGET FIVES 14/17 A1<B5 (-3.2) A3<B5 (-5.2) A4<B5 (-1.4)
+   TOP CHECK 42/56, shortfall -14.6
+== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5 LIFT_CAP=2 FIT_TWO_PG=15
+   SRS 0.873  prior 0.692
+   TARGET FIVES 14/17 A1<B5 (-2.8) A3<B5 (-4.8) A4<B5 (-1.0)
+   TOP CHECK 42/56, shortfall -14.6

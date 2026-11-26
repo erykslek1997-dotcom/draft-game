@@ -33,3 +33,4 @@ scripts/out/
 # Generated at build time by scripts/buildPrecomputedTiers.ts (see src/engine/precomputedTiers.ts)
 src/data/precomputedTiers.json
 src/data/raw/pbpstats/
+src/data/raw/pbpOnOff/

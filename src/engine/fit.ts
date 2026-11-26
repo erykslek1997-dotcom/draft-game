@@ -13,6 +13,7 @@ import {
 } from '../data/schema';
 import { isRimGravityScorer } from './offensiveProfile';
 import { offBallValue } from './heliocentric';
+import { ballShare } from './ballHandling';
 import { pairwiseFitNotes, mismatchStructureScore, offensiveSystemOverloadPenalty, heliocentricPostConflict, HELIO_POST } from './pairwiseFit';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import { primaryStarters } from './rotation';
@@ -176,11 +177,18 @@ const FIT_RESTORE = Number(FIT_ENV?.FIT_RESTORE ?? 0);
 const RESTORED = { spacingCompatibility: 0.11, switchability: 0.099, rimPressureTeam: 0.037, championshipStructure: 0.13 };
 const RESTORED_TOTAL = FIT_RESTORE * (RESTORED.spacingCompatibility + RESTORED.switchability + RESTORED.rimPressureTeam + RESTORED.championshipStructure);
 const KEPT = (1 - FIT_SPACING_SHARE) * (1 - RESTORED_TOTAL);
+// 2026-11-26 (`FIT_DRC`, 1 = as before; the user: Stockton over Curry): defensive role coverage re-reads
+// the defense the Defense score already carries; the weight it gives up goes to the pick-and-roll pairing.
+const FIT_DRC = Number(FIT_ENV?.FIT_DRC ?? 1);
+// 2026-11-26 (`FIT_TWO_PG`, Fit points, 0 = off; the user: "dlaczego dwóch PG dostaje dopasowanie 96"): two
+// starters who both run the offense (ball share past 0.18, full at 0.26) take turns with it. Charged per pair
+// at the smaller of the two loads, eased by half the better off-ball value (Curry can play off the ball).
+const FIT_TWO_PG = Number(FIT_ENV?.FIT_TWO_PG ?? 15);
 export const FIT_WEIGHTS = {
   creationStructure: 0,
-  pairingStructure: (0.293 / 0.624) * KEPT,
+  pairingStructure: ((0.293 + (1 - FIT_DRC) * 0.331) / 0.624) * KEPT,
   spacingCompatibility: FIT_SPACING_SHARE * (1 - RESTORED_TOTAL) + FIT_RESTORE * RESTORED.spacingCompatibility,
-  defensiveRoleCoverage: (0.331 / 0.624) * KEPT,
+  defensiveRoleCoverage: ((FIT_DRC * 0.331) / 0.624) * KEPT,
   switchability: FIT_RESTORE * RESTORED.switchability,
   huntResistance: 0,
   defensiveCohesion: 0,
@@ -1234,9 +1242,18 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
   const interiorRelief = paintScorers.length >= 2
     ? 0
     : spacingBottleneckPenalty * INTERIOR_BOTTLENECK_RELIEF * interiorStrength(rimPressureTeamComponent, reboundingBalance, sizeCoverage);
+  let twoOrganisers = 0;
+  if (FIT_TWO_PG > 0) {
+    const load = starters.map((p) => clamp((ballShare(p) - 0.18) / 0.08, 0, 1));
+    for (let i = 0; i < starters.length; i++) for (let j = i + 1; j < starters.length; j++) {
+      const both = Math.min(load[i], load[j]);
+      if (both > 0) twoOrganisers += FIT_TWO_PG * both * (1 - 0.5 * Math.max(offBallValue(starters[i]), offBallValue(starters[j])));
+    }
+    if (twoOrganisers >= 2) notes.push('Two starters who both run the offense take turns with the ball.');
+  }
   // 2026-11-25 (`FIT_DROP`, comma list, measurement only).
   const fd = (n: string, v: number) => (FIT_DROP.has(n) ? 0 : v);
-  const score = Math.round(clamp(weightedScore - fd('bottleneck', spacingBottleneckPenalty) - fd('paint', paintOverlapPenalty) - fd('offBall', offBallPenalty) - fd('shotFirst', shotFirstOverlapPenalty) + fd('interior', interiorRelief) + fd('threeAndD', threeAndDCredit)));
+  const score = Math.round(clamp(weightedScore - fd('bottleneck', spacingBottleneckPenalty) - fd('paint', paintOverlapPenalty) - fd('offBall', offBallPenalty) - fd('shotFirst', shotFirstOverlapPenalty) - twoOrganisers + fd('interior', interiorRelief) + fd('threeAndD', threeAndDCredit)));
   if (spacingBottleneckPenalty >= 2) {
     notes.push(`Spacing compatibility caps overall fit (-${Math.round(spacingBottleneckPenalty)}).`);
   }
@@ -1277,7 +1294,7 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
       positionAdjustedAthleticismPercentile,
       functionalSizePercentile,
       additionalRoleCredits,
-      lineupPenalty: paintOverlapPenalty + offBallPenalty + shotFirstOverlapPenalty - interiorRelief - threeAndDCredit,
+      lineupPenalty: paintOverlapPenalty + offBallPenalty + shotFirstOverlapPenalty + twoOrganisers - interiorRelief - threeAndDCredit,
       championshipArchetypes: championshipStructure.archetypes,
       primaryArchetype: championshipStructure.primaryArchetype,
       secondaryArchetype: championshipStructure.secondaryArchetype,

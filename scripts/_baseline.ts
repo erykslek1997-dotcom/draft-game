@@ -53,7 +53,7 @@ const byTeam = Object.groupBy(roster, (r) => `${r.end}|${r.team}`);
 const teamOf = (r: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster: r, rotation: autoAssignRotation(r) });
 const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
 
-type Row = { label: string; end: number; srs: number; ovr: number; off: number; def: number; tal: number; spans: PlayerSpan[]; minShare: number[] };
+type Row = { comp?: Record<string, number>; label: string; end: number; srs: number; ovr: number; off: number; def: number; tal: number; spans: PlayerSpan[]; minShare: number[] };
 const rows: Row[] = [];
 let skipped = 0;
 for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs: number }[]).entries()) {
@@ -68,7 +68,16 @@ for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs:
   }
   const total = all.reduce((s, r) => s + r.minutes, 0);
   const b = scoreTeam(teamOf(spans as PlayerSpan[], `${end}-${ts.team}`));
-  rows.push({ label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
+  // DUMP (2026-11-26, the user: "czy coś nie liczy się podwójnie"): every Overall ingredient per team.
+  let comp: Record<string, number> | undefined;
+  if (process.env.DUMP) {
+    const S = await import('../src/engine/scoring'); const L = await import('../src/engine/teammateLift'); const H = await import('../src/engine/heliocentric'); const R = await import('../src/engine/reviewRules'); const RO = await import('../src/engine/rotation');
+    const t = teamOf(spans as PlayerSpan[], `${end}-${ts.team}`);
+    comp = { talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
+      lift: L.liftAdjustment(t), creator: S.creatorAdjustment(t), ballLoad: S.ballLoadAdjustment(t), handler: S.ballHandlerAdjustment(t), helio: H.heliocentricAdjustment(t),
+      review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t), ...Object.fromEntries(Object.entries(R.reviewRuleHits(RO.primaryStarters(t).map((a) => a.player))).map(([k, v]) => ['rev_' + k, Number(v)])) };
+  }
+  rows.push({ comp, label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
 }
 const corr = (xs: number[], ys: number[]) => {
   const mx = mean(xs), my = mean(ys);
@@ -77,6 +86,13 @@ const corr = (xs: number[], ys: number[]) => {
   return a / Math.sqrt(b * c);
 };
 // YEAR_FROM: only team-seasons ending in or after that year (the era test).
+// MOVED_MIN (2026-11-26, top-end plan step 1.1): only team-seasons where at least this many of the top
+// eight played for another team (or not at all) the season before — new teammates, so a player's real
+// teammates of the past cannot stand in for the team being judged.
+if (process.env.MOVED_MIN) {
+  const was = new Set(roster.map((q) => `${normalizePlayerName(q.name)}|${q.end}|${q.team}`));
+  rows.splice(0, rows.length, ...rows.filter((x) => { const team = x.label.slice(x.label.indexOf(' ') + 1); return x.spans.filter((s) => !was.has(`${normalizePlayerName(s.playerName)}|${x.end - 1}|${team}`)).length >= Number(process.env.MOVED_MIN); }));
+}
 if (process.env.YEAR_FROM) rows.splice(0, rows.length, ...rows.filter((x) => x.end >= Number(process.env.YEAR_FROM)));
 const r = (xs: number[]) => corr(xs, rows.map((x) => x.srs)).toFixed(3);
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
@@ -107,3 +123,24 @@ const uniq = [...new Map(all.map((s) => [s.id, s])).values()].filter((s) => winB
 const tl = uniq.map((s) => computeTalent(s)), bp = uniq.map((s) => winBpm(s)!);
 console.log(`players ${uniq.length}: r(TAL, window BPM) ${corr(tl, bp).toFixed(3)}`);
 for (const w of [0.5, 1, 2]) console.log(`Overall + ${w} x Talent  ${r(zo.map((v, i) => v + w * zt[i]))}`);
+// STARTEST (2026-11-26, top-end plan step 1.4): does the best player's TAL say more than the five's mean?
+if (process.env.STARTEST) {
+  const { effectiveTalent } = await import('../src/engine/grades');
+  const ys = rows.map((x) => x.srs);
+  const feats = rows.map((x) => { const t = x.spans.slice(0, 5).map((s) => effectiveTalent(s)).sort((a, b) => b - a); return { mean: mean(t), top: t[0], second: t[1], min: t[t.length - 1], ovr: x.ovr }; });
+  const ols = (cols: number[][]) => { // least squares with intercept, returns coefficients and r
+    const X = cols[0].map((_, i) => [1, ...cols.map((c) => c[i])]); const k = X[0].length;
+    const A = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => X.reduce((s, r) => s + r[a] * r[b], 0)));
+    const v = Array.from({ length: k }, (_, a) => X.reduce((s, r, i) => s + r[a] * ys[i], 0));
+    for (let i = 0; i < k; i++) { const p = A[i][i]; for (let j = i; j < k; j++) A[i][j] /= p; v[i] /= p; for (let r = 0; r < k; r++) if (r !== i) { const f = A[r][i]; for (let j = i; j < k; j++) A[r][j] -= f * A[i][j]; v[r] -= f * v[i]; } }
+    return { b: v.map((x) => x.toFixed(3)), r: corr(X.map((row) => row.reduce((s, x, i) => s + x * v[i], 0)), ys).toFixed(3) };
+  };
+  console.log('SRS ~ mean TAL            ', JSON.stringify(ols([feats.map((f) => f.mean)])));
+  console.log('SRS ~ mean + top TAL      ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top)])));
+  console.log('SRS ~ mean + top + second ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.second)])));
+  console.log('SRS ~ mean + weakest      ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.min)])));
+  console.log('SRS ~ mean + top + weakest', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.min)])));
+  console.log('SRS ~ Overall + top TAL   ', JSON.stringify(ols([feats.map((f) => f.ovr), feats.map((f) => f.top)])));
+}
+
+if (process.env.DUMP) { const { writeFileSync } = await import('node:fs'); writeFileSync(process.env.DUMP, JSON.stringify(rows.map((x) => ({ srs: x.srs, ovr: x.ovr, ...x.comp })))); }

@@ -80,7 +80,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       // verdict is that the two read close, not a strict order.
       // 2026-10-07, the user ("A"): the five's rebounding now counts in Defense and Offense, and
       // Tulsa's Giannis-Kareem-Eaton glass against Charlotte's small frontcourt opens 2.8 — accepted.
-      [Math.abs(s('Charlotte').overallExact - s('Tulsa').overallExact) <= 3, 'Charlotte and Tulsa read close (within 3 points)'],
+      // 2026-11-26, the user: the Charlotte / Tulsa verdict is old and may not fit the game now — retired; the
+      // top-end checks (scripts/_targetFives.ts, scripts/_topcheck.ts) carry this kind of verdict instead.
       [by.get('Vermont')!.rank < teams.length, 'LeBron + Luka is not at the bottom'],
       [s('Charlotte').spacingScore > s('Tulsa').spacingScore, 'Charlotte spaces the floor better than Tulsa'],
       [offense('Nash') >= offense('Tulsa') - 0.5, 'Nash-Kobe-Malone scores at least as well as Tulsa'],
