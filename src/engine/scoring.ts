@@ -726,12 +726,12 @@ const STAR_OTAL_BENCH_SHARE = Number(envVar('OFF_BENCH_SHARE') ?? 0.18);
  * (shooting, cutting) always counts. `OFF_TOP` adds that much to the best player's weight in the
  * star-weighted blend (30% today), so the star lifts the team more.
  */
-const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.2);
+const OFF_BALL = Number(envVar('OFF_BALL') ?? 0.35); // 2026-11-26: 0.2 -> 0.35 with OFF_BALL_SRC=share (offense vs ORtg 0.7934 -> 0.7943, judges held, AI picks 30/30)
 const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0.5);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
 const OFF_BALL_ORDER = envVar('OFF_BALL_ORDER') ?? 'usage';
-const OFF_BALL_SRC = envVar('OFF_BALL_SRC') ?? 'usage';
+const OFF_BALL_SRC = envVar('OFF_BALL_SRC') ?? 'share';
 const OFF_BALL_SHARE_FULL = Number(envVar('OFF_BALL_SHARE_FULL') ?? 0.27);
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
   if (!OFF_BALL) return entries.map((e) => e.value);
