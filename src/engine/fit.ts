@@ -1294,7 +1294,7 @@ export function fitScore(team: Team, options: { bottleneckScale?: number } = {})
       positionAdjustedAthleticismPercentile,
       functionalSizePercentile,
       additionalRoleCredits,
-      lineupPenalty: paintOverlapPenalty + offBallPenalty + shotFirstOverlapPenalty - interiorRelief - threeAndDCredit,
+      lineupPenalty: paintOverlapPenalty + offBallPenalty + shotFirstOverlapPenalty + twoOrganisers - interiorRelief - threeAndDCredit,
       championshipArchetypes: championshipStructure.archetypes,
       primaryArchetype: championshipStructure.primaryArchetype,
       secondaryArchetype: championshipStructure.secondaryArchetype,
