@@ -1,3 +1,4 @@
+import { skill } from './skills';
 import { defenderProfile } from './liveDefense';
 import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand, skill } from './skills';
 import { spanEndYears } from './era';
@@ -596,6 +597,21 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // playmaking and mismatch weights onto O-TAL.
 const OFF_MIX = Number(envVar('OFF_MIX') ?? 0.5);
 const OFF_GUARD_W = Number(envVar('OFF_GUARD_W') ?? 0);
+/**
+ * 2026-11-26 (the user: a strong team with no off-the-dribble creator — "czy powinien być top2"; scripts/
+ * _creator.ts, 520 real teams 1997+: best self-creation skill in the top quarter beat Overall by +0.41 SRS,
+ * the bottom quarter lost 0.15 playoff series beyond SRS): `CREATOR_W` Overall points at the ends of
+ * the scale — the best starter's selfCreation skill, (v - `CREATOR_MID`) / 10, clamped to ±1. 1997+
+ * skills only (no skill = 0). Measurement knob, 0 = off.
+ */
+const CREATOR_W = Number(envVar('CREATOR_W') ?? 0);
+const CREATOR_MID = Number(envVar('CREATOR_MID') ?? 90);
+function creatorAdjustment(team: Team): number {
+  if (!CREATOR_W) return 0;
+  const v = primaryStarters(team).map((e) => skill(e.player, 'selfCreation')).filter((x): x is number => x !== null);
+  if (!v.length) return 0;
+  return CREATOR_W * Math.max(-1, Math.min(1, (Math.max(...v) - CREATOR_MID) / 10));
+}
 const OFF_GUARD_REF = Number(envVar('OFF_GUARD_REF') ?? 70);
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
@@ -2428,6 +2444,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     (SC_DROP === 'ballLoad' ? 0 : d('ballLoad', () => ballLoadAdjustment(team))) +
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts).
     d('lift', () => liftAdjustment(team)) +
+    creatorAdjustment(team) +
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts).
     (SC_DROP === 'handler' ? 0 : d('handler', () => ballHandlerAdjustment(team))) +
     (SC_DROP === 'certainty' ? 0 : d('certainty', () => dataCertaintyAdjustment(team))) +
