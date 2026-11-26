@@ -29,9 +29,16 @@ export const PAIRS: [string, string, string, string][] = [
   ['Kawhi Leonard','2015-17','Paul George','2017-19'],
   ['James Harden','2017-19','Russell Westbrook','2015-17'],
   ['Wilt Chamberlain','1966-68','Bill Russell','1962-64'],
-  ['Oscar Robertson','1963-65','Jerry West','1965-67'],
+  ['Jerry West','1965-67','Oscar Robertson','1963-65'],  // the user: reversed
   ['Kevin Garnett','2002-04','Chris Webber','2000-02'],
 ];
+// The user's margin notes (artifact 4UvVMG2AgNBS9h9asckGu2): the first should win clearly (>= MIN) or by no more than MAX.
+export const MARGINS: Record<string, { min?: number; max?: number }> = {
+  'Stephen Curry>John Stockton': { min: 2 },
+  'LeBron James>Kevin Durant': { min: 2 },
+  'Michael Jordan>Kobe Bryant': { min: 1 },
+  'Tim Duncan>Kevin Garnett': { max: 3 },
+};
 if (import.meta.url === `file://${process.argv[1]}`) {
   const has = (n: string, s: string) => draftPool.find((p) => p.playerName === n && p.spanLabel === s);
   for (const [a, sa, b, sb] of PAIRS) for (const [n, s] of [[a, sa], [b, sb]]) if (!has(n, s)) console.log('MISSING', n, s, '->', draftPool.filter((p) => p.playerName === n).map((p) => `${p.spanLabel}:${Math.round(effectiveTalent(p))}`).join(' '));
