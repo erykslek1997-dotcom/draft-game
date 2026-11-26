@@ -614,10 +614,15 @@ export function creatorAdjustment(team: Team): number {
 // the five's mean (+0.070 SRS a point ≈ +0.27 Overall); the mean alone hid a star's 17 TAL points as ~1.
 const STAR_W = Number(envVar('STAR_W') ?? 0);
 const STAR_REF = Number(envVar('STAR_REF') ?? 95);
+const WEAK_W = Number(envVar('WEAK_W') ?? 0);
+const WEAK_REF = Number(envVar('WEAK_REF') ?? 75);
 export function starAdjustment(team: Team): number {
-  if (!STAR_W) return 0;
+  if (!STAR_W && !WEAK_W) return 0;
   const t = primaryStarters(team).map((e) => effectiveTalent(e.player) * durabilityValueFactor(e.player));
-  return t.length ? STAR_W * (Math.max(...t) - STAR_REF) : 0;
+  if (!t.length) return 0;
+  // `WEAK_W` (2026-11-26, the user: the weakest starter for every team, a bonus when he is good): the forecast
+  // gave the weakest starter as much as the best (+0.109 SRS a TAL point). Signed around `WEAK_REF`.
+  return STAR_W * (Math.max(...t) - STAR_REF) + WEAK_W * (Math.min(...t) - WEAK_REF);
 }
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
