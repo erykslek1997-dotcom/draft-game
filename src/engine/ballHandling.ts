@@ -2,6 +2,7 @@ import { envVar } from './env';
 import type { PlayerSpan } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
 import { skill } from './skills';
+import { computeSpacing } from './spacing';
 
 /**
  * 2026-10-28, step 6.2 (the user: two players who play WITH the ball should not fit — not two
@@ -53,12 +54,16 @@ function secondHandlerExcess(five: PlayerSpan[]): number {
   const second = ranked[1];
   if (!second) return 0;
   // Of the two who want it, the better catch-and-shoot player is the one who gives the ball up.
-  const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
+  // 2026-11-26 (the user's calibration brief: Magic + Stockton, 3.3 / 2.3 threes a game, read as off-ball
+  // shooters through the spot-up skill alone): `BH_SHOOT_SRC=spacing` reads the shooter from the spacing
+  // the engine plays (volume and accuracy, 50 → none, 90 → full) instead of the spot-up skill.
+  const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, (((BH_SHOOT_SRC === 'spacing' ? computeSpacing(p) : skill(p, 'spotUp')) ?? 50) - 50) / 40));
   const shooter = Math.max(shoot(ranked[0]), shoot(second));
   return Math.max(0, ballShare(second) * (1 - BH_SHOOT * shooter) - BALL_HANDLER_TUNING.from);
 }
 // 2026-11-19: on at 0.6 — SRS 0.843 / 0.840 → 0.844 / 0.841, sim 0.60 → 0.61, lineups 0.559 held; three+ PGs 16% → 11%.
 const BH_SHOOT = Number(envVar('BH_SHOOT') ?? 0.6);
+const BH_SHOOT_SRC = envVar('BH_SHOOT_SRC') ?? 'spotUp';
 
 /** ORtg points a 100 trips per point of shooting on every shot of the five, as the game plays it:
  * set so Harden 2016-18 + Westbrook 2016-18 (cost 2.5) lose 2.5 points a 100 trips in the game's

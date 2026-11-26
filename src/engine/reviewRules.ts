@@ -36,13 +36,19 @@ const REV_DROP = (envVar('REV_DROP') ?? '').split(',').filter(Boolean);
 const REV_STAR = envVar('REV_STAR') !== '0';
 // 2026-11-21 (the user: Porter and Pierce shoot threes, they play off the ball): the spot-up level that takes a
 // player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
-const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
+const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 80);
 // 2026-11-21: the usage that makes a ball-holder for the "three with the ball" rule (J. Williams 0.43).
 const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
 const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
 const REV_BENCH_3D = envVar('REV_BENCH_3D') !== '0';
+const REV_PM_SPC = Number(envVar('REV_PM_SPC') ?? 80);
+const REV_PM_ENGINE = Number(envVar('REV_PM_ENGINE') ?? 0.45);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
-const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
+// 2026-11-26 (the user's center brief: Kareem 1971-73 escaped the paint-crowd rule on the missing spot-up
+// skill read as 50): with `REV_SPOT_EST=1` a window without the three-based skill (before 1979-80) reads its
+// spot-up from the spacing the engine plays (teamSpacingValue, the same 0-100 scale).
+const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
+const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
 export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
@@ -63,8 +69,11 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const eliteShooter = five.some((p) => s(p, 'pullUp3', 0) >= 98 && use(p) >= 0.5);
   // A second playmaker who can't shoot, beside an on-ball engine (LeBron + Draymond): his passing
   // repeats what the engine already does, and off the ball he doesn't space.
-  const engine = five.find((p) => use(p) >= 0.5 && s(p, 'handling', 0) >= 90);
-  const extraPlaymakers = engine && !offBallStar(engine) ? five.filter((p) => p !== engine && !(REV_STAR && use(p) >= 0.5) && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < 55).length : 0;
+  const engine = five.find((p) => use(p) >= REV_PM_ENGINE && s(p, 'handling', 0) >= 90);
+  // 2026-11-26 (the user: "coś jest źle skoro para Stockton - Magic wygrywa"; without Stockton it is Magic + Paul):
+  // `REV_PM_SPC` is the spacing that exempts a second playmaker (55 = as before; Stockton 72 and Paul 82
+  // always escaped). `REV_PM_ENGINE` the usage that makes the first one the engine (0.5 as before).
+  const extraPlaymakers = engine && !offBallStar(engine) ? five.filter((p) => p !== engine && !(REV_STAR && use(p) >= 0.5) && (playmakingScoreForPlayer(p) ?? 0) >= 85 && teamSpacingValue(p) < REV_PM_SPC).length : 0;
   // 2026-11-19 (the user, Kyrie / Manu / Kawhi / Davis / Nenê: "brakuje floor generala na PG"):
   // nobody organizes — the point guard is no real playmaker (< 88) and no one else is an elite
   // one (95+, a LeBron / Jokić / Magic who runs it from anywhere).
