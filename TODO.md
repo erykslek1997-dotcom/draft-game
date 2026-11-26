@@ -2005,3 +2005,32 @@ The user: "nie może być tak że specjalista defensywny jest wywyższany, a ofe
 - Check whether specialists' D-TAL is itself inflated (vs D-RAPM).
 - Gates: r(TAL, RAPM) >= 0.683, defenders' bias ~0, SRS >= 0.877, honest forecast >= 0.671, AI rosters. Behind knobs, not deployed.
 - TAL_OD (TAL as a linear O/D formula) was rejected: forecast 0.651.
+
+## Kalibracja 2026-11-26: dwóch głównych rozgrywających (Magic + Stockton) — nie wdrożone
+
+**Diagnoza.** Repro: `scripts/_ballrepro.ts`; najlepsza piątka: `scripts/_bestFive.ts`.
+
+1. Miara posiadania piłki istnieje: `ballShare` z USG% i AST%, dopasowana do danych o czasie z piłką z R² 0,83. Stockton ma 0,29, Magic 0,26, Jordan 0,15. Silnik używa jej jednak tylko w koszcie drugiego gracza z piłką (`ballHandlerAdjustment`).
+2. Ten koszt obniża zniżka dla strzelca, `BH_SHOOT` 0,6, liczona z samego spot-up skill. Magic + Stockton dostają przez to tylko −0,15 Overall (koszt 0,72 ORtg).
+3. Obciążenie (`ballLoadAdjustment`) i budżet jednej piłki w ataku (`OFF_BALL`) liczą z usage, a nie z posiadania. Jordan płaci za rzuty, dwóch rozgrywających prawie nic.
+4. Najlepsza piątka (Magic, Stockton, Bird, KG, Kareem; 12/12 dla top 80, 11/12 dla top 120) wygrywa głównie atakiem: 95 wobec 88 z Jordanem. Ta przewaga bierze się ze spacingu: Stockton 72, Magic 69, Jordan 1987-89 tylko 29.
+
+**Warianty** (`scripts/_ballgrid.sh`, `reports/ballgrid.txt`):
+
+| Wariant | Magic + Stockton | Najlepsza piątka | r SRS | r mechanika gry |
+|---|---|---|---|---|
+| dziś | 93,9 | ta sama | 0,875 | 0,735 |
+| `BH_SHOOT_SRC=spacing` (zniżka ze spacingu) | 93,7 | ta sama | 0,875 | 0,731 |
+| `BH_SHOOT=0` (pełny koszt z danych o piątkach, −2,3 ORtg) | 92,5 | ta sama | 0,876 | **0,724** |
+| `OFF_BALL_SRC=share` + `OFF_BALL` 0,5 / 0,8 | 93,0 / 92,1 | — | — | — |
+
+Ostatni wariant obniża wszystkie piątki podobnie, więc różnica zostaje: ok. 2,5 punktu na korzyść Magica i Stocktona.
+
+**Wniosek.** Żaden wariant nie detronizuje tej pary bez spadku r. Dane o prawdziwych piątkach (2013-14 i później) dają drugiemu graczowi z piłką ok. −2,3 ORtg, a to już jest w modelu (`BH_SHOOT=0`). Piątka z Currym i LeBronem jest 4,4 punktu za najlepszą (89,5 wobec 93,9), a jako trzeci wchodzi do niej znowu Stockton. To wskazuje na systematyczne przecenienie Stocktona w piątkach: TAL 94, spacing 72, mało rzutów, więc żadna kara za piłkę go nie dotyka.
+
+**Opcje na później:**
+- (a) Koszt „rozgrywający bez piłki”: gracz z wysokim AST% traci część O-TAL, gdy w piątce jest ktoś z większym `ballShare`. Kalibrowane na danych o piątkach z AST% obu graczy.
+- (b) Sprawdzić spacing Stocktona i Magica (72 / 69 przy 2,3 / 3,3 3PA): czy era-scaling nie zawyża wolumenu.
+- (c) Nic nie robić, jeśli (a) i (b) nie przejdą na r.
+
+Przełączniki `OFF_BALL_SRC` i `BH_SHOOT_SRC` zostają w kodzie, domyślnie wyłączone.
