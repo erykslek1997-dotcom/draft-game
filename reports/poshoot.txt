@@ -1,0 +1,25 @@
+playoff teams 480 seasons 1997 - 2026
+
+from 1997: n 480
+  champion       n  30  3PA rate z +0.34 (rank 12/30)  TS z +1.06  SRS +7.0
+  lost finals    n  30  3PA rate z +0.33 (rank 10/30)  TS z +1.09  SRS +4.7
+  conf finals    n  60  3PA rate z +0.47 (rank 12/30)  TS z +0.86  SRS +5.0
+  2nd round      n 120  3PA rate z +0.21 (rank 12/30)  TS z +0.57  SRS +3.8
+  1st round out  n 240  3PA rate z +0.03 (rank 14/30)  TS z +0.22  SRS +1.8
+  series wins ~ SRS                  r 0.555  coef +0.242
+  series wins ~ SRS + 3PA rate       r 0.555  coef +0.240 +0.028
+  series wins ~ SRS + TS             r 0.558  coef +0.225 +0.098
+  series wins ~ SRS + 3PA rate + TS  r 0.558  coef +0.225 +0.008 +0.094
+  finalists with a bottom-6 three-point rate: 1997 Utah Jazz, 1998 Utah Jazz, 2001 Philadelphia 76ers, 2004 Detroit Pistons
+
+from 2010: n 272
+  champion       n  17  3PA rate z +0.52 (rank 12/30)  TS z +1.35  SRS +6.9
+  lost finals    n  17  3PA rate z +0.70 (rank 8/30)  TS z +1.47  SRS +4.7
+  conf finals    n  34  3PA rate z +0.37 (rank 14/30)  TS z +0.81  SRS +4.9
+  2nd round      n  68  3PA rate z +0.13 (rank 15/30)  TS z +0.61  SRS +4.1
+  1st round out  n 136  3PA rate z -0.02 (rank 15/30)  TS z +0.17  SRS +1.9
+  series wins ~ SRS                  r 0.526  coef +0.226
+  series wins ~ SRS + 3PA rate       r 0.529  coef +0.220 +0.063
+  series wins ~ SRS + TS             r 0.561  coef +0.168 +0.322
+  series wins ~ SRS + 3PA rate + TS  r 0.561  coef +0.169 -0.008 +0.325
+  finalists with a bottom-6 three-point rate: none
