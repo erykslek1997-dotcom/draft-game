@@ -595,6 +595,8 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // Offense blend r 0.619, team O-TAL alone 0.768): `OFF_MIX` moves that share of the spacing,
 // playmaking and mismatch weights onto O-TAL.
 const OFF_MIX = Number(envVar('OFF_MIX') ?? 0.5);
+const OFF_GUARD_W = Number(envVar('OFF_GUARD_W') ?? 0);
+const OFF_GUARD_REF = Number(envVar('OFF_GUARD_REF') ?? 70);
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
@@ -1243,7 +1245,13 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
-  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
+  // 2026-11-26 (the user: Kidd O 66 + Oladipo O 67 beside KG / Marion / Wembanyama — "takie drużyny raczej
+  // nie wygrywają"; scripts/_backcourt.ts: weak backcourt + frontcourt star teams read 0.8 ORtg over real,
+  // corr(guard O, ORtg miss) 0.12): `OFF_GUARD_W` raw points per 10 O-TAL of the starting PG / SG mean
+  // over `OFF_GUARD_REF`. Measurement knob, 0 = off.
+  const guardO = primaryStarters(team).filter((e) => e.slot === 'PG' || e.slot === 'SG').map((e) => computeOffensiveTalent(e.player));
+  const guardTerm = OFF_GUARD_W && guardO.length ? (OFF_GUARD_W * (guardO.reduce((x, y) => x + y, 0) / guardO.length - OFF_GUARD_REF)) / 10 : 0;
+  const raw = guardTerm + raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };

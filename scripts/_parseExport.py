@@ -15,7 +15,8 @@ def parse(path):
       if m:
         team=dict(rank=int(m[1]),name=m[2].replace(' (YOU)',''),you='(YOU)' in m[2],overall=float(m[4]),title=m[5],lines={},players=[]);D['teams'].append(team);continue
       if not team: continue
-      m=re.match(r'^(Talent|Offense|Defense|Style|Fit inputs|Fit notes|Rotation notes): (.*)$',l)
+      if l.startswith('Talent ') and '·' in l: team['lines']['Talent']=l;continue
+      m=re.match(r'^(Offense|Defense|Style|Fit inputs|Fit notes|Rotation notes): (.*)$',l)
       if m: team['lines'][m[1]]=m[2];continue
       m=re.match(r'^  (PG|SG|SF|PF|C) +(.+?) (\d{4}-\d{2}) \((\w+)\) · (\d+)m · TAL (\d+) (.+?) · O (\d+) / D (\d+) .*?SPC (\d+).*?· FGA ([\d.]+) · (.+?) · max',l)
       if m: team['players'].append(dict(slot=m[1],name=m[2],span=m[3],pos=m[4],min=int(m[5]),tal=int(m[6]),tier=m[7],o=int(m[8]),d=int(m[9]),spc=int(m[10]),caps=float(m[11]),roles=m[12]))
