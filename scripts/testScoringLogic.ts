@@ -85,16 +85,20 @@ const breakdown = scoreTeam(fullRoster);
 // `scoreTeam`'s docstring in scoring.ts.
 // 2026-10-28, metrics audit: quality's internal weights are talent .271 / bench .17 / rotation .039
 // (same .48 bucket), and the second-ball-handler cost joins the whole-team terms.
-const qualitySum = 0.271 + 0.17 + 0.039;
-// 2026-10-29: offense .17 -> .13, defense .17 -> .21 (`scripts/measureDefenseLean.ts`).
-const fitSum = 0.18 + 0.13 + 0.21;
+// 2026-11-26: the weights audit (2026-11-24, scoring.ts `WM_DEFAULT`): talent x1.5, bench x1, rotation 0,
+// fit x0.5, offense x1.5, defense x0.75, each normalised within its bucket — this test still carried the
+// pre-audit split and only passed by rounding.
+const qT = 0.271 * 1.5, qB = 0.17 * 1, qR = 0;
+const fF = 0.18 * 0.5, fO = 0.13 * 1.5, fD = 0.21 * 0.75;
+const qualitySum = qT + qB + qR;
+const fitSum = fF + fO + fD;
 const recomputedOverall = Math.round(
-  (breakdown.talentScore * (0.271 / qualitySum) +
-    breakdown.benchDepthScore * (0.17 / qualitySum) +
-    breakdown.rotationScore * (0.039 / qualitySum)) * 0.5 +
-  (breakdown.fitScore * (0.18 / fitSum) +
-    breakdown.offenseScore * (0.13 / fitSum) +
-    breakdown.defenseScore * (0.21 / fitSum)) * 0.5 +
+  (breakdown.talentScore * (qT / qualitySum) +
+    breakdown.benchDepthScore * (qB / qualitySum) +
+    breakdown.rotationScore * (qR / qualitySum)) * 0.5 +
+  (breakdown.fitScore * (fF / fitSum) +
+    breakdown.offenseScore * (fO / fitSum) +
+    breakdown.defenseScore * (fD / fitSum)) * 0.5 +
     // Plus the two small whole-team terms: the ball load and (2026-10-15) the teammate lift.
     ballLoadAdjustment(fullRoster) +
     liftAdjustment(fullRoster) +
