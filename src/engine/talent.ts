@@ -2228,6 +2228,7 @@ const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
  * (spacing under `DEF_GATE_SPC`; 0 = off). Measurement knobs (scripts/_defover.ts, /tmp/defres.py).
  */
 const DEF_GATE_O0 = Number(envVar('DEF_GATE_O0') ?? 40);
+const DEF_WEAK_OFF = envVar('DEF_WEAK_OFF') !== '0';
 const DEF_GATE_O1 = Number(envVar('DEF_GATE_O1') ?? 0);
 const DEF_GATE_SPC = Number(envVar('DEF_GATE_SPC') ?? 0);
 const DEF_GATE_SPC_MULT = Number(envVar('DEF_GATE_SPC_MULT') ?? 0.5);
@@ -2263,7 +2264,10 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
     return (lift / 2) * clamp01((tal - 40) / 10);
   }
   lift = Math.min(lift * DEF_CREDIT_SCALE, DEFENSE_CREDIT_MAX_LIFT * DEF_CREDIT_SCALE) * defenseCreditGate(span, otal);
-  if (otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
+  // 2026-11-26 (the user: Mullin 1996-98 O 63 / D 56 over OG 2024-26 O 59 / D 85): the old hard weak-offense
+  // rule — under O-TAL 60 the credit stops at TAL 69 — gave OG's D 85 nothing. `DEF_WEAK_OFF=0` drops it
+  // (meant with the smooth gate `DEF_GATE_O1`).
+  if (DEF_WEAK_OFF && otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
   return lift;
 }
 
