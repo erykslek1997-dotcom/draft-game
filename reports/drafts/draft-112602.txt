@@ -1,0 +1,799 @@
+PRIMEBALL · FULL DRAFT EXPORT · seed 112602 · 16 teams · 2026-11-26 15:42 UTC
+You: Test
+
+==== DRAFT · every pick in order ===========================================
+
+R1 #  1  MIA  LeBron James 2011-13 (PF) · 18.3 caps
+R1 #  2  REN  Michael Jordan 1987-89 (SG) · 23.3 caps
+R1 #  3  SFE  Kevin Garnett 2002-04 (PF) · 18.9 caps
+R1 #  4  FLI  Giannis Antetokounmpo 2020-22 (PF) · 18.3 caps
+R1 #  5  CHY  Stephen Curry 2016-18 (PG) · 17.7 caps
+R1 #  6  ASP  David Robinson 1993-95 (C) · 19.5 caps
+R1 #  7  SXF  Hakeem Olajuwon 1992-94 (C) · 20.4 caps
+R1 #  8  BUF  Tim Duncan 2001-03 (C) · 17.8 caps
+R1 #  9  DUL  Nikola Jokic 2023-25 (C) · 18.6 caps
+R1 # 10  DEN  Larry Bird 1984-86 (SF) · 20.8 caps
+R1 # 11  TES  (YOU) Kevin Durant 2012-14 (PF) · 19.3 caps
+R1 # 12  SHR  Shaquille O'Neal 1999-01 (C) · 20.2 caps
+R1 # 13  NOR  Magic Johnson 1989-91 (PG) · 13.4 caps
+R1 # 14  PIT  Kareem Abdul-Jabbar 1975-77 (C) · 19.9 caps
+R1 # 15  LRK  Kobe Bryant 2006-08 (SG) · 21.7 caps
+R1 # 16  BTR  Kawhi Leonard 2014-16 (SF) · 14.1 caps
+R2 # 17  BTR  John Stockton 1990-92 (PG) · 11.7 caps
+R2 # 18  LRK  Scottie Pippen 1990-92 (SF) · 15.3 caps
+R2 # 19  PIT  Chris Paul 2013-15 (PG) · 14.2 caps
+R2 # 20  NOR  Dwyane Wade 2008-10 (SG) · 20.8 caps
+R2 # 21  SHR  Shai Gilgeous-Alexander 2024-26 (PG) · 20.7 caps
+R2 # 22  TES  (YOU) Steve Nash 2005-07 (PG) · 13.1 caps
+R2 # 23  DEN  Jerry West 1970-72 (PG) · 19.8 caps
+R2 # 24  DUL  Anthony Davis 2017-19 (PF) · 19.0 caps
+R2 # 25  BUF  James Harden 2018-20 (PG) · 23.4 caps
+R2 # 26  SXF  Charles Barkley 1988-90 (PF) · 15.1 caps
+R2 # 27  ASP  Luka Doncic 2024-26 (PG) · 21.8 caps
+R2 # 28  CHY  Wilt Chamberlain 1967-69 (C) · 15.2 caps
+R2 # 29  FLI  Victor Wembanyama 2024-26 (C) · 17.6 caps
+R2 # 30  SFE  Jason Kidd 2002-04 (PG) · 15.0 caps
+R2 # 31  REN  Chauncey Billups 2004-06 (PG) · 12.0 caps
+R2 # 32  MIA  Eddie Jones 2001-03 (SG) · 14.7 caps
+R3 # 33  MIA  Dwight Howard 2009-11 (C) · 11.7 caps
+R3 # 34  REN  Evan Mobley 2024-26 (PF) · 13.0 caps
+R3 # 35  SFE  Ray Allen 2000-02 (SG) · 16.3 caps
+R3 # 36  FLI  Reggie Miller 1993-95 (SG) · 13.3 caps
+R3 # 37  CHY  Paul Pierce 2006-08 (SF) · 15.3 caps
+R3 # 38  ASP  Paul George 2012-14 (SF) · 16.0 caps
+R3 # 39  SXF  Tracy McGrady 2001-03 (SG) · 22.5 caps
+R3 # 40  BUF  Vince Carter 2000-02 (SG) · 21.9 caps
+R3 # 41  DUL  Kyle Lowry 2015-17 (PG) · 15.4 caps
+R3 # 42  DEN  Moses Malone 1981-83 (C) · 19.7 caps
+R3 # 43  TES  (YOU) Bill Russell 1958-60 (C) · 15.2 caps
+R3 # 44  SHR  Dirk Nowitzki 2002-04 (PF) · 17.8 caps
+R3 # 45  NOR  Kristaps Porziņģis 2022-24 (C) · 14.5 caps
+R3 # 46  PIT  Jalen Williams 2023-25 (SF) · 15.4 caps
+R3 # 47  LRK  Terry Porter 1989-91 (PG) · 11.9 caps
+R3 # 48  BTR  Joel Embiid 2019-21 (C) · 16.7 caps
+R4 # 49  BTR  Chris Mullin 1988-90 (SG) · 18.1 caps
+R4 # 50  LRK  Alonzo Mourning 1998-00 (C) · 14.5 caps
+R4 # 51  PIT  Manu Ginóbili 2006-08 (SG) · 12.3 caps
+R4 # 52  NOR  Shawn Marion 2002-04 (SF) · 17.5 caps
+R4 # 53  SHR  Derrick White 2023-25 (SG) · 12.1 caps
+R4 # 54  TES  (YOU) Gerald Wallace 2008-10 (SF) · 11.9 caps
+R4 # 55  DEN  Rasheed Wallace 2005-07 (PF) · 12.3 caps
+R4 # 56  DUL  Jayson Tatum 2021-23 (SF) · 20.8 caps
+R4 # 57  BUF  Andrei Kirilenko 2002-04 (PF) · 10.0 caps
+R4 # 58  SXF  Khris Middleton 2019-21 (SF) · 15.5 caps
+R4 # 59  ASP  Klay Thompson 2014-16 (SG) · 17.1 caps
+R4 # 60  CHY  Draymond Green 2014-16 (PF) · 9.9 caps
+R4 # 61  FLI  Gary Payton 1998-00 (PG) · 19.6 caps
+R4 # 62  SFE  Patrick Ewing 1988-90 (C) · 18.2 caps
+R4 # 63  REN  Ron Artest 2007-09 (SF) · 15.9 caps
+R4 # 64  MIA  Oscar Robertson 1961-63 (PG) · 21.4 caps
+R5 # 65  MIA  Peja Stojaković 2002-04 (SF) · 15.8 caps
+R5 # 66  REN  Pau Gasol 2008-10 (C) · 12.9 caps
+R5 # 67  SFE  Clifford Robinson 1998-00 (SF) · 13.6 caps
+R5 # 68  FLI  Shane Battier 2006-08 (SF) · 7.9 caps
+R5 # 69  CHY  Andre Iguodala 2011-13 (SG) · 10.6 caps
+R5 # 70  ASP  Al Horford 2021-23 (PF) · 7.9 caps
+R5 # 71  SXF  Mike Conley 2022-24 (PG) · 8.8 caps
+R5 # 72  BUF  Danny Green 2012-14 (SG) · 7.9 caps
+R5 # 73  DUL  Doug Christie 2001-03 (SG) · 8.0 caps
+R5 # 74  DEN  Hersey Hawkins 1996-98 (SG) · 8.7 caps
+R5 # 75  TES  (YOU) Dan Majerle 1992-94 (SG) · 13.8 caps
+R5 # 76  SHR  Mikal Bridges 2020-22 (SF) · 9.9 caps
+R5 # 77  NOR  Bobby Jones 1976-78 (PF) · 10.4 caps
+R5 # 78  PIT  Bob McAdoo 1972-74 (PF) · 19.1 caps
+R5 # 79  LRK  Kevin Love 2013-15 (PF) · 15.6 caps
+R5 # 80  BTR  Kevin McHale 1986-88 (PF) · 15.7 caps
+R6 # 81  BTR  Mookie Blaylock 1994-96 (PG) · 14.4 caps
+R6 # 82  LRK  Jrue Holiday 2022-24 (PG) · 12.6 caps
+R6 # 83  PIT  Walt Frazier 1967-69 (PG) · 10.5 caps
+R6 # 84  NOR  Tyrese Haliburton 2021-23 (PG) · 13.2 caps
+R6 # 85  SHR  Kevin Johnson 1987-89 (PG) · 10.7 caps
+R6 # 86  TES  (YOU) Kyrie Irving 2017-19 (PG) · 18.3 caps
+R6 # 87  DEN  Doc Rivers 1985-87 (PG) · 9.1 caps
+R6 # 88  DUL  Kyle Korver 2013-15 (SG) · 8.3 caps
+R6 # 89  BUF  Baron Davis 1999-01 (PG) · 8.5 caps
+R6 # 90  SXF  Michael Cooper 1985-87 (SG) · 8.2 caps
+R6 # 91  ASP  Mark Jackson 1997-99 (PG) · 7.1 caps
+R6 # 92  CHY  Gilbert Arenas 2004-06 (PG) · 19.9 caps
+R6 # 93  FLI  Sleepy Floyd 1985-87 (PG) · 12.4 caps
+R6 # 94  SFE  George Hill 2013-15 (PG) · 9.7 caps
+R6 # 95  REN  Tony Parker 2004-06 (PG) · 14.1 caps
+R6 # 96  MIA  Jeff Hornacek 1997-99 (SG) · 10.0 caps
+R7 # 97  MIA  Tiago Splitter 2013-15 (C) · 5.8 caps
+R7 # 98  REN  Bruce Bowen 2002-04 (SF) · 6.0 caps
+R7 # 99  SFE  Rudy Gobert 2014-16 (C) · 5.5 caps
+R7 #100  FLI  Dikembe Mutombo 1997-99 (C) · 8.2 caps
+R7 #101  CHY  Joakim Noah 2011-13 (C) · 8.6 caps
+R7 #102  ASP  Ben Wallace 2000-02 (C) · 5.7 caps
+R7 #103  SXF  Serge Ibaka 2010-12 (PF) · 7.5 caps
+R7 #104  BUF  Tyson Chandler 2011-13 (C) · 5.9 caps
+R7 #105  DUL  Steve Kerr 1995-97 (PG) · 5.8 caps
+R7 #106  DEN  DeAndre Jordan 2014-16 (C) · 6.6 caps
+R7 #107  TES  (YOU) Robert Williams 2020-22 (C) · 5.5 caps
+R7 #108  SHR  Tree Rollins 1979-81 (C) · 5.9 caps
+R7 #109  NOR  Marcus Camby 2007-09 (C) · 8.0 caps
+R7 #110  PIT  Otto Porter Jr. 2016-18 (SF) · 10.8 caps
+R7 #111  LRK  Mitchell Robinson 2021-23 (C) · 4.8 caps
+R7 #112  BTR  Domantas Sabonis 2023-25 (C) · 12.9 caps
+R8 #113  BTR  Jud Buechler 2000-02 (SF) · 2.3 caps
+R8 #114  LRK  Toni Kukoč 1995-97 (PF) · 10.1 caps
+R8 #115  PIT  Hot Rod Williams 1997-99 (C) · 2.4 caps
+R8 #116  NOR  Amen Thompson 2023-25 (SF) · 8.7 caps
+R8 #117  SHR  Bob Gross 1976-78 (SF) · 9.3 caps
+R8 #118  TES  (YOU) Robert Horry 2001-03 (PF) · 5.8 caps
+R8 #119  DEN  Nicolas Batum 2020-22 (SF) · 6.3 caps
+R8 #120  DUL  Dennis Rodman 1989-91 (PF) · 6.4 caps
+R8 #121  BUF  Bryon Russell 1997-99 (SF) · 7.5 caps
+R8 #122  SXF  Charlie Ward 1998-00 (PG) · 6.4 caps
+R8 #123  ASP  Jimmy Butler 2012-14 (SF) · 8.1 caps
+R8 #124  CHY  Adam Keefe 1998-00 (PF) · 2.4 caps → played 1999-01
+R8 #125  FLI  Ryan Bowen 2002-04 (SF) · 2.2 caps
+R8 #126  SFE  Trevor Ariza 2012-14 (SF) · 9.8 caps
+R8 #127  REN  Chuck Hayes 2007-09 (PF) · 2.2 caps
+R8 #128  MIA  Brian Taylor 1980-82 (PG) · 7.6 caps
+R9 #129  MIA  DeSagana Diop 2005-07 (C) · 1.9 caps
+R9 #130  REN  Nenê 2011-13 (PF) · 9.9 caps
+R9 #131  SFE  Kevon Looney 2016-18 (C) · 2.5 caps
+R9 #132  FLI  Robert Covington 2017-19 (SF) · 10.4 caps
+R9 #133  CHY  Tayshaun Prince 2003-05 (SF) · 10.3 caps
+R9 #134  ASP  Andrew Lang 1988-90 (C) · 2.1 caps
+R9 #135  SXF  Joel Anthony 2010-12 (C) · 1.8 caps → played 2009-11
+R9 #136  BUF  Greg Ostertag 2004-06 (C) · 1.8 caps
+R9 #137  DUL  Dwight Powell 2023-25 (C) · 1.4 caps
+R9 #138  DEN  Ömer Aşık 2010-12 (C) · 2.0 caps
+R9 #139  TES  (YOU) T.R. Dunn 1987-89 (SG) · 1.6 caps
+R9 #140  SHR  Manute Bol 1986-88 (C) · 2.5 caps → played 1990-92
+R9 #141  NOR  Harvey Catchings 1982-84 (C) · 2.4 caps → played 1983-85
+R9 #142  PIT  Michael Cage 1996-98 (C) · 1.4 caps
+R9 #143  LRK  Fabricio Oberto 2008-10 (C) · 1.4 caps
+R9 #144  BTR  Jarron Collins 2006-08 (C) · 1.7 caps
+
+==== TEAMS · scores, ingredients, players ==================================
+
+DRAFT EXPORT · seed 112602 · 16 teams
+
+#1 Norfolk Squids — overall 87 (87.21) · title 23%
+Talent 84 · Bench 90 · Offense 81 · Defense 82 · Spacing 45 · Fit 69 · Rotation 97
+Offense: raw 83.5 · O-TAL 83 · Creation 99 · Rim 92 · Playmaking 88 · Self-creation 57 · Mismatch 61
+Defense: D-TAL 88 · Coverage 86 · Switch 91 · Hunt 100 · Cohesion 80 · Reb 85
+Style: Creator + rim protector (Creator + rim protector)
+Fit: pairingStructure 61 · defensiveRoleCoverage 86 · lineup penalty −1
+Fit inputs: on-ball demand 2.01 · creators 100/94 · plus shooters 2 · hard non-spacers 1 · POA Dwyane Wade 89 · wing Shawn Marion 92 · rim Kristaps Porziņģis 86 · weak link Magic Johnson 72
+Fit notes: The roster has a credible playoff defensive ceiling. | Two starters who both run the offense take turns with the ball.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9 · tierMinutesOverage -3
+Rotation notes: All starters in natural or realistic secondary positions. | Over their tier's real minutes ceiling: Bobby Jones (All-star) 33/30m.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Magic Johnson 1989-91 (PG) · 36m · TAL 97 Legend · O 97 / D 80 (engine 100 / 67) · SPC 69(69) · rim 39 · PM 98 · FGA 13.4 · Primary Ball Handler / Wing Stopper · max 40m
+  PG Tyrese Haliburton 2021-23 (PG) · 12m · TAL 81 All-star · O 88 / D 53 (engine 79 / 40) · SPC 89(89) · rim 10 · PM 94 · FGA 13.2 · Primary Ball Handler / Helper · max 36m
+  SG Dwyane Wade 2008-10 (SG) · 36m · TAL 95 MVP · O 97 / D 87 (engine 100 / 83) · SPC 34(34) · rim 79 · PM 92 · FGA 20.8 · Slasher / Point of Attack · max 38m
+  SG Tyrese Haliburton 2021-23 (PG) · 12m · TAL 81 All-star · O 88 / D 53 (engine 79 / 40) · SPC 89(89) · rim 10 · PM 94 · FGA 13.2 · Primary Ball Handler / Helper · max 36m
+  SF Shawn Marion 2002-04 (SF) · 36m · TAL 85 All-NBA · O 72 / D 92 (engine 70 / 87) · SPC 52(52) · rim 22 · PM 46 · FGA 17.5 · Stationary Shooter / Wing Stopper · max 38m
+  SF Amen Thompson 2023-25 (SF) · 12m · TAL 77 Starter · O 57 / D 90 (engine 54 / 84) · SPC 0(0) · rim 33 · PM 76 · FGA 8.7 · Athletic Finisher / Chaser · max 32m
+  PF Bobby Jones 1976-78 (PF) · 33m · TAL 82 All-star · O 66 / D 89 (engine 66 / 86) · SPC 9(9) · rim 15 · PM 59 · FGA 10.4 · Roll & Cut Big / Anchor Big · max 30m
+  PF Amen Thompson 2023-25 (SF) · 15m · TAL 77 Starter · O 57 / D 90 (engine 54 / 84) · SPC 0(0) · rim 33 · PM 76 · FGA 8.7 · Athletic Finisher / Chaser · max 32m
+  C  Kristaps Porziņģis 2022-24 (C) · 33m · TAL 85 All-NBA · O 79 / D 80 (engine 75 / 80) · SPC 80(80) · rim 28 · PM 68 · FGA 14.5 · Stretch Big / Anchor Big · max 33m
+  C  Marcus Camby 2007-09 (C) · 15m · TAL 70 Starter · O 44 / D 85 (engine 50 / 89) · SPC 0(0) · rim 23 · PM 60 · FGA 8.0 · Roll & Cut Big / Anchor Big · max 35m
+
+#2 Little Rock Boulders — overall 87 (86.81) · title 14%
+Talent 86 · Bench 88 · Offense 85 · Defense 72 · Spacing 64 · Fit 78 · Rotation 100
+Offense: raw 85.9 · O-TAL 82 · Creation 99 · Rim 89 · Playmaking 87 · Self-creation 56 · Mismatch 67
+Defense: D-TAL 81 · Coverage 84 · Switch 48 · Hunt 83 · Cohesion 57 · Reb 87
+Style: Big lineup + shooting (Big lineup + shooting)
+Fit: pairingStructure 67 · defensiveRoleCoverage 84
+Fit inputs: on-ball demand 2.10 · creators 100/94 · plus shooters 3 · hard non-spacers 2 · POA Kobe Bryant 82 · wing Scottie Pippen 92 · rim Alonzo Mourning 95 · weak link Kevin Love 54
+Fit notes: The roster has a credible playoff defensive ceiling.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Terry Porter 1989-91 (PG) · 36m · TAL 85 All-NBA · O 90 / D 73 (engine 85 / 59) · SPC 78(78) · rim 17 · PM 94 · FGA 11.9 · Primary Ball Handler / Point of Attack · max 38m
+  PG Jrue Holiday 2022-24 (PG) · 12m · TAL 81 All-star · O 64 / D 88 (engine 62 / 80) · SPC 79(79) · rim 8 · PM 90 · FGA 12.6 · Primary Ball Handler / Point of Attack · max 36m
+  SG Kobe Bryant 2006-08 (SG) · 36m · TAL 96 Legend · O 96 / D 83 (engine 100 / 73) · SPC 79(79) · rim 49 · PM 87 · FGA 21.7 · Shot Creator / Point of Attack · max 40m
+  SG Jrue Holiday 2022-24 (PG) · 12m · TAL 81 All-star · O 64 / D 88 (engine 62 / 80) · SPC 79(79) · rim 8 · PM 90 · FGA 12.6 · Primary Ball Handler / Point of Attack · max 36m
+  SF Scottie Pippen 1990-92 (SF) · 36m · TAL 94 MVP · O 86 / D 95 (engine 83 / 88) · SPC 17(34) · rim 24 · PM 87 · FGA 15.3 · Secondary Ball Handler / Wing Stopper · max 38m
+  SF Toni Kukoč 1995-97 (PF) · 12m · TAL 71 Starter · O 74 / D 57 (engine 71 / 49) · SPC 42(42) · rim 21 · PM 87 · FGA 10.1 · Slasher / Helper · max 25m
+  PF Kevin Love 2013-15 (PF) · 36m · TAL 81 All-star · O 91 / D 49 (engine 86 / 37) · SPC 83(83) · rim 26 · PM 84 · FGA 15.6 · Stretch Big / Helper · max 36m
+  PF Toni Kukoč 1995-97 (PF) · 12m · TAL 71 Starter · O 74 / D 57 (engine 71 / 49) · SPC 42(42) · rim 21 · PM 87 · FGA 10.1 · Slasher / Helper · max 25m
+  C  Alonzo Mourning 1998-00 (C) · 36m · TAL 87 All-NBA · O 72 / D 94 (engine 70 / 97) · SPC 0(15) · rim 65 · PM 28 · FGA 14.5 · Post Scorer / Anchor Big · max 37m
+  C  Mitchell Robinson 2021-23 (C) · 12m · TAL 69 Starter · O 54 / D 78 (engine 56 / 82) · SPC 0(0) · rim 29 · PM 52 · FGA 4.8 · Roll & Cut Big / Anchor Big · max 32m
+
+#3 Denver Peaks — overall 87 (86.78) · title 15%
+Talent 81 · Bench 85 · Offense 84 · Defense 79 · Spacing 84 · Fit 78 · Rotation 100
+Offense: raw 84.9 · O-TAL 81 · Creation 99 · Rim 100 · Playmaking 79 · Self-creation 83 · Mismatch 82
+Defense: D-TAL 79 · Coverage 73 · Switch 52 · Hunt 96 · Cohesion 45 · Reb 84
+Style: Shooting + switching (Shooting + switching)
+Fit: pairingStructure 82 · defensiveRoleCoverage 73
+Fit inputs: on-ball demand 2.67 · creators 100/96 · plus shooters 3 · hard non-spacers 1 · POA Hersey Hawkins 66 · wing Larry Bird 83 · rim Rasheed Wallace 86 · weak link Jerry West 71
+Fit notes: Larry Bird wants an empty paint for his isolations and threes, Moses Malone wants the ball on the block — two offenses that get in each other's way. | On-ball demand is crowded (2.67 weighted roles). | The roster has a credible playoff defensive ceiling.
+Rotation: basePositionFit 100 · benchRimCoverage 7 · optimalMinutes 8 · bonusCap -15
+Rotation notes: All starters in natural or realistic secondary positions. | Bench brings rim protection the starting five lacks.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Jerry West 1970-72 (PG) · 36m · TAL 91 MVP · O 93 / D 78 (engine 91 / 65) · SPC 80(80) · rim 32 · PM 82 · FGA 19.8 · Primary Ball Handler / Chaser · max 38m
+  PG Doc Rivers 1985-87 (PG) · 12m · TAL 75 Starter · O 66 / D 81 (engine 68 / 75) · SPC 13(14) · rim 13 · PM 95 · FGA 9.1 · Primary Ball Handler / Point of Attack · max 30m
+  SG Hersey Hawkins 1996-98 (SG) · 35m · TAL 77 Starter · O 70 / D 72 (engine 65 / 57) · SPC 67(67) · rim 4 · PM 59 · FGA 8.7 · Stationary Shooter / Chaser · max 36m
+  SG Doc Rivers 1985-87 (PG) · 13m · TAL 75 Starter · O 66 / D 81 (engine 68 / 75) · SPC 13(14) · rim 13 · PM 95 · FGA 9.1 · Primary Ball Handler / Point of Attack · max 30m
+  SF Larry Bird 1984-86 (SF) · 36m · TAL 97 Legend · O 96 / D 84 (engine 100 / 73) · SPC 96(96) · rim 28 · PM 91 · FGA 20.8 · Shot Creator / Wing Stopper · max 40m
+  SF Nicolas Batum 2020-22 (SF) · 12m · TAL 67 Starter · O 58 / D 67 (engine 52 / 55) · SPC 72(72) · rim 0 · PM 89 · FGA 6.3 · Stationary Shooter / Chaser · max 32m
+  PF Rasheed Wallace 2005-07 (PF) · 36m · TAL 81 All-star · O 57 / D 92 (engine 53 / 86) · SPC 64(64) · rim 15 · PM 50 · FGA 12.3 · Stretch Big / Anchor Big · max 35m
+  PF Nicolas Batum 2020-22 (SF) · 12m · TAL 67 Starter · O 58 / D 67 (engine 52 / 55) · SPC 72(72) · rim 0 · PM 89 · FGA 6.3 · Stationary Shooter / Chaser · max 32m
+  C  Moses Malone 1981-83 (C) · 36m · TAL 87 All-NBA · O 93 / D 71 (engine 90 / 72) · SPC 0(0) · rim 94 · PM 29 · FGA 19.7 · Post Scorer / Anchor Big · max 38m
+  C  DeAndre Jordan 2014-16 (C) · 12m · TAL 77 Starter · O 65 / D 86 (engine 66 / 91) · SPC 0(0) · rim 52 · PM 59 · FGA 6.6 · Roll & Cut Big / Anchor Big · max 36m
+
+#4 Reno Jackrabbits — overall 86 (85.56) · title 7%
+Talent 83 · Bench 81 · Offense 82 · Defense 79 · Spacing 57 · Fit 72 · Rotation 100
+Offense: raw 84.3 · O-TAL 77 · Creation 94 · Rim 100 · Playmaking 90 · Self-creation 72 · Mismatch 61
+Defense: D-TAL 81 · Coverage 85 · Switch 62 · Hunt 90 · Cohesion 64 · Reb 80
+Style: Creator + rim protector (Creator + rim protector)
+Fit: pairingStructure 61 · defensiveRoleCoverage 85
+Fit inputs: on-ball demand 2.52 · creators 100/92 · plus shooters 2 · hard non-spacers 1 · POA Michael Jordan 99 · wing Ron Artest 86 · rim Evan Mobley 85 · weak link Pau Gasol 60
+Fit notes: On-ball demand is crowded (2.52 weighted roles). | The roster has a credible playoff defensive ceiling.
+Rotation: basePositionFit 100 · optimalMinutes 8 · bonusCap -8
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Chauncey Billups 2004-06 (PG) · 36m · TAL 86 All-NBA · O 88 / D 75 (engine 82 / 61) · SPC 89(89) · rim 14 · PM 98 · FGA 12.0 · Primary Ball Handler / Point of Attack · max 38m
+  PG Tony Parker 2004-06 (PG) · 12m · TAL 80 All-star · O 79 / D 69 (engine 72 / 53) · SPC 13(13) · rim 33 · PM 91 · FGA 14.1 · Secondary Ball Handler / Low Activity · max 36m
+  SG Michael Jordan 1987-89 (SG) · 36m · TAL 99+ GOAT · O 99 / D 99 (engine 100 / 98) · SPC 43(56) · rim 87 · PM 87 · FGA 23.3 · Shot Creator / Point of Attack · max 40m
+  SG Tony Parker 2004-06 (PG) · 12m · TAL 80 All-star · O 79 / D 69 (engine 72 / 53) · SPC 13(13) · rim 33 · PM 91 · FGA 14.1 · Secondary Ball Handler / Low Activity · max 36m
+  SF Ron Artest 2007-09 (SF) · 36m · TAL 79 All-star · O 61 / D 90 (engine 58 / 84) · SPC 72(72) · rim 22 · PM 55 · FGA 15.9 · Stationary Shooter / Wing Stopper · max 36m
+  SF Bruce Bowen 2002-04 (SF) · 12m · TAL 64 Role Player · O 43 / D 86 (engine 48 / 85) · SPC 75(62) · rim 0 · PM 60 · FGA 6.0 · Stationary Shooter / Wing Stopper · max 33m
+  PF Evan Mobley 2024-26 (PF) · 33m · TAL 86 All-NBA · O 72 / D 86 (engine 69 / 79) · SPC 36(36) · rim 45 · PM 64 · FGA 13.0 · Versatile Big / Mobile Big · max 34m
+  PF Nenê 2011-13 (PF) · 15m · TAL 66 Starter · O 50 / D 77 (engine 52 / 73) · SPC 0(0) · rim 30 · PM 34 · FGA 9.9 · Post Scorer / Switch Big · max 32m
+  C  Pau Gasol 2008-10 (C) · 36m · TAL 85 All-NBA · O 89 / D 56 (engine 77 / 47) · SPC 0(0) · rim 45 · PM 81 · FGA 12.9 · Post Scorer / Mobile Big · max 38m
+  C  Nenê 2011-13 (PF) · 12m · TAL 66 Starter · O 50 / D 77 (engine 52 / 73) · SPC 0(0) · rim 30 · PM 34 · FGA 9.9 · Post Scorer / Switch Big · max 32m
+
+#5 Santa Fe Coyotes — overall 86 (85.54) · title 7%
+Talent 84 · Bench 83 · Offense 83 · Defense 75 · Spacing 63 · Fit 80 · Rotation 100
+Offense: raw 85.5 · O-TAL 78 · Creation 94 · Rim 100 · Playmaking 87 · Self-creation 58 · Mismatch 84
+Defense: D-TAL 76 · Coverage 78 · Switch 70 · Hunt 82 · Cohesion 69 · Reb 84
+Style: Creator + rim protector, leaning Shooting + switching (Creator + rim protector + Shooting + switching)
+Fit: pairingStructure 84 · defensiveRoleCoverage 78
+Fit inputs: on-ball demand 2.13 · creators 100/92 · plus shooters 2 · hard non-spacers 2 · POA Jason Kidd 95 · wing Kevin Garnett 80 · rim Patrick Ewing 84 · weak link Ray Allen 25
+Fit notes: Wing coverage is inferred from box activity, not a confirmed incumbent Wing Stopper role. | Ray Allen is a huntable defensive weak link in the starting five. | The roster has a low defensive floor even if its best lineup can defend.
+Rotation: basePositionFit 100 · optimalMinutes 8 · bonusCap -8
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Jason Kidd 2002-04 (PG) · 36m · TAL 87 All-NBA · O 72 / D 98 (engine 72 / 95) · SPC 55(55) · rim 17 · PM 97 · FGA 15.0 · Primary Ball Handler / Point of Attack · max 38m
+  PG George Hill 2013-15 (PG) · 12m · TAL 71 Starter · O 59 / D 77 (engine 55 / 64) · SPC 65(64) · rim 4 · PM 76 · FGA 9.7 · Secondary Ball Handler / Helper · max 36m
+  SG Ray Allen 2000-02 (SG) · 36m · TAL 86 All-NBA · O 95 / D 49 (engine 98 / 26) · SPC 99(99) · rim 17 · PM 75 · FGA 16.3 · Movement Shooter / Low Activity · max 38m
+  SG George Hill 2013-15 (PG) · 12m · TAL 71 Starter · O 59 / D 77 (engine 55 / 64) · SPC 65(64) · rim 4 · PM 76 · FGA 9.7 · Secondary Ball Handler / Helper · max 36m
+  SF Clifford Robinson 1998-00 (SF) · 36m · TAL 80 All-star · O 74 / D 74 (engine 67 / 59) · SPC 68(68) · rim 20 · PM 66 · FGA 13.6 · Slasher / Chaser · max 36m
+  SF Trevor Ariza 2012-14 (SF) · 12m · TAL 68 Starter · O 60 / D 70 (engine 55 / 58) · SPC 70(70) · rim 6 · PM 65 · FGA 9.8 · Stationary Shooter / Wing Stopper · max 33m
+  PF Kevin Garnett 2002-04 (PF) · 36m · TAL 98 Legend · O 95 / D 99 (engine 97 / 97) · SPC 7(48) · rim 41 · PM 83 · FGA 18.9 · Versatile Big / Mobile Big · max 40m
+  PF Trevor Ariza 2012-14 (SF) · 12m · TAL 68 Starter · O 60 / D 70 (engine 55 / 58) · SPC 70(70) · rim 6 · PM 65 · FGA 9.8 · Stationary Shooter / Wing Stopper · max 33m
+  C  Patrick Ewing 1988-90 (C) · 36m · TAL 87 All-NBA · O 83 / D 77 (engine 77 / 76) · SPC 0(19) · rim 100 · PM 33 · FGA 18.2 · Post Scorer / Anchor Big · max 38m
+  C  Rudy Gobert 2014-16 (C) · 12m · TAL 78 All-star · O 55 / D 89 (engine 53 / 90) · SPC 0(0) · rim 30 · PM 48 · FGA 5.5 · Roll & Cut Big / Anchor Big · max 30m
+
+#6 Duluth Yetis — overall 85 (85.40) · title 9%
+Talent 83 · Bench 84 · Offense 90 · Defense 75 · Spacing 86 · Fit 83 · Rotation 100
+Offense: raw 92.4 · O-TAL 84 · Creation 85 · Rim 100 · Playmaking 84 · Self-creation 57 · Mismatch 97
+Defense: D-TAL 77 · Coverage 73 · Switch 59 · Hunt 93 · Cohesion 58 · Reb 91
+Style: Shooting + switching, leaning Creator + rim protector (Shooting + switching + Creator + rim protector)
+Fit: pairingStructure 97 · defensiveRoleCoverage 73
+Fit inputs: on-ball demand 2.09 · creators 91/90 · plus shooters 4 · hard non-spacers 0 · POA Kyle Lowry 71 · wing Jayson Tatum 70 · rim Anthony Davis 90 · weak link Kyle Korver 63
+Fit notes: The roster has a low defensive floor even if its best lineup can defend.
+Rotation: basePositionFit 100 · optimalMinutes 8 · bonusCap -8
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Kyle Lowry 2015-17 (PG) · 36m · TAL 85 All-NBA · O 87 / D 77 (engine 82 / 65) · SPC 90(90) · rim 21 · PM 90 · FGA 15.4 · Secondary Ball Handler / Chaser · max 38m
+  PG Steve Kerr 1995-97 (PG) · 12m · TAL 68 Starter · O 66 / D 52 (engine 59 / 40) · SPC 76(72) · rim 0 · PM 62 · FGA 5.8 · Off Screen Shooter / Low Activity · max 32m
+  SG Kyle Korver 2013-15 (SG) · 35m · TAL 77 Starter · O 70 / D 68 (engine 63 / 52) · SPC 99(99) · rim 0 · PM 59 · FGA 8.3 · Movement Shooter / Helper · max 36m
+  SG Doug Christie 2001-03 (SG) · 13m · TAL 75 Starter · O 55 / D 90 (engine 55 / 86) · SPC 49(44) · rim 6 · PM 82 · FGA 8.0 · Secondary Ball Handler / Wing Stopper · max 36m
+  SF Jayson Tatum 2021-23 (SF) · 36m · TAL 85 All-NBA · O 93 / D 72 (engine 89 / 60) · SPC 92(92) · rim 67 · PM 82 · FGA 20.8 · Shot Creator / Wing Stopper · max 38m
+  SF Doug Christie 2001-03 (SG) · 12m · TAL 75 Starter · O 55 / D 90 (engine 55 / 86) · SPC 49(44) · rim 6 · PM 82 · FGA 8.0 · Secondary Ball Handler / Wing Stopper · max 36m
+  PF Anthony Davis 2017-19 (PF) · 30m · TAL 94 MVP · O 91 / D 91 (engine 90 / 88) · SPC 32(32) · rim 100 · PM 44 · FGA 19.0 · Versatile Big / Anchor Big · max 38m
+  PF Dennis Rodman 1989-91 (PF) · 18m · TAL 70 Starter · O 43 / D 84 (engine 49 / 82) · SPC 7(4) · rim 15 · PM 41 · FGA 6.4 · Athletic Finisher / Wing Stopper · max 32m
+  C  Nikola Jokic 2023-25 (C) · 40m · TAL 97 Legend · O 99 / D 68 (engine 100 / 64) · SPC 83(83) · rim 66 · PM 91 · FGA 18.6 · Versatile Big / Post Defender · max 40m
+  C  Anthony Davis 2017-19 (PF) · 8m · TAL 94 MVP · O 91 / D 91 (engine 90 / 88) · SPC 32(32) · rim 100 · PM 44 · FGA 19.0 · Versatile Big / Anchor Big · max 38m
+
+#7 Test (YOU) — overall 85 (85.23) · title 4%
+Talent 81 · Bench 90 · Offense 87 · Defense 71 · Spacing 85 · Fit 73 · Rotation 100
+Offense: raw 88.2 · O-TAL 82 · Creation 98 · Rim 77 · Playmaking 87 · Self-creation 69 · Mismatch 74
+Defense: D-TAL 79 · Coverage 76 · Switch 45 · Hunt 77 · Cohesion 26 · Reb 86
+Style: Creator + rim protector, leaning Shooting + switching (Creator + rim protector + Shooting + switching)
+Fit: pairingStructure 74 · defensiveRoleCoverage 76
+Fit inputs: on-ball demand 1.78 · creators 100/91 · plus shooters 3 · hard non-spacers 2 · POA Dan Majerle 73 · wing Gerald Wallace 89 · rim Bill Russell 97 · weak link Steve Nash 25
+Fit notes: Steve Nash is a pick-and-roll lead guard paired with a block-camping center (Bill Russell) — a screen-and-pop big and a back-to-the-basket scorer are different jobs. | 2 non-spacing starters compress the starting lineup. | Steve Nash is a huntable defensive weak link in the starting five.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Steve Nash 2005-07 (PG) · 37m · TAL 90 MVP · O 95 / D 47 (engine 100 / 21) · SPC 99(99) · rim 13 · PM 99 · FGA 13.1 · Primary Ball Handler / Low Activity · max 38m
+  PG Kyrie Irving 2017-19 (PG) · 11m · TAL 81 All-star · O 92 / D 48 (engine 88 / 28) · SPC 91(91) · rim 24 · PM 84 · FGA 18.3 · Shot Creator / Low Activity · max 36m
+  SG Dan Majerle 1992-94 (SG) · 30m · TAL 75 Starter · O 64 / D 80 (engine 62 / 69) · SPC 83(83) · rim 1 · PM 61 · FGA 13.8 · Stationary Shooter / Wing Stopper · max 36m
+  SG Kyrie Irving 2017-19 (PG) · 18m · TAL 81 All-star · O 92 / D 48 (engine 88 / 28) · SPC 91(91) · rim 24 · PM 84 · FGA 18.3 · Shot Creator / Low Activity · max 36m
+  SF Gerald Wallace 2008-10 (SF) · 36m · TAL 81 All-star · O 63 / D 90 (engine 59 / 83) · SPC 28(25) · rim 28 · PM 51 · FGA 11.9 · Athletic Finisher / Wing Stopper · max 36m
+  SF Kevin Durant 2012-14 (PF) · 12m · TAL 97 Legend · O 98 / D 75 (engine 100 / 65) · SPC 99(99) · rim 79 · PM 77 · FGA 19.3 · Shot Creator / Chaser · max 40m
+  PF Kevin Durant 2012-14 (PF) · 28m · TAL 97 Legend · O 98 / D 75 (engine 100 / 65) · SPC 99(99) · rim 79 · PM 77 · FGA 19.3 · Shot Creator / Chaser · max 40m
+  PF Robert Horry 2001-03 (PF) · 20m · TAL 73 Starter · O 54 / D 90 (engine 57 / 90) · SPC 51(46) · rim 15 · PM 75 · FGA 5.8 · Stretch Big / Switch Big · max 34m
+  C  Bill Russell 1958-60 (C) · 36m · TAL 88 All-NBA · O 62 / D 97 (engine 59 / 100) · SPC 0(0) · rim 16 · PM 50 · FGA 15.2 · Post Scorer / Anchor Big · max 38m
+  C  Robert Williams 2020-22 (C) · 12m · TAL 77 Starter · O 66 / D 80 (engine 65 / 83) · SPC 0(0) · rim 31 · PM 56 · FGA 5.5 · Roll & Cut Big / Anchor Big · max 17m
+
+#8 Shreveport Catfish — overall 85 (85.03) · title 5%
+Talent 83 · Bench 82 · Offense 89 · Defense 72 · Spacing 78 · Fit 81 · Rotation 99
+Offense: raw 90.0 · O-TAL 87 · Creation 79 · Rim 100 · Playmaking 80 · Self-creation 61 · Mismatch 86
+Defense: D-TAL 77 · Coverage 78 · Switch 69 · Hunt 92 · Cohesion 27 · Reb 80
+Style: Shooting + switching (Shooting + switching)
+Fit: pairingStructure 86 · defensiveRoleCoverage 78
+Fit inputs: on-ball demand 2.01 · creators 87/86 · plus shooters 3 · hard non-spacers 1 · POA Shai Gilgeous-Alexander 77 · wing Derrick White 80 · rim Shaquille O'Neal 89 · weak link Dirk Nowitzki 63
+Fit notes: Wing coverage is inferred from box activity, not a confirmed incumbent Wing Stopper role. | The roster has a credible playoff defensive ceiling.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9 · tierMinutesOverage -1
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Shai Gilgeous-Alexander 2024-26 (PG) · 26m · TAL 93 MVP · O 99 / D 79 (engine 100 / 68) · SPC 80(80) · rim 75 · PM 87 · FGA 20.7 · Shot Creator / Point of Attack · max 37m
+  PG Kevin Johnson 1987-89 (PG) · 22m · TAL 77 Starter · O 80 / D 56 (engine 72 / 44) · SPC 4(31) · rim 19 · PM 92 · FGA 10.7 · Secondary Ball Handler / Chaser · max 36m
+  SG Derrick White 2023-25 (SG) · 36m · TAL 83 All-star · O 70 / D 90 (engine 69 / 85) · SPC 69(69) · rim 0 · PM 78 · FGA 12.1 · Secondary Ball Handler / Point of Attack · max 36m
+  SG Shai Gilgeous-Alexander 2024-26 (PG) · 12m · TAL 93 MVP · O 99 / D 79 (engine 100 / 68) · SPC 80(80) · rim 75 · PM 87 · FGA 20.7 · Shot Creator / Point of Attack · max 37m
+  SF Mikal Bridges 2020-22 (SF) · 36m · TAL 73 Starter · O 62 / D 80 (engine 58 / 68) · SPC 63(63) · rim 8 · PM 68 · FGA 9.9 · Stationary Shooter / Wing Stopper · max 34m
+  SF Bob Gross 1976-78 (SF) · 12m · TAL 68 Starter · O 66 / D 63 (engine 63 / 53) · SPC 50(48) · rim 9 · PM 41 · FGA 9.3 · Athletic Finisher / Chaser · max 32m
+  PF Dirk Nowitzki 2002-04 (PF) · 36m · TAL 88 All-NBA · O 91 / D 64 (engine 85 / 51) · SPC 83(83) · rim 24 · PM 71 · FGA 17.8 · Stretch Big / Mobile Big · max 38m
+  PF Bob Gross 1976-78 (SF) · 12m · TAL 68 Starter · O 66 / D 63 (engine 63 / 53) · SPC 50(48) · rim 9 · PM 41 · FGA 9.3 · Athletic Finisher / Chaser · max 32m
+  C  Shaquille O'Neal 1999-01 (C) · 36m · TAL 97 Legend · O 97 / D 81 (engine 100 / 82) · SPC 0(0) · rim 100 · PM 51 · FGA 20.2 · Post Scorer / Anchor Big · max 40m
+  C  Tree Rollins 1979-81 (C) · 12m · TAL 69 Starter · O 52 / D 80 (engine 53 / 85) · SPC 0(0) · rim 15 · PM 51 · FGA 5.9 · Roll & Cut Big / Anchor Big · max 32m
+
+#9 Miami Comets — overall 85 (84.51) · title 4%
+Talent 86 · Bench 72 · Offense 85 · Defense 72 · Spacing 76 · Fit 84 · Rotation 99
+Offense: raw 89.8 · O-TAL 88 · Creation 100 · Rim 100 · Playmaking 82 · Self-creation 80 · Mismatch 86
+Defense: D-TAL 77 · Coverage 77 · Switch 86 · Hunt 79 · Cohesion 21 · Reb 87
+Style: Shooting + switching, leaning Creator + rim protector (Shooting + switching + Creator + rim protector)
+Fit: pairingStructure 86 · defensiveRoleCoverage 77
+Fit inputs: on-ball demand 2.24 · creators 100/100 · plus shooters 3 · hard non-spacers 1 · POA Eddie Jones 77 · wing LeBron James 88 · rim Dwight Howard 95 · weak link Peja Stojaković 25
+Fit notes: Peja Stojaković is a huntable defensive weak link in the starting five. | Eddie Jones defends and spaces the floor around the scorers — the right complement.
+Rotation: basePositionFit 100 · durabilityOverwork -2 · optimalMinutes 8 · bonusCap -6 · tierMinutesOverage -1
+Rotation notes: All starters in natural or realistic secondary positions. | Overworked for their durability: LeBron James (42/40 safe min).
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Oscar Robertson 1961-63 (PG) · 36m · TAL 92 MVP · O 95 / D 69 (engine 100 / 52) · SPC 60(60) · rim 36 · PM 81 · FGA 21.4 · Primary Ball Handler / Point of Attack · max 38m
+  PG Jeff Hornacek 1997-99 (SG) · 12m · TAL 72 Starter · O 73 / D 62 (engine 69 / 50) · SPC 78(78) · rim 7 · PM 89 · FGA 10.0 · Secondary Ball Handler / Chaser · max 32m
+  SG Eddie Jones 2001-03 (SG) · 36m · TAL 85 All-NBA · O 77 / D 85 (engine 73 / 75) · SPC 80(80) · rim 14 · PM 68 · FGA 14.7 · Stationary Shooter / Chaser · max 38m
+  SG Jeff Hornacek 1997-99 (SG) · 12m · TAL 72 Starter · O 73 / D 62 (engine 69 / 50) · SPC 78(78) · rim 7 · PM 89 · FGA 10.0 · Secondary Ball Handler / Chaser · max 32m
+  SF Peja Stojaković 2002-04 (SF) · 36m · TAL 79 All-star · O 90 / D 43 (engine 83 / 22) · SPC 99(99) · rim 18 · PM 40 · FGA 15.8 · Off Screen Shooter / Low Activity · max 36m
+  SF LeBron James 2011-13 (PF) · 12m · TAL 99+ GOAT · O 99 / D 91 (engine 100 / 86) · SPC 78(78) · rim 97 · PM 96 · FGA 18.3 · Primary Ball Handler / Wing Stopper · max 40m
+  PF LeBron James 2011-13 (PF) · 30m · TAL 99+ GOAT · O 99 / D 91 (engine 100 / 86) · SPC 78(78) · rim 97 · PM 96 · FGA 18.3 · Primary Ball Handler / Wing Stopper · max 40m
+  PF Tiago Splitter 2013-15 (C) · 18m · TAL 65 Role Player · O 45 / D 71 (engine 50 / 74) · SPC 0(0) · rim 28 · PM 50 · FGA 5.8 · Roll & Cut Big / Post Defender · max 32m
+  C  Dwight Howard 2009-11 (C) · 36m · TAL 87 All-NBA · O 75 / D 93 (engine 74 / 96) · SPC 0(0) · rim 93 · PM 22 · FGA 11.7 · Post Scorer / Anchor Big · max 37m
+  C  Tiago Splitter 2013-15 (C) · 12m · TAL 65 Role Player · O 45 / D 71 (engine 50 / 74) · SPC 0(0) · rim 28 · PM 50 · FGA 5.8 · Roll & Cut Big / Post Defender · max 32m
+
+#10 Pittsburgh Anvils — overall 84 (84.05) · title 5%
+Talent 86 · Bench 83 · Offense 81 · Defense 82 · Spacing 68 · Fit 89 · Rotation 100
+Offense: raw 85.5 · O-TAL 81 · Creation 98 · Rim 100 · Playmaking 90 · Self-creation 71 · Mismatch 88
+Defense: D-TAL 84 · Coverage 84 · Switch 67 · Hunt 100 · Cohesion 58 · Reb 85
+Style: Shooting + switching (Shooting + switching)
+Fit: pairingStructure 88 · defensiveRoleCoverage 84
+Fit inputs: on-ball demand 2.71 · creators 100/92 · plus shooters 3 · hard non-spacers 1 · POA Chris Paul 93 · wing Jalen Williams 80 · rim Kareem Abdul-Jabbar 93 · weak link Bob McAdoo 70
+Fit notes: On-ball demand is crowded (2.71 weighted roles). | The roster has a credible playoff defensive ceiling. | Chris Paul and Manu Ginóbili and Jalen Williams defend and space the floor around the scorers — the right complement.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Chris Paul 2013-15 (PG) · 36m · TAL 95 MVP · O 94 / D 93 (engine 96 / 90) · SPC 76(76) · rim 8 · PM 99 · FGA 14.2 · Primary Ball Handler / Point of Attack · max 36m
+  PG Walt Frazier 1967-69 (PG) · 12m · TAL 80 All-star · O 61 / D 86 (engine 56 / 75) · SPC 57(45) · rim 8 · PM 81 · FGA 10.5 · Secondary Ball Handler / Point of Attack · max 36m
+  SG Manu Ginóbili 2006-08 (SG) · 31m · TAL 84 All-NBA · O 85 / D 86 (engine 87 / 85) · SPC 76(76) · rim 20 · PM 92 · FGA 12.3 · Secondary Ball Handler / Chaser · max 31m
+  SG Walt Frazier 1967-69 (PG) · 17m · TAL 80 All-star · O 61 / D 86 (engine 56 / 75) · SPC 57(45) · rim 8 · PM 81 · FGA 10.5 · Secondary Ball Handler / Point of Attack · max 36m
+  SF Jalen Williams 2023-25 (SF) · 34m · TAL 85 All-NBA · O 78 / D 86 (engine 73 / 76) · SPC 76(76) · rim 27 · PM 89 · FGA 15.4 · Secondary Ball Handler / Wing Stopper · max 35m
+  SF Otto Porter Jr. 2016-18 (SF) · 14m · TAL 71 Starter · O 68 / D 65 (engine 63 / 53) · SPC 74(74) · rim 0 · PM 43 · FGA 10.8 · Stationary Shooter / Chaser · max 32m
+  PF Bob McAdoo 1972-74 (PF) · 36m · TAL 85 All-NBA · O 83 / D 69 (engine 75 / 57) · SPC 61(61) · rim 55 · PM 39 · FGA 19.1 · Post Scorer / Anchor Big · max 38m
+  PF Otto Porter Jr. 2016-18 (SF) · 12m · TAL 71 Starter · O 68 / D 65 (engine 63 / 53) · SPC 74(74) · rim 0 · PM 43 · FGA 10.8 · Stationary Shooter / Chaser · max 32m
+  C  Kareem Abdul-Jabbar 1975-77 (C) · 39m · TAL 97 Legend · O 95 / D 88 (engine 94 / 89) · SPC 0(0) · rim 100 · PM 70 · FGA 19.9 · Post Scorer / Anchor Big · max 40m
+  C  Hot Rod Williams 1997-99 (C) · 9m · TAL 46 Role Player · O 28 / D 55 (engine 36 / 57) · SPC 0(0) · rim 15 · PM 44 · FGA 2.4 · Roll & Cut Big / Post Defender · max 24m
+
+#11 Buffalo Snowplows — overall 84 (83.91) · title 2%
+Talent 81 · Bench 84 · Offense 83 · Defense 78 · Spacing 81 · Fit 81 · Rotation 99
+Offense: raw 85.5 · O-TAL 83 · Creation 85 · Rim 100 · Playmaking 84 · Self-creation 70 · Mismatch 71
+Defense: D-TAL 83 · Coverage 83 · Switch 81 · Hunt 90 · Cohesion 65 · Reb 73
+Style: Two-way star (Two-way star)
+Fit: pairingStructure 71 · defensiveRoleCoverage 83
+Fit inputs: on-ball demand 2.50 · creators 92/81 · plus shooters 3 · hard non-spacers 1 · POA Danny Green 80 · wing Andrei Kirilenko 86 · rim Tim Duncan 99 · weak link James Harden 65
+Fit notes: James Harden wants an empty paint for his isolations and threes, Tim Duncan wants the ball on the block — two offenses that get in each other's way. | On-ball demand is crowded (2.50 weighted roles). | The roster has a credible playoff defensive ceiling. | Danny Green defends and spaces the floor around the scorers — the right complement.
+Rotation: basePositionFit 99 · optimalMinutes 8 · bonusCap -7 · tierMinutesOverage -1
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG James Harden 2018-20 (PG) · 36m · TAL 92 MVP · O 99 / D 67 (engine 100 / 49) · SPC 90(90) · rim 52 · PM 92 · FGA 23.4 · Shot Creator / Chaser · max 38m
+  PG Baron Davis 1999-01 (PG) · 12m · TAL 74 Starter · O 60 / D 78 (engine 54 / 63) · SPC 47(40) · rim 13 · PM 95 · FGA 8.5 · Secondary Ball Handler / Point of Attack · max 36m
+  SG Vince Carter 2000-02 (SG) · 36m · TAL 86 All-NBA · O 94 / D 58 (engine 92 / 47) · SPC 85(85) · rim 34 · PM 80 · FGA 21.9 · Athletic Finisher / Chaser · max 38m
+  SG Baron Davis 1999-01 (PG) · 12m · TAL 74 Starter · O 60 / D 78 (engine 54 / 63) · SPC 47(40) · rim 13 · PM 95 · FGA 8.5 · Secondary Ball Handler / Point of Attack · max 36m
+  SF Danny Green 2012-14 (SG) · 32m · TAL 73 Starter · O 56 / D 88 (engine 57 / 85) · SPC 86(86) · rim 0 · PM 44 · FGA 7.9 · Stationary Shooter / Wing Stopper · max 32m
+  SF Bryon Russell 1997-99 (SF) · 16m · TAL 69 Starter · O 56 / D 75 (engine 50 / 62) · SPC 63(53) · rim 9 · PM 43 · FGA 7.5 · Athletic Finisher / Chaser · max 32m
+  PF Andrei Kirilenko 2002-04 (PF) · 36m · TAL 83 All-star · O 72 / D 86 (engine 72 / 84) · SPC 36(36) · rim 27 · PM 81 · FGA 10.0 · Athletic Finisher / Wing Stopper · max 34m
+  PF Bryon Russell 1997-99 (SF) · 12m · TAL 69 Starter · O 56 / D 75 (engine 50 / 62) · SPC 63(53) · rim 9 · PM 43 · FGA 7.5 · Athletic Finisher / Chaser · max 32m
+  C  Tim Duncan 2001-03 (C) · 36m · TAL 98 Legend · O 94 / D 97 (engine 97 / 100) · SPC 0(12) · rim 86 · PM 65 · FGA 17.8 · Post Scorer / Anchor Big · max 40m
+  C  Tyson Chandler 2011-13 (C) · 12m · TAL 77 Starter · O 58 / D 88 (engine 58 / 91) · SPC 0(0) · rim 41 · PM 53 · FGA 5.9 · Roll & Cut Big / Mobile Big · max 34m
+
+#12 Sioux Falls Bison — overall 84 (83.62) · title 2%
+Talent 86 · Bench 81 · Offense 82 · Defense 73 · Spacing 75 · Fit 67 · Rotation 99
+Offense: raw 85.2 · O-TAL 82 · Creation 85 · Rim 100 · Playmaking 86 · Self-creation 65 · Mismatch 79
+Defense: D-TAL 76 · Coverage 68 · Switch 69 · Hunt 90 · Cohesion 30 · Reb 84
+Style: Creator + rim protector, leaning Shooting + switching (Creator + rim protector + Shooting + switching)
+Fit: pairingStructure 79 · defensiveRoleCoverage 68 · lineup penalty −7
+Fit inputs: on-ball demand 2.84 · creators 93/89 · plus shooters 3 · hard non-spacers 2 · POA Tracy McGrady 60 · wing Khris Middleton 64 · rim Hakeem Olajuwon 100 · weak link Khris Middleton 64
+Fit notes: On-ball demand is crowded (2.84 weighted roles). | Wing coverage is inferred from box activity, not a confirmed incumbent Wing Stopper role. | The roster has a low defensive floor even if its best lineup can defend. | Charles Barkley and Hakeem Olajuwon both score in the paint without an outside shot.
+Rotation: basePositionFit 100 · optimalMinutes 9 · bonusCap -9 · tierMinutesOverage -1
+Rotation notes: All starters in natural or realistic secondary positions. | Thin at center — one credible option, so foul trouble or an injury there has no real answer.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Mike Conley 2022-24 (PG) · 32m · TAL 80 All-star · O 65 / D 80 (engine 58 / 64) · SPC 86(86) · rim 0 · PM 89 · FGA 8.8 · Secondary Ball Handler / Chaser · max 32m
+  PG Charlie Ward 1998-00 (PG) · 6m · TAL 67 Starter · O 40 / D 89 (engine 48 / 89) · SPC 65(60) · rim 0 · PM 87 · FGA 6.4 · Stationary Shooter / Point of Attack · max 32m
+  PG Michael Cooper 1985-87 (SG) · 10m · TAL 75 Starter · O 62 / D 86 (engine 63 / 82) · SPC 61(59) · rim 0 · PM 91 · FGA 8.2 · Secondary Ball Handler / Point of Attack · max 29m
+  SG Tracy McGrady 2001-03 (SG) · 28m · TAL 92 MVP · O 97 / D 61 (engine 100 / 47) · SPC 80(80) · rim 52 · PM 93 · FGA 22.5 · Shot Creator / Chaser · max 38m
+  SG Michael Cooper 1985-87 (SG) · 20m · TAL 75 Starter · O 62 / D 86 (engine 63 / 82) · SPC 61(59) · rim 0 · PM 91 · FGA 8.2 · Secondary Ball Handler / Point of Attack · max 29m
+  SF Khris Middleton 2019-21 (SF) · 38m · TAL 85 All-NBA · O 85 / D 69 (engine 75 / 53) · SPC 90(90) · rim 9 · PM 82 · FGA 15.5 · Shot Creator / Helper · max 37m
+  SF Tracy McGrady 2001-03 (SG) · 10m · TAL 92 MVP · O 97 / D 61 (engine 100 / 47) · SPC 80(80) · rim 52 · PM 93 · FGA 22.5 · Shot Creator / Chaser · max 38m
+  PF Charles Barkley 1988-90 (PF) · 36m · TAL 90 MVP · O 95 / D 64 (engine 100 / 52) · SPC 15(17) · rim 91 · PM 69 · FGA 15.1 · Slasher / Helper · max 38m
+  PF Serge Ibaka 2010-12 (PF) · 12m · TAL 63 Role Player · O 37 / D 78 (engine 47 / 77) · SPC 9(5) · rim 22 · PM 46 · FGA 7.5 · Roll & Cut Big / Anchor Big · max 32m
+  C  Hakeem Olajuwon 1992-94 (C) · 36m · TAL 97 Legend · O 88 / D 97 (engine 86 / 100) · SPC 1(23) · rim 97 · PM 42 · FGA 20.4 · Post Scorer / Anchor Big · max 40m
+  C  Serge Ibaka 2010-12 (PF) · 12m · TAL 63 Role Player · O 37 / D 78 (engine 47 / 77) · SPC 9(5) · rim 22 · PM 46 · FGA 7.5 · Roll & Cut Big / Anchor Big · max 32m
+
+#13 Aspen Ibexes — overall 83 (83.11) · title 1%
+Talent 83 · Bench 81 · Offense 79 · Defense 78 · Spacing 86 · Fit 84 · Rotation 99
+Offense: raw 85.9 · O-TAL 79 · Creation 82 · Rim 100 · Playmaking 84 · Self-creation 59 · Mismatch 94
+Defense: D-TAL 83 · Coverage 73 · Switch 76 · Hunt 91 · Cohesion 23 · Reb 80
+Style: Balanced two-way (Balanced two-way) · risk: the roster lacks a single advantage that can decide a close series
+Fit: pairingStructure 94 · defensiveRoleCoverage 73
+Fit inputs: on-ball demand 2.41 · creators 89/88 · plus shooters 4 · hard non-spacers 1 · POA Luka Doncic 62 · wing Paul George 89 · rim David Robinson 98 · weak link Luka Doncic 65
+Fit notes: The roster has a credible playoff defensive ceiling. | Paul George defends and spaces the floor around the scorers — the right complement.
+Rotation: basePositionFit 100 · optimalMinutes 8 · smallBall -1 · bonusCap -8
+Rotation notes: All starters in natural or realistic secondary positions. | Heavy small-ball: Jimmy Butler (SF) at PF (16m).
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Luka Doncic 2024-26 (PG) · 36m · TAL 88 All-NBA · O 96 / D 66 (engine 100 / 50) · SPC 95(95) · rim 24 · PM 88 · FGA 21.8 · Shot Creator / Chaser · max 37m
+  PG Mark Jackson 1997-99 (PG) · 12m · TAL 69 Starter · O 74 / D 45 (engine 68 / 34) · SPC 42(42) · rim 4 · PM 98 · FGA 7.1 · Secondary Ball Handler / Helper · max 32m
+  SG Klay Thompson 2014-16 (SG) · 35m · TAL 85 All-NBA · O 88 / D 76 (engine 82 / 62) · SPC 97(97) · rim 13 · PM 62 · FGA 17.1 · Movement Shooter / Wing Stopper · max 35m
+  SG Mark Jackson 1997-99 (PG) · 13m · TAL 69 Starter · O 74 / D 45 (engine 68 / 34) · SPC 42(42) · rim 4 · PM 98 · FGA 7.1 · Secondary Ball Handler / Helper · max 32m
+  SF Paul George 2012-14 (SF) · 36m · TAL 86 All-NBA · O 68 / D 93 (engine 65 / 86) · SPC 81(81) · rim 19 · PM 70 · FGA 16.0 · Stationary Shooter / Wing Stopper · max 38m
+  SF Jimmy Butler 2012-14 (SF) · 12m · TAL 67 Starter · O 47 / D 77 (engine 47 / 65) · SPC 28(21) · rim 12 · PM 79 · FGA 8.1 · Athletic Finisher / Wing Stopper · max 33m
+  PF Al Horford 2021-23 (PF) · 32m · TAL 82 All-star · O 63 / D 84 (engine 58 / 75) · SPC 87(87) · rim 15 · PM 89 · FGA 7.9 · Stretch Big / Post Defender · max 33m
+  PF Jimmy Butler 2012-14 (SF) · 16m · TAL 67 Starter · O 47 / D 77 (engine 47 / 65) · SPC 28(21) · rim 12 · PM 79 · FGA 8.1 · Athletic Finisher / Wing Stopper · max 33m
+  C  David Robinson 1993-95 (C) · 36m · TAL 98 Legend · O 96 / D 94 (engine 100 / 98) · SPC 3(27) · rim 100 · PM 71 · FGA 19.5 · Post Scorer / Anchor Big · max 40m
+  C  Ben Wallace 2000-02 (C) · 12m · TAL 78 All-star · O 45 / D 92 (engine 48 / 94) · SPC 0(0) · rim 25 · PM 58 · FGA 5.7 · Roll & Cut Big / Anchor Big · max 36m
+
+#14 Baton Rouge Crawdads — overall 83 (82.95) · title <1%
+Talent 86 · Bench 72 · Offense 87 · Defense 66 · Spacing 55 · Fit 86 · Rotation 82
+Offense: raw 88.7 · O-TAL 85 · Creation 97 · Rim 100 · Playmaking 88 · Self-creation 57 · Mismatch 82
+Defense: D-TAL 72 · Coverage 82 · Switch 45 · Hunt 86 · Cohesion 49 · Reb 84
+Style: Creator + rim protector, leaning Balanced two-way (Creator + rim protector + Balanced two-way)
+Fit: pairingStructure 82 · defensiveRoleCoverage 82
+Fit inputs: on-ball demand 3.16 · creators 100/86 · plus shooters 2 · hard non-spacers 1 · POA John Stockton 92 · wing Kawhi Leonard 96 · rim Joel Embiid 78 · weak link Chris Mullin 63
+Fit notes: On-ball demand is crowded (3.16 weighted roles). | John Stockton and Kawhi Leonard defend and space the floor around the scorers — the right complement.
+Rotation: basePositionFit 100 · optimalMinutes 8 · bonusCap -8 · tierMinutesOverage -18
+Rotation notes: All starters in natural or realistic secondary positions. | Over their tier's real minutes ceiling: Kawhi Leonard (MVP) 40/34m, Jud Buechler (Cigarette Butt) 16/13m.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG John Stockton 1990-92 (PG) · 36m · TAL 94 MVP · O 93 / D 92 (engine 95 / 89) · SPC 72(72) · rim 18 · PM 99 · FGA 11.7 · Primary Ball Handler / Point of Attack · max 38m
+  PG Mookie Blaylock 1994-96 (PG) · 12m · TAL 81 All-star · O 68 / D 88 (engine 68 / 82) · SPC 57(57) · rim 0 · PM 97 · FGA 14.4 · Primary Ball Handler / Point of Attack · max 36m
+  SG Chris Mullin 1988-90 (SG) · 40m · TAL 86 All-NBA · O 93 / D 57 (engine 88 / 44) · SPC 54(54) · rim 37 · PM 75 · FGA 18.1 · Shot Creator / Helper · max 38m
+  SG Jud Buechler 2000-02 (SF) · 8m · TAL 24 Cigarette Butt · O 26 / D 20 (engine 33 / 18) · SPC 46(19) · rim 0 · PM 65 · FGA 2.3 · Athletic Finisher / Low Activity · max 13m
+  SF Kawhi Leonard 2014-16 (SF) · 40m · TAL 95 MVP · O 83 / D 99 (engine 80 / 95) · SPC 76(76) · rim 16 · PM 54 · FGA 14.1 · Stationary Shooter / Wing Stopper · max 34m
+  SF Jud Buechler 2000-02 (SF) · 8m · TAL 24 Cigarette Butt · O 26 / D 20 (engine 33 / 18) · SPC 46(19) · rim 0 · PM 65 · FGA 2.3 · Athletic Finisher / Low Activity · max 13m
+  PF Kevin McHale 1986-88 (PF) · 36m · TAL 85 All-NBA · O 87 / D 71 (engine 82 / 61) · SPC 5(15) · rim 100 · PM 37 · FGA 15.7 · Post Scorer / Anchor Big · max 38m
+  PF Domantas Sabonis 2023-25 (C) · 12m · TAL 72 Starter · O 90 / D 43 (engine 88 / 40) · SPC 67(67) · rim 41 · PM 92 · FGA 12.9 · Versatile Big / Helper · max 36m
+  C  Joel Embiid 2019-21 (C) · 32m · TAL 90 MVP · O 91 / D 76 (engine 87 / 76) · SPC 57(57) · rim 56 · PM 86 · FGA 16.7 · Versatile Big / Mobile Big · max 33m
+  C  Domantas Sabonis 2023-25 (C) · 16m · TAL 72 Starter · O 90 / D 43 (engine 88 / 40) · SPC 67(67) · rim 41 · PM 92 · FGA 12.9 · Versatile Big / Helper · max 36m
+
+#15 Cheyenne Jackalopes — overall 82 (82.47) · title 1%
+Talent 81 · Bench 88 · Offense 74 · Defense 81 · Spacing 100 · Fit 75 · Rotation 100
+Offense: raw 81.5 · O-TAL 75 · Creation 98 · Rim 92 · Playmaking 88 · Self-creation 46 · Mismatch 71
+Defense: D-TAL 84 · Coverage 81 · Switch 72 · Hunt 95 · Cohesion 79 · Reb 87
+Style: Defense-first, leaning Creator + rim protector (Defense-first + Creator + rim protector)
+Fit: pairingStructure 71 · defensiveRoleCoverage 81
+Fit inputs: on-ball demand 1.28 · creators 100/91 · plus shooters 2 · hard non-spacers 1 · POA Draymond Green 76 · wing Andre Iguodala 91 · rim Wilt Chamberlain 93 · weak link Paul Pierce 65
+Fit notes: The roster has a credible playoff defensive ceiling.
+Rotation: basePositionFit 100 · optimalMinutes 8 · bonusCap -8
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Stephen Curry 2016-18 (PG) · 35m · TAL 97 Legend · O 95 / D 74 (engine 100 / 57) · SPC 100(100) · rim 19 · PM 92 · FGA 17.7 · Primary Ball Handler / Chaser · max 36m
+  PG Gilbert Arenas 2004-06 (PG) · 13m · TAL 81 All-star · O 91 / D 52 (engine 85 / 39) · SPC 92(92) · rim 42 · PM 81 · FGA 19.9 · Shot Creator / Helper · max 36m
+  SG Andre Iguodala 2011-13 (SG) · 36m · TAL 79 All-star · O 60 / D 92 (engine 60 / 88) · SPC 41(40) · rim 12 · PM 85 · FGA 10.6 · Secondary Ball Handler / Wing Stopper · max 36m
+  SG Gilbert Arenas 2004-06 (PG) · 12m · TAL 81 All-star · O 91 / D 52 (engine 85 / 39) · SPC 92(92) · rim 42 · PM 81 · FGA 19.9 · Shot Creator / Helper · max 36m
+  SF Paul Pierce 2006-08 (SF) · 36m · TAL 85 All-NBA · O 87 / D 70 (engine 78 / 55) · SPC 82(82) · rim 24 · PM 72 · FGA 15.3 · Stationary Shooter / Wing Stopper · max 38m
+  SF Tayshaun Prince 2003-05 (SF) · 12m · TAL 70 Starter · O 57 / D 82 (engine 56 / 74) · SPC 43(36) · rim 14 · PM 67 · FGA 10.3 · Athletic Finisher / Wing Stopper · max 36m
+  PF Draymond Green 2014-16 (PF) · 35m · TAL 84 All-NBA · O 64 / D 93 (engine 63 / 88) · SPC 50(50) · rim 24 · PM 91 · FGA 9.9 · Versatile Big / Anchor Big · max 37m
+  PF Tayshaun Prince 2003-05 (SF) · 13m · TAL 70 Starter · O 57 / D 82 (engine 56 / 74) · SPC 43(36) · rim 14 · PM 67 · FGA 10.3 · Athletic Finisher / Wing Stopper · max 36m
+  C  Wilt Chamberlain 1967-69 (C) · 36m · TAL 88 All-NBA · O 86 / D 85 (engine 85 / 89) · SPC 0(0) · rim 82 · PM 61 · FGA 15.2 · Versatile Big / Anchor Big · max 38m
+  C  Joakim Noah 2011-13 (C) · 12m · TAL 78 All-star · O 59 / D 87 (engine 59 / 89) · SPC 0(0) · rim 27 · PM 73 · FGA 8.6 · Roll & Cut Big / Anchor Big · max 34m
+
+#16 Flint Embers — overall 82 (81.89) · title <1%
+Talent 81 · Bench 84 · Offense 74 · Defense 82 · Spacing 84 · Fit 88 · Rotation 100
+Offense: raw 78.6 · O-TAL 80 · Creation 98 · Rim 100 · Playmaking 76 · Self-creation 59 · Mismatch 83
+Defense: D-TAL 87 · Coverage 84 · Switch 61 · Hunt 86 · Cohesion 80 · Reb 74
+Style: Shooting + switching, leaning Defense-first (Shooting + switching + Defense-first)
+Fit: pairingStructure 83 · defensiveRoleCoverage 84
+Fit inputs: on-ball demand 1.80 · creators 100/93 · plus shooters 4 · hard non-spacers 1 · POA Gary Payton 87 · wing Shane Battier 83 · rim Victor Wembanyama 96 · weak link Reggie Miller 62
+Fit notes: The roster has a credible playoff defensive ceiling. | Shane Battier defends and spaces the floor around the scorers — the right complement.
+Rotation: basePositionFit 100 · optimalMinutes 7 · bonusCap -7
+Rotation notes: All starters in natural or realistic secondary positions.
+Players: slot name years · min · TAL tier · O/D · SPC(team) · rim · playmaking · FGA · roles · max min
+  PG Gary Payton 1998-00 (PG) · 36m · TAL 87 All-NBA · O 85 / D 86 (engine 84 / 81) · SPC 67(67) · rim 41 · PM 81 · FGA 19.6 · Primary Ball Handler / Point of Attack · max 38m
+  PG Sleepy Floyd 1985-87 (PG) · 12m · TAL 80 All-star · O 91 / D 52 (engine 85 / 39) · SPC 55(55) · rim 20 · PM 95 · FGA 12.4 · Primary Ball Handler / Helper · max 36m
+  SG Reggie Miller 1993-95 (SG) · 35m · TAL 85 All-NBA · O 91 / D 56 (engine 86 / 43) · SPC 96(96) · rim 25 · PM 78 · FGA 13.3 · Movement Shooter / Chaser · max 37m
+  SG Sleepy Floyd 1985-87 (PG) · 13m · TAL 80 All-star · O 91 / D 52 (engine 85 / 39) · SPC 55(55) · rim 20 · PM 95 · FGA 12.4 · Primary Ball Handler / Helper · max 36m
+  SF Shane Battier 2006-08 (SF) · 36m · TAL 77 Starter · O 56 / D 91 (engine 52 / 85) · SPC 76(76) · rim 0 · PM 48 · FGA 7.9 · Stationary Shooter / Wing Stopper · max 36m
+  SF Robert Covington 2017-19 (SF) · 12m · TAL 65 Role Player · O 43 / D 88 (engine 48 / 87) · SPC 59(59) · rim 0 · PM 52 · FGA 10.4 · Stationary Shooter / Wing Stopper · max 34m
+  PF Giannis Antetokounmpo 2020-22 (PF) · 35m · TAL 98 Legend · O 98 / D 92 (engine 100 / 91) · SPC 24(24) · rim 100 · PM 70 · FGA 18.3 · Slasher / Mobile Big · max 36m
+  PF Robert Covington 2017-19 (SF) · 13m · TAL 65 Role Player · O 43 / D 88 (engine 48 / 87) · SPC 59(59) · rim 0 · PM 52 · FGA 10.4 · Stationary Shooter / Wing Stopper · max 34m
+  C  Victor Wembanyama 2024-26 (C) · 33m · TAL 90 MVP · O 83 / D 92 (engine 81 / 95) · SPC 80(80) · rim 33 · PM 69 · FGA 17.6 · Stretch Big / Anchor Big · max 34m
+  C  Dikembe Mutombo 1997-99 (C) · 15m · TAL 79 All-star · O 58 / D 86 (engine 55 / 86) · SPC 0(0) · rim 35 · PM 17 · FGA 8.2 · Roll & Cut Big / Anchor Big · max 36m
+
+
+==== DESCRIPTIONS · the report each team got, then every detector that fired ====
+
+#1 Norfolk Squids
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_PERIMETER_DEFENSE 0.92 · +BALANCED_DEFENSIVE_COVERAGE 0.92 · +CLOSING_FIVE_STABLE 0.90 · +OFF_BALL_SUPPORT_STRONG 0.85 · +BALL_HAWKS 0.84 · +DEEP_PLAYOFF_ROTATION 0.83 · −DEAD_SLOT_HURTS_ROTATION 0.82 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · +ELITE_FLOOR_GENERAL 0.81 · +HIGH_VALUE_ROLE_PLAYERS 0.81 · +RIM_PROTECTION_CONTINUITY 0.81 · −PLAYER_ABOVE_MINUTES_CEILING 0.79
+
+#2 Little Rock Boulders
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +SHOT_BLOCKING_ANCHOR 0.83 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · +RIM_PROTECTION_CONTINUITY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −NON_SPACER_OVERLOAD 0.69
+
+#3 Denver Peaks
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +STRONG_STARTING_REBOUNDING 0.89 · +MULTIPLE_PERIMETER_DEFENDERS 0.85 · +BALANCED_DEFENSIVE_COVERAGE 0.84 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · −NO_FRONTCOURT_SPACING 0.82 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −SINGLE_RIM_PROTECTOR_DEPENDENCY 0.61
+
+#4 Reno Jackrabbits
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +CLOSING_FIVE_STABLE 0.86 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · −NO_FRONTCOURT_SPACING 0.82 · +BALL_HAWKS 0.80 · +WING_STOPPER_PRESENT 0.79 · −SINGLE_RIM_PROTECTOR_DEPENDENCY 0.78 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#5 Santa Fe Coyotes
+  Detectors: +ELITE_DEFENSIVE_LAYERING 0.94 · +MOVEMENT_SHOOTING_GRAVITY 0.87 · +SHOT_BLOCKING_ANCHOR 0.83 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · −NO_FRONTCOURT_SPACING 0.82 · +RIM_PROTECTION_CONTINUITY 0.81 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −CLOSING_FIVE_REQUIRES_TRADEOFF 0.55
+
+#6 Duluth Yetis
+  Detectors: +BALANCED_DEFENSIVE_COVERAGE 0.91 · +ELITE_STARTING_SPACING 0.91 · +STRONG_STARTING_REBOUNDING 0.89 · +ELITE_DEFENSE_LOW_FGA_COST 0.88 · −ELITE_SPACING_WEAK_CREATION 0.87 · +MOVEMENT_SHOOTING_GRAVITY 0.87 · +SPACING_WITH_TWO_BIGS_VIABLE 0.83 · +HIGH_VALUE_ROLE_PLAYERS 0.81 · −SINGLE_RIM_PROTECTOR_DEPENDENCY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#7 Test (YOU)
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +STRONG_STARTING_REBOUNDING 0.89 · −DEFENSE_DEPENDS_ON_STARTERS 0.83 · −PERIMETER_DEFENSE_BUT_NO_RIM_PROTECTION 0.83 · +ELITE_FLOOR_GENERAL 0.81 · +RIM_PROTECTION_CONTINUITY 0.81 · −HUNTABLE_STARTER_EXPOSED 0.80 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −NON_SPACER_OVERLOAD 0.69 · −CLOSING_FIVE_REQUIRES_TRADEOFF 0.56
+
+#8 Shreveport Catfish
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · −DEFENSE_DEPENDS_ON_STARTERS 0.88 · +SPACING_WITH_TWO_BIGS_VIABLE 0.83 · +RIM_PROTECTION_CONTINUITY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#9 Miami Comets
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +STRONG_STARTING_REBOUNDING 0.89 · +CLOSING_FIVE_STABLE 0.88 · +MOVEMENT_SHOOTING_GRAVITY 0.87 · +SPACING_WITH_TWO_BIGS_VIABLE 0.83 · −DEAD_SLOT_HURTS_ROTATION 0.82 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · −SINGLE_RIM_PROTECTOR_DEPENDENCY 0.81 · −PLAYER_ABOVE_MINUTES_CEILING 0.81 · −HUNTABLE_STARTER_EXPOSED 0.80 · −STAR_FGA_COST_HURTS_DEPTH 0.80 · +WING_STOPPER_PRESENT 0.79 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#10 Pittsburgh Anvils
+  Detectors: +ELITE_DEFENSIVE_LAYERING 0.94 · +ELITE_TWO_WAY_CORE 0.93 · +CLOSING_FIVE_STABLE 0.90 · +STRONG_STARTING_REBOUNDING 0.89 · +ELITE_DEFENSE_LOW_FGA_COST 0.89 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · +SHOT_BLOCKING_ANCHOR 0.82 · −DEAD_SLOT_HURTS_ROTATION 0.82 · +ELITE_FLOOR_GENERAL 0.82 · −NO_FRONTCOURT_SPACING 0.82 · +HIGH_VALUE_ROLE_PLAYERS 0.81 · +RIM_PROTECTION_CONTINUITY 0.81 · +WING_STOPPER_PRESENT 0.79 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#11 Buffalo Snowplows
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +ELITE_DEFENSE_LOW_FGA_COST 0.89 · +CLOSING_FIVE_STABLE 0.88 · −NO_FRONTCOURT_SPACING 0.82 · +HIGH_VALUE_ROLE_PLAYERS 0.81 · +RIM_PROTECTION_CONTINUITY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#12 Sioux Falls Bison
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_RIM_PROTECTION 0.94 · +STRONG_STARTING_REBOUNDING 0.89 · +BALANCED_DEFENSIVE_COVERAGE 0.89 · +SHOT_BLOCKING_ANCHOR 0.83 · −DEAD_SLOT_HURTS_ROTATION 0.82 · −STAR_FGA_COST_HURTS_DEPTH 0.80 · +WING_STOPPER_PRESENT 0.79 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −NON_SPACER_OVERLOAD 0.69 · −CLOSING_FIVE_REQUIRES_TRADEOFF 0.52
+
+#13 Aspen Ibexes
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +MOVEMENT_SHOOTING_GRAVITY 0.89 · +ELITE_DEFENSE_LOW_FGA_COST 0.89 · +ELITE_STARTING_SPACING 0.88 · +CLOSING_FIVE_STABLE 0.87 · −ELITE_SPACING_WEAK_CREATION 0.86 · +SPACING_WITH_TWO_BIGS_VIABLE 0.83 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · +RIM_PROTECTION_CONTINUITY 0.81 · +SHOT_BLOCKING_ANCHOR 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#14 Baton Rouge Crawdads
+  Detectors: +ELITE_PERIMETER_DEFENSE 0.93 · +ELITE_TWO_WAY_CORE 0.90 · +BALANCED_DEFENSIVE_COVERAGE 0.90 · +ELITE_FLOOR_GENERAL 0.89 · −NO_RIM_PROTECTOR 0.88 · +CLOSING_FIVE_STABLE 0.87 · −DEFENSE_DEPENDS_ON_STARTERS 0.87 · −DEAD_SLOT_HURTS_ROTATION 0.82 · +BALL_HAWKS 0.82 · −MULTIPLE_MINUTES_CEILING_VIOLATIONS 0.82 · −NO_FRONTCOURT_SPACING 0.82 · +MATCHUP_SPECIALIST_AVAILABLE 0.75
+
+#15 Cheyenne Jackalopes
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +STRONG_STARTING_REBOUNDING 0.89 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · −NO_FRONTCOURT_SPACING 0.82 · −SINGLE_RIM_PROTECTOR_DEPENDENCY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78 · +MATCHUP_SPECIALIST_AVAILABLE 0.75 · −CLOSING_FIVE_REQUIRES_TRADEOFF 0.53
+
+#16 Flint Embers
+  Detectors: +ELITE_PRIMARY_CREATOR 0.95 · +ELITE_DEFENSIVE_LAYERING 0.94 · +ELITE_TWO_WAY_CORE 0.93 · +CLOSING_FIVE_STABLE 0.89 · +OFF_BALL_SUPPORT_STRONG 0.87 · +ELITE_STARTING_SPACING 0.86 · −ELITE_SPACING_WEAK_CREATION 0.86 · +MOVEMENT_SHOOTING_GRAVITY 0.85 · +DEEP_PLAYOFF_ROTATION 0.83 · +SPACING_WITH_TWO_BIGS_VIABLE 0.83 · −DEFENSE_DEPENDS_ON_STARTERS 0.82 · +SHOT_BLOCKING_ANCHOR 0.81 · +RIM_PROTECTION_CONTINUITY 0.81 · +WING_STOPPER_PRESENT 0.79 · +DEAD_NINTH_SLOT_ACCEPTABLE 0.78
+
+
+==== REGULAR SEASON ========================================================
+
+Standings: place team W-L · PF PA net per game · FG% 3PA 3P% FTA REB AST TOV · opp FG% 3PA 3P% REB TOV · games within 5
+ 1. NOR  Norfolk Squids 50-32 · 126.7 121.9 +4.8 · 54.9% 18.0 38.0% 35.2 42.4 24.6 13.0 · opp 52.9% 19.4 36.5% 39.6 12.7 · close 5-7
+ 2. MIA  Miami Comets 50-32 · 128.7 127.1 +1.6 · 56.2% 18.6 41.3% 38.6 39.5 26.4 11.7 · opp 55.7% 20.6 40.4% 38.8 12.3 · close 16-4
+ 3. DEN  Denver Peaks 48-34 · 125.3 123.5 +1.8 · 54.3% 18.4 40.6% 34.9 41.4 23.5 11.8 · opp 54.0% 20.2 38.1% 39.7 12.0 · close 11-8
+ 4. DUL  Duluth Yetis 45-37 · 131.6 129.4 +2.2 · 56.0% 26.8 40.7% 32.4 38.4 33.1 11.6 · opp 57.9% 20.0 40.8% 37.7 11.8 · close 8-9
+ 5. SFE  Santa Fe Coyotes 44-38 · 129.5 126.8 +2.7 · 57.3% 17.7 39.9% 31.5 40.0 32.8 11.7 · opp 55.0% 20.9 38.5% 39.1 12.2 · close 7-15
+ 6. LRK  Little Rock Boulders 44-38 · 126.4 125.4 +1.0 · 56.7% 17.2 40.0% 33.5 40.8 26.8 12.7 · opp 53.8% 19.9 37.9% 39.2 11.5 · close 9-6
+ 7. REN  Reno Jackrabbits 44-38 · 123.2 123.3 -0.1 · 55.3% 13.3 37.3% 33.9 40.8 22.7 12.0 · opp 53.1% 21.1 37.7% 40.5 12.0 · close 14-11
+ 8. PIT  Pittsburgh Anvils 43-39 · 127.5 126.7 +0.8 · 53.5% 21.3 39.0% 32.5 42.3 28.1 11.0 · opp 54.5% 19.9 38.4% 41.5 12.8 · close 10-8
+ 9. SXF  Sioux Falls Bison 42-40 · 128.4 127.7 +0.7 · 55.8% 17.5 39.2% 31.8 40.5 27.5 12.0 · opp 55.2% 20.5 40.0% 39.1 12.3 · close 11-10
+10. SHR  Shreveport Catfish 41-41 · 128.3 129.5 -1.1 · 56.4% 19.3 37.8% 34.5 38.5 28.0 11.3 · opp 55.3% 20.7 39.1% 41.0 12.2 · close 8-6
+11. TES  Test (YOU) 40-42 · 129.1 129.3 -0.2 · 54.9% 21.7 40.6% 32.5 40.3 26.9 12.0 · opp 56.2% 21.0 40.9% 39.9 11.7 · close 9-8
+12. CHY  Cheyenne Jackalopes 38-44 · 124.3 125.3 -1.1 · 54.2% 24.3 40.3% 36.5 41.2 27.2 13.5 · opp 53.5% 20.5 39.1% 42.1 12.0 · close 8-8
+13. BUF  Buffalo Snowplows 36-46 · 124.5 126.6 -2.1 · 52.8% 23.9 38.3% 35.3 39.9 22.7 12.5 · opp 54.6% 19.1 39.3% 42.2 12.2 · close 7-9
+14. BTR  Baton Rouge Crawdads 31-51 · 131.1 134.7 -3.6 · 58.2% 14.1 40.3% 35.5 36.4 28.5 11.5 · opp 60.2% 20.0 42.9% 35.5 12.3 · close 9-11
+15. FLI  Flint Embers 30-52 · 121.6 125.1 -3.5 · 52.5% 25.5 37.9% 33.6 40.1 25.9 13.3 · opp 54.0% 19.6 39.4% 43.0 11.6 · close 6-10
+16. ASP  Aspen Ibexes 30-52 · 122.0 125.7 -3.8 · 50.9% 26.3 36.9% 32.0 41.1 26.0 11.4 · opp 54.1% 20.6 38.3% 44.3 11.6 · close 5-13
+
+Awards:
+  MVP: LeBron James (MIA, 30.3/6.7/6.9)
+  DPOY: David Robinson (ASP, 27.9/9.1/3.4)
+  Sixth Man: Kyrie Irving (TES, 20.0/2.7/4.9)
+  All-NBA 1st: Michael Jordan (REN, 35.9/5.1/4.7) · Shai Gilgeous-Alexander (SHR, 33.5/4.4/7.3) · LeBron James (MIA, 30.3/6.7/6.9) · Kevin Durant (TES, 34.1/6.0/4.5) · Nikola Jokic (DUL, 29.2/10.7/13.3)
+  All-NBA 2nd: Oscar Robertson (MIA, 28.4/6.0/8.1) · James Harden (BUF, 33.5/4.9/6.9) · Anthony Davis (DUL, 25.7/8.6/2.7) · Larry Bird (DEN, 26.8/7.5/4.0) · Kareem Abdul-Jabbar (PIT, 26.7/11.3/3.6)
+  All-NBA 3rd: Dwyane Wade (NOR, 29.0/4.1/5.6) · Jerry West (DEN, 26.7/2.7/7.3) · Charles Barkley (SXF, 26.3/8.8/2.8) · Kevin Garnett (SFE, 22.7/9.3/5.4) · David Robinson (ASP, 27.9/9.1/3.4)
+  All-Defense 1st: Michael Jordan (REN, 35.9/5.1/4.7) · Jason Kidd (SFE, 18.9/5.2/11.1) · David Robinson (ASP, 27.9/9.1/3.4) · Bill Russell (TES, 14.4/12.3/2.8) · Hakeem Olajuwon (SXF, 24.3/9.2/2.9)
+  All-Defense 2nd: Andre Iguodala (CHY, 12.8/4.9/4.1) · Chris Paul (PIT, 21.5/3.6/9.3) · Alonzo Mourning (LRK, 16.2/8.6/1.5) · Tim Duncan (BUF, 21.1/10.4/3.1) · Victor Wembanyama (FLI, 19.5/9.5/2.6)
+  All-Stars (24): Nikola Jokic (DUL, 29.2/10.7/13.3) · Shai Gilgeous-Alexander (SHR, 33.5/4.4/7.3) · Michael Jordan (REN, 35.9/5.1/4.7) · LeBron James (MIA, 30.3/6.7/6.9) · Kevin Durant (TES, 34.1/6.0/4.5) · Oscar Robertson (MIA, 28.4/6.0/8.1) · James Harden (BUF, 33.5/4.9/6.9) · Kareem Abdul-Jabbar (PIT, 26.7/11.3/3.6) · Anthony Davis (DUL, 25.7/8.6/2.7) · David Robinson (ASP, 27.9/9.1/3.4) · Charles Barkley (SXF, 26.3/8.8/2.8) · Larry Bird (DEN, 26.8/7.5/4.0) · Dwyane Wade (NOR, 29.0/4.1/5.6) · Jerry West (DEN, 26.7/2.7/7.3) · Tracy McGrady (SXF, 27.7/5.7/5.3) · Shaquille O'Neal (SHR, 26.2/10.2/3.3) · Wilt Chamberlain (CHY, 22.7/11.4/4.0) · Kevin Garnett (SFE, 22.7/9.3/5.4) · Magic Johnson (NOR, 23.5/5.0/7.4) · Kobe Bryant (LRK, 27.4/4.4/4.5) · Giannis Antetokounmpo (FLI, 27.0/9.6/5.3) · Patrick Ewing (SFE, 24.8/8.1/2.2) · Chris Mullin (BTR, 27.6/3.9/3.8) · Moses Malone (DEN, 24.6/10.7/0.9)
+
+Players, regular season: team player (pos) G · MIN PTS REB AST STL BLK TOV PF per game · FG FG% 3P 3P% FT FT% totals · DD TD
+  MIA  LeBron James 2011-13 (PF) 82 · 40.2 30.3 6.7 6.9 1.3 0.8 2.4 3.5 · 925/1549 59.7% 119/266 44.7% 517/692 74.7% · 28 1
+  MIA  Oscar Robertson 1961-63 (PG) 82 · 36.6 28.4 6.0 8.1 1.4 0.3 2.3 2.6 · 761/1481 51.4% 178/500 35.6% 631/769 82.1% · 26 0
+  MIA  Eddie Jones 2001-03 (SG) 82 · 36.1 15.0 3.2 3.3 1.0 0.5 1.3 2.8 · 435/844 51.5% 128/291 44.0% 234/285 82.1% · 2 0
+  MIA  Peja Stojaković 2002-04 (SF) 82 · 36.0 19.1 4.3 1.7 0.9 0.1 1.2 2.9 · 568/1008 56.3% 160/349 45.8% 270/303 89.1% · 0 0
+  MIA  Dwight Howard 2009-11 (C) 82 · 35.7 15.9 10.4 1.4 0.8 2.1 2.5 4.2 · 466/750 62.1% 2/21 9.5% 372/610 61.0% · 43 0
+  MIA  Tiago Splitter 2013-15 (C) bench 82 · 32.1 10.3 6.7 1.8 0.7 0.9 1.2 3.0 · 319/533 59.8% 1/10 10.0% 207/300 69.0% · 8 0
+  MIA  Jeff Hornacek 1997-99 (SG) bench 82 · 24.7 9.6 2.3 3.2 0.8 0.1 0.8 1.7 · 280/516 54.3% 40/85 47.1% 186/204 91.2% · 0 0
+  REN  Michael Jordan 1987-89 (SG) 82 · 36.2 35.9 5.1 4.7 1.3 0.9 2.8 2.7 · 1123/1912 58.7% 26/127 20.5% 673/796 84.5% · 5 0
+  REN  Chauncey Billups 2004-06 (PG) 82 · 36.0 19.1 3.0 5.3 0.8 0.1 1.7 3.0 · 459/910 50.4% 176/373 47.2% 473/512 92.4% · 2 0
+  REN  Ron Artest 2007-09 (SF) 82 · 35.9 12.0 5.2 2.6 1.4 0.4 1.4 2.6 · 370/749 49.4% 84/205 41.0% 160/224 71.4% · 1 0
+  REN  Pau Gasol 2008-10 (C) 82 · 35.8 15.7 8.4 2.2 0.4 0.9 1.4 3.5 · 463/819 56.5% 2/24 8.3% 363/448 81.0% · 26 0
+  REN  Evan Mobley 2024-26 (PF) 82 · 33.3 13.6 9.1 2.2 0.8 1.2 1.6 3.0 · 432/797 54.2% 57/174 32.8% 194/287 67.6% · 28 0
+  REN  Nenê 2011-13 (PF) bench 82 · 26.9 10.6 6.4 1.8 0.8 0.5 1.0 2.8 · 357/584 61.1% 3/9 33.3% 154/203 75.9% · 4 0
+  REN  Tony Parker 2004-06 (PG) bench 82 · 24.3 13.4 2.4 3.3 0.8 0.2 1.9 1.8 · 452/827 54.7% 28/99 28.3% 167/255 65.5% · 0 0
+  REN  Bruce Bowen 2002-04 (SF) bench 82 · 12.2 2.8 1.3 0.6 0.3 0.1 0.3 0.9 · 86/170 50.6% 32/83 38.6% 28/55 50.9% · 0 0
+  SFE  Jason Kidd 2002-04 (PG) 82 · 36.3 18.9 5.2 11.1 1.4 0.3 2.1 2.8 · 548/1075 51.0% 109/318 34.3% 346/404 85.6% · 52 2
+  SFE  Clifford Robinson 1998-00 (SF) 82 · 36.1 16.1 3.7 3.1 1.0 0.6 1.2 2.7 · 468/853 54.9% 89/214 41.6% 299/383 78.1% · 0 0
+  SFE  Ray Allen 2000-02 (SG) 82 · 36.1 23.3 3.4 4.9 1.0 0.2 1.9 3.1 · 675/1193 56.6% 213/429 49.7% 348/379 91.8% · 1 0
+  SFE  Kevin Garnett 2002-04 (PF) 82 · 36.0 22.7 9.3 5.4 1.0 1.0 1.9 2.5 · 774/1260 61.4% 12/54 22.2% 302/398 75.9% · 36 0
+  SFE  Patrick Ewing 1988-90 (C) 82 · 35.5 24.8 8.1 2.2 1.0 2.1 2.3 3.8 · 841/1310 64.2% 4/27 14.8% 347/465 74.6% · 22 0
+  SFE  Trevor Ariza 2012-14 (SF) bench 82 · 24.7 8.5 3.6 1.9 0.8 0.2 1.0 1.7 · 240/511 47.0% 67/204 32.8% 154/192 80.2% · 0 0
+  SFE  George Hill 2013-15 (PG) bench 82 · 24.5 11.2 2.5 3.6 0.7 0.2 0.7 1.8 · 341/589 57.9% 86/200 43.0% 153/196 78.1% · 0 0
+  SFE  Rudy Gobert 2014-16 (C) bench 82 · 12.9 3.9 4.2 0.6 0.2 0.7 0.7 1.5 · 114/197 57.9% 0/8 0.0% 91/162 56.2% · 0 0
+  FLI  Shane Battier 2006-08 (SF) 82 · 36.2 8.2 4.0 1.8 0.7 0.6 0.8 2.8 · 247/498 49.6% 119/279 42.7% 62/82 75.6% · 1 0
+  FLI  Gary Payton 1998-00 (PG) 82 · 36.1 20.9 4.5 6.4 1.0 0.2 2.1 2.5 · 647/1324 48.9% 141/411 34.3% 281/385 73.0% · 8 0
+  FLI  Reggie Miller 1993-95 (SG) 82 · 35.0 17.5 1.9 2.7 1.1 0.2 1.7 2.6 · 476/898 53.0% 142/315 45.1% 341/378 90.2% · 0 0
+  FLI  Giannis Antetokounmpo 2020-22 (PF) 82 · 35.0 27.0 9.6 5.3 0.7 0.9 2.9 2.5 · 810/1410 57.4% 75/276 27.2% 521/742 70.2% · 43 2
+  FLI  Victor Wembanyama 2024-26 (C) 82 · 32.6 19.5 9.5 2.6 0.9 2.3 2.0 3.8 · 544/1028 52.9% 154/391 39.4% 358/433 82.7% · 34 0
+  FLI  Sleepy Floyd 1985-87 (PG) bench 82 · 25.4 12.7 1.8 5.6 0.8 0.2 2.1 2.3 · 343/651 52.7% 46/121 38.0% 306/373 82.0% · 2 0
+  FLI  Robert Covington 2017-19 (SF) bench 82 · 25.2 9.0 3.2 1.0 1.0 0.5 0.9 2.4 · 255/536 47.6% 113/290 39.0% 115/139 82.7% · 0 0
+  FLI  Dikembe Mutombo 1997-99 (C) bench 82 · 15.6 6.8 5.5 0.5 0.2 1.0 0.8 1.7 · 204/367 55.6% 3/12 25.0% 143/224 63.8% · 1 0
+  CHY  Paul Pierce 2006-08 (SF) 82 · 36.2 21.5 4.1 3.1 1.0 0.4 2.4 2.2 · 550/1126 48.8% 156/347 45.0% 511/604 84.6% · 2 0
+  CHY  Andre Iguodala 2011-13 (SG) 82 · 36.1 12.8 4.9 4.1 1.4 0.4 1.5 3.1 · 393/763 51.5% 94/254 37.0% 171/288 59.4% · 4 0
+  CHY  Wilt Chamberlain 1967-69 (C) 82 · 35.9 22.7 11.4 4.0 0.7 3.7 2.1 3.4 · 775/1124 69.0% 11/30 36.7% 298/726 41.0% · 59 0
+  CHY  Stephen Curry 2016-18 (PG) 82 · 35.1 25.8 3.8 5.7 1.3 0.1 2.4 2.8 · 711/1394 51.0% 311/717 43.4% 385/435 88.5% · 4 0
+  CHY  Draymond Green 2014-16 (PF) 82 · 34.8 11.9 7.5 5.1 1.1 0.9 1.5 2.9 · 348/652 53.4% 94/219 42.9% 184/265 69.4% · 16 1
+  CHY  Tayshaun Prince 2003-05 (SF) bench 82 · 25.3 8.5 3.1 1.7 0.3 0.4 1.0 2.0 · 285/485 58.8% 22/91 24.2% 103/136 75.7% · 1 0
+  CHY  Gilbert Arenas 2004-06 (PG) bench 82 · 25.3 16.6 2.4 2.5 0.9 0.2 1.9 2.3 · 440/947 46.5% 112/323 34.7% 367/438 83.8% · 0 0
+  CHY  Joakim Noah 2011-13 (C) bench 82 · 12.3 4.5 3.9 0.9 0.2 0.6 0.6 1.3 · 146/240 60.8% 2/11 18.2% 74/101 73.3% · 0 0
+  ASP  Luka Doncic 2024-26 (PG) 82 · 36.2 26.9 6.2 6.6 1.0 0.3 2.8 3.2 · 713/1558 45.8% 235/694 33.9% 544/697 78.0% · 17 1
+  ASP  Paul George 2012-14 (SF) 82 · 35.7 17.5 5.2 3.0 1.2 0.3 1.9 3.3 · 496/1005 49.4% 132/371 35.6% 308/357 86.3% · 4 0
+  ASP  David Robinson 1993-95 (C) 82 · 35.6 27.9 9.1 3.4 1.1 2.3 2.0 3.7 · 846/1456 58.1% 15/46 32.6% 581/761 76.3% · 35 0
+  ASP  Klay Thompson 2014-16 (SG) 82 · 35.2 20.0 2.8 1.9 0.6 0.6 1.3 2.4 · 621/1231 50.4% 219/507 43.2% 175/199 87.9% · 1 0
+  ASP  Al Horford 2021-23 (PF) 82 · 32.3 8.9 6.4 2.9 0.5 1.1 0.7 2.4 · 273/540 50.6% 100/269 37.2% 84/103 81.6% · 6 0
+  ASP  Jimmy Butler 2012-14 (SF) bench 82 · 28.6 9.8 3.7 1.6 1.0 0.3 0.9 1.6 · 286/529 54.1% 48/137 35.0% 185/231 80.1% · 0 0
+  ASP  Mark Jackson 1997-99 (PG) bench 82 · 25.5 8.2 3.1 6.1 0.7 0.0 1.6 2.3 · 241/523 46.1% 47/121 38.8% 142/172 82.6% · 2 0
+  ASP  Ben Wallace 2000-02 (C) bench 82 · 12.8 2.8 4.4 0.5 0.3 0.9 0.3 1.5 · 97/180 53.9% 0/11 0.0% 39/100 39.0% · 0 0
+  SXF  Khris Middleton 2019-21 (SF) 82 · 37.8 18.5 5.6 5.0 1.1 0.1 1.9 2.7 · 563/1084 51.9% 143/338 42.3% 252/277 91.0% · 7 0
+  SXF  Tracy McGrady 2001-03 (SG) 82 · 37.2 27.7 5.7 5.3 1.2 0.5 1.8 2.8 · 855/1636 52.3% 122/344 35.5% 441/551 80.0% · 10 0
+  SXF  Charles Barkley 1988-90 (PF) 82 · 36.1 26.3 8.8 2.8 1.1 0.5 2.3 2.8 · 761/1162 65.5% 38/139 27.3% 595/769 77.4% · 36 0
+  SXF  Hakeem Olajuwon 1992-94 (C) 82 · 35.3 24.3 9.2 2.9 1.0 2.3 2.4 4.0 · 809/1372 59.0% 11/40 27.5% 362/472 76.7% · 34 0
+  SXF  Mike Conley 2022-24 (PG) 82 · 32.2 10.1 2.1 5.4 0.9 0.2 1.0 2.7 · 278/577 48.2% 134/311 43.1% 139/162 85.8% · 1 0
+  SXF  Michael Cooper 1985-87 (SG) bench 82 · 31.3 10.4 2.4 4.6 0.7 0.4 1.3 3.1 · 308/605 50.9% 85/183 46.4% 149/169 88.2% · 1 0
+  SXF  Serge Ibaka 2010-12 (PF) bench 82 · 24.7 9.1 5.9 0.5 0.5 1.6 0.8 2.8 · 308/498 61.8% 4/23 17.4% 130/173 75.1% · 5 0
+  SXF  Charlie Ward 1998-00 (PG) bench 82 · 6.3 1.9 0.7 1.1 0.2 0.0 0.4 0.9 · 54/115 47.0% 26/59 44.1% 24/33 72.7% · 0 0
+  BUF  James Harden 2018-20 (PG) 82 · 36.4 33.5 4.9 6.9 1.2 0.4 3.2 3.0 · 817/1723 47.4% 321/847 37.9% 795/908 87.6% · 12 1
+  BUF  Andrei Kirilenko 2002-04 (PF) 82 · 36.2 15.6 6.3 2.1 1.1 2.0 1.7 2.9 · 427/774 55.2% 57/148 38.5% 368/455 80.9% · 8 0
+  BUF  Vince Carter 2000-02 (SG) 82 · 36.0 22.3 4.1 3.4 0.9 0.8 1.8 2.5 · 709/1308 54.2% 130/297 43.8% 284/368 77.2% · 0 0
+  BUF  Tim Duncan 2001-03 (C) 82 · 34.5 21.1 10.4 3.1 0.6 1.3 1.9 4.3 · 671/1096 61.2% 7/30 23.3% 381/492 77.4% · 51 0
+  BUF  Danny Green 2012-14 (SG) 82 · 32.4 10.3 3.5 1.6 1.1 0.6 1.1 2.6 · 299/617 48.5% 145/329 44.1% 98/119 82.4% · 1 0
+  BUF  Bryon Russell 1997-99 (SF) bench 82 · 28.3 8.6 4.0 1.1 0.9 0.2 0.9 2.2 · 241/488 49.4% 50/158 31.6% 171/208 82.2% · 1 0
+  BUF  Baron Davis 1999-01 (PG) bench 82 · 24.4 8.7 2.6 4.2 0.8 0.2 1.5 2.2 · 266/555 47.9% 39/141 27.7% 141/205 68.8% · 0 0
+  BUF  Tyson Chandler 2011-13 (C) bench 82 · 13.9 4.4 4.0 0.3 0.2 0.4 0.5 1.2 · 135/190 71.1% 1/9 11.1% 90/139 64.7% · 2 0
+  DUL  Nikola Jokic 2023-25 (C) 82 · 41.8 29.2 10.7 13.3 1.2 0.8 3.0 3.3 · 899/1535 58.6% 135/327 41.3% 461/568 81.2% · 81 47
+  DUL  Jayson Tatum 2021-23 (SF) 82 · 36.1 25.3 5.2 4.1 0.7 0.4 1.9 2.4 · 711/1516 46.9% 236/671 35.2% 420/509 82.5% · 6 0
+  DUL  Kyle Lowry 2015-17 (PG) 82 · 35.9 22.1 2.8 6.4 1.3 0.3 2.2 3.2 · 587/1087 54.0% 214/474 45.1% 424/521 81.4% · 9 0
+  DUL  Anthony Davis 2017-19 (PF) 82 · 35.2 25.7 8.6 2.7 0.9 1.7 1.6 3.7 · 776/1299 59.7% 53/172 30.8% 500/613 81.6% · 34 0
+  DUL  Kyle Korver 2013-15 (SG) 82 · 34.8 9.6 2.6 2.4 0.4 0.3 1.2 2.7 · 263/493 53.3% 148/311 47.6% 117/125 93.6% · 0 0
+  DUL  Doug Christie 2001-03 (SG) bench 82 · 25.0 8.3 2.7 2.7 1.1 0.2 1.0 2.2 · 255/412 61.9% 57/138 41.3% 114/140 81.4% · 0 0
+  DUL  Dennis Rodman 1989-91 (PF) bench 82 · 18.6 6.8 5.2 0.6 0.4 0.3 0.4 1.8 · 235/341 68.9% 4/9 44.4% 87/127 68.5% · 0 0
+  DUL  Steve Kerr 1995-97 (PG) bench 82 · 12.5 4.5 0.5 1.0 0.3 0.0 0.3 1.6 · 136/218 62.4% 48/96 50.0% 48/54 88.9% · 0 0
+  DEN  Jerry West 1970-72 (PG) 82 · 36.4 26.7 2.7 7.3 0.7 0.2 2.5 2.6 · 720/1369 52.6% 190/470 40.4% 563/696 80.9% · 13 0
+  DEN  Larry Bird 1984-86 (SF) 82 · 36.2 26.8 7.5 4.0 1.1 0.7 2.7 2.3 · 826/1449 57.0% 83/166 50.0% 460/517 89.0% · 18 0
+  DEN  Rasheed Wallace 2005-07 (PF) 82 · 35.6 14.1 6.4 1.9 0.8 1.5 1.0 3.4 · 457/885 51.6% 106/322 32.9% 139/184 75.5% · 6 0
+  DEN  Moses Malone 1981-83 (C) 82 · 35.5 24.6 10.7 0.9 0.7 1.4 1.6 3.4 · 767/1344 57.1% 0/15 0.0% 486/614 79.2% · 52 0
+  DEN  Hersey Hawkins 1996-98 (SG) 82 · 35.1 12.8 3.6 2.7 1.5 0.1 1.2 2.7 · 326/614 53.1% 131/258 50.8% 265/301 88.0% · 0 0
+  DEN  Doc Rivers 1985-87 (PG) bench 82 · 25.2 10.4 2.2 5.3 1.3 0.3 1.7 2.5 · 295/592 49.8% 7/35 20.0% 253/351 72.1% · 0 0
+  DEN  Nicolas Batum 2020-22 (SF) bench 82 · 24.5 6.2 3.4 1.2 0.5 0.4 0.6 1.7 · 192/381 50.4% 95/235 40.4% 31/46 67.4% · 0 0
+  DEN  DeAndre Jordan 2014-16 (C) bench 82 · 12.7 3.6 4.9 0.2 0.2 0.5 0.5 1.3 · 118/176 67.0% 0/5 0.0% 63/152 41.4% · 0 0
+  TES  Kevin Durant 2012-14 (PF) 82 · 39.5 34.1 6.0 4.5 1.0 0.6 3.0 2.0 · 952/1689 56.4% 174/450 38.7% 722/827 87.3% · 6 0
+  TES  Steve Nash 2005-07 (PG) 82 · 36.4 19.5 2.8 8.9 0.6 0.1 2.7 3.7 · 579/1077 53.8% 155/351 44.2% 288/319 90.3% · 27 0
+  TES  Bill Russell 1958-60 (C) 82 · 36.1 14.4 12.3 2.8 0.8 3.3 1.1 3.5 · 482/826 58.4% 10/36 27.8% 206/339 60.8% · 52 0
+  TES  Gerald Wallace 2008-10 (SF) 82 · 36.0 17.1 6.2 1.9 1.1 0.6 1.6 2.8 · 486/825 58.9% 50/111 45.0% 378/470 80.4% · 7 0
+  TES  Dan Majerle 1992-94 (SG) 82 · 30.5 12.9 2.8 2.1 0.9 0.2 0.9 1.7 · 378/755 50.1% 131/291 45.0% 169/213 79.3% · 0 0
+  TES  Kyrie Irving 2017-19 (PG) bench 82 · 29.5 20.0 2.7 4.9 0.8 0.2 1.6 2.9 · 606/1234 49.1% 165/424 38.9% 261/290 90.0% · 2 0
+  TES  Robert Horry 2001-03 (PF) bench 82 · 20.4 5.3 4.1 1.5 0.7 0.5 0.8 1.9 · 158/305 51.8% 36/108 33.3% 83/106 78.3% · 0 0
+  TES  Robert Williams 2020-22 (C) bench 82 · 12.1 5.8 3.3 0.6 0.4 0.5 0.4 1.2 · 208/303 68.6% 2/11 18.2% 58/97 59.8% · 0 0
+  SHR  Shai Gilgeous-Alexander 2024-26 (PG) 82 · 37.4 33.5 4.4 7.3 1.3 0.5 2.2 3.1 · 954/1718 55.5% 157/404 38.9% 684/763 89.6% · 15 1
+  SHR  Mikal Bridges 2020-22 (SF) 82 · 36.3 13.2 3.8 2.0 1.1 0.3 0.7 2.5 · 407/703 57.9% 120/272 44.1% 147/184 79.9% · 0 0
+  SHR  Derrick White 2023-25 (SG) 82 · 35.9 13.3 3.9 5.3 1.0 0.7 1.5 3.1 · 386/819 47.1% 171/442 38.7% 149/171 87.1% · 4 0
+  SHR  Dirk Nowitzki 2002-04 (PF) 82 · 35.9 20.6 7.5 2.7 1.2 0.7 1.3 3.1 · 597/1117 53.4% 92/277 33.2% 401/455 88.1% · 17 0
+  SHR  Shaquille O'Neal 1999-01 (C) 82 · 35.5 26.2 10.2 3.3 0.4 1.5 2.1 3.8 · 881/1335 66.0% 2/24 8.3% 385/733 52.5% · 49 0
+  SHR  Bob Gross 1976-78 (SF) bench 82 · 24.6 8.6 3.5 1.9 0.6 0.3 1.4 1.7 · 255/464 55.0% 51/139 36.7% 146/186 78.5% · 0 0
+  SHR  Kevin Johnson 1987-89 (PG) bench 82 · 23.5 9.7 1.9 5.3 0.6 0.1 1.8 2.3 · 286/522 54.8% 4/21 19.0% 223/253 88.1% · 2 0
+  SHR  Tree Rollins 1979-81 (C) bench 82 · 12.9 3.2 3.3 0.2 0.2 0.7 0.3 1.5 · 99/177 55.9% 1/5 20.0% 61/82 74.4% · 0 0
+  NOR  Magic Johnson 1989-91 (PG) 82 · 36.1 23.5 5.0 7.4 0.9 0.3 3.1 2.3 · 585/1081 54.1% 109/269 40.5% 646/713 90.6% · 17 2
+  NOR  Dwyane Wade 2008-10 (SG) 82 · 36.0 29.0 4.1 5.6 1.3 0.7 3.4 2.9 · 869/1634 53.2% 85/242 35.1% 555/729 76.1% · 4 0
+  NOR  Shawn Marion 2002-04 (SF) 82 · 35.8 17.6 6.7 1.4 1.0 0.6 1.1 2.9 · 575/1050 54.8% 77/219 35.2% 219/267 82.0% · 13 0
+  NOR  Bobby Jones 1976-78 (PF) 82 · 32.9 13.7 6.9 2.0 1.3 1.1 1.3 3.3 · 440/711 61.9% 50/140 35.7% 192/275 69.8% · 12 0
+  NOR  Kristaps Porziņģis 2022-24 (C) 82 · 32.9 16.6 7.0 1.4 0.7 0.8 1.2 3.7 · 462/899 51.4% 114/270 42.2% 324/388 83.5% · 10 0
+  NOR  Amen Thompson 2023-25 (SF) bench 82 · 27.4 11.1 6.3 1.9 0.7 0.6 1.2 2.4 · 376/599 62.8% 16/64 25.0% 143/209 68.4% · 9 0
+  NOR  Tyrese Haliburton 2021-23 (PG) bench 82 · 24.4 11.0 2.0 4.2 1.0 0.2 1.1 2.0 · 313/624 50.2% 109/264 41.3% 169/198 85.4% · 0 0
+  NOR  Marcus Camby 2007-09 (C) bench 82 · 15.3 4.1 4.5 0.6 0.3 0.8 0.5 1.9 · 132/233 56.7% 0/7 0.0% 76/107 71.0% · 0 0
+  PIT  Kareem Abdul-Jabbar 1975-77 (C) 82 · 38.7 26.7 11.3 3.6 1.1 1.8 2.4 3.9 · 878/1481 59.3% 48/137 35.0% 386/592 65.2% · 56 0
+  PIT  Bob McAdoo 1972-74 (PF) 82 · 36.0 19.0 9.9 1.3 0.1 1.4 1.6 3.2 · 553/1067 51.8% 115/277 41.5% 336/448 75.0% · 38 0
+  PIT  Chris Paul 2013-15 (PG) 82 · 35.9 21.5 3.6 9.3 1.4 0.0 1.7 2.8 · 636/1215 52.3% 138/335 41.2% 353/400 88.3% · 36 0
+  PIT  Jalen Williams 2023-25 (SF) 82 · 34.3 18.8 4.1 3.3 1.1 0.4 1.6 2.6 · 597/1114 53.6% 109/297 36.7% 237/303 78.2% · 1 0
+  PIT  Manu Ginóbili 2006-08 (SG) 82 · 31.4 18.5 4.0 4.3 1.2 0.4 1.9 2.7 · 485/959 50.6% 131/352 37.2% 418/470 88.9% · 2 0
+  PIT  Walt Frazier 1967-69 (PG) bench 82 · 29.4 10.0 2.5 4.9 0.8 0.1 1.0 2.4 · 288/589 48.9% 47/140 33.6% 199/259 76.8% · 1 0
+  PIT  Otto Porter Jr. 2016-18 (SF) bench 82 · 26.3 10.9 4.7 1.2 0.8 0.2 0.5 2.5 · 343/623 55.1% 92/203 45.3% 115/136 84.6% · 2 0
+  PIT  Hot Rod Williams 1997-99 (C) bench 82 · 9.6 2.1 2.2 0.2 0.3 0.4 0.3 1.0 · 65/135 48.1% 0/2 0.0% 42/55 76.4% · 0 0
+  LRK  Terry Porter 1989-91 (PG) 82 · 36.2 18.4 2.5 6.3 1.2 0.1 2.0 2.6 · 512/916 55.9% 109/249 43.8% 379/438 86.5% · 5 0
+  LRK  Kobe Bryant 2006-08 (SG) 82 · 36.0 27.4 4.4 4.5 1.0 0.3 2.5 2.5 · 796/1425 55.9% 117/334 35.0% 537/618 86.9% · 0 0
+  LRK  Scottie Pippen 1990-92 (SF) 82 · 36.0 21.0 6.0 4.9 1.5 0.8 2.1 3.2 · 711/1177 60.4% 24/92 26.1% 276/380 72.6% · 4 0
+  LRK  Kevin Love 2013-15 (PF) 82 · 35.8 18.1 8.9 2.8 0.6 0.4 1.5 3.4 · 515/962 53.5% 143/334 42.8% 309/384 80.5% · 31 0
+  LRK  Alonzo Mourning 1998-00 (C) 82 · 35.0 16.2 8.6 1.5 0.6 2.5 2.0 4.3 · 515/873 59.0% 2/6 33.3% 298/466 63.9% · 24 0
+  LRK  Toni Kukoč 1995-97 (PF) bench 82 · 24.5 11.5 3.2 2.7 0.6 0.3 1.1 1.7 · 355/627 56.6% 68/161 42.2% 166/225 73.8% · 0 0
+  LRK  Jrue Holiday 2022-24 (PG) bench 82 · 24.2 10.1 3.3 3.8 0.7 0.2 1.2 2.3 · 306/601 50.9% 100/228 43.9% 114/144 79.2% · 0 0
+  LRK  Mitchell Robinson 2021-23 (C) bench 82 · 13.2 3.7 3.9 0.3 0.3 0.6 0.3 1.5 · 129/187 69.0% 1/6 16.7% 41/95 43.2% · 0 0
+  BTR  Kawhi Leonard 2014-16 (SF) 82 · 40.0 20.9 5.9 2.4 1.5 0.7 1.1 3.2 · 623/1101 56.6% 124/276 44.9% 347/411 84.4% · 6 0
+  BTR  Chris Mullin 1988-90 (SG) 82 · 39.8 27.6 3.9 3.8 1.2 0.4 2.1 2.4 · 845/1363 62.0% 70/163 42.9% 502/560 89.6% · 2 0
+  BTR  John Stockton 1990-92 (PG) 82 · 36.1 17.3 2.0 10.3 1.9 0.1 2.5 2.8 · 509/915 55.6% 66/157 42.0% 338/401 84.3% · 48 0
+  BTR  Kevin McHale 1986-88 (PF) 82 · 36.0 20.9 6.5 2.0 0.5 1.0 1.6 2.7 · 666/1018 65.4% 4/29 13.8% 375/473 79.3% · 7 0
+  BTR  Joel Embiid 2019-21 (C) 82 · 32.0 23.0 8.1 2.5 0.5 0.8 1.9 3.5 · 631/1171 53.9% 75/217 34.6% 549/677 81.1% · 20 0
+  BTR  Domantas Sabonis 2023-25 (C) bench 82 · 28.0 12.6 7.3 4.6 0.4 0.3 1.6 3.4 · 390/662 58.9% 40/94 42.6% 211/294 71.8% · 12 0
+  BTR  Jud Buechler 2000-02 (SF) bench 82 · 16.2 3.1 1.5 0.7 0.4 0.1 0.2 2.5 · 104/186 55.9% 25/71 35.2% 20/26 76.9% · 0 0
+  BTR  Mookie Blaylock 1994-96 (PG) bench 82 · 12.2 5.7 1.3 2.3 0.5 0.0 0.6 0.9 · 177/359 49.3% 61/148 41.2% 51/70 72.9% · 0 0
+
+==== PLAYOFFS ==============================================================
+
+Quarterfinals:
+  (1) NOR vs (8) PIT · NOR wins 4-2 · expected margin +3.1 for NOR · G1 122-132, G2 139-131, G3 111-109, G4 128-109, G5 106-125, G6 141-115
+  (4) DUL vs (5) SFE · SFE wins 4-1 · expected margin +0.7 for DUL · G1 121-129, G2 120-136, G3 127-120, G4 129-146, G5 99-134
+  (2) MIA vs (7) REN · REN wins 4-3 · expected margin -0.6 for MIA · G1 105-117, G2 130-140, G3 134-125, G4 116-105, G5 136-140, G6 126-117, G7 116-123
+  (3) DEN vs (6) LRK · DEN wins 4-1 · expected margin +0.1 for DEN · G1 127-120, G2 123-122, G3 126-125, G4 111-133, G5 141-115
+Semifinals:
+  (1) NOR vs (5) SFE · NOR wins 4-3 · expected margin +2.6 for NOR · G1 129-103, G2 127-117, G3 117-122, G4 103-109, G5 138-129, G6 115-125, G7 127-106
+  (7) REN vs (3) DEN · DEN wins 4-0 · expected margin -2.0 for REN · G1 117-134, G2 122-127, G3 122-130, G4 127-134
+Finals:
+  (1) NOR vs (3) DEN · NOR wins 4-1 · expected margin +1.0 for NOR · G1 136-119, G2 138-126, G3 107-130, G4 137-105, G5 134-131
+
+Champion: Norfolk Squids (NOR)
+Finals MVP: Dwyane Wade (NOR, 29.6/5.2/5.4)
+
+Players, playoffs: team player (pos) G · MIN PTS REB AST STL BLK TOV PF per game · FG FG% 3P 3P% FT FT% totals · DD TD
+  MIA  LeBron James 2011-13 (PF) 7 · 40.0 24.7 6.3 6.6 1.6 0.4 2.7 4.0 · 63/120 52.5% 4/24 16.7% 43/55 78.2% · 2 0
+  MIA  Oscar Robertson 1961-63 (PG) 7 · 36.3 25.9 4.9 7.7 1.1 0.3 2.4 3.1 · 65/137 47.4% 15/39 38.5% 36/53 67.9% · 3 0
+  MIA  Peja Stojaković 2002-04 (SF) 7 · 36.0 18.4 4.7 2.3 1.0 0.1 1.1 2.4 · 47/86 54.7% 9/20 45.0% 26/27 96.3% · 0 0
+  MIA  Dwight Howard 2009-11 (C) 7 · 36.0 19.7 13.9 1.9 0.4 2.1 2.1 3.3 · 49/69 71.0% 0/2 0.0% 40/57 70.2% · 6 0
+  MIA  Eddie Jones 2001-03 (SG) 7 · 35.0 15.6 3.4 2.9 0.7 1.4 1.0 3.7 · 37/71 52.1% 6/17 35.3% 29/35 82.9% · 0 0
+  MIA  Tiago Splitter 2013-15 (C) bench 7 · 32.0 8.1 6.1 1.4 0.7 0.9 0.9 2.4 · 23/49 46.9% 1/2 50.0% 10/17 58.8% · 1 0
+  MIA  Jeff Hornacek 1997-99 (SG) bench 7 · 24.6 10.9 2.3 3.4 0.9 0.3 1.3 0.9 · 24/43 55.8% 2/6 33.3% 26/30 86.7% · 0 0
+  REN  Chauncey Billups 2004-06 (PG) 11 · 36.1 21.5 2.4 5.2 0.5 0.3 1.3 3.0 · 62/126 49.2% 22/52 42.3% 90/103 87.4% · 0 0
+  REN  Ron Artest 2007-09 (SF) 11 · 36.0 13.2 3.8 2.5 1.2 0.5 1.0 1.9 · 49/101 48.5% 15/31 48.4% 32/41 78.0% · 0 0
+  REN  Pau Gasol 2008-10 (C) 11 · 36.0 14.9 9.7 2.5 0.6 0.5 1.8 3.7 · 60/111 54.1% 1/7 14.3% 43/54 79.6% · 3 0
+  REN  Michael Jordan 1987-89 (SG) 11 · 35.5 36.7 4.4 4.4 1.7 0.7 3.1 3.1 · 162/251 64.5% 4/8 50.0% 76/87 87.4% · 0 0
+  REN  Evan Mobley 2024-26 (PF) 11 · 33.0 14.9 7.6 2.1 0.5 0.9 0.9 3.5 · 65/103 63.1% 12/29 41.4% 22/34 64.7% · 2 0
+  REN  Nenê 2011-13 (PF) bench 11 · 27.0 7.3 6.3 2.0 0.6 0.8 1.1 2.4 · 37/76 48.7% 0/5 0.0% 6/11 54.5% · 0 0
+  REN  Tony Parker 2004-06 (PG) bench 11 · 24.4 12.9 2.0 3.2 0.5 0.3 2.0 2.3 · 57/109 52.3% 2/10 20.0% 26/36 72.2% · 0 0
+  REN  Bruce Bowen 2002-04 (SF) bench 11 · 12.0 1.8 0.4 0.5 0.4 0.0 0.4 1.4 · 8/21 38.1% 4/9 44.4% 0/0 — · 0 0
+  SFE  Jason Kidd 2002-04 (PG) 12 · 36.0 17.9 5.6 9.9 2.0 0.4 2.3 2.1 · 76/166 45.8% 19/48 39.6% 44/50 88.0% · 5 0
+  SFE  Ray Allen 2000-02 (SG) 12 · 36.0 20.8 3.7 4.1 1.3 0.3 2.0 2.4 · 90/174 51.7% 24/61 39.3% 46/53 86.8% · 0 0
+  SFE  Clifford Robinson 1998-00 (SF) 12 · 36.0 16.1 4.8 3.3 1.3 0.3 1.0 3.5 · 70/127 55.1% 10/32 31.3% 43/55 78.2% · 0 0
+  SFE  Kevin Garnett 2002-04 (PF) 12 · 36.0 23.5 9.8 5.3 0.9 0.9 2.2 2.4 · 119/187 63.6% 0/4 0.0% 44/58 75.9% · 6 0
+  SFE  Patrick Ewing 1988-90 (C) 12 · 35.8 21.8 8.4 2.6 0.7 2.4 2.9 3.3 · 104/186 55.9% 1/6 16.7% 53/73 72.6% · 3 0
+  SFE  George Hill 2013-15 (PG) bench 12 · 24.0 8.8 2.6 2.9 0.8 0.3 0.8 1.8 · 42/76 55.3% 8/25 32.0% 13/17 76.5% · 0 0
+  SFE  Trevor Ariza 2012-14 (SF) bench 12 · 24.0 9.3 3.0 1.7 0.8 0.2 1.5 2.0 · 39/84 46.4% 15/40 37.5% 18/26 69.2% · 0 0
+  SFE  Rudy Gobert 2014-16 (C) bench 12 · 12.2 4.8 4.0 0.8 0.3 0.8 0.3 2.1 · 22/38 57.9% 0/1 0.0% 14/24 58.3% · 0 0
+  DUL  Nikola Jokic 2023-25 (C) 5 · 42.0 29.0 9.0 11.0 1.4 1.2 3.2 4.6 · 58/95 61.1% 5/16 31.3% 24/31 77.4% · 5 1
+  DUL  Kyle Lowry 2015-17 (PG) 5 · 36.0 18.4 2.6 7.4 1.2 0.2 2.0 2.4 · 29/66 43.9% 11/30 36.7% 23/24 95.8% · 1 0
+  DUL  Jayson Tatum 2021-23 (SF) 5 · 36.0 26.4 7.2 3.8 1.2 0.4 2.8 3.0 · 40/92 43.5% 14/46 30.4% 38/45 84.4% · 0 0
+  DUL  Kyle Korver 2013-15 (SG) 5 · 35.0 11.8 2.0 2.4 0.6 0.0 1.4 2.0 · 23/35 65.7% 11/20 55.0% 2/4 50.0% · 0 0
+  DUL  Anthony Davis 2017-19 (PF) 5 · 34.8 22.6 6.8 2.8 1.0 2.4 2.8 4.0 · 45/71 63.4% 3/8 37.5% 20/24 83.3% · 0 0
+  DUL  Doug Christie 2001-03 (SG) bench 5 · 25.0 4.6 1.8 2.2 1.4 0.0 2.6 1.8 · 10/23 43.5% 2/8 25.0% 1/2 50.0% · 0 0
+  DUL  Dennis Rodman 1989-91 (PF) bench 5 · 19.2 2.0 4.4 0.0 0.0 0.6 0.6 3.2 · 5/11 45.5% 0/1 0.0% 0/0 — · 0 0
+  DUL  Steve Kerr 1995-97 (PG) bench 5 · 12.0 4.4 0.4 1.0 0.6 0.2 0.0 1.4 · 6/10 60.0% 1/3 33.3% 9/10 90.0% · 0 0
+  DEN  Jerry West 1970-72 (PG) 14 · 36.5 26.5 2.8 5.5 1.1 0.2 2.6 2.7 · 118/231 51.1% 39/86 45.3% 96/114 84.2% · 0 0
+  DEN  Larry Bird 1984-86 (SF) 14 · 36.4 27.1 6.2 4.5 1.4 0.9 2.6 3.0 · 140/249 56.2% 12/26 46.2% 88/96 91.7% · 2 0
+  DEN  Moses Malone 1981-83 (C) 14 · 36.0 25.1 11.6 0.9 1.1 0.9 1.6 2.6 · 132/237 55.7% 2/4 50.0% 86/113 76.1% · 12 0
+  DEN  Rasheed Wallace 2005-07 (PF) 14 · 35.1 15.6 5.3 2.1 0.9 1.3 1.3 3.7 · 77/156 49.4% 21/59 35.6% 43/47 91.5% · 0 0
+  DEN  Hersey Hawkins 1996-98 (SG) 14 · 35.0 12.1 3.6 3.1 1.4 0.1 1.0 3.5 · 56/94 59.6% 15/36 41.7% 43/44 97.7% · 0 0
+  DEN  Doc Rivers 1985-87 (PG) bench 14 · 26.0 10.3 2.4 6.0 1.1 0.4 2.3 2.4 · 53/97 54.6% 1/4 25.0% 37/44 84.1% · 0 0
+  DEN  Nicolas Batum 2020-22 (SF) bench 14 · 24.6 5.5 3.0 0.9 0.4 0.1 0.6 2.5 · 28/59 47.5% 13/36 36.1% 8/13 61.5% · 0 0
+  DEN  DeAndre Jordan 2014-16 (C) bench 14 · 12.4 3.7 4.7 0.9 0.1 0.4 0.3 1.9 · 19/28 67.9% 0/0 — 14/29 48.3% · 0 0
+  NOR  Magic Johnson 1989-91 (PG) 18 · 36.0 20.6 4.6 7.2 0.8 0.3 3.2 2.3 · 117/220 53.2% 26/57 45.6% 111/125 88.8% · 2 0
+  NOR  Dwyane Wade 2008-10 (SG) 18 · 36.0 29.3 4.3 5.2 1.8 0.7 2.3 2.2 · 203/363 55.9% 10/48 20.8% 111/151 73.5% · 0 0
+  NOR  Shawn Marion 2002-04 (SF) 18 · 35.8 17.7 7.2 2.2 1.2 0.7 1.1 3.0 · 124/235 52.8% 17/50 34.0% 53/67 79.1% · 3 0
+  NOR  Bobby Jones 1976-78 (PF) 18 · 33.0 14.8 8.0 1.8 1.1 1.1 1.6 2.8 · 98/159 61.6% 12/31 38.7% 58/85 68.2% · 4 0
+  NOR  Kristaps Porziņģis 2022-24 (C) 18 · 32.6 14.9 5.9 1.8 0.6 0.4 1.7 4.1 · 83/166 50.0% 15/47 31.9% 88/100 88.0% · 1 0
+  NOR  Amen Thompson 2023-25 (SF) bench 18 · 27.2 10.6 5.4 2.6 0.8 0.4 1.1 1.5 · 72/120 60.0% 5/14 35.7% 42/67 62.7% · 1 0
+  NOR  Tyrese Haliburton 2021-23 (PG) bench 18 · 24.1 10.9 3.1 3.8 0.5 0.2 1.5 2.1 · 68/147 46.3% 31/73 42.5% 30/32 93.8% · 1 0
+  NOR  Marcus Camby 2007-09 (C) bench 18 · 15.4 6.4 5.0 0.8 0.3 0.8 0.4 1.7 · 41/70 58.6% 0/2 0.0% 34/50 68.0% · 0 0
+  PIT  Kareem Abdul-Jabbar 1975-77 (C) 6 · 38.0 26.2 11.2 2.8 0.5 1.8 2.7 4.0 · 55/87 63.2% 3/8 37.5% 44/60 73.3% · 4 0
+  PIT  Bob McAdoo 1972-74 (PF) 6 · 36.0 15.7 9.3 0.8 0.0 2.0 1.8 3.7 · 35/72 48.6% 10/18 55.6% 14/20 70.0% · 2 0
+  PIT  Chris Paul 2013-15 (PG) 6 · 34.8 17.2 2.0 9.5 1.5 0.0 2.3 4.0 · 34/82 41.5% 3/23 13.0% 32/36 88.9% · 4 0
+  PIT  Jalen Williams 2023-25 (SF) 6 · 33.8 17.7 3.8 4.8 0.8 0.3 1.3 2.7 · 42/82 51.2% 3/13 23.1% 19/22 86.4% · 0 0
+  PIT  Manu Ginóbili 2006-08 (SG) 6 · 31.3 22.8 3.8 2.8 0.8 0.2 2.2 4.3 · 47/84 56.0% 15/37 40.5% 28/34 82.4% · 0 0
+  PIT  Walt Frazier 1967-69 (PG) bench 6 · 29.7 9.7 2.2 4.8 1.0 0.3 0.7 1.3 · 23/51 45.1% 4/15 26.7% 8/11 72.7% · 0 0
+  PIT  Otto Porter Jr. 2016-18 (SF) bench 6 · 26.2 8.2 5.5 0.8 0.3 0.0 0.3 1.0 · 20/40 50.0% 6/14 42.9% 3/5 60.0% · 0 0
+  PIT  Hot Rod Williams 1997-99 (C) bench 6 · 10.0 2.8 2.7 0.3 0.5 0.5 0.0 1.5 · 6/11 54.5% 0/0 — 5/7 71.4% · 0 0
+  LRK  Terry Porter 1989-91 (PG) 5 · 37.0 15.2 3.0 7.0 2.0 0.8 1.6 2.2 · 25/47 53.2% 6/14 42.9% 20/23 87.0% · 0 0
+  LRK  Scottie Pippen 1990-92 (SF) 5 · 37.0 27.8 4.4 3.2 1.2 0.6 3.2 4.0 · 51/82 62.2% 0/8 0.0% 37/43 86.0% · 0 0
+  LRK  Kobe Bryant 2006-08 (SG) 5 · 36.0 25.0 3.4 3.6 1.2 0.0 2.8 1.8 · 45/85 52.9% 4/17 23.5% 31/37 83.8% · 0 0
+  LRK  Kevin Love 2013-15 (PF) 5 · 36.0 14.8 9.2 3.2 0.6 0.2 1.6 2.4 · 22/46 47.8% 6/9 66.7% 24/26 92.3% · 3 0
+  LRK  Alonzo Mourning 1998-00 (C) 5 · 34.4 15.0 8.2 0.8 0.2 4.2 2.6 4.8 · 31/50 62.0% 0/0 — 13/19 68.4% · 2 0
+  LRK  Jrue Holiday 2022-24 (PG) bench 5 · 25.0 7.6 3.8 2.8 1.0 0.2 1.0 2.2 · 14/40 35.0% 4/14 28.6% 6/6 100.0% · 0 0
+  LRK  Toni Kukoč 1995-97 (PF) bench 5 · 25.0 15.0 2.6 2.4 1.0 0.2 2.4 2.2 · 26/39 66.7% 5/11 45.5% 18/24 75.0% · 0 0
+  LRK  Mitchell Robinson 2021-23 (C) bench 5 · 14.6 2.6 4.4 0.0 0.4 0.4 0.0 2.6 · 4/7 57.1% 0/0 — 5/8 62.5% · 0 0
