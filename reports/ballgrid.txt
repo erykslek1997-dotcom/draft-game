@@ -1,0 +1,53 @@
+=========== BH_SHOOT_SRC=spotUp
+Magic Stockton Bird KG Kareem  ovr 93.9 O 95 fit 91 spc 67 FGA5 88.0 | ball
+Stockton->Jordan               ovr 90.8 O 88 fit 86 spc 61 FGA5 102.4 | bal
+Magic->Jordan                  ovr 91.2 O 88 fit 89 spc 62 FGA5 100.7 | bal
+Stockton->LeBron               ovr 90.0 O 87 fit 88 spc 69 FGA5 94.0 | ball
+ctrl Stockton+Hornacek+Malone  ovr 57.2 O 63 fit 71 spc 45 FGA5 49.4 | ball
+ctrl Curry+Klay                ovr 70.8 O 69 fit 77 spc 100 FGA5 71.7 | bal
+ctrl LeBron+Wade               ovr 60.3 O 56 fit 53 spc 28 FGA5 62.1 | ball
+-- best five top80:
+93.88  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- best five top120:
+93.88  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+92.55  1/12  Dwyane Wade 2008-10, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Magic Johnson 1989-91, Tyrese Haliburton 2022-24
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.735, 1.05 judge units per Overall point
+-- prior: 0.679
+-- AI picks: AI pick regression: all 30 pinned picks match baseline.
+=========== BH_SHOOT_SRC=spacing
+Magic Stockton Bird KG Kareem  ovr 93.7 O 95 fit 91 spc 67 FGA5 88.0 | ball
+Stockton->Jordan               ovr 90.8 O 88 fit 86 spc 61 FGA5 102.4 | bal
+Magic->Jordan                  ovr 91.2 O 88 fit 89 spc 62 FGA5 100.7 | bal
+Stockton->LeBron               ovr 90.0 O 87 fit 88 spc 69 FGA5 94.0 | ball
+ctrl Stockton+Hornacek+Malone  ovr 57.2 O 63 fit 71 spc 45 FGA5 49.4 | ball
+ctrl Curry+Klay                ovr 70.8 O 69 fit 77 spc 100 FGA5 71.7 | bal
+ctrl LeBron+Wade               ovr 60.3 O 56 fit 53 spc 28 FGA5 62.1 | ball
+-- best five top80:
+93.71  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- best five top120:
+93.71  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.731, 1.04 judge units per Overall point
+-- prior: 0.679
+-- AI picks: 4/30 pinned picks changed. If deliberate, re-bless with --update.
+=========== BH_SHOOT=0
+Magic Stockton Bird KG Kareem  ovr 92.5 O 95 fit 91 spc 67 FGA5 88.0 | ball
+Stockton->Jordan               ovr 90.3 O 88 fit 86 spc 61 FGA5 102.4 | bal
+Magic->Jordan                  ovr 90.8 O 88 fit 89 spc 62 FGA5 100.7 | bal
+Stockton->LeBron               ovr 89.4 O 87 fit 88 spc 69 FGA5 94.0 | ball
+ctrl Stockton+Hornacek+Malone  ovr 57.2 O 63 fit 71 spc 45 FGA5 49.4 | ball
+ctrl Curry+Klay                ovr 70.7 O 69 fit 77 spc 100 FGA5 71.7 | bal
+ctrl LeBron+Wade               ovr 59.8 O 56 fit 53 spc 28 FGA5 62.1 | ball
+-- best five top80:
+92.48  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- best five top120:
+92.48  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+89.00  1/12  David Robinson 1993-95, Kawhi Leonard 2015-17, Larry Bird 1985-87, LeBron James 2012-14, Nikola Jokic 2023-25
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.876, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.724, 1.03 judge units per Overall point
+-- prior: 0.679
+-- AI picks: 3/30 pinned picks changed. If deliberate, re-bless with --update.

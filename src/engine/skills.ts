@@ -172,13 +172,33 @@ export function isSpacer(span: { id: string; offensiveArchetype: string }, label
  * the label weight.
  */
 import { usageForSpan } from './usageLookup';
+import leaguePtsData from '../data/leaguePointsPerGame.json';
+import { estimatedMinutesPerGame } from './minutesPerGame';
+import { spanEndYears } from './era';
 import { realSpan } from './realAdvancedLookup';
 import { HIGH_USAGE_ARCHETYPE_WEIGHT } from '../data/schema';
 const SKILL_USAGE = envVar('SKILL_USAGE') === '1';
 const SHOT_CREATOR_MEAN_DEMAND = 0.571;
+/**
+ * 2026-11-26 (the user's center brief: Kareem 1971-73 read as a low-usage screening big — no USG% before
+ * 1977-78, so every rule took the 0.3 default and he got the elite-shooter-cover credit and none of the
+ * paint / three-ball costs): `USG_EST=1` estimates USG% where it is missing from points a 36 minutes over
+ * the league's points a game, plus assists a 36 (scripts/_usgfit.ts: 8,029 windows, fit on 1997+, hold-out
+ * r 0.89 on 1978-96).
+ */
+const USG_EST = envVar('USG_EST') === '1';
+const LEAGUE_PTS = leaguePtsData as Record<string, number>;
+function estimatedUsage(span: PlayerSpan): number {
+  const ys = spanEndYears(span.spanLabel);
+  const lg = LEAGUE_PTS[String(ys[Math.floor(ys.length / 2)])];
+  const mpg = estimatedMinutesPerGame(span);
+  if (!lg || !mpg || mpg < 10) return NaN;
+  return 0.0301 + (1.027 * (span.box.ppg * 36) / mpg) / lg + (0.0023 * span.box.apg * 36) / mpg;
+}
 export function dataUsageDemand(span: PlayerSpan): number | null {
   const u = usageForSpan(span);
-  const usg = u?.usgPct ?? ((realSpan(span) as { usg?: number } | null)?.usg ?? NaN) / 100;
+  let usg = u?.usgPct ?? ((realSpan(span) as { usg?: number } | null)?.usg ?? NaN) / 100;
+  if (!Number.isFinite(usg) && USG_EST) usg = estimatedUsage(span);
   if (!Number.isFinite(usg)) return null;
   const self = u ? 1 - u.assistedFgPct : (skill(span, 'selfCreation') ?? 50) / 100;
   return Math.min(1.3, Math.max(0, (usg - 0.14) / 0.2)) * (0.5 + 0.5 * self);

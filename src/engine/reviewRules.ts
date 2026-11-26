@@ -42,7 +42,11 @@ const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
 const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
 const REV_BENCH_3D = envVar('REV_BENCH_3D') !== '0';
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
-const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? d;
+// 2026-11-26 (the user's center brief: Kareem 1971-73 escaped the paint-crowd rule on the missing spot-up
+// skill read as 50): with `REV_SPOT_EST=1` a window without the three-based skill (before 1979-80) reads its
+// spot-up from the spacing the engine plays (teamSpacingValue, the same 0-100 scale).
+const REV_SPOT_EST = envVar('REV_SPOT_EST') === '1';
+const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
 export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const use = (p: PlayerSpan) => dataUsageDemand(p) ?? 0.3;
