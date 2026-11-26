@@ -9,10 +9,11 @@ const w = (n: string, s?: string) => { const p = draftPool.find((x) => x.playerN
 const STAR: Record<string, PlayerSpan> = { PG: w('Chris Paul','2015-17'), SG: w('Dwyane Wade','2008-10'), SF: w('Kawhi Leonard','2015-17'), PF: w('Kevin Garnett','2002-04'), C: w('David Robinson','1994-96') };
 const ROLE: Record<string, PlayerSpan> = { PG: w('Mike Conley'), SG: w('Klay Thompson','2014-16'), SF: w('Mikal Bridges'), PF: w('Draymond Green','2015-17'), C: w('Rudy Gobert') };
 const bench = ['Jamal Murray','Robert Covington','Tree Rollins','Bobby Portis'].map((n) => w(n));
+const parts = (core: Record<string, PlayerSpan>, pos: string, p: PlayerSpan) => { const roster = [p, ...Object.entries(core).filter(([k]) => k !== pos).map(([, v]) => v), ...bench]; const t: Team = { id: 'x', name: 'x', draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) }; const b = scoreTeam(t); return [b.talentScore, b.fitScore, b.offenseScore, b.defenseScore]; };
 const score = (core: Record<string, PlayerSpan>, pos: string, p: PlayerSpan) => { const roster = [p, ...Object.entries(core).filter(([k]) => k !== pos).map(([, v]) => v), ...bench]; const t: Team = { id: 'x', name: 'x', draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) }; return scoreTeam(t).overallExact; };
 let ok = 0, n = 0, margin = 0;
 for (const [a, sa, b, sb] of PAIRS) { const A = w(a, sa), B = w(b, sb); const pos = A.primaryPosition;
   const m = MARGINS[`${a}>${b}`] ?? {}; const lo = m.min ?? 0, hi = m.max ?? Infinity;
   const d = [STAR, ROLE].map((c) => score(c, pos, A) - score(c, pos, B)); for (const x of d) { n++; if (x > lo && x <= hi) ok++; margin += Math.min(x - lo, 0) + Math.min(hi - x, 0); }
-  console.log((d.every((x) => x > lo && x <= hi) ? 'ok ' : d.some((x) => x > lo && x <= hi) ? '½  ' : 'BAD') , `${a} ${sa} > ${b} ${sb}`.padEnd(62), d.map((x) => x.toFixed(1)).join(' / ')); }
+  console.log((d.every((x) => x > lo && x <= hi) ? 'ok ' : d.some((x) => x > lo && x <= hi) ? '½  ' : 'BAD') , `${a} ${sa} > ${b} ${sb}`.padEnd(62), d.map((x) => x.toFixed(1)).join(' / '), process.env.PARTS ? [STAR, ROLE].map((c) => { const x = parts(c, pos, A), y = parts(c, pos, B); return 'T F O D ' + x.map((v, i) => v - y[i]).join(' '); }).join(' | ') : ''); }
 console.log(`TOP CHECK ${ok}/${n}, shortfall ${margin.toFixed(1)}`);
