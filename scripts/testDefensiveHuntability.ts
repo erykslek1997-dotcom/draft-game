@@ -370,6 +370,7 @@ check(defenseScore(reportedElite) >= 88, 'complete all-time defensive shell reac
 // 2026-11-13: 86.2 -> 85.9 after the tier bands, the All-Star floor and a lifted card moving O-TAL /
 // D-TAL with it (grades.ts): the shell's bench reads a little more defense. Re-measured.
 // 2026-11-13, later: 85.9 -> 86.2 with the defense position correction (wings −~3 D). Re-measured.
-check(Math.abs(eliteProjection.defense - 86.2) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
+// 2026-11-26: 86.2 -> 86.7, the same with every 2026-11-26 Overall change off (earlier rotation / TAL work). Re-measured.
+check(Math.abs(eliteProjection.defense - 86.7) < 0.15, 'complete all-time defensive shell reaches the intended historical DRTG tier');
 
 console.log('Defensive huntability tests complete.');
