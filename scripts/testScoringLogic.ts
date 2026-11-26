@@ -3,6 +3,7 @@ import { autoAssignRotation, primaryStarters } from '../src/engine/rotation';
 import { reviewAdjustment } from '../src/engine/reviewRules';
 import { ballHandlerAdjustment, ballLoadAdjustment, benchDepthScore, benchOffenseAdjustment, benchRoleAdjustment, benchFloorAdjustment, eraAdjustment, rotationScore, scoreTeam, spacingScore } from '../src/engine/scoring';
 import { liftAdjustment } from '../src/engine/teammateLift';
+import { creatorAdjustment } from '../src/engine/scoring';
 import { heliocentricAdjustment } from '../src/engine/heliocentric';
 // 2026-08-19: FIT v2 promoted to the official `fitScore` (user's explicit ask) — it lives in
 // `fit.ts` now, not `scoring.ts` (which only imports it internally for `scoreTeam`).
@@ -102,6 +103,7 @@ const recomputedOverall = Math.round(
     // Plus the two small whole-team terms: the ball load and (2026-10-15) the teammate lift.
     ballLoadAdjustment(fullRoster) +
     liftAdjustment(fullRoster) +
+    creatorAdjustment(fullRoster) +
     ballHandlerAdjustment(fullRoster) +
     // 2026-11-06: two players who live on the ball (heliocentric.ts).
     heliocentricAdjustment(fullRoster) +
