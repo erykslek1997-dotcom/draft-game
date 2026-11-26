@@ -135,6 +135,19 @@ const STYLE_WEIGHT: Record<MatchupContext, number> = { single: 0, season: 0.5 * 
  * comes with it — same status as `netRatingProjection.ts`'s own playoff weak-link correction.
  */
 
+/**
+ * 2026-11-26 (`PO_HUNT`, points of margin per point of huntability penalty, 0 = off; the realism audit,
+ * reports/realism.txt): on real playoff teams 1997+ a rotation with nothing to hunt won more series than its
+ * Overall said (+0.18 sd per sd of hunt resistance), in the simulated playoffs it barely mattered (+0.02). In a
+ * series the other side prepares for the weakest defender, so in the playoffs only each side's penalty costs it.
+ */
+const PO_HUNT = Number(envVar('PO_HUNT') ?? 0);
+function playoffHuntMargin(teamA: Team, teamB: Team, cacheA: MatchupTeamCache | undefined, cacheB: MatchupTeamCache | undefined, context: MatchupContext): number {
+  if (context !== 'playoffs' || !PO_HUNT) return 0;
+  const pen = (t: Team, c?: MatchupTeamCache) => (c?.huntability ?? defensiveHuntability(t)).penalty;
+  return PO_HUNT * (pen(teamB, cacheB) - pen(teamA, cacheA));
+}
+
 const HUNTING_POTENTIAL_NEUTRAL = 50;
 /** How much of the defender's existing huntability penalty a real mismatch hunter can swing up
  * or down, relative to the neutral assumption already baked into their own standalone
@@ -302,7 +315,8 @@ export function projectMatchup(
     OVERALL_MARGIN_WEIGHT * overallMargin +
     (1 - OVERALL_MARGIN_WEIGHT) * netMargin +
     MU_MISMATCH * (mismatchForA - mismatchForB) +
-    styleMargin;
+    styleMargin +
+    playoffHuntMargin(teamA, teamB, cacheA, cacheB, context);
   const gameWinProbA = gameWinProbability(marginA);
   const seriesWinProbA = seriesWinProbability(gameWinProbA);
   return { marginA, gameWinProbA, seriesWinProbA };
