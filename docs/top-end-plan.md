@@ -42,3 +42,10 @@ _baseline.ts z MOVED_MIN (drużyny, w których co najmniej N z ośmiu graczy jes
 Wniosek: F4 obalone — gwiazdy z silnych drużyn naprawdę miały statystyki podbite przez kolegów.
 Problem B5 leży gdzie indziej: dodatni wpływ (Magic +1.3, Kareem +1.1, Stockton +1.1, Kawhi +1.2) sumuje się
 liniowo w piątce gwiazd, czego prawdziwe drużyny nie sprawdzają. Następny krok: czy suma wpływu ma sufit.
+
+## Wynik pomiaru 1.4 (2026-11-26): gwiazda waży więcej niż 1/5 (STARTEST w _baseline.ts)
+- SRS (600 drużyn): średni TAL piątki sam r 0.869; cały Overall 0.876 — reszta składników dodaje ~0.007.
+- Prognoza (114): średni TAL 0.672; + TAL najlepszego 0.692; Overall 0.677 -> Overall + najlepszy 0.701.
+  Współczynniki (Overall + najlepszy): najlepszy gracz +0.070 SRS na punkt TAL ponad to, co daje przez Overall.
+- LeBron w tej samej piątce: TAL 88 -> 105 zmienia Overall o ~0.2-1 pkt (1/5 średniej), a fit/O/D różnią się o ±3-5.
+Wniosek: najlepszy gracz powinien ważyć więcej (dowód poza próbą); dziś jego TAL ginie w średniej.

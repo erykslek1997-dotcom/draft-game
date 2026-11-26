@@ -13,5 +13,5 @@ for (const p of draftPool.filter((x) => x.playerName === n).sort((a, b) => a.spa
   const roster = [p, ...Object.entries(STAR).filter(([k]) => k !== p.primaryPosition).map(([, v]) => v), ...bench];
   const t: Team = { id: 'x', name: 'x', draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) };
   const b = scoreTeam(t), l = liftAdjustment(t);
-  console.log(p.spanLabel, 'TAL', Math.round(effectiveTalent(p)), 'ovr', b.overallExact.toFixed(1), 'lift', l.toFixed(1), 'ovr w/o lift', (b.overallExact - l).toFixed(1));
+  const st = b; console.log(p.spanLabel, p.primaryPosition, 'T', st.talentScore, 'F', st.fitScore, 'O', st.offenseScore, 'D', st.defenseScore, 'bench', st.benchDepthScore, 'TAL', Math.round(effectiveTalent(p)), 'ovr', b.overallExact.toFixed(1), 'lift', l.toFixed(1), 'ovr w/o lift', (b.overallExact - l).toFixed(1));
 }

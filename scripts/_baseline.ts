@@ -114,3 +114,20 @@ const uniq = [...new Map(all.map((s) => [s.id, s])).values()].filter((s) => winB
 const tl = uniq.map((s) => computeTalent(s)), bp = uniq.map((s) => winBpm(s)!);
 console.log(`players ${uniq.length}: r(TAL, window BPM) ${corr(tl, bp).toFixed(3)}`);
 for (const w of [0.5, 1, 2]) console.log(`Overall + ${w} x Talent  ${r(zo.map((v, i) => v + w * zt[i]))}`);
+// STARTEST (2026-11-26, top-end plan step 1.4): does the best player's TAL say more than the five's mean?
+if (process.env.STARTEST) {
+  const { effectiveTalent } = await import('../src/engine/grades');
+  const ys = rows.map((x) => x.srs);
+  const feats = rows.map((x) => { const t = x.spans.slice(0, 5).map((s) => effectiveTalent(s)).sort((a, b) => b - a); return { mean: mean(t), top: t[0], second: t[1], ovr: x.ovr }; });
+  const ols = (cols: number[][]) => { // least squares with intercept, returns coefficients and r
+    const X = cols[0].map((_, i) => [1, ...cols.map((c) => c[i])]); const k = X[0].length;
+    const A = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => X.reduce((s, r) => s + r[a] * r[b], 0)));
+    const v = Array.from({ length: k }, (_, a) => X.reduce((s, r, i) => s + r[a] * ys[i], 0));
+    for (let i = 0; i < k; i++) { const p = A[i][i]; for (let j = i; j < k; j++) A[i][j] /= p; v[i] /= p; for (let r = 0; r < k; r++) if (r !== i) { const f = A[r][i]; for (let j = i; j < k; j++) A[r][j] -= f * A[i][j]; v[r] -= f * v[i]; } }
+    return { b: v.map((x) => x.toFixed(3)), r: corr(X.map((row) => row.reduce((s, x, i) => s + x * v[i], 0)), ys).toFixed(3) };
+  };
+  console.log('SRS ~ mean TAL            ', JSON.stringify(ols([feats.map((f) => f.mean)])));
+  console.log('SRS ~ mean + top TAL      ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top)])));
+  console.log('SRS ~ mean + top + second ', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.second)])));
+  console.log('SRS ~ Overall + top TAL   ', JSON.stringify(ols([feats.map((f) => f.ovr), feats.map((f) => f.top)])));
+}
