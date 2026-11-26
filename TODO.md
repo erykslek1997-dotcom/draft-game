@@ -2078,3 +2078,29 @@ Waga obrońcy obręczy (`SIM_ROLE_RIM` 1,9 / 2,2) prawie nic nie zmienia, bo Kar
 - (c) Zostawić. Różnice są dziś w granicach 0,2–0,7.
 
 **Stockton:** wciąż w najlepszej piątce (obok Kawhiego), co sugeruje szersze przecenienie dwustronnego PG z niskim usage. Do sprawdzenia przy okazji.
+
+## 2026-11-26: Stockton vs Curry (najlepsza piątka po #413) — wdrożone (budżet) + plan grawitacji
+
+Stockton zostaje w najlepszej piątce (Stockton, Kawhi, Bird, KG, Kareem). Na tle Curry'ego w tej samej czwórce (`scripts/_stockswap.ts`, `scripts/_offsc.ts`) silnik daje mu przewagę z czterech źródeł:
+
+1. **Obrona:** D 89 wobec 62, fit 96 wobec 88 (spójność obrony 86/44, pokrycie ról 91/81). To uczciwe.
+2. **Budżet jednej piłki liczył usage, nie posiadanie.** Curry (usage 0,60) „zabierał piłkę”, Stockton (0,31) nie. Wdrożone: `OFF_BALL_SRC=share` (czas z piłką, `ballShare`) i `OFF_BALL` 0,35. Atak względem ORtg 0,7934 → 0,7943, sędziowie bez zmian, AI 30/30. Atak piątki Stockton / Curry 88/87 → 87/87.
+3. **Lift kolegów „dał minus dostał”** (`teammateLift.ts`, `realMates`):
+
+   | Gracz | Netto |
+   |---|---|
+   | Curry | −1,7 |
+   | LeBron | −2,1 |
+   | Nash | −1,6 |
+   | Stockton | +0,5 |
+   | Jordan | +1,1 |
+   | Lillard | +1,3 |
+
+   Pomiar jest okrężny: lift Klaya zmierzono m.in. na Currym, a potem odejmuje się go Curry'emu. Karze gwiazdy z mocnych drużyn. Wyłączenie (`LIFT_RM=0`) obniża prognozę 0,678 → 0,661 i SRS 0,875 → 0,867, bo miara ta sama przecieka z drużyn, które przewidujemy (`reports/rmgrid.txt`). Nie da się jej po prostu wyrzucić.
+4. **Korekta z błędów silnika na prawdziwych drużynach** (`realTeamResiduals`): Curry −0,53, LeBron −0,86, Stockton/Jordan/Bird/Malone brak, bo ich drużyny nie mieszczą się w całości w puli. Nierówne pokrycie. Poza próbą korekta pomaga, więc zostaje.
+
+**Następny krok (zaakceptowany):** grawitacja z danych play-by-play.
+- On/off ze strony pbpstats (`get-on-off`, `get-wowy-stats`, od 2000-01).
+- Skuteczność tych samych kolegów z graczem i bez, w tym samym sezonie, z odjęciem jego własnych rzutów.
+- Zastąpi „dał minus dostał” od 2000-01.
+- Sędziowie: prognoza, SRS, mechanika, najlepsza piątka.

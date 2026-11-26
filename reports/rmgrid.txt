@@ -1,0 +1,36 @@
+=========== LIFT_RM=1
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.741, 1.04 judge units per Overall point
+-- prior: 0.678 srs 0.875
+-- swap:
+John Stockton 1990-92      ovr 92.44 TAL 96 bench 59 O 88 D 
+Stephen Curry 2014-16      ovr 89.25 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 91.60 TAL 97 bench 59 O 88 D 
+Chris Paul 2015-17         ovr 89.64 TAL 96 bench 59 O 88 D 
+-- best five top80:
+92.44  8/8  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+=========== LIFT_RM=0.5
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.872, 0.25 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.745, 1.04 judge units per Overall point
+-- prior: 0.670 srs 0.872
+-- swap:
+John Stockton 1990-92      ovr 93.10 TAL 96 bench 59 O 88 D 
+Stephen Curry 2014-16      ovr 90.25 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 92.20 TAL 97 bench 59 O 88 D 
+Chris Paul 2015-17         ovr 90.22 TAL 96 bench 59 O 88 D 
+-- best five top80:
+93.10  8/8  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+=========== LIFT_RM=0
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.867, 0.24 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.748, 1.03 judge units per Overall point
+-- prior: 0.661 srs 0.867
+-- swap:
+John Stockton 1990-92      ovr 93.76 TAL 96 bench 59 O 88 D 
+Stephen Curry 2014-16      ovr 91.26 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 92.79 TAL 97 bench 59 O 88 D 
+Chris Paul 2015-17         ovr 90.81 TAL 96 bench 59 O 88 D 
+-- best five top80:
+93.76  8/8  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
