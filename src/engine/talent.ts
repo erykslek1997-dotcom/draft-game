@@ -2057,7 +2057,7 @@ const TAL_OD = (envVar('TAL_OD') ?? '0') === '1';
  * `BIG_REB_REF` (and `BIG_BLK_W` per block over `BIG_BLK_REF`) comes off, both ways, windows from 1980
  * on (pace makes older rebound counts incomparable). Measurement knobs, 0 = off.
  */
-const BIG_REB_W = Number(envVar('BIG_REB_W') ?? 0);
+const BIG_REB_W = Number(envVar('BIG_REB_W') ?? 0.6);
 const BIG_REB_REF = Number(envVar('BIG_REB_REF') ?? 7.7);
 const BIG_BLK_W = Number(envVar('BIG_BLK_W') ?? 0);
 const BIG_BLK_REF = Number(envVar('BIG_BLK_REF') ?? 1.05);
@@ -2244,9 +2244,9 @@ const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
  * (O1 0 = off) — and, for windows from 1980 on, cut to `DEF_GATE_SPC_MULT` for a non-shooter
  * (spacing under `DEF_GATE_SPC`; 0 = off). Measurement knobs (scripts/_defover.ts, /tmp/defres.py).
  */
-const DEF_GATE_O0 = Number(envVar('DEF_GATE_O0') ?? 40);
-const DEF_WEAK_OFF = envVar('DEF_WEAK_OFF') !== '0';
-const DEF_GATE_O1 = Number(envVar('DEF_GATE_O1') ?? 0);
+const DEF_GATE_O0 = Number(envVar('DEF_GATE_O0') ?? 45);
+const DEF_WEAK_OFF = envVar('DEF_WEAK_OFF') === '1';
+const DEF_GATE_O1 = Number(envVar('DEF_GATE_O1') ?? 55);
 const DEF_GATE_SPC = Number(envVar('DEF_GATE_SPC') ?? 0);
 const DEF_GATE_SPC_MULT = Number(envVar('DEF_GATE_SPC_MULT') ?? 0.5);
 function defenseCreditGate(span: PlayerSpan, otal: number): number {
