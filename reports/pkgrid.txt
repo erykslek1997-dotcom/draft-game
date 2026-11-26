@@ -1,0 +1,54 @@
+=========== USG_EST=1 REV_SPOT_EST=1 REV_PM_ENGINE=0.45 REV_PM_SPC=80 REV_OFFBALL_SPOT=80
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.741, 1.04 judge units per Overall point
+-- prior: 0.678 srs 0.875
+-- AI picks: 3/30 pinned picks changed. If deliberate, re-bless with --update.
+-- centers:
+Kareem 71-73    A 97.0 (91/85/91, +6.3) | B 92.2 (88/88/94, +1.4) | C 78.2 (82/64/78, -16.1)
+Robinson 93-95  A 96.3 (90/88/92, +5.8) | B 91.2 (87/89/96, +0.5) | C 78.0 (81/70/79, -16.0)
+Shaq 99-01      A 96.2 (92/84/91, +5.5) | B 91.5 (89/87/94, +0.6) | C 77.6 (83/64/78, -16.6)
+Jokic 23-25     A 96.4 (94/84/86, +5.9) | B 91.0 (89/87/82, -0.4) | C 77.9 (85/60/71, -16.2)
+Hakeem best     A 95.2 (86/88/89, +4.5) | B 90.4 (84/89/93, -0.6) | C 77.5 (79/70/77, -16.7)
+Duncan 01-03    A 95.2 (90/88/84, +4.4) | B 89.9 (86/90/89, -1.0) | C 77.1 (82/72/69, -17.4)
+-- best five top80:
+92.44  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+-- best five top120:
+92.44  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+=========== USG_EST=1 REV_SPOT_EST=1 REV_PM_ENGINE=0.45 REV_PM_SPC=80 REV_OFFBALL_SPOT=80 BH_SHOOT_SRC=spacing
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.738, 1.04 judge units per Overall point
+-- prior: 0.678 srs 0.875
+-- AI picks: 5/30 pinned picks changed. If deliberate, re-bless with --update.
+-- centers:
+Kareem 71-73    A 96.8 (91/85/91, +6.1) | B 92.3 (88/88/94, +1.5) | C 80.1 (82/64/78, -14.0)
+Robinson 93-95  A 96.1 (90/88/92, +5.6) | B 91.4 (87/89/96, +0.6) | C 79.9 (81/70/79, -13.9)
+Shaq 99-01      A 96.1 (92/84/91, +5.4) | B 91.6 (89/87/94, +0.8) | C 79.6 (83/64/78, -14.4)
+Jokic 23-25     A 96.2 (94/84/86, +5.7) | B 91.6 (89/87/82, +0.3) | C 79.8 (85/60/71, -14.0)
+Hakeem best     A 95.0 (86/88/89, +4.3) | B 90.5 (84/89/93, -0.4) | C 79.4 (79/70/77, -14.6)
+Duncan 01-03    A 95.0 (90/88/84, +4.2) | B 90.1 (86/90/89, -0.8) | C 79.0 (82/72/69, -15.3)
+-- best five top80:
+92.44  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+89.62  1/12  David Robinson 1993-95, Jerry West 1965-67, Kawhi Leonard 2015-17, Magic Johnson 1989-91, Tyrese Haliburton 2022-24
+-- best five top120:
+92.44  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+88.62  1/12  David Robinson 1993-95, Kawhi Leonard 2015-17, Larry Bird 1985-87, LeBron James 2012-14, Nikola Jokic 2023-25
+=========== USG_EST=1 REV_SPOT_EST=1 REV_PM_ENGINE=0.45 REV_PM_SPC=80 REV_OFFBALL_SPOT=80 BH_SHOOT=0
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.876, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.732, 1.03 judge units per Overall point
+-- prior: 0.677 srs 0.876
+-- AI picks: 3/30 pinned picks changed. If deliberate, re-bless with --update.
+-- centers:
+Kareem 71-73    A 95.6 (91/85/91, +5.5) | B 91.6 (88/88/94, +1.5) | C 78.2 (82/64/78, -15.3)
+Robinson 93-95  A 94.9 (90/88/92, +5.0) | B 90.7 (87/89/96, +0.6) | C 78.0 (81/70/79, -15.3)
+Shaq 99-01      A 94.8 (92/84/91, +4.8) | B 90.9 (89/87/94, +0.8) | C 77.6 (83/64/78, -15.8)
+Jokic 23-25     A 95.0 (94/84/86, +5.1) | B 90.5 (89/87/82, -0.1) | C 77.9 (85/60/71, -15.4)
+Hakeem best     A 93.8 (86/88/89, +3.7) | B 89.8 (84/89/93, -0.4) | C 77.5 (79/70/77, -15.9)
+Duncan 01-03    A 93.8 (90/88/84, +3.7) | B 89.4 (86/90/89, -0.8) | C 77.1 (82/72/69, -16.7)
+-- best five top80:
+92.10  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+-- best five top120:
+92.10  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+88.00  1/12  David Robinson 1993-95, Kawhi Leonard 2015-17, Larry Bird 1985-87, LeBron James 2012-14, Nikola Jokic 2023-25

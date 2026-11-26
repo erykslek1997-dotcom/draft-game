@@ -36,18 +36,18 @@ const REV_DROP = (envVar('REV_DROP') ?? '').split(',').filter(Boolean);
 const REV_STAR = envVar('REV_STAR') !== '0';
 // 2026-11-21 (the user: Porter and Pierce shoot threes, they play off the ball): the spot-up level that takes a
 // player out of the ball-holder count (90 = only a Curry; 65 = any real catch-and-shoot threat).
-const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 65);
+const REV_OFFBALL_SPOT = Number(envVar('REV_OFFBALL_SPOT') ?? 80);
 // 2026-11-21: the usage that makes a ball-holder for the "three with the ball" rule (J. Williams 0.43).
 const REV_BALL_USE = Number(envVar('REV_BALL_USE') ?? 0.5);
 const REV_PAINT = envVar('REV_PAINT') ?? 'mid';
 const REV_BENCH_3D = envVar('REV_BENCH_3D') !== '0';
-const REV_PM_SPC = Number(envVar('REV_PM_SPC') ?? 55);
-const REV_PM_ENGINE = Number(envVar('REV_PM_ENGINE') ?? 0.5);
+const REV_PM_SPC = Number(envVar('REV_PM_SPC') ?? 80);
+const REV_PM_ENGINE = Number(envVar('REV_PM_ENGINE') ?? 0.45);
 const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition === 'C';
 // 2026-11-26 (the user's center brief: Kareem 1971-73 escaped the paint-crowd rule on the missing spot-up
 // skill read as 50): with `REV_SPOT_EST=1` a window without the three-based skill (before 1979-80) reads its
 // spot-up from the spacing the engine plays (teamSpacingValue, the same 0-100 scale).
-const REV_SPOT_EST = envVar('REV_SPOT_EST') === '1';
+const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
 export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {

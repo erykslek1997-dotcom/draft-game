@@ -2034,3 +2034,47 @@ Ostatni wariant obniża wszystkie piątki podobnie, więc różnica zostaje: ok.
 - (c) Nic nie robić, jeśli (a) i (b) nie przejdą na r.
 
 Przełączniki `OFF_BALL_SRC` i `BH_SHOOT_SRC` zostają w kodzie, domyślnie wyłączone.
+
+## Kalibracja 2026-11-26: centrum i dwóch rozgrywających — wdrożone (część)
+
+Para Magic + Stockton wygrywała przez trzy błędy w danych i regułach, a nie przez preferencję. `reports/pkgrid.txt`.
+
+1. **Reguła „dodatkowy rozgrywający obok silnika” nigdy się nie uruchamiała.**
+   - Silnik gry liczył się dopiero od usage 0,5, a Magic ma 0,47.
+   - Oszacowany spot-up 75 (próg 65) robił z Magica „gwiazdę bez piłki”.
+   - Spacing 55+ zwalniał Stocktona (72) i CP3 (76/82).
+   - Teraz: silnik od 0,45, gwiazda bez piłki od spot-up 80 (Curry 95+ zostaje), zwolnienie od spacingu 80.
+   - Przełączniki `REV_PM_ENGINE`, `REV_OFFBALL_SPOT`, `REV_PM_SPC`.
+2. **Brak USG% przed 1977-78 czytany jako 0,3.** Kareem 1971-73 grał przez to jak center bez piłki. Teraz USG% szacowane z punktów na 36 minut względem ligi i asyst (`USG_EST`; hold-out r 0,89 na latach 1978-96).
+3. **Brak spot-up skill przed linią za 3 czytany jako 50.** Kareem omijał karę za tłok w pomalowanym. Teraz brakujący spot-up czyta się ze spacingu (`REV_SPOT_EST`).
+
+| | Przed | Po |
+|---|---|---|
+| Najlepsza piątka (top 80 / 120, 12 restartów) | Magic, Stockton, Bird, KG, Kareem | Stockton, **Kawhi**, Bird, KG, Kareem (12/12) |
+| r mechanika gry | 0,735 | **0,741** |
+| r SRS | 0,875 | 0,875 |
+| Prognoza uczciwa | 0,679 | 0,678 |
+| Wybory AI | — | 3/30 zmienione, wzorzec odświeżony |
+
+Koszt drugiego gracza z piłką bez zmian. Warianty `BH_SHOOT_SRC=spacing` i `BH_SHOOT=0` obniżały r mechaniki (0,738 / 0,732).
+
+**Centrum — warunki z briefu po zmianie** (`scripts/_centers.ts`):
+- Rdzeń C: Kareem 78,2 wobec Robinson 78,0. Kareem wciąż najlepszy o 0,2, choć mecz przeciw REF Robinson ma lepszy (−16,0 wobec −16,1). ✗
+- Rdzeń A: Kareem 97,0 wobec Robinson 96,3, różnica 0,7 (cel < 0,5). ✗
+- Rdzeń B: Shaq drugi (91,5). ✓
+- Jokić ma najniższy fit w C (71). ✓
+
+**Co jeszcze trzyma Kareema** (rdzeń C):
+- lift kolegów +0,8 (z danych);
+- atak +1 (O 82 wobec 81).
+
+Obrona Robinsona (70 wobec 64) daje ok. −1,0 i nie wystarcza.
+
+Waga obrońcy obręczy (`SIM_ROLE_RIM` 1,9 / 2,2) prawie nic nie zmienia, bo Kareem też liczy się jako rim protector z szacowanymi 3,3 BPG.
+
+**Opcje:**
+- (a) Mniejsza pewność szacowanych bloków sprzed 1973-74 w rim-protector / D-TAL. Nie da się tego zmierzyć sędziami (brak drużyn sprzed 1974 w SRS), więc to decyzja Eryka.
+- (b) Typ 1 (center bez piłki) z danych: Robinson 1993-95 ma wysokie usage (19,5 FGA), więc nie łapie się jako typ 1. Reguła dla typu 1 nie pomoże Robinsonowi.
+- (c) Zostawić. Różnice są dziś w granicach 0,2–0,7.
+
+**Stockton:** wciąż w najlepszej piątce (obok Kawhiego), co sugeruje szersze przecenienie dwustronnego PG z niskim usage. Do sprawdzenia przy okazji.

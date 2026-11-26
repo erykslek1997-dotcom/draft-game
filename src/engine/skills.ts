@@ -186,7 +186,7 @@ const SHOT_CREATOR_MEAN_DEMAND = 0.571;
  * the league's points a game, plus assists a 36 (scripts/_usgfit.ts: 8,029 windows, fit on 1997+, hold-out
  * r 0.89 on 1978-96).
  */
-const USG_EST = envVar('USG_EST') === '1';
+const USG_EST = envVar('USG_EST') !== '0';
 const LEAGUE_PTS = leaguePtsData as Record<string, number>;
 function estimatedUsage(span: PlayerSpan): number {
   const ys = spanEndYears(span.spanLabel);
