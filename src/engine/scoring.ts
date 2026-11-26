@@ -2399,7 +2399,7 @@ function benchShare(team: Team): number {
 // playoffs, rate for the playoffs): a rotation with a defender to hunt won fewer real playoff series than its Overall
 // said (reports/realism.txt). 0.3 took the 317 real playoff teams 0.550 -> 0.565 and real SRS 0.873 -> 0.875.
 // Around `HUNT_REF` (a drafted five's typical reading), so the drafted field keeps its level.
-const HUNT_W = Number(envVar('HUNT_W') ?? 0);
+const HUNT_W = Number(envVar('HUNT_W') ?? 0.15);
 const HUNT_REF = Number(envVar('HUNT_REF') ?? 90);
 const TRAITS_ON = envVar('TRAITS') !== '0';
 const OVR_DROP = new Set((envVar('OVR_DROP') ?? '').split(',').filter(Boolean));
