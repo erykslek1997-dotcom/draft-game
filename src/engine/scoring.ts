@@ -27,7 +27,6 @@ import { maxSustainableMinutes, durabilityValueFactor } from './durability';
 import { displayTalentForSpan, effectiveTalent, overallTierForSpan, tierRank } from './grades';
 import { realSpan } from './realAdvancedLookup';
 import { apbrRapmForSpan } from './apbrRapmLookup';
-import { pbpForSpan } from './pbpLookup';
 import { draftPool } from '../data/draftPool';
 import { tierContextWithSixthMan } from './sixthMan';
 import { minuteProfileForSpan, minutesOverrunPenalty, MINUTES_CAP_TOLERANCE } from './rotationRoleMinutes';
@@ -595,7 +594,6 @@ function teamSelfCreationQuality(starters: PlayerSpan[]): number {
 // Offense blend r 0.619, team O-TAL alone 0.768): `OFF_MIX` moves that share of the spacing,
 // playmaking and mismatch weights onto O-TAL.
 const OFF_MIX = Number(envVar('OFF_MIX') ?? 0.5);
-const OFF_GUARD_W = Number(envVar('OFF_GUARD_W') ?? 0);
 /**
  * 2026-11-26 (the user: a strong team with no off-the-dribble creator — "czy powinien być top2"; scripts/
  * _creator.ts, 520 real teams 1997+: best self-creation skill in the top quarter beat Overall by +0.41 SRS,
@@ -611,7 +609,6 @@ export function creatorAdjustment(team: Team): number {
   if (!v.length) return 0;
   return CREATOR_W * Math.max(-1, Math.min(1, (Math.max(...v) - CREATOR_MID) / 10));
 }
-const OFF_GUARD_REF = Number(envVar('OFF_GUARD_REF') ?? 70);
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
@@ -1260,13 +1257,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
-  // 2026-11-26 (the user: Kidd O 66 + Oladipo O 67 beside KG / Marion / Wembanyama — "takie drużyny raczej
-  // nie wygrywają"; scripts/_backcourt.ts: weak backcourt + frontcourt star teams read 0.8 ORtg over real,
-  // corr(guard O, ORtg miss) 0.12): `OFF_GUARD_W` raw points per 10 O-TAL of the starting PG / SG mean
-  // over `OFF_GUARD_REF`. Measurement knob, 0 = off.
-  const guardO = primaryStarters(team).filter((e) => e.slot === 'PG' || e.slot === 'SG').map((e) => computeOffensiveTalent(e.player));
-  const guardTerm = OFF_GUARD_W && guardO.length ? (OFF_GUARD_W * (guardO.reduce((x, y) => x + y, 0) / guardO.length - OFF_GUARD_REF)) / 10 : 0;
-  const raw = guardTerm + raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
+  const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
   const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
   return { ...components, score, raw };
@@ -2276,50 +2267,6 @@ function bpmImplied(span: PlayerSpan): number {
   }
   return bpmLine.a + bpmLine.b * effectiveTalent(span);
 }
-/**
- * 2026-11-25 (`PBP_FEAT` + `PBP_W`, measurement; docs/pbp-plan.md): one pbpstats feature, minutes-weighted
- * over the rotation and z-scored over the pool's 2000+ spans, as Overall points. Spans without play-by-play
- * read the pool mean (0).
- */
-const PBP_FEAT = envVar('PBP_FEAT') ?? '';
-const PBP_W = Number(envVar('PBP_W') ?? 0);
-const pbpFeature = (s: PlayerSpan): number | null => {
-  const b = pbpForSpan(s);
-  if (!b || b.minutes < 500) return null;
-  const per36 = (v: number) => (v / b.minutes) * 36;
-  switch (PBP_FEAT) {
-    case 'atRim': return per36(b.atRimFga);
-    case 'atRimShare': return b.atRimFga / Math.max(1, b.atRimFga + b.shortMidFga + b.longMidFga + b.corner3Fga + b.arc3Fga);
-    case 'liveTo': return -per36(b.liveBallTurnovers);
-    case 'assisted': return (b.assisted2s + b.assisted3s) / 2;
-    case 'selfMade': return 1 - (b.assisted2s + b.assisted3s) / 2;
-    case 'corner3': return per36(b.corner3Fga);
-    case 'threeAcc': return (b.corner3Fgm + b.arc3Fgm) / Math.max(1, b.corner3Fga + b.arc3Fga);
-    case 'longMidAcc': return b.longMidFga >= 50 ? b.longMidFgm / b.longMidFga : null;
-    case 'onOff': return b.onOffRtg - b.onDefRtg;
-    case 'foulsDrawn': return per36(b.foulsDrawn2 + b.foulsDrawn3 + b.nonShootingDrawn);
-    case 'fouls': return -per36(b.fouls);
-    default: return null;
-  }
-};
-let pbpStats: { m: number; s: number } | null = null;
-export function pbpAdjustment(team: Team): number {
-  if (!PBP_W || !PBP_FEAT) return 0;
-  if (!pbpStats) {
-    const v = draftPool.map(pbpFeature).filter((x): x is number => x !== null && Number.isFinite(x));
-    const m = v.reduce((a, b) => a + b, 0) / v.length;
-    pbpStats = { m, s: Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1 };
-  }
-  let sum = 0, min = 0;
-  for (const a of allAssignments(team)) {
-    if (a.minutes <= 0) continue;
-    const v = pbpFeature(a.player);
-    sum += (v === null || !Number.isFinite(v) ? 0 : (v - pbpStats.m) / pbpStats.s) * a.minutes;
-    min += a.minutes;
-  }
-  return min ? PBP_W * sum / min : 0;
-}
-
 export function bpmAdjustment(team: Team): number {
   if (!OVR_BPM) return 0;
   let sum = 0, min = 0;
@@ -2460,8 +2407,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-11-19: the second unit's offense (see BENCH_OFF).
     d('benchOff', () => benchOffenseAdjustment(team)) +
     d('benchRole', () => benchRoleAdjustment(team)) +
-    d('bpm', () => bpmAdjustment(team)) +
-    pbpAdjustment(team);
+    d('bpm', () => bpmAdjustment(team));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
   const certaintyNotes =

@@ -20,27 +20,6 @@ import { namedShiftFor, namedShiftRegistered } from './namedShift';
 import { blendWithNeighbours, neighbourWindowsFor, neighbourWindowsRegistered, onNeighbourWindowsRegistered } from './neighbourWindows';
 import { withHustleBonus } from '../data/hustleDefenders';
 import { envVar } from './env';
-import defRepData from '../data/defRep.json';
-
-/**
- * 2026-11-25 (docs/pbp-plan.md, defense-reputation test): written defensive reputation (web sources,
- * level 1-5 + confidence) for ~150 key pre-1997 players. Measurement knob: DEF_REP_W points per level
- * away from 3, on pre-1997 windows only; DEF_REP_MODE 'extreme' (default: only level 1/5 with high
- * confidence) or 'all' (medium/high confidence, any level). Off (0) by default.
- */
-const DEF_REP_W = Number(envVar('DEF_REP_W') ?? 0);
-const DEF_REP_MODE = envVar('DEF_REP_MODE') ?? 'extreme';
-const DEF_REP = defRepData as unknown as Record<string, [number, string]>;
-function defRepAdjustment(span: PlayerSpan): number {
-  if (!DEF_REP_W) return 0;
-  if (Math.max(...spanEndYears(span.spanLabel)) > 1996) return 0;
-  const r = DEF_REP[normalizePlayerName(span.playerName)];
-  if (!r) return 0;
-  const [lvl, conf] = r;
-  if (DEF_REP_MODE === 'extreme') { if (conf !== 'high' || (lvl !== 1 && lvl !== 5)) return 0; }
-  else if (conf === 'low') return 0;
-  return DEF_REP_W * (lvl - 3);
-}
 
 /**
  * D-TAL — "how good is this player defensively," 0-100, per position.
@@ -1171,7 +1150,7 @@ export function computeDefensiveTalentBase(rawSpan: PlayerSpan): number {
   const cached = playoffDefensiveTalentCache.get(span.id);
   if (cached !== undefined) return cached;
   const bonus = (NAMED_DTAL_BONUS.get(normalizePlayerName(span.playerName)) ?? 0) + (NAMED_SPAN_DTAL_BONUS.get(`${normalizePlayerName(span.playerName)}|${span.spanLabel}`) ?? 0);
-  const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus + defRepAdjustment(span);
+  const measured = computeDefensiveTalentRegularSeason(span) + playoffImpactForSpan(span).defense + bonus;
   const floored = Math.max(measured, recognizedDefenderFloor(span), rimProtectorFloor(span), boxEliteConfirmedFloor(span), neutralDataFloor(span));
   const result = Math.max(0, Math.min(100, Math.round(floored)));
   playoffDefensiveTalentCache.set(span.id, result);

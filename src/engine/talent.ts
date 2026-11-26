@@ -1,5 +1,3 @@
-import { apbrRapmForSpan } from './apbrRapmLookup';
-import { pbpForSpan } from './pbpLookup';
 import type { OffensiveArchetype, PlayerSpan, Position } from '../data/schema';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
@@ -2045,13 +2043,6 @@ function namedTalPenalty(span: PlayerSpan): number {
 }
 
 /**
- * 2026-11-25 (the user: "czy TAL nie powinien być powiązany z O-TAL i D-TAL"), quick version for review:
- * TAL = k x (O-TAL + TAL_OD_R x D-TAL) + c, on the current TAL's mean and spread (1997+ windows:
- * k 0.8045, c -12.05 at R 0.65 — the D/O ratio APBR RAPM gives). Today's TAL reads 0.83 O + 0.42 D.
- * `TAL_OD=1` turns it on (off by default).
- */
-const TAL_OD = (envVar('TAL_OD') ?? '0') === '1';
-/**
  * 2026-11-26 (the user: Whiteside's named ceiling → a rule; scripts/_defover.ts, 1,359 big windows 1997+
  * against APBR RAPM, reverse fit): a PF / C reads +1.2 TAL per rebound a game over what RAPM implies (+0.5
  * per block on top), the same in even and odd seasons. `BIG_REB_W` TAL per rebound a game over
@@ -2062,23 +2053,6 @@ const BIG_REB_W = Number(envVar('BIG_REB_W') ?? 0.6);
 const BIG_REB_REF = Number(envVar('BIG_REB_REF') ?? 7.7);
 const BIG_BLK_W = Number(envVar('BIG_BLK_W') ?? 0);
 const BIG_BLK_REF = Number(envVar('BIG_BLK_REF') ?? 1.05);
-/**
- * 2026-11-26 (the user: Hassan Whiteside 2014-16 at 75 is odd — option C, "stats over impact"): where APBR
- * RAPM covers the window (1997-2019, 3,000+ possessions) and TAL sits more than `TAL_RAPM_GAP` points
- * from the TAL its RAPM implies (reverse fit on 4,643 windows: TAL 54.44 at RAPM +0.607, 0.0632 RAPM per
- * TAL point), TAL moves `TAL_RAPM_W` of the excess toward it. Measurement knob, 0 = off.
- */
-const TAL_RAPM_W = Number(envVar('TAL_RAPM_W') ?? 0); // 2026-11-26: 0.5 rolled back — single-window RAPM moved 764 windows by up to 19 (Middleton +16, Kevin Johnson -19)
-const TAL_RAPM_GAP = Number(envVar('TAL_RAPM_GAP') ?? 10);
-function rapmPull(span: PlayerSpan, tal: number): number {
-  if (!TAL_RAPM_W) return 0;
-  const r = apbrRapmForSpan(span);
-  if (!r || r.poss < 3000) return 0;
-  const implied = 54.44 + (r.net - 0.607) / 0.0632;
-  const gap = implied - tal;
-  const excess = Math.sign(gap) * Math.max(0, Math.abs(gap) - TAL_RAPM_GAP);
-  return TAL_RAPM_W * excess;
-}
 function bigBoxAdjustment(span: PlayerSpan): number {
   if ((!BIG_REB_W && !BIG_BLK_W) || (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF')) return 0;
   if (Math.min(...spanEndYears(span.spanLabel)) < 1980) return 0;
@@ -2089,12 +2063,6 @@ function bigBoxAdjustment(span: PlayerSpan): number {
  * oldschool, resume, smallcap. */
 const TAL_DROP = new Set((envVar('TAL_DROP') ?? '').split(',').filter(Boolean));
 const TD = (k: string) => TAL_DROP.has(k);
-const TAL_OD_R = Number(envVar('TAL_OD_R') ?? 0.65);
-const TAL_OD_K = Number(envVar('TAL_OD_K') ?? 0.8045);
-const TAL_OD_C = Number(envVar('TAL_OD_C') ?? -12.05);
-function talentFromOD(span: PlayerSpan): number {
-  return Math.max(0, Math.min(100, Math.round(TAL_OD_K * (computeOffensiveTalentBase(span) + TAL_OD_R * computeDefensiveTalentBase(span)) + TAL_OD_C)));
-}
 export function computeTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = talentCache.get(span.id);
@@ -2125,9 +2093,8 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + (TD('credit') ? 0 : defenseCreditLift(span, reduced));
   const lifted = credited + (TD('lowusage') ? 0 : lowUsageLift(span, credited)) + (TD('named') ? 0 : namedTalLift(span)) - (TD('oldschool') ? 0 : oldSchoolPointPenalty(span, credited));
   const resumed = lifted + (TD('resume') ? 0 : roleResumeAdjustment(span, lifted));
-  const boxed0 = resumed + bigBoxAdjustment(span);
-  const boxed = boxed0 + rapmPull(span, boxed0);
-  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? boxed : (TD('smallcap') ? boxed : Math.min(boxed, smallRoleCap(span))))));
+  const boxed = resumed + bigBoxAdjustment(span);
+  const result = Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? boxed : (TD('smallcap') ? boxed : Math.min(boxed, smallRoleCap(span))))));
   talentCache.set(span.id, result);
   return result;
 }
@@ -2251,30 +2218,19 @@ const DEFENSE_CREDIT_WEIGHT: Record<'L' | 'M' | 'H', Record<'G' | 'W' | 'B', num
 const DEFENSE_CREDIT_FADE_FROM = 70;
 const DEFENSE_CREDIT_FADE_TO = 90;
 const DEFENSE_CREDIT_MAX_LIFT = 12;
-/** 2026-11-25 (the user: after the offense weight went up, are defenders' TAL too high? scripts/_defover.ts:
- * windows with D-TAL 30+ over O-TAL sit +5.3 TAL over their APBR RAPM, balanced ones -1.4): measurement
- * knob, the positive defense credit scaled by `DEF_CREDIT_SCALE` (1 = as before). */
-const DEF_CREDIT_SCALE = Number(envVar('DEF_CREDIT_SCALE') ?? 1);
-const DEFENSE_CREDIT_WEAK_OFFENSE = 60;
 /**
- * 2026-11-25 overnight (the user: "nie może być tak że specjalista defensywny jest wywyższany, a
- * ofensywny znacznie zaniżany … jak ktoś nie potrafi nawet rzucać z rogu po prostu nie gra"): the
- * positive defense credit gated by offense — none at O-TAL `DEF_GATE_O0`, full from `DEF_GATE_O1`
- * (O1 0 = off) — and, for windows from 1980 on, cut to `DEF_GATE_SPC_MULT` for a non-shooter
- * (spacing under `DEF_GATE_SPC`; 0 = off). Measurement knobs (scripts/_defover.ts, /tmp/defres.py).
+ * 2026-11-25/26 (the user: "nie może być tak że specjalista defensywny jest wywyższany, a ofensywny
+ * znacznie zaniżany … jak ktoś nie potrafi nawet rzucać z rogu po prostu nie gra"; docs/tal-gates-2026-11-25.md):
+ * the positive defense credit grows with offense — none at base O-TAL `DEF_GATE_O0`, full from
+ * `DEF_GATE_O1`. Defense specialists sat +2.7 to +5.2 TAL over APBR RAPM, about 0 with the gate; honest
+ * forecast 0.671 -> 0.674. It replaced the old hard rule (under O-TAL 60 the credit stopped at TAL 69,
+ * which gave OG Anunoby 2024-26's D 85 nothing). `DEF_GATE_O1=0` turns the gate off.
  */
 const DEF_GATE_O0 = Number(envVar('DEF_GATE_O0') ?? 45);
-const DEF_WEAK_OFF = envVar('DEF_WEAK_OFF') === '1';
 const DEF_GATE_O1 = Number(envVar('DEF_GATE_O1') ?? 55);
-const DEF_GATE_SPC = Number(envVar('DEF_GATE_SPC') ?? 0);
-const DEF_GATE_SPC_MULT = Number(envVar('DEF_GATE_SPC_MULT') ?? 0.5);
-function defenseCreditGate(span: PlayerSpan, otal: number): number {
-  let g = 1;
-  if (DEF_GATE_O1 > DEF_GATE_O0) g *= clamp01((otal - DEF_GATE_O0) / (DEF_GATE_O1 - DEF_GATE_O0));
-  if (DEF_GATE_SPC > 0 && Math.max(...spanEndYears(span.spanLabel)) >= 1980 && computeSpacing(span) < DEF_GATE_SPC) g *= DEF_GATE_SPC_MULT;
-  return g;
+function defenseCreditGate(otal: number): number {
+  return DEF_GATE_O1 > DEF_GATE_O0 ? clamp01((otal - DEF_GATE_O0) / (DEF_GATE_O1 - DEF_GATE_O0)) : 1;
 }
-const DEFENSE_CREDIT_WEAK_OFFENSE_CEILING = 69;
 /** First season (end year) with steals and blocks in the box score. */
 const DEFENSE_CREDIT_STOCKS_FROM = 1974;
 const CARRY_INTO_TAL = (envVar('CARRY_TAL') ?? '1') !== '0';
@@ -2299,11 +2255,7 @@ export function defenseCreditLift(span: PlayerSpan, tal: number): number {
     if (spanEndYears(span.spanLabel)[0] < DEFENSE_CREDIT_STOCKS_FROM) return 0;
     return (lift / 2) * clamp01((tal - 40) / 10);
   }
-  lift = Math.min(lift * DEF_CREDIT_SCALE, DEFENSE_CREDIT_MAX_LIFT * DEF_CREDIT_SCALE) * defenseCreditGate(span, otal);
-  // 2026-11-26 (the user: Mullin 1996-98 O 63 / D 56 over OG 2024-26 O 59 / D 85): the old hard weak-offense
-  // rule — under O-TAL 60 the credit stops at TAL 69 — gave OG's D 85 nothing. `DEF_WEAK_OFF=0` drops it
-  // (meant with the smooth gate `DEF_GATE_O1`).
-  if (DEF_WEAK_OFF && otal < DEFENSE_CREDIT_WEAK_OFFENSE) lift = Math.min(lift, Math.max(0, DEFENSE_CREDIT_WEAK_OFFENSE_CEILING - tal));
+  lift = Math.min(lift, DEFENSE_CREDIT_MAX_LIFT) * defenseCreditGate(otal);
   return lift;
 }
 
@@ -2468,32 +2420,6 @@ function onPositionNeutralOffense(position: string, value: number): number {
   const [a, b] = OTAL_POSITION_FIT[position] ?? [1, 0];
   return value + OTAL_POSITION_SHARE * (a * value + b - value);
 }
-/**
- * 2026-11-25 (TAL rebuild, offense; scripts/_otalres.ts + .py): what the engine's offense misses on
- * 445 real team-seasons 2001+, from pbpstats: rim attempts and finishing, self-made twos, putbacks
- * (plus), turnovers and long twos (minus). Weights from even/odd season fits (out of sample r 0.36 /
- * 0.48 on the residual), z-scored on the pool's players, summed and scaled to about one sd.
- * `OTAL_PBP` = O-TAL points per unit (0 = off). No pbp (before 2000-01) = 0.
- */
-const OTAL_PBP = Number(envVar('OTAL_PBP') ?? 0);
-const OTAL_PBP_FEATURES: [keyof ReturnType<typeof pbpShape>, number, number, number][] = [
-  ['rimRate', 0.3252, 0.1572, 1.4], ['rimPct', 0.6096, 0.0643, 1.3], ['longMidRate', 0.2096, 0.1329, -0.4],
-  ['selfMade2', 0.4689, 0.176, 1.85], ['tov', 2.8622, 0.9246, -2.4], ['putback', 1.0598, 1.0187, 1.25],
-];
-function pbpShape(p: NonNullable<ReturnType<typeof pbpForSpan>>) {
-  const fga = p.atRimFga + p.shortMidFga + p.longMidFga + p.corner3Fga + p.arc3Fga;
-  return { rimRate: fga ? p.atRimFga / fga : 0, rimPct: p.atRimFga ? p.atRimFgm / p.atRimFga : 0, longMidRate: fga ? p.longMidFga / fga : 0,
-    selfMade2: 1 - (p.assisted2s || 0), tov: (100 * p.turnovers) / p.offPoss, putback: (100 * p.putbackPts) / p.offPoss };
-}
-export function otalPbpAdjustment(span: PlayerSpan): number {
-  if (!OTAL_PBP) return 0;
-  const p = pbpForSpan(span);
-  if (!p || !p.offPoss) return 0;
-  const x = pbpShape(p);
-  let z = 0;
-  for (const [k, mu, sd, w] of OTAL_PBP_FEATURES) z += (w * (x[k] - mu)) / sd;
-  return OTAL_PBP * Math.max(-3, Math.min(3, z / 3.5));
-}
 export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = offensiveTalentCache.get(span.id);
@@ -2502,7 +2428,7 @@ export function computeOffensiveTalentBase(rawSpan: PlayerSpan): number {
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span) + otalPbpAdjustment(span);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.min(100, Math.round(liftForReducedRole(span, scaled, computeOffensiveTalentBase))));
   offensiveTalentCache.set(span.id, result);
   return result;
@@ -2532,7 +2458,7 @@ export function computeUncappedOffensiveTalentBase(rawSpan: PlayerSpan): number 
   const { scale, intercept } = OFFENSE_TAL_PARAMS[span.primaryPosition];
   // Plus the offensive half of the playoff impact (`playoffImpact.ts`), in TAL points — O-TAL's
   // per-position scales (1.16-1.45 per raw offense point) sit close to TAL's own 0.6 x 2.15.
-  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span) + otalPbpAdjustment(span);
+  const scaled = onPositionNeutralOffense(span.primaryPosition, offense * scale + intercept + playoffImpactForSpan(span).offense) + OTAL_SELF_CREATION * selfCreationTalentBonus(span);
   const result = Math.max(0, Math.round(liftForReducedRole(span, scaled, computeUncappedOffensiveTalentBase)));
   uncappedOffensiveTalentCache.set(span.id, result);
   return result;
