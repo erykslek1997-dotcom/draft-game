@@ -1493,8 +1493,12 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * Best windows moved: Wembanyama 2024-26 93 → 89, Oladipo 2017-19 85 → 83, Kirilenko 2003-05 84 → 83.
  */
 const SHORT_SEASON_FROM = Number(envVar('SHORT_FROM') ?? 78);
+const SHORT_PEN = Number(envVar('SHORT_PEN') ?? 0);
 function shortSeasonCap(playerName: string | undefined, spanLabel: string | undefined, value: number): number {
   if (!playerName || !spanLabel || value < SHORT_SEASON_FROM || shortSeasonsIn(playerName, spanLabel).length === 0) return value;
+  // 2026-11-26 (the user: Wembanyama 2023-25 89 -> 83 when his engine TAL moved 88 -> 86 across the MVP
+  // line): `SHORT_PEN` > 0 takes that many points off instead of the top of the tier below — no cliff.
+  if (SHORT_PEN > 0) return value - SHORT_PEN;
   const floor = value >= 100 ? 100 : Math.max(...DISPLAY_TIER_FLOORS.filter(([f]) => f <= value).map(([f]) => f));
   return Math.min(value, floor - 1);
 }
