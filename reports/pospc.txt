@@ -1,0 +1,22 @@
+from 1997: playoff teams 317
+  series wins ~ Overall                        r 0.550  coefs +0.052
+  series wins ~ + spacing                      r 0.556  coefs +0.056 -0.119
+  series wins ~ + rim                          r 0.550  coefs +0.051 +0.035
+  series wins ~ + spacing + rim                r 0.557  coefs +0.056 -0.118 +0.004
+  series wins ~ + spacing + rim + spacing*rim  r 0.568  coefs +0.053 -0.116 +0.043 -0.156
+  series wins ~ + min(spacing,rim)             r 0.558  coefs +0.056 -0.186
+  spacing low  rim low : n  66  series wins left over vs Overall +0.151
+  spacing low  rim high: n  86  series wins left over vs Overall +0.038
+  spacing high rim low : n  92  series wins left over vs Overall -0.063
+  spacing high rim high: n  73  series wins left over vs Overall -0.102
+from 2010: playoff teams 175
+  series wins ~ Overall                        r 0.565  coefs +0.051
+  series wins ~ + spacing                      r 0.566  coefs +0.052 -0.029
+  series wins ~ + rim                          r 0.567  coefs +0.052 -0.050
+  series wins ~ + spacing + rim                r 0.567  coefs +0.054 -0.041 -0.058
+  series wins ~ + spacing + rim + spacing*rim  r 0.571  coefs +0.053 -0.051 -0.031 -0.102
+  series wins ~ + min(spacing,rim)             r 0.569  coefs +0.054 -0.133
+  spacing low  rim low : n  42  series wins left over vs Overall -0.025
+  spacing low  rim high: n  45  series wins left over vs Overall +0.047
+  spacing high rim low : n  45  series wins left over vs Overall +0.094
+  spacing high rim high: n  43  series wins left over vs Overall -0.123

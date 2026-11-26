@@ -73,7 +73,8 @@ for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs:
   if (process.env.DUMP) {
     const S = await import('../src/engine/scoring'); const L = await import('../src/engine/teammateLift'); const H = await import('../src/engine/heliocentric'); const R = await import('../src/engine/reviewRules'); const RO = await import('../src/engine/rotation');
     const t = teamOf(spans as PlayerSpan[], `${end}-${ts.team}`);
-    comp = { talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
+    const ob = S.offenseScoreBreakdown(t);
+    comp = { end, team: ts.team, rim: ob.rimPressure, spc: ob.spacing, talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
       lift: L.liftAdjustment(t), creator: S.creatorAdjustment(t), ballLoad: S.ballLoadAdjustment(t), handler: S.ballHandlerAdjustment(t), helio: H.heliocentricAdjustment(t),
       review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t), ...Object.fromEntries(Object.entries(R.reviewRuleHits(RO.primaryStarters(t).map((a) => a.player))).map(([k, v]) => ['rev_' + k, Number(v)])) };
   }
