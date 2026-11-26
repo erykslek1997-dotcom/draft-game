@@ -11,7 +11,7 @@ const first = (n: string) => draftPool.find((p) => p.playerName === n)!;
 const bench = ['Jamal Murray', 'Mikal Bridges', 'Robert Covington', 'Tree Rollins'].map(first);
 const best = new Map<string, PlayerSpan>();
 for (const p of draftPool) { const c = best.get(p.playerName); if (!c || effectiveTalent(p) > effectiveTalent(c)) best.set(p.playerName, p); }
-const pool = [...best.values()].filter((p) => !bench.some((b) => b.playerName === p.playerName)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, N);
+const pool = [...best.values()].filter((p) => !bench.some((b) => b.playerName === p.playerName) && !(process.env.EXCLUDE ?? '').split(',').includes(p.playerName)).sort((a, b) => effectiveTalent(b) - effectiveTalent(a)).slice(0, N);
 const cache = new Map<string, number>();
 const score = (five: PlayerSpan[]) => { const k = five.map((p) => p.id).sort().join('|'); let v = cache.get(k); if (v === undefined) { const roster = [...five, ...bench]; const t: Team = { id: 'x', name: 'x', draftSlot: 1, isHuman: false, roster, rotation: autoAssignRotation(roster) }; v = scoreTeam(t).overallExact; cache.set(k, v); } return v; };
 let seed = 7; const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);

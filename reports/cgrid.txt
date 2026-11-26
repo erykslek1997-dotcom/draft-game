@@ -1,0 +1,21 @@
+=========== X=0
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.735, 1.05 judge units per Overall point
+-- prior: 0.679 srs 0.875
+-- AI picks: AI pick regression: all 30 pinned picks match baseline.
+-- best five top80:
+93.88  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- best five top120:
+93.88  11/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+92.55  1/12  Dwyane Wade 2008-10, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Magic Johnson 1989-91, Tyrese Haliburton 2022-24
+=========== USG_EST=1 REV_SPOT_EST=1
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.875, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.741, 1.05 judge units per Overall point
+-- prior: 0.679 srs 0.875
+-- AI picks: 1/30 pinned picks changed. If deliberate, re-bless with --update.
+-- best five top80:
+92.78  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
+-- best five top120:
+92.78  12/12  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91
