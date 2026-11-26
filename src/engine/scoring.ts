@@ -1,4 +1,3 @@
-import { skill } from './skills';
 import { defenderProfile } from './liveDefense';
 import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataUsageDemand, skill } from './skills';
 import { spanEndYears } from './era';

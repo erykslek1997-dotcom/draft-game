@@ -2068,7 +2068,7 @@ const BIG_BLK_REF = Number(envVar('BIG_BLK_REF') ?? 1.05);
  * from the TAL its RAPM implies (reverse fit on 4,643 windows: TAL 54.44 at RAPM +0.607, 0.0632 RAPM per
  * TAL point), TAL moves `TAL_RAPM_W` of the excess toward it. Measurement knob, 0 = off.
  */
-const TAL_RAPM_W = Number(envVar('TAL_RAPM_W') ?? 0.5);
+const TAL_RAPM_W = Number(envVar('TAL_RAPM_W') ?? 0); // 2026-11-26: 0.5 rolled back — single-window RAPM moved 764 windows by up to 19 (Middleton +16, Kevin Johnson -19)
 const TAL_RAPM_GAP = Number(envVar('TAL_RAPM_GAP') ?? 10);
 function rapmPull(span: PlayerSpan, tal: number): number {
   if (!TAL_RAPM_W) return 0;
