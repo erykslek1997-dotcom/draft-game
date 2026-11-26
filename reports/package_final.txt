@@ -1,0 +1,9 @@
+prior 0.676 | srs 0.877
+defense r all 0.8282 even 0.8380 odd 0.8180 (n 600)
+offense r all 0.7934 even 0.7869 odd 0.8000 (n 600)
+starters O<50: 2/240 | AI mean Overall 84.01
+    -0.0  Derrick Rose 2008-10 (5)
+    -0.0  Kendrick Perkins 2011-13 (5)
+Fit tests complete.
+Scoring-logic tests complete.
+Node.js v22.23.5
