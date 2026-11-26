@@ -609,6 +609,16 @@ export function creatorAdjustment(team: Team): number {
   if (!v.length) return 0;
   return CREATOR_W * Math.max(-1, Math.min(1, (Math.max(...v) - CREATOR_MID) / 10));
 }
+// 2026-11-26 (`STAR_W`, Overall points per TAL point, 0 = off; top-end plan step 2.1): the best starter's TAL
+// (the card's number, past 100) over `STAR_REF`. On the forecast judge the best player's TAL predicted SRS beyond
+// the five's mean (+0.070 SRS a point ≈ +0.27 Overall); the mean alone hid a star's 17 TAL points as ~1.
+const STAR_W = Number(envVar('STAR_W') ?? 0);
+const STAR_REF = Number(envVar('STAR_REF') ?? 95);
+export function starAdjustment(team: Team): number {
+  if (!STAR_W) return 0;
+  const t = primaryStarters(team).map((e) => effectiveTalent(e.player) * durabilityValueFactor(e.player));
+  return t.length ? STAR_W * (Math.max(...t) - STAR_REF) : 0;
+}
 const OFFENSE_OTAL_BLEND_WEIGHT = 0.493 + OFF_MIX * (0.17 + 0.17 + 0.167);
 const OFFENSE_SPACING_BLEND_WEIGHT = 0.17 * (1 - OFF_MIX);
 const OFFENSE_RIM_PRESSURE_BLEND_WEIGHT = 0;
@@ -2407,6 +2417,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     // 2026-10-15: how much the players lift their teammates' shooting (teammateLift.ts).
     d('lift', () => liftAdjustment(team)) +
     creatorAdjustment(team) +
+    d('star', () => starAdjustment(team)) +
     // 2026-10-28, step 6.2: a second player holding the ball (ballHandling.ts).
     (SC_DROP === 'handler' ? 0 : d('handler', () => ballHandlerAdjustment(team))) +
     (SC_DROP === 'certainty' ? 0 : d('certainty', () => dataCertaintyAdjustment(team))) +
