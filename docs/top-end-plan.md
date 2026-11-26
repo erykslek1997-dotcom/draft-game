@@ -30,3 +30,15 @@ Ile dopasowanie może przestawić piątki: pokazać przykłady przy limicie ±2 
 
 ## Etap 4 — wdrożenie
 Testy, re-bless AI picks, build, PR, notatka w TODO.md. Dopiero po akceptacji użytkownika.
+
+## Wynik pomiaru 1.1 (2026-11-26): odejmowanie siły kolegów NIE jest obiegiem
+_baseline.ts z MOVED_MIN (drużyny, w których co najmniej N z ośmiu graczy jest nowych):
+| zestaw | LIFT_RM=1 | LIFT_RM=0 |
+| SRS wszystkie 600 | 0.876 | 0.867 |
+| SRS ≥3 nowych (236) | 0.868 | 0.858 |
+| SRS ≥4 nowych (123) | 0.853 | 0.846 |
+| prognoza wszystkie 114 | 0.677 | 0.660 |
+| prognoza ≥3 nowych (29) | 0.699 | 0.679 |
+Wniosek: F4 obalone — gwiazdy z silnych drużyn naprawdę miały statystyki podbite przez kolegów.
+Problem B5 leży gdzie indziej: dodatni wpływ (Magic +1.3, Kareem +1.1, Stockton +1.1, Kawhi +1.2) sumuje się
+liniowo w piątce gwiazd, czego prawdziwe drużyny nie sprawdzają. Następny krok: czy suma wpływu ma sufit.

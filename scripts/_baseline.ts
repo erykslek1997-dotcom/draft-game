@@ -77,6 +77,13 @@ const corr = (xs: number[], ys: number[]) => {
   return a / Math.sqrt(b * c);
 };
 // YEAR_FROM: only team-seasons ending in or after that year (the era test).
+// MOVED_MIN (2026-11-26, top-end plan step 1.1): only team-seasons where at least this many of the top
+// eight played for another team (or not at all) the season before — new teammates, so a player's real
+// teammates of the past cannot stand in for the team being judged.
+if (process.env.MOVED_MIN) {
+  const was = new Set(roster.map((q) => `${normalizePlayerName(q.name)}|${q.end}|${q.team}`));
+  rows.splice(0, rows.length, ...rows.filter((x) => { const team = x.label.slice(x.label.indexOf(' ') + 1); return x.spans.filter((s) => !was.has(`${normalizePlayerName(s.playerName)}|${x.end - 1}|${team}`)).length >= Number(process.env.MOVED_MIN); }));
+}
 if (process.env.YEAR_FROM) rows.splice(0, rows.length, ...rows.filter((x) => x.end >= Number(process.env.YEAR_FROM)));
 const r = (xs: number[]) => corr(xs, rows.map((x) => x.srs)).toFixed(3);
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
