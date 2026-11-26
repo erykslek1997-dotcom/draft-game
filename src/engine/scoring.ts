@@ -7,7 +7,7 @@ import { ballHandlerCost, ballShare } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
-import { computeOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact, computeTalent } from './talent';
+import { computeOffensiveTalent, computeUncappedOffensiveTalent, computeDefensiveTalent, computeDefensiveImpact, computeTalent } from './talent';
 import { isPlusShooter } from './shooting';
 import {
   isShootingAnomalyPlayer,
@@ -756,7 +756,7 @@ function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): num
 function starWeightedOffensiveTalent(team: Team): number {
   const starters = primaryStarters(team);
   if (starters.length === 0) return 0;
-  const values = ballBudgetValues(starters.map(({ player, slot }) => ({ player, value: computeOffensiveTalent(player) * positionFitMultiplier(player, slot) })))
+  const values = ballBudgetValues(starters.map(({ player, slot }) => ({ player, value: teamOffensiveTalent(player) * positionFitMultiplier(player, slot) })))
     .sort((a, b) => b - a);
   const weights = (OFF_TOP ? STAR_OTAL_WEIGHTS.map((w, i) => (i === 0 ? w + OFF_TOP : w)) : STAR_OTAL_WEIGHTS).slice(0, values.length);
   const weightSum = weights.reduce((sum, w) => sum + w, 0);
@@ -1240,6 +1240,16 @@ export function isoOffense(five: PlayerSpan[]): { points: number; met: number } 
   return { points: creators >= 2 && shooters >= 3 ? ISO.w : 0, met: creators };
 }
 
+// 2026-11-26 (the user: "Curry powinien mieć atak bliski 100… wypłaszczenie które pozwala przekroczyć 100"):
+// the team offense reads O-TAL past the 100 display cap — above `OFF_SOFTCAP_AT` the uncapped value
+// counts at `OFF_SOFTCAP` per point (Curry 112 -> 105 at 0.5; Stockton 95 unchanged). 0 = off.
+const OFF_SOFTCAP = Number(envVar('OFF_SOFTCAP') ?? 0);
+const OFF_SOFTCAP_AT = Number(envVar('OFF_SOFTCAP_AT') ?? 95);
+export function teamOffensiveTalent(p: PlayerSpan): number {
+  const c = computeOffensiveTalent(p);
+  if (OFF_SOFTCAP <= 0 || c < OFF_SOFTCAP_AT) return c;
+  return OFF_SOFTCAP_AT + (computeUncappedOffensiveTalent(p) - OFF_SOFTCAP_AT) * OFF_SOFTCAP;
+}
 export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const components = offenseScoreComponents(team);
   const rawBlend =
@@ -1255,12 +1265,12 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   // 2026-11-19 (the user: "gracz z takim atakiem jak Jordan powinien dawać jakąś podłogę"): a soft floor
   // under the best starter — the blend moves `OFF_FLOOR_W` of the way up to 0.9 × his O-TAL when it sits
   // below that (Jordan's five read 71 raw against his 100). 0 = off.
-  const starO = Math.max(0, ...primaryStarters(team).map((e) => computeOffensiveTalent(e.player)));
+  const starO = Math.max(0, ...primaryStarters(team).map((e) => teamOffensiveTalent(e.player)));
   const raw1 = raw0 + OFF_FLOOR_W * Math.max(0, 0.9 * starO - raw0);
   // 2026-11-19 (the user: LeBron 2012-14 + McGrady 2001-03 at Offense 63 is too low): two elite scorers
   // (both 88+ O-TAL) lift the floor further — `OFF_PAIR_W` of the way to 0.9 × their mean. Real teams
   // rarely have such a pair, so the NBA judges barely see it.
-  const topO = primaryStarters(team).map((e) => computeOffensiveTalent(e.player)).sort((a, b) => b - a);
+  const topO = primaryStarters(team).map((e) => teamOffensiveTalent(e.player)).sort((a, b) => b - a);
   const pairO = topO[1] >= 88 ? (topO[0] + topO[1]) / 2 : 0;
   const fivePlayers = primaryStarters(team).map((e) => e.player);
   const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);

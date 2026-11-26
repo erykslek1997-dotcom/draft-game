@@ -176,11 +176,14 @@ const FIT_RESTORE = Number(FIT_ENV?.FIT_RESTORE ?? 0);
 const RESTORED = { spacingCompatibility: 0.11, switchability: 0.099, rimPressureTeam: 0.037, championshipStructure: 0.13 };
 const RESTORED_TOTAL = FIT_RESTORE * (RESTORED.spacingCompatibility + RESTORED.switchability + RESTORED.rimPressureTeam + RESTORED.championshipStructure);
 const KEPT = (1 - FIT_SPACING_SHARE) * (1 - RESTORED_TOTAL);
+// 2026-11-26 (`FIT_DRC`, 1 = as before; the user: Stockton over Curry): defensive role coverage re-reads
+// the defense the Defense score already carries; the weight it gives up goes to the pick-and-roll pairing.
+const FIT_DRC = Number(FIT_ENV?.FIT_DRC ?? 1);
 export const FIT_WEIGHTS = {
   creationStructure: 0,
-  pairingStructure: (0.293 / 0.624) * KEPT,
+  pairingStructure: ((0.293 + (1 - FIT_DRC) * 0.331) / 0.624) * KEPT,
   spacingCompatibility: FIT_SPACING_SHARE * (1 - RESTORED_TOTAL) + FIT_RESTORE * RESTORED.spacingCompatibility,
-  defensiveRoleCoverage: (0.331 / 0.624) * KEPT,
+  defensiveRoleCoverage: ((FIT_DRC * 0.331) / 0.624) * KEPT,
   switchability: FIT_RESTORE * RESTORED.switchability,
   huntResistance: 0,
   defensiveCohesion: 0,

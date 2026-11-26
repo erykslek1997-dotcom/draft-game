@@ -33,6 +33,9 @@ export interface TeammateLift {
 const GRAVITY = processEnv?.GRAVITY === '1';
 const GRAVITY_K = Number(processEnv?.GRAVITY_K ?? 6000);
 const GRAVITY_SCALE = Number(processEnv?.GRAVITY_SCALE ?? 1);
+// 2026-11-26 (`GRAVITY_MIX`, 0 = off): a light blend instead of the full swap — the old lift-minus-teammates
+// net keeps (1 - mix) of its weight, the pbp gravity takes the rest.
+const GRAVITY_MIX = Number(processEnv?.GRAVITY_MIX ?? 0);
 const GRAV = gravityData as unknown as Record<string, Record<string, [number, number]>>;
 function gravityFor(span: PlayerSpan): number | null {
   const seasons = GRAV[normalizePlayerName(span.playerName)];
@@ -49,7 +52,9 @@ export function teammateLift(span: PlayerSpan): TeammateLift {
   // 2026-11-25 (`LIFT_MIN`, 0 = every lift; the user: league-wide it may not show, for Curry it may): only the
   // lift past this threshold counts (TS fraction; 0.008 = Curry's +0.8), the rest reads 0 — elite lifts only.
   const lift = row[0] / 1000;
-  return { lift: LIFT_MIN > 0 ? Math.max(0, lift - LIFT_MIN) : lift, realMates: LIFT_MIN > 0 ? 0 : row[1] / 1000 };
+  const out = { lift: LIFT_MIN > 0 ? Math.max(0, lift - LIFT_MIN) : lift, realMates: LIFT_MIN > 0 ? 0 : row[1] / 1000 };
+  if (GRAVITY_MIX > 0) { const g = gravityFor(span); if (g !== null) return { lift: (1 - GRAVITY_MIX) * out.lift + GRAVITY_MIX * g, realMates: (1 - GRAVITY_MIX) * out.realMates }; }
+  return out;
 }
 
 /**
