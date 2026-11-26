@@ -1307,97 +1307,11 @@ export function registerSixthManContextProvider(provider: (span: PlayerSpan) => 
 
 const smoothedDisplayCache = new Map<string, number>();
 /**
- * 2026-09-26, the user's calibration pass after the smooth-TAL / playoff rebuild: named ceilings
- * on a player's DISPLAYED number, every window — the rebuild lifted high-volume guards and
- * early-era scorers past where the user reads them ("Oscar do low MVP, okolice Westa", "Lillard
- * max All-NBA", "Mullin z 87 bardziej na 83"). A ceiling, never a raise; applied after the
- * neighbour smoothing, so no window can climb back over it, and the badge follows the number.
- * Draft value reads the same number (`effectiveTalent`).
+ * 2026-09-26 → 2026-11-26: the named display ceilings and peak targets (Whiteside 70, OG 77, Pau 84 …)
+ * are gone — the user's rule "no exceptions for names"; the defense-credit gate and the bigs' rebound
+ * read took over the role players' ceilings, the stars' ones no longer bound anyone
+ * (docs/tal-gates-2026-11-25.md). Judges unchanged without them.
  */
-/** 2026-11-26 (the user: review every named ceiling / peak target — option B): `NAMED_OFF=1` empties both
- * lists, to see where these players land on the rules alone. Measurement knob. */
-const NAMED_OFF = envVar('NAMED_OFF') !== '0';
-const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(NAMED_OFF ? [] : [
-    ['Oscar Robertson', 90], // low MVP, next to Jerry West's peak (90)
-    ['Damian Lillard', 87], // top of All-NBA
-    ['Anthony Edwards', 87], // top of All-NBA
-    ['Gilbert Arenas', 84], // mid All-NBA
-    ['DeMarcus Cousins', 81], // low All-NBA
-    ['Chris Mullin', 83],
-    ['Joel Embiid', 95], // top of MVP, not Legend
-    ['Donovan Mitchell', 86], // All-NBA, not MVP
-    ['Ray Allen', 85], // high-mid All-NBA
-    ['Kevin Johnson', 85], // high-mid All-NBA
-    // 2026-11-11, the card audit (`scripts/auditCards.ts`: peak card vs ten statistical twins, with
-    // RAPTOR's overall impact as a third read) — defensive specialists the engine lifted far over
-    // what the rest of their game and their on/off say (the user: "jestem za obniżeniem wysokich,
-    // oprócz Lopeza" — his spacing makes him a near-unicorn, so he keeps his 75).
-    ['Greg Ostertag', 66], // was 72; twins 42, RAPTOR overall -1.3..+0.9 — a starter, not All-star
-    ['Shawn Bradley', 67], // was 71; twins 48, RAPTOR overall +1.0..2.7
-    ['Caldwell Jones', 62], // was 68; twins 37, RAPTOR overall -1.3..-0.1
-    ['Mark Eaton', 69], // was 73; two DPOYs keep him a high starter
-    ['Michael Cooper', 69], // was 73; DPOY 1987, sixth man
-    // 2026-11-13, the user: "Raja Bella bym dał trochę wyżej, imo nie jest o 8 gorszy od Bowena" (76) — 69 → 73.
-    ['Raja Bell', 73], // was 76; twins 50, RAPTOR overall +0.5..1.7
-    ['Robert Horry', 70], // was 74; the playoff shots keep him over his twins (39)
-    ['Tiago Splitter', 68], // was 71; small cut, RAPTOR liked him (+3.3..4.0)
-    ['Tony Allen', 67], // was 69; small cut, RAPTOR defense +3.1..3.6
-    // 2026-11-13, the user: "Hassan Whiteside za dużo" → "Whiteside 70", "Bob Gross z 71" → "Gross 65".
-    ['Hassan Whiteside', 70],
-    ['Bob Gross', 65],
-    ['OG Anunoby', 77], // with his peak target: "OG max startera
-  ].map(([name, ceiling]) => [normalizePlayerName(name as string), ceiling as number]),
-);
-
-function namedPlayerCeiling(playerName: string | undefined): number {
-  const ceiling = (playerName && NAMED_PLAYER_DISPLAY_CEILING.get(normalizePlayerName(playerName))) || Infinity;
-  // A player in the user's table reads on the label scale, so his named ceiling does too (2026-11-12).
-  return playerName && ceiling !== Infinity && tierCalibrationFor(playerName) ? onLabelScale(ceiling) : ceiling;
-}
-
-/**
- * Same pass, the other direction: a player's PEAK the user reads higher ("Pau 84, Marc 83, Bosh
- * 79"). The whole prime moves up with it — every window within `TARGET_FULL_RANGE` of the peak
- * gets the full lift, fading to none `TARGET_FADE_RANGE` further down — so the career keeps its
- * shape instead of one window jumping. Raise only.
- */
-const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(NAMED_OFF ? [] : [
-    ['Pau Gasol', 84],
-    ['Marc Gasol', 83],
-    ['Chris Bosh', 79],
-    // 2026-11-13, the user: "OG Anuboby za nisko" → "OG max startera" (77, the top of Starter).
-    ['OG Anunoby', 77],
-  ].map(([name, target]) => [normalizePlayerName(name as string), target as number]),
-);
-const TARGET_FULL_RANGE = 12;
-const TARGET_FADE_RANGE = 12;
-const peakCache = new Map<string, number>();
-
-function playerPeakDisplay(playerName: string): number {
-  const key = normalizePlayerName(playerName);
-  const hit = peakCache.get(key);
-  if (hit !== undefined) return hit;
-  const peak = Math.max(
-    ...draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => smoothedDisplayTalent(tierContextFor(s))),
-  );
-  peakCache.set(key, peak);
-  return peak;
-}
-
-function namedPeakLift(playerName: string | undefined, value: number): number {
-  const target = playerName ? NAMED_PLAYER_PEAK_TARGET.get(normalizePlayerName(playerName)) : undefined;
-  if (target === undefined) return 0;
-  const peak = playerPeakDisplay(playerName!);
-  const lift = target - peak;
-  if (lift <= 0) return 0;
-  const below = peak - value;
-  const share = below <= TARGET_FULL_RANGE ? 1 : Math.max(0, 1 - (below - TARGET_FULL_RANGE) / TARGET_FADE_RANGE);
-  return Math.round(lift * share);
-}
-
-/** TAL points of a named adjustment -> O-TAL / D-TAL points: a TAL point is worth about this
- * much on the side it lands on (O-TAL's scale is ~1.3 per TAL-weighted offense point). */
-const NAMED_SHIFT_SCALE = 1.3;
 const LIFT_FOLLOWS_OD = envVar('LIFT_OD') !== '0';
 const LIFT_SPLIT = envVar('LIFT_SPLIT') === '1';
 
@@ -1408,9 +1322,7 @@ const LIFT_SPLIT = envVar('LIFT_SPLIT') === '1';
  */
 function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number } {
   const name = span.playerName;
-  const key = normalizePlayerName(name);
-  const named = NAMED_PLAYER_DISPLAY_CEILING.has(key) || NAMED_PLAYER_PEAK_TARGET.has(key);
-  if (!named && !LIFT_FOLLOWS_OD) return { offense: 0, defense: 0 };
+  if (!LIFT_FOLLOWS_OD) return { offense: 0, defense: 0 };
   const ctx = tierContextFor(span);
   // 2026-11-13 (the user: "dziwnie wygląda jak ktoś ma np 80 a po obu stronach 55/56"): every lift of
   // the card's number over the engine's own (the user's table, the All-Star floor, a hold) moves
@@ -1420,12 +1332,6 @@ function namedShiftForSpan(span: PlayerSpan): { offense: number; defense: number
   const o = Math.max(1, (ctx.otalUncapped ?? ctx.otal) - 50);
   const d = Math.max(1, ctx.dtal - 50);
   const share = o / (o + d);
-  if (named) {
-    // On the same scale: a tabled player's card reads on the label scale, his engine number on the
-    // old one (2026-11-13: Ray Allen's and Mullin's named ceilings read as a +6 lift, O-TAL 99 / 96).
-    const delta = displayTalentForSpan(ctx) - (tierCalibrationFor(name) ? onLabelScale(smoothedDisplayTalent(ctx)) : smoothedDisplayTalent(ctx));
-    return delta === 0 ? { offense: 0, defense: 0 } : { offense: delta * share * NAMED_SHIFT_SCALE, defense: delta * (1 - share) * NAMED_SHIFT_SCALE };
-  }
   // A lifted card moves O / D only as far as their blend (60 / 40, as TAL weighs them) still falls
   // short of the card's number — Vin Baker's O 69 already read above his lifted 61 — and both by the
   // same points.
@@ -1568,7 +1474,7 @@ function displayTalentUncompressed(ctx: TierGateContext): number {
   // over it either (Ostertag's 66 was coming back as 72 through the defensive-big premium).
   // The user's hold binds after the premium too (2026-11-12: Battier 77 + 3-and-D read 78, All-star).
   const premium = held + threeAndDPremium(ctx, held);
-  return Math.min(namedPlayerCeiling(ctx.playerName), minutesCeiling(ctx), hold ? Math.min(premium, labelTierTop(hold) ?? Infinity) : premium);
+  return Math.min(minutesCeiling(ctx), hold ? Math.min(premium, labelTierTop(hold) ?? Infinity) : premium);
 }
 
 /**
@@ -1707,7 +1613,7 @@ function withBandOffset(name: string, spanLabel: string | undefined, value: numb
 
 function legacyDisplayTalent(ctx: TierGateContext): number {
   const smoothed = smoothedDisplayTalent(ctx);
-  return Math.min(namedPlayerCeiling(ctx.playerName), smoothed + namedPeakLift(ctx.playerName, smoothed));
+  return smoothed;
 }
 
 /**

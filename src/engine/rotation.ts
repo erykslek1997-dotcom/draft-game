@@ -11,7 +11,7 @@ import { STARTER_SLOTS, positionFitMultiplier, isPositionEligible, isRealPositio
 import { maxSustainableMinutes } from './durability';
 import { allocateMinutes, BENCH_MINUTES_CAP, SIXTH_MAN_MINUTES_CAP } from './minuteAllocation';
 import { STARTER_STANDARD_TAL, isJustifiedRoleStarter, isStopperOnlyStarter } from './starterStandard';
-import { overallTierForSpan, effectiveTalent, spacesTheFloor, gradeRank, spacingGrade, type Grade } from './grades';
+import { overallTierForSpan, effectiveTalent, spacesTheFloor } from './grades';
 import { computeOffensiveTalent } from './talent';
 import { tierContextWithSixthMan } from './sixthMan';
 import { cardTierMinutesCap, minuteProfileForSpan, playableMinutesCap, MINUTES_CAP_TOLERANCE, OVERRUN_BANDS } from './rotationRoleMinutes';
@@ -19,7 +19,6 @@ import { teamSpacingValue } from './midrangeGravity';
 import { playmakingScoreForPlayer } from './playmakingLookup';
 import type { Rotation, SlotAssignment, Team } from './types';
 import { envVar } from './env';
-import { computeSpacing } from './spacing';
 
 export const GAME_MINUTES = 48;
 /** Exported so `scoring.ts`'s Curry spacing floor can treat a normal starter workload as "fully
@@ -225,7 +224,7 @@ const BEST_PRIMARY_ASSIGNMENT_CACHE_CAP = 20000;
  * valued down `perPoint` for each point short (at most to `min`), so a five takes a real scorer
  * when the roster has one and two non-scorers start together only when nothing else is there.
  */
-const STARTER_OFFENSE_FLOOR = { floor: Number(envVar('ROT_OFF_FLOOR') ?? 50), perPoint: Number(envVar('ROT_OFF_PER') ?? 0.015), min: 0.7 };
+const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
 /** 2026-11-04, the user (Battier 2008-10 at offense 37 while spacing B+: "kara na atak wchodzi poniżej
  * spacingu B"): a starter whose card reads spacing B or better is exempt; the volume is already in
  * that letter (grades.ts `LOW_VOLUME_SPACING`), so the card and the penalty always agree. */
@@ -233,11 +232,8 @@ const STARTER_OFFENSE_FLOOR = { floor: Number(envVar('ROT_OFF_FLOOR') ?? 50), pe
  * starter value is `VETERAN_STARTER_KEEP` of the rest; off the bench he is worth what he is. */
 const VETERAN_STARTER_KEEP = 0.95;
 const ROT_PIN_FLEX = (envVar('ROT_PIN_FLEX') ?? '1') === '1';
-/** 2026-11-25 (the user: Horry 2001-03, spacing B, O 46, starting PF on the top team): the spacing
- * letter that exempts a starter from the offense floor (knob; 'B' = as before, Battier B+ stays exempt). */
-const ROT_OFF_SPC_GRADE = envVar('ROT_OFF_SPC') ?? 'B';
 function starterOffenseFactor(player: PlayerSpan): number {
-  if (ROT_OFF_SPC_GRADE === 'B' ? spacesTheFloor(player) : gradeRank(spacingGrade(computeSpacing(player), player)) >= gradeRank(ROT_OFF_SPC_GRADE as Grade)) return 1;
+  if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
   return Math.max(STARTER_OFFENSE_FLOOR.min, 1 - STARTER_OFFENSE_FLOOR.perPoint * gap);
 }
