@@ -105,6 +105,24 @@ for (const key of SKILLS) {
     (out[w.s.id] ??= {})[key] = Math.round((100 * peers.filter((x) => x < v).length) / peers.length);
   }
 }
+// 2026-11-26 (the user: Mullin 72 -> 14 between neighbouring windows): a three-season window shares two
+// seasons with the next, so an estimated skill can't jump like that — each pre-1997 window reads half
+// its own estimate and a quarter of each neighbour's (start year one apart, same player). `SKILL_PRE_SMOOTH=0` = off.
+if (process.env.SKILL_PRE_SMOOTH !== '0') {
+  const byPlayer = new Map<string, PlayerSpan[]>();
+  for (const w of pre) { const k = normalizePlayerName(w.s.playerName); byPlayer.set(k, [...(byPlayer.get(k) ?? []), w.s]); }
+  const start = (sp: PlayerSpan) => Math.min(...ys(sp));
+  const smoothed: Record<string, Record<string, number>> = {};
+  for (const spans of byPlayer.values()) for (const sp of spans) {
+    const own = out[sp.id]; if (!own) continue;
+    const nb = spans.filter((q) => Math.abs(start(q) - start(sp)) === 1 && out[q.id]);
+    smoothed[sp.id] = Object.fromEntries(Object.entries(own).map(([k, v]) => {
+      const vals = nb.map((q) => out[q.id][k]).filter((x): x is number => x !== undefined);
+      return [k, Math.round((0.5 * v + 0.25 * vals.reduce((a, b) => a + b, 0)) / (0.5 + 0.25 * vals.length))];
+    }));
+  }
+  Object.assign(out, smoothed);
+}
 writeFileSync(resolve(import.meta.dirname, '../src/data/skillsPre.json'), JSON.stringify(out));
 writeFileSync(resolve(import.meta.dirname, '../src/data/skillsMasked.json'), JSON.stringify(masked));
 console.log(report.join('\n'));
