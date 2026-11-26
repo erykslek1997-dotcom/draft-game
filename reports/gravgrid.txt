@@ -1,0 +1,58 @@
+=========== GRAVITY=0
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.876, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.740, 1.04 judge units per Overall point
+-- offense judge: offense r all 0.7943 even 0.7881 odd 0.8
+-- prior: 0.677 srs 0.876
+-- swap:
+John Stockton 1990-92      ovr 92.22 TAL 96 bench 59 O 87 D 
+Stephen Curry 2014-16      ovr 89.25 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 91.82 TAL 97 bench 59 O 89 D 
+Chris Paul 2015-17         ovr 89.64 TAL 96 bench 59 O 88 D 
+-- best five top80:
+92.22  8/8  John Stockton 1990-92, Kareem Abdul-Jabbar 1971-73, Kawhi Leonard 2015-17, Kevin Garnett 2002-04, Larry Bird 1985-87
+-- AI picks: AI pick regression: all 30 pinned picks match baseline.
+=========== GRAVITY=1
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.867, 0.25 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.703, 0.92 judge units per Overall point
+-- offense judge: offense r all 0.7943 even 0.7881 odd 0.8
+-- prior: 0.656 srs 0.867
+-- swap:
+John Stockton 1990-92      ovr 91.40 TAL 96 bench 59 O 87 D 
+Stephen Curry 2014-16      ovr 90.59 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 90.96 TAL 97 bench 59 O 89 D 
+Chris Paul 2015-17         ovr 91.11 TAL 96 bench 59 O 88 D 
+-- best five top80:
+95.08  5/8  Chris Paul 2013-15, Kevin Garnett 2002-04, Larry Bird 1985-87, Nikola Jokic 2023-25, Stephen Curry 2014-16
+94.99  2/8  Dwyane Wade 2008-10, Kevin Garnett 2002-04, Klay Thompson 2014-16, Shaquille O'Neal 1999-01, Stephen Curry 2014-16
+-- AI picks: 11/30 pinned picks changed. If deliberate, re-bless with --update.
+=========== GRAVITY=1 GRAVITY_K=3000
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.861, 0.25 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.699, 0.84 judge units per Overall point
+-- offense judge: offense r all 0.7943 even 0.7881 odd 0.8
+-- prior: 0.648 srs 0.861
+-- swap:
+John Stockton 1990-92      ovr 91.97 TAL 96 bench 59 O 87 D 
+Stephen Curry 2014-16      ovr 92.02 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 91.50 TAL 97 bench 59 O 89 D 
+Chris Paul 2015-17         ovr 92.46 TAL 96 bench 59 O 88 D 
+-- best five top80:
+99.92  8/8  Chris Paul 2013-15, Draymond Green 2015-17, Klay Thompson 2014-16, Nikola Jokic 2023-25, Stephen Curry 2014-16
+-- AI picks: 10/30 pinned picks changed. If deliberate, re-bless with --update.
+=========== GRAVITY=1 GRAVITY_K=12000
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.871, 0.26 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.712, 1.00 judge units per Overall point
+-- offense judge: offense r all 0.7943 even 0.7881 odd 0.8
+-- prior: 0.662 srs 0.871
+-- swap:
+John Stockton 1990-92      ovr 90.83 TAL 96 bench 59 O 87 D 
+Stephen Curry 2014-16      ovr 89.20 TAL 97 bench 59 O 87 D 
+Magic Johnson 1989-91      ovr 90.41 TAL 97 bench 59 O 89 D 
+Chris Paul 2015-17         ovr 89.83 TAL 96 bench 59 O 88 D 
+-- best five top80:
+92.55  6/8  Kareem Abdul-Jabbar 1971-73, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91, Stephen Curry 2014-16
+92.06  2/8  John Stockton 1990-92, Kevin Garnett 2002-04, Larry Bird 1985-87, Magic Johnson 1989-91, Nikola Jokic 2023-25
+-- AI picks: 8/30 pinned picks changed. If deliberate, re-bless with --update.

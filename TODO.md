@@ -2104,3 +2104,10 @@ Stockton zostaje w najlepszej piątce (Stockton, Kawhi, Bird, KG, Kareem). Na tl
 - Skuteczność tych samych kolegów z graczem i bez, w tym samym sezonie, z odjęciem jego własnych rzutów.
 - Zastąpi „dał minus dostał” od 2000-01.
 - Sędziowie: prognoza, SRS, mechanika, najlepsza piątka.
+
+## Gravity z pbp on/off (2026-11-26) — NIE wdrożone
+GRAVITY=1 (teammateLift z gravity.json od 2000-01 zamiast lift−realMates), wyniki reports/gravgrid.txt:
+- K 6000: SRS r 0.876→0.867, game r 0.740→0.703, prognoza 0.677→0.656; Curry 89.3→90.6, Stockton 92.2→91.4.
+- K 3000 gorzej (game 0.699), K 12000 mniej źle (0.712). Wszystkie sędziowie spadają → zostaje wyłączone.
+Powód prawdopodobny: miara tylko od 2000 (gracze sprzed nie mają korekty → niespójność er) i on/off dzieli zasługi między gwiazdy (Klay≈Curry).
+Pomysł na później: użyć gravity tylko jako zamiennika realMates w lift (nie całego lift) albo jako lekkiego dodatku do obecnej formuły.
