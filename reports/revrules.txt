@@ -1,0 +1,18 @@
+comp.json n 600
+  rev_paintCrowd         fires   0.8%  data wants  -0.00 Overall per hit
+  rev_threeBall          fires   0.2%  data wants  -0.15 Overall per hit
+  rev_offBallNoShot      fires  54.5%  data wants  +1.61 Overall per hit
+  rev_secondWeakPerim    fires  49.8%  data wants  +0.33 Overall per hit
+  rev_benchStarter       fires  99.5%  data wants  +1.25 Overall per hit
+  rev_extraPlaymaker     fires   6.5%  data wants  -2.46 Overall per hit
+  rev_noFloorGeneral     fires  34.5%  data wants  +0.96 Overall per hit
+  rev_eliteShooterCover  fires   7.2%  data wants  -2.59 Overall per hit
+compP.json n 114
+  rev_paintCrowd         never
+  rev_threeBall          fires   0.9%  data wants +10.73 Overall per hit
+  rev_offBallNoShot      fires  51.8%  data wants  -0.35 Overall per hit
+  rev_secondWeakPerim    fires  41.2%  data wants  +0.42 Overall per hit
+  rev_benchStarter       fires  97.4%  data wants  +1.93 Overall per hit
+  rev_extraPlaymaker     fires   6.1%  data wants  +2.62 Overall per hit
+  rev_noFloorGeneral     fires  26.3%  data wants  +3.98 Overall per hit
+  rev_eliteShooterCover  fires   7.9%  data wants  -3.92 Overall per hit

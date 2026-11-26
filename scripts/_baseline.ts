@@ -75,7 +75,7 @@ for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs:
     const t = teamOf(spans as PlayerSpan[], `${end}-${ts.team}`);
     comp = { talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
       lift: L.liftAdjustment(t), creator: S.creatorAdjustment(t), ballLoad: S.ballLoadAdjustment(t), handler: S.ballHandlerAdjustment(t), helio: H.heliocentricAdjustment(t),
-      review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t) };
+      review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t), ...Object.fromEntries(Object.entries(R.reviewRuleHits(RO.primaryStarters(t).map((a) => a.player))).map(([k, v]) => ['rev_' + k, Number(v)])) };
   }
   rows.push({ comp, label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
 }
