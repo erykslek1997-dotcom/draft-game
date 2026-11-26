@@ -1314,8 +1314,10 @@ const smoothedDisplayCache = new Map<string, number>();
  * neighbour smoothing, so no window can climb back over it, and the badge follows the number.
  * Draft value reads the same number (`effectiveTalent`).
  */
-const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(
-  [
+/** 2026-11-26 (the user: review every named ceiling / peak target — option B): `NAMED_OFF=1` empties both
+ * lists, to see where these players land on the rules alone. Measurement knob. */
+const NAMED_OFF = envVar('NAMED_OFF') === '1';
+const NAMED_PLAYER_DISPLAY_CEILING: ReadonlyMap<string, number> = new Map(NAMED_OFF ? [] : [
     ['Oscar Robertson', 90], // low MVP, next to Jerry West's peak (90)
     ['Damian Lillard', 87], // top of All-NBA
     ['Anthony Edwards', 87], // top of All-NBA
@@ -1359,8 +1361,7 @@ function namedPlayerCeiling(playerName: string | undefined): number {
  * gets the full lift, fading to none `TARGET_FADE_RANGE` further down — so the career keeps its
  * shape instead of one window jumping. Raise only.
  */
-const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(
-  [
+const NAMED_PLAYER_PEAK_TARGET: ReadonlyMap<string, number> = new Map(NAMED_OFF ? [] : [
     ['Pau Gasol', 84],
     ['Marc Gasol', 83],
     ['Chris Bosh', 79],
