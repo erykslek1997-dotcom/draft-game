@@ -53,7 +53,7 @@ const byTeam = Object.groupBy(roster, (r) => `${r.end}|${r.team}`);
 const teamOf = (r: PlayerSpan[], id: string): Team => ({ id, name: id, draftSlot: 1, isHuman: false, roster: r, rotation: autoAssignRotation(r) });
 const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
 
-type Row = { label: string; end: number; srs: number; ovr: number; off: number; def: number; tal: number; spans: PlayerSpan[]; minShare: number[] };
+type Row = { comp?: Record<string, number>; label: string; end: number; srs: number; ovr: number; off: number; def: number; tal: number; spans: PlayerSpan[]; minShare: number[] };
 const rows: Row[] = [];
 let skipped = 0;
 for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs: number }[]).entries()) {
@@ -68,7 +68,16 @@ for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs:
   }
   const total = all.reduce((s, r) => s + r.minutes, 0);
   const b = scoreTeam(teamOf(spans as PlayerSpan[], `${end}-${ts.team}`));
-  rows.push({ label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
+  // DUMP (2026-11-26, the user: "czy coś nie liczy się podwójnie"): every Overall ingredient per team.
+  let comp: Record<string, number> | undefined;
+  if (process.env.DUMP) {
+    const S = await import('../src/engine/scoring'); const L = await import('../src/engine/teammateLift'); const H = await import('../src/engine/heliocentric'); const R = await import('../src/engine/reviewRules'); const RO = await import('../src/engine/rotation');
+    const t = teamOf(spans as PlayerSpan[], `${end}-${ts.team}`);
+    comp = { talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
+      lift: L.liftAdjustment(t), creator: S.creatorAdjustment(t), ballLoad: S.ballLoadAdjustment(t), handler: S.ballHandlerAdjustment(t), helio: H.heliocentricAdjustment(t),
+      review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t) };
+  }
+  rows.push({ comp, label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
 }
 const corr = (xs: number[], ys: number[]) => {
   const mx = mean(xs), my = mean(ys);
@@ -133,3 +142,5 @@ if (process.env.STARTEST) {
   console.log('SRS ~ mean + top + weakest', JSON.stringify(ols([feats.map((f) => f.mean), feats.map((f) => f.top), feats.map((f) => f.min)])));
   console.log('SRS ~ Overall + top TAL   ', JSON.stringify(ols([feats.map((f) => f.ovr), feats.map((f) => f.top)])));
 }
+
+if (process.env.DUMP) { const { writeFileSync } = await import('node:fs'); writeFileSync(process.env.DUMP, JSON.stringify(rows.map((x) => ({ srs: x.srs, ovr: x.ovr, ...x.comp })))); }

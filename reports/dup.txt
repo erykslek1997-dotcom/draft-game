@@ -1,0 +1,40 @@
+comp.json n 600 r(ovr) 0.876 ovr rebuilt r 0.9993
+part        weight   sd*w  r(srs)  r w/o  best x
+talent       0.368   6.21   0.850  0.854    1.27
+bench        0.143   1.03   0.548  0.869    2.51
+fit          0.098   1.15   0.677  0.880   -1.42
+offense      0.213   2.60   0.734  0.866    1.35
+defense      0.175   2.94   0.719  0.865    1.13
+lift         0.972   0.81   0.278  0.874    1.03
+creator      0.995   0.64   0.149  0.877   -0.56
+ballLoad     0.781   0.17  -0.216  0.876    1.21
+handler      0.820   0.14  -0.088  0.876    2.24
+helio        1.135   0.21  -0.027  0.875    2.10
+review       0.982   2.02   0.687  0.881   -0.24
+era          0.929   0.71   0.057  0.870    3.20
+benchOff   const
+benchRole    1.008   0.82   0.057  0.879   -0.64
+benchFloor   0.926   0.35   0.527  0.873    7.09
+certainty  const
+top correlated parts: talent-offense 0.79, talent-fit 0.78, fit-review 0.77, talent-review 0.76, talent-defense 0.76, bench-benchFloor 0.75, fit-defense 0.73, defense-review 0.67, fit-offense 0.66, offense-review 0.66
+
+compP.json n 114 r(ovr) 0.677 ovr rebuilt r 0.9948
+part        weight   sd*w  r(srs)  r w/o  best x
+talent       0.379   5.60   0.619  0.668    0.61
+bench        0.132   0.94   0.368  0.668    3.62
+fit          0.082   0.97   0.438  0.683   -2.49
+offense      0.253   2.84   0.577  0.655    2.05
+defense      0.198   2.96   0.459  0.683    0.18
+lift         0.779   1.06   0.351  0.663    4.05
+creator      0.691   0.47   0.122  0.675    2.55
+ballLoad     1.479   0.40  -0.226  0.679   -2.04
+handler      2.600   0.66  -0.070  0.677    0.70
+helio        0.964   0.29  -0.097  0.678   -0.98
+review       0.996   2.10   0.466  0.685   -0.31
+era          1.329   0.97   0.112  0.664    3.98
+benchOff   const
+benchRole    1.073   0.89   0.070  0.681   -0.67
+benchFloor   1.404   0.47   0.414  0.668   12.26
+certainty  const
+top correlated parts: talent-defense 0.72, talent-fit 0.70, fit-review 0.70, talent-review 0.69, talent-offense 0.68, fit-defense 0.66, offense-review 0.62, bench-benchFloor 0.62, fit-offense 0.57, defense-review 0.56
+
