@@ -1,0 +1,15 @@
+=========== REV_DROP=eliteShooterCover,noFloorGeneral,secondWeakPerim W_FIT=0.25 W_OFF=2.25 STAR_W=0.27 OFF_SOFTCAP=0.5 FIT_TWO_PG=15 LIFT_CAP=1 REV_BALL_SRC=share
+-- auditMetrics:
+REAL team-seasons (SRS): n 600, Overall vs judge r 0.873, 0.23 judge units per Overall point
+GAME bench leagues (margin a 100 trips): n 160, Overall vs judge r 0.745, 1.07 judge units per Overall point
+-- offense judge: offense r all 0.7939 even 0.7867 odd 0.8
+-- prior: 0.689 srs 0.873
+-- swap:
+John Stockton 1990-92      ovr 88.16 TAL 96 bench 59 O 87 D 
+Stephen Curry 2014-16      ovr 87.52 TAL 97 bench 59 O 88 D 
+Magic Johnson 1989-91      ovr 87.97 TAL 97 bench 59 O 89 D 
+Chris Paul 2015-17         ovr 88.36 TAL 96 bench 59 O 89 D 
+-- best five top80:
+91.76  7/8  Kevin Garnett 2002-04, Larry Bird 1985-87, LeBron James 2012-14, Magic Johnson 1989-91, Michael Jordan 1987-89
+91.21  1/8  Anthony Davis 2017-19, Dwyane Wade 2008-10, Kevin Garnett 2002-04, LeBron James 2012-14, Ray Allen 2000-02
+-- AI picks: 6/30 pinned picks changed. If deliberate, re-bless with --update.
