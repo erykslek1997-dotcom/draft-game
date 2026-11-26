@@ -2050,6 +2050,22 @@ function namedTalPenalty(span: PlayerSpan): number {
  * `TAL_OD=1` turns it on (off by default).
  */
 const TAL_OD = (envVar('TAL_OD') ?? '0') === '1';
+/**
+ * 2026-11-26 (the user: Whiteside's named ceiling → a rule; scripts/_defover.ts, 1,359 big windows 1997+
+ * against APBR RAPM, reverse fit): a PF / C reads +1.2 TAL per rebound a game over what RAPM implies (+0.5
+ * per block on top), the same in even and odd seasons. `BIG_REB_W` TAL per rebound a game over
+ * `BIG_REB_REF` (and `BIG_BLK_W` per block over `BIG_BLK_REF`) comes off, both ways, windows from 1980
+ * on (pace makes older rebound counts incomparable). Measurement knobs, 0 = off.
+ */
+const BIG_REB_W = Number(envVar('BIG_REB_W') ?? 0);
+const BIG_REB_REF = Number(envVar('BIG_REB_REF') ?? 7.7);
+const BIG_BLK_W = Number(envVar('BIG_BLK_W') ?? 0);
+const BIG_BLK_REF = Number(envVar('BIG_BLK_REF') ?? 1.05);
+function bigBoxAdjustment(span: PlayerSpan): number {
+  if ((!BIG_REB_W && !BIG_BLK_W) || (span.primaryPosition !== 'C' && span.primaryPosition !== 'PF')) return 0;
+  if (Math.min(...spanEndYears(span.spanLabel)) < 1980) return 0;
+  return -(BIG_REB_W * (span.box.rpg - BIG_REB_REF) + BIG_BLK_W * (span.box.bpg - BIG_BLK_REF));
+}
 /** 2026-11-25 overnight (the user: "wszystkie bramki jakie mamy"): measurement knob, a comma list of
  * TAL pipeline steps to switch off — usage, bridge, ceiling, named, reduced, credit, lowusage,
  * oldschool, resume, smallcap. */
@@ -2091,7 +2107,8 @@ export function computeTalent(rawSpan: PlayerSpan): number {
   const credited = reduced + (TD('credit') ? 0 : defenseCreditLift(span, reduced));
   const lifted = credited + (TD('lowusage') ? 0 : lowUsageLift(span, credited)) + (TD('named') ? 0 : namedTalLift(span)) - (TD('oldschool') ? 0 : oldSchoolPointPenalty(span, credited));
   const resumed = lifted + (TD('resume') ? 0 : roleResumeAdjustment(span, lifted));
-  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? resumed : (TD('smallcap') ? resumed : Math.min(resumed, smallRoleCap(span))))));
+  const boxed = resumed + bigBoxAdjustment(span);
+  const result = TAL_OD ? talentFromOD(span) : Math.max(0, Math.min(100, Math.round(ENGINE_BLOCKS_OFF ? boxed : (TD('smallcap') ? boxed : Math.min(boxed, smallRoleCap(span))))));
   talentCache.set(span.id, result);
   return result;
 }
