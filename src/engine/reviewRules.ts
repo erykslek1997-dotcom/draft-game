@@ -112,5 +112,7 @@ export function reviewAdjustment(five: PlayerSpan[]): number {
   // 2026-11-26 (the user approved, top-end plan): eliteShooterCover, secondWeakPerim and noFloorGeneral no longer
   // count — on 600 real team-seasons and the 114-team forecast each one read against the judge beside the rest of
   // Overall (reports/revrules.txt); their hits stay visible.
-  return W * (-h.paintCrowd - h.threeBall - h.offBallNoShot - h.benchStarter - h.extraPlaymaker);
+  // 2026-11-26, later (the user: "skoro się poprawia to ok"): offBallNoShot and benchStarter out too — without
+  // each, real playoff series, SRS and the forecast all held or rose (reports/pogrid1.txt).
+  return W * (-h.paintCrowd - h.threeBall - h.extraPlaymaker);
 }
