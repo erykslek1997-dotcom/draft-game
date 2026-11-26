@@ -21,6 +21,7 @@
 import type { PlayerSpan } from '../data/schema';
 import { envVar } from './env';
 import { skill, dataUsageDemand } from './skills';
+import { ballShare } from './ballHandling';
 import { computeDefensiveTalent } from './defensiveTalent';
 import { effectiveTalent } from './grades';
 import { computeOffensiveTalent } from './talent';
@@ -47,6 +48,11 @@ const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition
 // 2026-11-26 (the user's center brief: Kareem 1971-73 escaped the paint-crowd rule on the missing spot-up
 // skill read as 50): with `REV_SPOT_EST=1` a window without the three-based skill (before 1979-80) reads its
 // spot-up from the spacing the engine plays (teamSpacingValue, the same 0-100 scale).
+// 2026-11-26 (`REV_BALL_SRC`, 'use' = as before; the user: USG counts a cut finished off a pass): 'share' reads
+// how much a player holds the ball — his ball share (USG% and AST%: Stockton, Magic, Jokic hold it by passing),
+// 0 at 0.15 and full at 0.25 — and, for a big, his own scoring load as well (a post-up starts with a pass too:
+// Shaq, Duncan); graded, the three-ball count is their sum. Off-ball stars stay out.
+const REV_BALL_SRC = envVar('REV_BALL_SRC') ?? 'use';
 const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
@@ -59,7 +65,10 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // Wade, Westbrook) scores before the paint, 0 = the rule off; the user: Wade beside Shaq won 2006).
   const paint = REV_PAINT === '0' ? 0 : five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45 && !(REV_PAINT === 'mid' && !isBig(p) && s(p, 'post', 0) >= 90)).length;
   const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= REV_OFFBALL_SPOT;
-  const ball = five.filter((p) => use(p) >= REV_BALL_USE && !offBallStar(p)).length;
+  const holds = (p: PlayerSpan) => Math.max(Math.min(1, Math.max(0, (ballShare(p) - 0.15) / 0.1)), isBig(p) ? Math.min(1, Math.max(0, (use(p) - 0.4) / 0.2)) : 0);
+  const ball = REV_BALL_SRC === 'share'
+    ? Math.round(five.filter((p) => !offBallStar(p)).reduce((sum, p) => sum + holds(p), 0) * 10) / 10
+    : five.filter((p) => use(p) >= REV_BALL_USE && !offBallStar(p)).length;
   const offBallNoShot = five.filter((p) => !isBig(p) && use(p) < 0.3 && teamSpacingValue(p) < 35).length;
   const weakPerim = five.filter((p) => !isBig(p) && computeDefensiveTalent(p) < 40).length;
   // 2026-11-22 (REV_BENCH_3D, the user: OG Anunoby beside Nash / Oladipo / Giannis / Wemby): a premium 3-and-D
@@ -85,7 +94,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   const nonShootBigs = five.filter((p) => isBig(p) && teamSpacingValue(p) < 30 && use(p) < 0.35).length;
   return {
     paintCrowd: paint >= 2 ? paint - 1 : 0,
-    threeBall: ball >= 3 ? ball - 2 : 0,
+    threeBall: ball > 2 ? Math.round((ball - 2) * 10) / 10 : 0,
     offBallNoShot,
     secondWeakPerim: Math.max(0, weakPerim - 1),
     benchStarter: bench,
