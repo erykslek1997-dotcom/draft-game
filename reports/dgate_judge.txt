@@ -1,0 +1,3 @@
+DEF_GATE_O1=0 | prior 0.671 | srs 0.877 | defense r all 0.8300 even 0.84 | offense r all 0.7918 even 0.78 | starters O<50: 4/240 | AI mean Overall 83.70
+DEF_GATE_O1=55 | prior 0.674 | srs 0.878 | defense r all 0.8308 even 0.84 | offense r all 0.7919 even 0.78 | starters O<50: 1/240 | AI mean Overall 83.60
+DEF_GATE_O1=60 | prior 0.674 | srs 0.878 | defense r all 0.8308 even 0.84 | offense r all 0.7914 even 0.78 | starters O<50: 2/240 | AI mean Overall 83.43

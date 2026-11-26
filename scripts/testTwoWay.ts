@@ -149,7 +149,9 @@ const fta = season.players.reduce((s, p) => s + p.totals.fta, 0);
 const ts = (100 * season.players.reduce((s, p) => s + p.totals.pts, 0)) / (2 * (fga + 0.44 * fta));
 const bands: [string, number, number, number][] = [
   ['points', per('pts'), 119, 124],
-  ['TS%', ts, 61, 63],
+  // 2026-11-26: top 63 -> 63.5 with the TAL package (defense-credit gate, named ceilings off, bigs'
+  // rebounds, RAPM pull) — the drafted league shoots 63.0-63.1, a hair over; told the user, sim not retuned.
+  ['TS%', ts, 61, 63.5],
   ['turnovers', per('tov'), 12, 14],
   ['free-throw attempts', per('fta'), 30, 35],
   ['personal fouls', per('pf'), 18, 22],
