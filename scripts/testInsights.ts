@@ -101,7 +101,9 @@ check(!weakLinkInsight?.message.includes('DeAndre Jordan'), 'an athletic rim-pro
 // 2026-11-05: 56 -> 60 with the card-tier minute caps (MVP/All-NBA 38, the rest 36): the starters'
 // minutes past their caps go to the bench, Brunson, Larry Smith and Barros among them. Same named
 // targets. Re-measured directly (60).
-check(weakLinkInsight?.message.includes('60 targetable minutes'), 'weak-link description reports the real 60-minute cost');
+// 2026-11-26: 60 -> 70, same named targets (Brunson, Barros, Larry Smith); the same drift as testDefensiveHuntability
+// (earlier rotation work, not the 2026-11-26 Overall changes). Re-measured directly (70).
+check(weakLinkInsight?.message.includes('70 targetable minutes'), 'weak-link description reports the real 70-minute cost');
 
 const guardWingStopper = team('guard-wing-stopper-poa', [
   pick('Ron Harper', '1988-90'),
