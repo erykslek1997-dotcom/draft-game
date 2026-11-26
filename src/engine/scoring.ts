@@ -3,7 +3,7 @@ import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataU
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
-import { ballHandlerCost } from './ballHandling';
+import { ballHandlerCost, ballShare } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -731,12 +731,18 @@ const OFF_TOP = Number(envVar('OFF_TOP') ?? 0);
 const OFF_BALL_SHOOT = Number(envVar('OFF_BALL_SHOOT') ?? 0.5);
 const BALL_RANK_KEEP = [1, 0.7, 0.4, 0.2, 0.2];
 const OFF_BALL_ORDER = envVar('OFF_BALL_ORDER') ?? 'usage';
+const OFF_BALL_SRC = envVar('OFF_BALL_SRC') ?? 'usage';
+const OFF_BALL_SHARE_FULL = Number(envVar('OFF_BALL_SHARE_FULL') ?? 0.27);
 function ballBudgetValues(entries: { player: PlayerSpan; value: number }[]): number[] {
   if (!OFF_BALL) return entries.map((e) => e.value);
   // `OFF_BALL_SHOOT`: a catch-and-shoot scorer's usage is partly off the ball (Dirk, Klay) — that share of
   // his on-ball part goes away at a spot-up skill of 90 (none at 50), as in the second-handler cost.
   const shoot = (p: PlayerSpan) => Math.max(0, Math.min(1, ((skill(p, 'spotUp') ?? 50) - 50) / 40));
-  const share = (p: PlayerSpan) => Math.min(1, (dataUsageDemand(p) ?? 0.3) / 0.6) * (1 - OFF_BALL_SHOOT * shoot(p));
+  // 2026-11-26 (the user's calibration brief: two primary ball handlers cost nothing, only FGA did): with
+  // `OFF_BALL_SRC=share` the on-ball part is the time of possession (`ballShare`, USG% + AST%, tracking fit
+  // R² 0.83; Magic / Stockton ~0.26-0.29, Jordan 0.15) over `OFF_BALL_SHARE_FULL`, not the usage demand.
+  const onBall = (p: PlayerSpan) => (OFF_BALL_SRC === 'share' ? ballShare(p) / OFF_BALL_SHARE_FULL : (dataUsageDemand(p) ?? 0.3) / 0.6);
+  const share = (p: PlayerSpan) => Math.min(1, onBall(p)) * (1 - OFF_BALL_SHOOT * shoot(p));
   // 2026-11-19 (the user, Jordan + Nash at Offense 77): the ball goes to the best scorers first, so the
   // budget ranks by O-TAL (`OFF_BALL_ORDER=value`), not by usage — by usage Nash (0.38) ranked fourth
   // behind Walton and Pierce and lost a quarter of his 96.
