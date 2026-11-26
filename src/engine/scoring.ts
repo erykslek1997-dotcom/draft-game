@@ -612,7 +612,7 @@ export function creatorAdjustment(team: Team): number {
 // 2026-11-26 (`STAR_W`, Overall points per TAL point, 0 = off; top-end plan step 2.1): the best starter's TAL
 // (the card's number, past 100) over `STAR_REF`. On the forecast judge the best player's TAL predicted SRS beyond
 // the five's mean (+0.070 SRS a point ≈ +0.27 Overall); the mean alone hid a star's 17 TAL points as ~1.
-const STAR_W = Number(envVar('STAR_W') ?? 0);
+const STAR_W = Number(envVar('STAR_W') ?? 0.27);
 const STAR_REF = Number(envVar('STAR_REF') ?? 95);
 const WEAK_W = Number(envVar('WEAK_W') ?? 0);
 const WEAK_REF = Number(envVar('WEAK_REF') ?? 75);
@@ -1258,7 +1258,7 @@ export function isoOffense(five: PlayerSpan[]): { points: number; met: number } 
 // 2026-11-26 (the user: "Curry powinien mieć atak bliski 100… wypłaszczenie które pozwala przekroczyć 100"):
 // the team offense reads O-TAL past the 100 display cap — above `OFF_SOFTCAP_AT` the uncapped value
 // counts at `OFF_SOFTCAP` per point (Curry 112 -> 105 at 0.5; Stockton 95 unchanged). 0 = off.
-const OFF_SOFTCAP = Number(envVar('OFF_SOFTCAP') ?? 0);
+const OFF_SOFTCAP = Number(envVar('OFF_SOFTCAP') ?? 0.5);
 const OFF_SOFTCAP_AT = Number(envVar('OFF_SOFTCAP_AT') ?? 95);
 export function teamOffensiveTalent(p: PlayerSpan): number {
   const c = computeOffensiveTalent(p);
@@ -2155,7 +2155,7 @@ const QUALITY_FIT_SPLIT = 0.5;
 // 0.777 — it added nothing); talent and bench keep their ratio. Was .271 / .17 / .039 of .48.
 // 2026-11-25 (`W_TAL` / `W_BENCH` / `W_FIT` / `W_OFF` / `W_DEF`, multipliers, measurement): the weights audit.
 // 2026-11-25 defaults from the audit (scripts/_weights.sh; SRS 0.852 -> 0.862, lineups 0.569 -> 0.579, offense 0.7783 -> 0.7913).
-const WM_DEFAULT: Record<string, number> = { W_TAL: 1.5, W_BENCH: 1, W_FIT: 0.5, W_OFF: 1.5, W_DEF: 0.75 };
+const WM_DEFAULT: Record<string, number> = { W_TAL: 1.5, W_BENCH: 1, W_FIT: 0.25, W_OFF: 2.25, W_DEF: 0.75 };
 const WM = (k: string) => Number(envVar(k) ?? WM_DEFAULT[k] ?? 1);
 // Normalised: the multipliers change the shares, not the scale (the bucket keeps its sum).
 const Q_SUM = (0.271 * WM('W_TAL') + 0.17 * WM('W_BENCH')) / 0.441;

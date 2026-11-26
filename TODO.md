@@ -2120,3 +2120,10 @@ Baza: SRS 0.876, game 0.740, prognoza 0.677, Stockton 92.2 / Curry 89.3, najleps
 - GRAVITY_MIX 0.3/0.5: wszystko w dół (game 0.730/0.723).
 - Wszystkie trzy razem: game 0.731, prognoza 0.670 — nie.
 Do sprawdzenia: OFF_SOFTCAP=0.5 + FIT_DRC=0.5.
+
+## Szczyt rankingu — pakiet wdrożony (2026-11-26, docs/top-end-plan.md)
+Zmiany: usunięte reguły eliteShooterCover/noFloorGeneral/secondWeakPerim; W_FIT 0.5→0.25, W_OFF 1.5→2.25;
+STAR_W 0.27 (najlepszy starter ponad 95); OFF_SOFTCAP 0.5; FIT_TWO_PG 15; LIFT_CAP 1; REV_BALL_SRC share.
+Sędziowie: SRS 0.876→0.873, prognoza 0.677→0.689, gra 0.740→0.745, atak/ORtg 0.794. Piątki 9/17→16/17, pary 40/56→44/56.
+Najlepsza piątka: Magic, Jordan, Bird, LeBron, KG. AI picks re-bless (6/30).
+Dalej: Curry > Stockton o 2+ (dziś Stockton +0.6), LeBron > Durant, A3 vs B5 (decyzja użytkownika), pozostałe pary.

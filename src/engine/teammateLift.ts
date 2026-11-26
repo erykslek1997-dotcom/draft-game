@@ -131,7 +131,7 @@ const teamLiftPoints = (team: Team) => teamLiftShift(team) * LIFT_TUNING.pointsP
 const LIFT_POINTS_PER_OVERALL = 0.85;
 // 2026-11-26 (`LIFT_CAP`, Overall points, 0 = no cap; top-end plan): real teams spread the term ~±0.8 (sd), but a
 // five of drafted lifters added theirs up to +5.5 — far past anything a real team showed. Past the cap, a tenth.
-const LIFT_CAP = Number(LIFT_ENV?.LIFT_CAP ?? 0);
+const LIFT_CAP = Number(LIFT_ENV?.LIFT_CAP ?? 1);
 export const liftAdjustment = (team: Team) => {
   const v = (LIFT_TUNING.overall * teamLiftPoints(team)) / LIFT_POINTS_PER_OVERALL;
   return LIFT_CAP > 0 && Math.abs(v) > LIFT_CAP ? Math.sign(v) * (LIFT_CAP + (Math.abs(v) - LIFT_CAP) * 0.1) : v;

@@ -183,7 +183,7 @@ const FIT_DRC = Number(FIT_ENV?.FIT_DRC ?? 1);
 // 2026-11-26 (`FIT_TWO_PG`, Fit points, 0 = off; the user: "dlaczego dwóch PG dostaje dopasowanie 96"): two
 // starters who both run the offense (ball share past 0.18, full at 0.26) take turns with it. Charged per pair
 // at the smaller of the two loads, eased by half the better off-ball value (Curry can play off the ball).
-const FIT_TWO_PG = Number(FIT_ENV?.FIT_TWO_PG ?? 0);
+const FIT_TWO_PG = Number(FIT_ENV?.FIT_TWO_PG ?? 15);
 export const FIT_WEIGHTS = {
   creationStructure: 0,
   pairingStructure: ((0.293 + (1 - FIT_DRC) * 0.331) / 0.624) * KEPT,

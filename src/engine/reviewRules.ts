@@ -52,7 +52,7 @@ const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition
 // how much a player holds the ball — his ball share (USG% and AST%: Stockton, Magic, Jokic hold it by passing),
 // 0 at 0.15 and full at 0.25 — and, for a big, his own scoring load as well (a post-up starts with a pass too:
 // Shaq, Duncan); graded, the three-ball count is their sum. Off-ball stars stay out.
-const REV_BALL_SRC = envVar('REV_BALL_SRC') ?? 'use';
+const REV_BALL_SRC = envVar('REV_BALL_SRC') ?? 'share';
 const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
@@ -109,5 +109,8 @@ export function reviewAdjustment(five: PlayerSpan[]): number {
   const h = reviewRuleHits(five);
   // 2026-11-25 (`REV_DROP`, comma list, measurement only): leave out the named rules.
   for (const k of REV_DROP) h[k] = 0;
-  return W * (h.eliteShooterCover - h.paintCrowd - h.threeBall - h.offBallNoShot - h.secondWeakPerim - h.benchStarter - h.extraPlaymaker - h.noFloorGeneral);
+  // 2026-11-26 (the user approved, top-end plan): eliteShooterCover, secondWeakPerim and noFloorGeneral no longer
+  // count — on 600 real team-seasons and the 114-team forecast each one read against the judge beside the rest of
+  // Overall (reports/revrules.txt); their hits stay visible.
+  return W * (-h.paintCrowd - h.threeBall - h.offBallNoShot - h.benchStarter - h.extraPlaymaker);
 }
