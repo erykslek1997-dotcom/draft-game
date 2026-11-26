@@ -1,0 +1,4 @@
+CREATOR_W=0 | prior 0.678 | srs 0.881 | playoff teams 316: series wins vs projection 0.5248 | vs Overall 0.5224 | vs real SRS 0.5659
+CREATOR_W=1 | prior 0.682 | srs 0.879 | playoff teams 316: series wins vs projection 0.5273 | vs Overall 0.5250 | vs real SRS 0.5659
+CREATOR_W=2 | prior 0.684 | srs 0.876 | playoff teams 316: series wins vs projection 0.5284 | vs Overall 0.5262 | vs real SRS 0.5659
+CREATOR_W=3 | prior 0.684 | srs 0.871 | playoff teams 316: series wins vs projection 0.5283 | vs Overall 0.5260 | vs real SRS 0.5659
