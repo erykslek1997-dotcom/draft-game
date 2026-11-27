@@ -700,7 +700,8 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 // the simple average, not a ladder-based mechanic) — a real, felt credit without fully erasing the
 // cost of a genuinely bad-shooting frontcourt. `fitScore(team)` is computed once and reused for
 // `mismatchStructure` below too, instead of the pre-existing redundant second call.
-const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
+// `SPC_ENGINE_BONUS` (measurement, 2026-11-27): the elite engine's spacing cover, 0 = off.
+const OFFENSE_SPACING_ELITE_ENGINE_BONUS = Number(envVar('SPC_ENGINE_BONUS') ?? 15);
 
 /**
  * 2026-09-30, engine calibration session 5 (the user: "czasem spacing u niektórych drużyn ssie i nie
