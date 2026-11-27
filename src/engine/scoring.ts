@@ -2278,6 +2278,7 @@ const ORG_FROM = Number(envVar('ORG_FROM') ?? 30);
 const ORG_STAIR = Number(envVar('ORG_STAIR') ?? 0);
 const ORG3_FROM = Number(envVar('ORG3_FROM') ?? 20);
 const ORG4_FROM = Number(envVar('ORG4_FROM') ?? 15);
+const ORG_STAIR_PERIM = (envVar('ORG_STAIR_PERIM') ?? '0') === '1';
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
   const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
@@ -2287,7 +2288,10 @@ export function orgDupCost(five: PlayerSpan[]): number {
   // 2026-11-27 (`ORG_STAIR`, the user: "gdzie kucharek sześć…" — each further organiser crowds the others at a
   // lower bar): the third passer costs from `ORG3_FROM`% and the fourth from `ORG4_FROM`%, `ORG_STAIR` ORtg per 5
   // points, at most 2 each. Real units 2013-14 on read the third at −0.9 (20-25%) / −1.2 (25%+, 7 units). 0 = off.
-  const stair = ORG_STAIR ? Math.min(2, (ORG_STAIR * Math.max(0, (pas[2]?.a ?? 0) - ORG3_FROM)) / 5) + Math.min(2, (ORG_STAIR * Math.max(0, (pas[3]?.a ?? 0) - ORG4_FROM)) / 5) : 0;
+  // `ORG_STAIR_PERIM=1` (the user: a passing big works from the elbow, not in the guards' way): the staircase
+  // ranks the perimeter passers only (PG, SG, SF); a big is never one of the extra cooks.
+  const st = ORG_STAIR_PERIM ? five.filter((p) => p.primaryPosition !== 'PF' && p.primaryPosition !== 'C').map((p) => astPctForSpan(p)).sort((x, y) => y - x) : pas.map((x) => x.a);
+  const stair = ORG_STAIR ? Math.min(2, (ORG_STAIR * Math.max(0, (st[2] ?? 0) - ORG3_FROM)) / 5) + Math.min(2, (ORG_STAIR * Math.max(0, (st[3] ?? 0) - ORG4_FROM)) / 5) : 0;
   return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1])) + stair;
 }
 export function orgDupAdjustment(team: Team): number {
