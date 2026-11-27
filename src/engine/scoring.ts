@@ -2350,14 +2350,18 @@ const ERA_PER_YEAR = Number(envVar('ERA_K') ?? -0.073);
 const ERA_PIVOT = Number(envVar('ERA_PIVOT') ?? 2003);
 // 2026-11-22 (ERA_ROT=1, the user: "liczone z ławkami czy bez?"): the mean year over the whole rotation by minutes.
 const ERA_ROT = envVar('ERA_ROT') === '1';
+// 2026-11-27 (the user: "Frazier też grał w szybkiej koszykówce"): the drift was fitted on 1973-74 on and read
+// linearly back; `ERA_FLOOR` stops the lift growing before that year (0 = linear all the way back).
+const ERA_FLOOR = Number(envVar('ERA_FLOOR') ?? 0);
+const eraYear = (y: number) => (ERA_FLOOR ? Math.max(ERA_FLOOR, y) : y);
 export function eraAdjustment(team: Team): number {
   if (ERA_ROT) {
     const rows = allAssignments(team).filter((a) => a.minutes > 0);
     const m = rows.reduce((s, a) => s + a.minutes, 0);
     if (!m) return 0;
-    return ERA_PER_YEAR * (rows.reduce((s, a) => s + (Number(a.player.spanLabel.slice(0, 4)) + 2) * a.minutes, 0) / m - ERA_PIVOT);
+    return ERA_PER_YEAR * (rows.reduce((s, a) => s + eraYear(Number(a.player.spanLabel.slice(0, 4)) + 2) * a.minutes, 0) / m - ERA_PIVOT);
   }
-  const years = primaryStarters(team).map((e) => Number(e.player.spanLabel.slice(0, 4)) + 2).filter((y) => Number.isFinite(y));
+  const years = primaryStarters(team).map((e) => eraYear(Number(e.player.spanLabel.slice(0, 4)) + 2)).filter((y) => Number.isFinite(y));
   if (!years.length) return 0;
   const mean = years.reduce((a, b) => a + b, 0) / years.length;
   return ERA_PER_YEAR * (mean - ERA_PIVOT);
