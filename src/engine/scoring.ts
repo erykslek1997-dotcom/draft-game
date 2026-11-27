@@ -2352,7 +2352,7 @@ const ERA_PIVOT = Number(envVar('ERA_PIVOT') ?? 2003);
 const ERA_ROT = envVar('ERA_ROT') === '1';
 // 2026-11-27 (the user: "Frazier też grał w szybkiej koszykówce"): the drift was fitted on 1973-74 on and read
 // linearly back; `ERA_FLOOR` stops the lift growing before that year (0 = linear all the way back).
-const ERA_FLOOR = Number(envVar('ERA_FLOOR') ?? 0);
+const ERA_FLOOR = Number(envVar('ERA_FLOOR') ?? 1980);
 const eraYear = (y: number) => (ERA_FLOOR ? Math.max(ERA_FLOOR, y) : y);
 export function eraAdjustment(team: Team): number {
   if (ERA_ROT) {
