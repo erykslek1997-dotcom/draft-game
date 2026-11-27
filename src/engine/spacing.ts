@@ -313,8 +313,11 @@ const SHOOTING_ANOMALY_PLAYER = 'Stephen Curry';
 
 /** True for the one player `SHOOTING_ANOMALY_PLAYER` names — exported so `scoring.ts` can apply
  * the team-level floor below without a second copy of the name to keep in sync. */
+// 2026-11-27 (the user: "usuńmy efekt Currego na skład" — no name exceptions): `CURRY_RULE=0` turns the named
+// shooting-anomaly rules off everywhere; Curry is then read like any other shooter.
+const CURRY_RULE = (envVar('CURRY_RULE') ?? '1') === '1';
 export function isShootingAnomalyPlayer(span: PlayerSpan): boolean {
-  return normalizePlayerName(span.playerName) === normalizePlayerName(SHOOTING_ANOMALY_PLAYER);
+  return CURRY_RULE && normalizePlayerName(span.playerName) === normalizePlayerName(SHOOTING_ANOMALY_PLAYER);
 }
 
 /**
