@@ -57,7 +57,7 @@ const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
 // 2026-11-27 (the user: LeBron 2011-13, listed PF, read as a post big holding the ball): `REV_BIG_REAL=1` keeps
 // the big's usage path for players who don't create on the perimeter (handling below `REV_BIG_HANDLING`);
 // a point forward is read by his ball share like any wing. 0 = off.
-const REV_BIG_REAL = (envVar('REV_BIG_REAL') ?? '0') === '1';
+const REV_BIG_REAL = (envVar('REV_BIG_REAL') ?? '1') === '1';
 const REV_BIG_HANDLING = Number(envVar('REV_BIG_HANDLING') ?? 85);
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 

@@ -1390,7 +1390,8 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   const place = ctx.playerName && tierCalibrationFor(ctx.playerName) ? bandPlace(ctx.playerName) : undefined;
   let placed = place === undefined ? value : Math.min(place, value);
   if (WIN_GAP && ctx.playerName) placed = Math.min(placed, windowGapCap(ctx, placed));
-  if (PO_TAL && ctx.playerName && ctx.spanLabel) placed = Math.round(placed + playoffTalShift(ctx.playerName, ctx.spanLabel));
+  // The user's own window order (LeBron) stays as he set it.
+  if (PO_TAL && ctx.playerName && ctx.spanLabel && !hasUserWindowOrder(ctx.playerName)) placed = Math.round(placed + playoffTalShift(ctx.playerName, ctx.spanLabel));
   return allNbaTeamGate(ctx.playerName, shortSeasonCap(ctx.playerName, ctx.spanLabel, placed));
 }
 
