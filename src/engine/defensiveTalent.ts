@@ -1341,6 +1341,20 @@ function onPositionNeutralDefense(position: string, value: number): number {
   const [a, b] = DTAL_POSITION_FIT[position] ?? [1, 0];
   return value + DTAL_POSITION_SHARE * (a * value + b - value);
 }
+/**
+ * 2026-11-27 (the user: a general rule instead of Manu's named cap — per-minute defense in a bench role reads
+ * high): `DT_MIN` of a window's D-TAL above 50 fades with minutes — none at `DT_MIN_FULL`+ a game, all of it
+ * at 15 — so a 25-minute defender keeps less of his per-minute edge. With it on, the named Manu cap is off.
+ */
+const DT_MIN = Number(envVar('DT_MIN') ?? 0.5);
+const DT_MIN_FULL = Number(envVar('DT_MIN_FULL') ?? 32);
+function minutesShrink(span: PlayerSpan, d: number): number {
+  if (d <= 50) return d;
+  const mpg = realSpan(span)?.mpg;
+  if (mpg === undefined) return d;
+  const f = Math.max(0, Math.min(1, (mpg - 15) / (DT_MIN_FULL - 15)));
+  return 50 + (d - 50) * (1 - DT_MIN * (1 - f));
+}
 export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   const span = ratingSpan(rawSpan);
   const cached = shiftedDefensiveTalentCache.get(span.id);
@@ -1356,7 +1370,8 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // 2026-11-20 (the user: Mbah a Moute, Chuck Hayes, Charlie Ward at 85-89 with no All-Defense): with
   // award data for the window and no recognition, the hustle bonus and the floors stop at `DT_NOREC_CAP`.
   const noRecCap = DT_NOREC_CAP < 100 && hasDefenseAwardCoverage(span) && individualDefenseRate(span) === 0 ? DT_NOREC_CAP : 100;
-  const final = Math.round(Math.min(NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName)) ?? 100, noRecCap, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const final0 = Math.round(Math.min((DT_MIN ? undefined : NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName))) ?? 100, noRecCap, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
+  const final = DT_MIN ? Math.round(minutesShrink(span, final0)) : final0;
   const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
