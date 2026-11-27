@@ -700,7 +700,8 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 // the simple average, not a ladder-based mechanic) — a real, felt credit without fully erasing the
 // cost of a genuinely bad-shooting frontcourt. `fitScore(team)` is computed once and reused for
 // `mismatchStructure` below too, instead of the pre-existing redundant second call.
-const OFFENSE_SPACING_ELITE_ENGINE_BONUS = 15;
+// `SPC_ENGINE_BONUS` (measurement, 2026-11-27): the elite engine's spacing cover, 0 = off.
+const OFFENSE_SPACING_ELITE_ENGINE_BONUS = Number(envVar('SPC_ENGINE_BONUS') ?? 0);
 
 /**
  * 2026-09-30, engine calibration session 5 (the user: "czasem spacing u niektórych drużyn ssie i nie
@@ -2272,13 +2273,27 @@ export function driveCreator(p: PlayerSpan): number {
  */
 const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
 const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
+// 2026-11-27 (`ORG_FROM`, the user: "25%?"): the second passer's AST% where the cost starts (full 10 points on).
+const ORG_FROM = Number(envVar('ORG_FROM') ?? 30);
+const ORG_STAIR = Number(envVar('ORG_STAIR') ?? 1);
+const ORG3_FROM = Number(envVar('ORG3_FROM') ?? 25);
+const ORG4_FROM = Number(envVar('ORG4_FROM') ?? 20);
+const ORG_STAIR_PERIM = (envVar('ORG_STAIR_PERIM') ?? '1') === '1';
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
   const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
-  const pair = Math.max(0, Math.min(1, (pas[1].a - 30) / 10));
+  const pair = Math.max(0, Math.min(1, (pas[1].a - ORG_FROM) / 10));
   // Both must be poor shooters: if one shoots, he plays off the ball (spacing 85 → none, 60 → full).
   const nonShoot = (x: { sp: number }) => Math.max(0, Math.min(1, (85 - x.sp) / 25));
-  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1]));
+  // 2026-11-27 (`ORG_STAIR`, the user: "gdzie kucharek sześć…" — each further organiser crowds the others at a
+  // lower bar): the third passer costs from `ORG3_FROM`% and the fourth from `ORG4_FROM`%, `ORG_STAIR` ORtg per 5
+  // points, at most 2 each. Real units 2013-14 on read the third at −0.9 (20-25%) / −1.2 (25%+, 7 units). 0 = off.
+  // `ORG_STAIR_PERIM=1` (the user: a passing big works from the elbow, not in the guards' way): the staircase
+  // ranks the perimeter passers only (PG, SG, SF, and a PF who handles like a wing — LeBron 2011-14); a center is never one
+  // of the extra cooks.
+  const st = ORG_STAIR_PERIM ? five.filter((p) => p.primaryPosition !== 'C' && !(p.primaryPosition === 'PF' && (skill(p, 'handling') ?? 0) < 85)).map((p) => astPctForSpan(p)).sort((x, y) => y - x) : pas.map((x) => x.a);
+  const stair = ORG_STAIR ? Math.min(2, (ORG_STAIR * Math.max(0, (st[2] ?? 0) - ORG3_FROM)) / 5) + Math.min(2, (ORG_STAIR * Math.max(0, (st[3] ?? 0) - ORG4_FROM)) / 5) : 0;
+  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1])) + stair;
 }
 export function orgDupAdjustment(team: Team): number {
   if (!ORG_DUP) return 0;
@@ -2295,6 +2310,21 @@ export function bestPlaymakerAdjustment(team: Team): number {
   if (!PM_BEST) return 0;
   const best = Math.max(0, ...primaryStarters(team).map((s) => skill(s.player, 'handling') ?? 50));
   return (PM_BEST * (best - PM_BEST_REF)) / 10 * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+/**
+ * 2026-11-27 (the user: "czy powinna być oddzielna mechanika na spacing i 3pt?"): real five-man units 2013-14 on
+ * (`scripts/_drive.ts`) — beyond the five's Offense, the starters' mean catch-and-shoot skill (spot-up) is worth
+ * +1.0 ORtg per 10 points (90% +0.56 … +1.53); once it is in, spacing as a whole and pull-up threes add nothing.
+ * `SPOT_W` = ORtg per 10 points of mean spot-up over `SPOT_REF` (0 = off).
+ */
+const SPOT_W = Number(envVar('SPOT_W') ?? 0);
+const SPOT_REF = Number(envVar('SPOT_REF') ?? 50);
+export function spotUpAdjustment(team: Team): number {
+  if (!SPOT_W) return 0;
+  const st = primaryStarters(team).map((e) => skill(e.player, 'spotUp') ?? teamSpacingValue(e.player));
+  if (st.length === 0) return 0;
+  const mean = st.reduce((a, b) => a + b, 0) / st.length;
+  return (SPOT_W * (mean - SPOT_REF)) / 10 * BALL_HANDLER_OVERALL_PER_ORTG;
 }
 export function driveDupAdjustment(team: Team): number {
   if (!DRIVE_DUP) return 0;
@@ -2335,14 +2365,18 @@ const ERA_PER_YEAR = Number(envVar('ERA_K') ?? -0.073);
 const ERA_PIVOT = Number(envVar('ERA_PIVOT') ?? 2003);
 // 2026-11-22 (ERA_ROT=1, the user: "liczone z ławkami czy bez?"): the mean year over the whole rotation by minutes.
 const ERA_ROT = envVar('ERA_ROT') === '1';
+// 2026-11-27 (the user: "Frazier też grał w szybkiej koszykówce"): the drift was fitted on 1973-74 on and read
+// linearly back; `ERA_FLOOR` stops the lift growing before that year (0 = linear all the way back).
+const ERA_FLOOR = Number(envVar('ERA_FLOOR') ?? 1980);
+const eraYear = (y: number) => (ERA_FLOOR ? Math.max(ERA_FLOOR, y) : y);
 export function eraAdjustment(team: Team): number {
   if (ERA_ROT) {
     const rows = allAssignments(team).filter((a) => a.minutes > 0);
     const m = rows.reduce((s, a) => s + a.minutes, 0);
     if (!m) return 0;
-    return ERA_PER_YEAR * (rows.reduce((s, a) => s + (Number(a.player.spanLabel.slice(0, 4)) + 2) * a.minutes, 0) / m - ERA_PIVOT);
+    return ERA_PER_YEAR * (rows.reduce((s, a) => s + eraYear(Number(a.player.spanLabel.slice(0, 4)) + 2) * a.minutes, 0) / m - ERA_PIVOT);
   }
-  const years = primaryStarters(team).map((e) => Number(e.player.spanLabel.slice(0, 4)) + 2).filter((y) => Number.isFinite(y));
+  const years = primaryStarters(team).map((e) => eraYear(Number(e.player.spanLabel.slice(0, 4)) + 2)).filter((y) => Number.isFinite(y));
   if (!years.length) return 0;
   const mean = years.reduce((a, b) => a + b, 0) / years.length;
   return ERA_PER_YEAR * (mean - ERA_PIVOT);
@@ -2519,6 +2553,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('driveDup', () => driveDupAdjustment(team)) +
     d('orgDup', () => orgDupAdjustment(team)) +
     d('pmBest', () => bestPlaymakerAdjustment(team)) +
+    d('spotUp', () => spotUpAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
