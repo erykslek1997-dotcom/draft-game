@@ -4,7 +4,8 @@ import { draftPool } from '../src/data/draftPool';
 import { effectiveTalent } from '../src/engine/grades';
 export const PAIRS: [string, string, string, string][] = [
   ['Stephen Curry','2014-16','John Stockton','1990-92'],
-  ['Magic Johnson','1985-87','John Stockton','1990-92'],
+  // 2026-11-27 (the user): Magic's best window against Stockton, a near-tie allowed (Stockton, CP3 13-15 and Magic 89-91 read as one group).
+  ['Magic Johnson','1989-91','John Stockton','1990-92'],
   ['Michael Jordan','1990-92','Clyde Drexler','1990-92'],
   ['Michael Jordan','1990-92','Kobe Bryant','2006-08'],
   ['LeBron James','2011-13','Kevin Durant','2012-14'],
@@ -38,6 +39,7 @@ export const MARGINS: Record<string, { min?: number; max?: number }> = {
   'LeBron James>Kevin Durant': { min: 2 },
   'Michael Jordan>Kobe Bryant': { min: 1 },
   'Tim Duncan>Kevin Garnett': { max: 3 },
+  'Magic Johnson>John Stockton': { min: -1 },
 };
 if (import.meta.url === `file://${process.argv[1]}`) {
   const has = (n: string, s: string) => draftPool.find((p) => p.playerName === n && p.spanLabel === s);

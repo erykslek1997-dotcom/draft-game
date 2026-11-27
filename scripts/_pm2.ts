@@ -1,7 +1,6 @@
 import { draftPool } from '../src/data/draftPool';
+import { playmakingScoreForPlayer } from '../src/engine/playmakingLookup';
 import { skill } from '../src/engine/skills';
-import { reviewRuleHits } from '../src/engine/reviewRules';
-const w = (n: string, s: string) => draftPool.find((x) => x.playerName === n && x.spanLabel === s)!;
-const five = [w('Magic Johnson','1989-91'), w('John Stockton','1990-92'), w('Larry Bird','1985-87'), w('Kevin Garnett','2002-04'), w('Kareem Abdul-Jabbar','1971-73')];
-for (const p of five) console.log(p.playerName, 'spotUp', skill(p, 'spotUp'));
-console.log(JSON.stringify(reviewRuleHits(five)));
+for (const [n, s] of [['Nikola Jokic','2022-24'],['Joel Embiid','2021-23'],['Mike Conley',''],['Draymond Green','2015-17'],['Klay Thompson','2014-16'],['Mikal Bridges',''],['Rudy Gobert',''],['LeBron James','2012-14'],['Magic Johnson','1989-91'],['Magic Johnson','1985-87'],['Chris Paul','2013-15'],['John Stockton','1990-92'],['Stephen Curry','2014-16'],['Michael Jordan','1990-92'],['Kawhi Leonard','2015-17'],['Shaquille O\'Neal','1999-01'],['Russell Westbrook','2015-17'],['Luka Doncic','2020-22']]) { const p = draftPool.find((x) => x.playerName === n && (!s || x.spanLabel === s))!; console.log(n.padEnd(18), p.spanLabel, 'old', playmakingScoreForPlayer(p), 'handling', skill(p, 'handling')); }
+const v = draftPool.map((p) => skill(p, 'handling')).filter((x): x is number => x !== null).sort((a, b) => a - b); console.log('handling n', v.length, 'p50', v[v.length >> 1], 'p90', v[Math.floor(v.length * 0.9)]);
+const o = draftPool.map((p) => playmakingScoreForPlayer(p)).filter((x): x is number => x !== null).sort((a, b) => a - b); console.log('old n', o.length, 'p50', o[o.length >> 1], 'p90', o[Math.floor(o.length * 0.9)], 'missing', draftPool.length - o.length);
