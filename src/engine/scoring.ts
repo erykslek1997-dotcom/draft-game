@@ -701,7 +701,7 @@ export interface OffenseScoreBreakdown extends OffenseScoreComponents {
 // cost of a genuinely bad-shooting frontcourt. `fitScore(team)` is computed once and reused for
 // `mismatchStructure` below too, instead of the pre-existing redundant second call.
 // `SPC_ENGINE_BONUS` (measurement, 2026-11-27): the elite engine's spacing cover, 0 = off.
-const OFFENSE_SPACING_ELITE_ENGINE_BONUS = Number(envVar('SPC_ENGINE_BONUS') ?? 15);
+const OFFENSE_SPACING_ELITE_ENGINE_BONUS = Number(envVar('SPC_ENGINE_BONUS') ?? 0);
 
 /**
  * 2026-09-30, engine calibration session 5 (the user: "czasem spacing u niektórych drużyn ssie i nie
@@ -2275,10 +2275,10 @@ const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
 const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
 // 2026-11-27 (`ORG_FROM`, the user: "25%?"): the second passer's AST% where the cost starts (full 10 points on).
 const ORG_FROM = Number(envVar('ORG_FROM') ?? 30);
-const ORG_STAIR = Number(envVar('ORG_STAIR') ?? 0);
-const ORG3_FROM = Number(envVar('ORG3_FROM') ?? 20);
-const ORG4_FROM = Number(envVar('ORG4_FROM') ?? 15);
-const ORG_STAIR_PERIM = (envVar('ORG_STAIR_PERIM') ?? '0') === '1';
+const ORG_STAIR = Number(envVar('ORG_STAIR') ?? 1);
+const ORG3_FROM = Number(envVar('ORG3_FROM') ?? 25);
+const ORG4_FROM = Number(envVar('ORG4_FROM') ?? 20);
+const ORG_STAIR_PERIM = (envVar('ORG_STAIR_PERIM') ?? '1') === '1';
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
   const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
