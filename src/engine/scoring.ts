@@ -2254,7 +2254,7 @@ export function driveCreator(p: PlayerSpan): number {
  * (spacing < 75, none at 50) ~10 (90% -16 … -3.5, 15 units). `ORG_DUP` = ORtg at a full pair of
  * non-shooters (both of the two; a shooter beside him plays off the ball). 0 = off.
  */
-const ORG_DUP = Number(envVar('ORG_DUP') ?? 0);
+const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
 const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
