@@ -54,6 +54,11 @@ const isBig = (p: PlayerSpan) => p.primaryPosition === 'PF' || p.primaryPosition
 // Shaq, Duncan); graded, the three-ball count is their sum. Off-ball stars stay out.
 const REV_BALL_SRC = envVar('REV_BALL_SRC') ?? 'share';
 const REV_SPOT_EST = envVar('REV_SPOT_EST') !== '0';
+// 2026-11-27 (the user: LeBron 2011-13, listed PF, read as a post big holding the ball): `REV_BIG_REAL=1` keeps
+// the big's usage path for players who don't create on the perimeter (handling below `REV_BIG_HANDLING`);
+// a point forward is read by his ball share like any wing. 0 = off.
+const REV_BIG_REAL = (envVar('REV_BIG_REAL') ?? '0') === '1';
+const REV_BIG_HANDLING = Number(envVar('REV_BIG_HANDLING') ?? 85);
 const s = (p: PlayerSpan, k: Parameters<typeof skill>[1], d = 50) => skill(p, k) ?? (REV_SPOT_EST && k === 'spotUp' ? teamSpacingValue(p) : d);
 
 export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
@@ -65,7 +70,7 @@ export function reviewRuleHits(five: PlayerSpan[]): Record<string, number> {
   // Wade, Westbrook) scores before the paint, 0 = the rule off; the user: Wade beside Shaq won 2006).
   const paint = REV_PAINT === '0' ? 0 : five.filter((p) => s(p, 'rimPressure', 0) >= 85 && s(p, 'spotUp') < 40 && use(p) >= 0.45 && !(REV_PAINT === 'mid' && !isBig(p) && s(p, 'post', 0) >= 90)).length;
   const offBallStar = (p: PlayerSpan) => REV_STAR && s(p, 'spotUp') >= REV_OFFBALL_SPOT;
-  const holds = (p: PlayerSpan) => Math.max(Math.min(1, Math.max(0, (ballShare(p) - 0.15) / 0.1)), isBig(p) ? Math.min(1, Math.max(0, (use(p) - 0.4) / 0.2)) : 0);
+  const holds = (p: PlayerSpan) => Math.max(Math.min(1, Math.max(0, (ballShare(p) - 0.15) / 0.1)), isBig(p) && !(REV_BIG_REAL && s(p, 'handling', 0) >= REV_BIG_HANDLING) ? Math.min(1, Math.max(0, (use(p) - 0.4) / 0.2)) : 0);
   const ball = REV_BALL_SRC === 'share'
     ? Math.round(five.filter((p) => !offBallStar(p)).reduce((sum, p) => sum + holds(p), 0) * 10) / 10
     : five.filter((p) => use(p) >= REV_BALL_USE && !offBallStar(p)).length;
