@@ -2275,13 +2275,20 @@ const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
 const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
 // 2026-11-27 (`ORG_FROM`, the user: "25%?"): the second passer's AST% where the cost starts (full 10 points on).
 const ORG_FROM = Number(envVar('ORG_FROM') ?? 30);
+const ORG_STAIR = Number(envVar('ORG_STAIR') ?? 0);
+const ORG3_FROM = Number(envVar('ORG3_FROM') ?? 20);
+const ORG4_FROM = Number(envVar('ORG4_FROM') ?? 15);
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
   const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
   const pair = Math.max(0, Math.min(1, (pas[1].a - ORG_FROM) / 10));
   // Both must be poor shooters: if one shoots, he plays off the ball (spacing 85 → none, 60 → full).
   const nonShoot = (x: { sp: number }) => Math.max(0, Math.min(1, (85 - x.sp) / 25));
-  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1]));
+  // 2026-11-27 (`ORG_STAIR`, the user: "gdzie kucharek sześć…" — each further organiser crowds the others at a
+  // lower bar): the third passer costs from `ORG3_FROM`% and the fourth from `ORG4_FROM`%, `ORG_STAIR` ORtg per 5
+  // points, at most 2 each. Real units 2013-14 on read the third at −0.9 (20-25%) / −1.2 (25%+, 7 units). 0 = off.
+  const stair = ORG_STAIR ? Math.min(2, (ORG_STAIR * Math.max(0, (pas[2]?.a ?? 0) - ORG3_FROM)) / 5) + Math.min(2, (ORG_STAIR * Math.max(0, (pas[3]?.a ?? 0) - ORG4_FROM)) / 5) : 0;
+  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1])) + stair;
 }
 export function orgDupAdjustment(team: Team): number {
   if (!ORG_DUP) return 0;
