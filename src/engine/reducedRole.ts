@@ -33,7 +33,8 @@ const LIFT_SHARE = 0.8;
 const GAP_DECAY = 0.5;
 /** A player past this season of his career who takes fewer shots is usually declining, not
  * deferring (Millsap in Denver, Mutombo in Houston) — the rule stays with players in their prime. */
-const MAX_CAREER_SEASON = Number(envVar('RR_MAX_SEASON') ?? 9);
+const MAX_CAREER_SEASON = 9;
+const MAX_CAREER_SEASON_WIDE = Number(envVar('RR_MAX_SEASON') ?? 10);
 /** 2026-11-27 (the user: "jeśli gracz w mniejszej roli jest taki sam, mając wcześniej potwierdzenie… czy
  * powinniśmy go karać?" — Durant in Golden State, his OKC windows had Westbrook): `RR_ANY=1` lets the
  * earlier window have a star teammate too — what counts is that he carried more shots there. 0 = off. */
@@ -104,39 +105,46 @@ export interface ReducedRoleReference {
   weight: number;
 }
 
-const cache = new Map<string, ReducedRoleReference | null>();
-function reducedRoleReference(span: PlayerSpan): ReducedRoleReference | null {
-  const hit = cache.get(span.id);
-  if (hit !== undefined) return hit;
-  let result: ReducedRoleReference | null = null;
+const cache = new Map<string, ReducedRoleReference[]>();
+/** The classic rule (a star-free earlier window, shots per game, adjacent seasons, up to season 9) and,
+ * with `RR_ANY`, the widened one (any earlier window with the bigger role); the lift takes the larger. */
+function referenceFor(span: PlayerSpan, widened: boolean): ReducedRoleReference | null {
   const share = starSeasonShare(span);
   const years = spanEndYears(span.spanLabel);
   const start = years.length ? Math.min(...years) : 0;
   const rookieYear = index().firstSeason.get(normalizePlayerName(span.playerName));
-  if (share > 0 && rookieYear !== undefined && start - rookieYear + 1 <= MAX_CAREER_SEASON) {
-    const prior = (index().spansByPlayer.get(normalizePlayerName(span.playerName)) ?? [])
-      .filter((s) => {
-        const y = spanEndYears(s.spanLabel);
-        return y.length > 0 && Math.max(...y) < start && (RR_ANY ? (RR_PER36 ? s.fga >= span.fga + FGA_DROP || mpgOf(s) >= mpgOf(span) + MPG_DROP : s.fga >= span.fga + FGA_DROP) : starSeasonShare(s) === 0);
-      })
-      .sort((a, b) => Math.max(...spanEndYears(b.spanLabel)) - Math.max(...spanEndYears(a.spanLabel)))[0];
-    const reduced = (p: PlayerSpan) => RR_PER36
-      ? (span.fga <= p.fga - FGA_DROP || mpgOf(span) <= mpgOf(p) - MPG_DROP) && pts36(span) >= pts36(p) - PTS36_TOL
-      : span.fga <= p.fga - FGA_DROP;
-    if (prior && reduced(prior) && span.box.tsPct >= prior.box.tsPct - TS_TOLERANCE) {
-      const gap = start - Math.max(...spanEndYears(prior.spanLabel));
-      const weight = LIFT_SHARE * share * (RR_PER36 ? Math.max(0, 1 - (gap - 1) / RR_GAP) : Math.max(0, 1 - (gap - 1) * GAP_DECAY));
-      if (weight > 0) result = { prior, weight };
-    }
-  }
-  cache.set(span.id, result);
-  return result;
+  const maxSeason = widened ? MAX_CAREER_SEASON_WIDE : MAX_CAREER_SEASON;
+  if (!(share > 0 && rookieYear !== undefined && start - rookieYear + 1 <= maxSeason)) return null;
+  const per36 = widened && RR_PER36;
+  const prior = (index().spansByPlayer.get(normalizePlayerName(span.playerName)) ?? [])
+    .filter((s) => {
+      const y = spanEndYears(s.spanLabel);
+      return y.length > 0 && Math.max(...y) < start && (widened ? s.fga >= span.fga + FGA_DROP || (per36 && mpgOf(s) >= mpgOf(span) + MPG_DROP) : starSeasonShare(s) === 0);
+    })
+    .sort((a, b) => Math.max(...spanEndYears(b.spanLabel)) - Math.max(...spanEndYears(a.spanLabel)))[0];
+  if (!prior) return null;
+  const reduced = per36
+    ? (span.fga <= prior.fga - FGA_DROP || mpgOf(span) <= mpgOf(prior) - MPG_DROP) && pts36(span) >= pts36(prior) - PTS36_TOL
+    : span.fga <= prior.fga - FGA_DROP;
+  if (!reduced || span.box.tsPct < prior.box.tsPct - TS_TOLERANCE) return null;
+  const gap = start - Math.max(...spanEndYears(prior.spanLabel));
+  const weight = LIFT_SHARE * share * (per36 ? Math.max(0, 1 - (gap - 1) / RR_GAP) : Math.max(0, 1 - (gap - 1) * GAP_DECAY));
+  return weight > 0 ? { prior, weight } : null;
+}
+function reducedRoleReferences(span: PlayerSpan): ReducedRoleReference[] {
+  const hit = cache.get(span.id);
+  if (hit !== undefined) return hit;
+  const refs = [referenceFor(span, false), RR_ANY ? referenceFor(span, true) : null].filter((r): r is ReducedRoleReference => r !== null);
+  cache.set(span.id, refs);
+  return refs;
 }
 
 /** `value` lifted toward what the same measure reads for the reference window (raise only). */
 export function liftForReducedRole(span: PlayerSpan, value: number, measure: (s: PlayerSpan) => number): number {
-  const ref = reducedRoleReference(span);
-  if (!ref) return value;
-  const target = measure(ref.prior);
-  return target > value ? value + (target - value) * ref.weight : value;
+  let best = value;
+  for (const ref of reducedRoleReferences(span)) {
+    const target = measure(ref.prior);
+    if (target > value) best = Math.max(best, value + (target - value) * ref.weight);
+  }
+  return best;
 }
