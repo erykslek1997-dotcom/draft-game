@@ -1390,6 +1390,7 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   const place = ctx.playerName && tierCalibrationFor(ctx.playerName) ? bandPlace(ctx.playerName) : undefined;
   let placed = place === undefined ? value : Math.min(place, value);
   if (WIN_GAP && ctx.playerName) placed = Math.min(placed, windowGapCap(ctx, placed));
+  if (PO_TAL && ctx.playerName && ctx.spanLabel) placed = Math.round(placed + playoffTalShift(ctx.playerName, ctx.spanLabel));
   return allNbaTeamGate(ctx.playerName, shortSeasonCap(ctx.playerName, ctx.spanLabel, placed));
 }
 
@@ -1402,6 +1403,21 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * gap (computeTalent, near-peak gaps halved as in `STAR_WINDOWS`).
  */
 const WIN_GAP = (envVar('WIN_GAP') ?? '1') === '1';
+/**
+ * 2026-11-27 (the user: "oceniamy pod playoffs" — Embiid 2021-23 at 94 with a playoff BPM of −0.2 against
+ * 9.2 in the season): a window's TAL moves by `PO_TAL` of what its playoff BPM gap says, against the
+ * stars' typical gap (−0.32, TAL 84+ windows), at 1.69 TAL per BPM point (TAL on BPM, 1974+), weighted by
+ * the sample's reliability (minutes / (minutes + 500) × source quality), at most ±`PO_TAL_MAX`. 0 = off.
+ */
+const PO_TAL = Number(envVar('PO_TAL') ?? 0);
+const PO_TAL_MAX = Number(envVar('PO_TAL_MAX') ?? 6);
+const PO_TAL_REF = -0.32;
+function playoffTalShift(playerName: string, spanLabel: string): number {
+  const po = playoffBpm2ForSpan({ playerName, spanLabel } as PlayerSpan);
+  if (!po) return 0;
+  return Math.max(-PO_TAL_MAX, Math.min(PO_TAL_MAX, PO_TAL * po.reliability * (po.bpmDeltaVsRs - PO_TAL_REF) * 1.69));
+}
+
 const WIN_GAP_MIX = Number(envVar('WIN_GAP_MIX') ?? 0.5);
 // Only windows already in the star band, and only players whose peak the cap really pulled down.
 const WIN_GAP_FROM = Number(envVar('WIN_GAP_FROM') ?? 80);
