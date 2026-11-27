@@ -6,6 +6,7 @@ import { athleticismScoreForSpan } from './athleticismLookup';
 import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
+import { apbrDrapmAround } from './apbrRapmLookup';
 import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
@@ -1346,6 +1347,23 @@ function onPositionNeutralDefense(position: string, value: number): number {
  * high): `DT_MIN` of a window's D-TAL above 50 fades with minutes — none at `DT_MIN_FULL`+ a game, all of it
  * at 15 — so a 25-minute defender keeps less of his per-minute edge. With it on, the named Manu cap is off.
  */
+/**
+ * 2026-11-27 (the user: Manu's defense lifted by Duncan — DBPM and the team-defense floor credit a whole defense to
+ * its players): `DT_RAPM` of the way toward the D-TAL his defensive RAPM implies (APBRmetrics, 1997-2019, the
+ * window ± `DT_RAPM_REACH` seasons, possession-weighted; 50 + `DT_RAPM_SCALE` per point), weighted by sample
+ * (poss / (poss + 30000)), at most ±`DT_RAPM_CAP`. RAPM is the one source that takes the teammates out. 0 = off.
+ */
+const DT_RAPM = Number(envVar('DT_RAPM') ?? 0);
+const DT_RAPM_SCALE = Number(envVar('DT_RAPM_SCALE') ?? 14);
+const DT_RAPM_CAP = Number(envVar('DT_RAPM_CAP') ?? 12);
+const DT_RAPM_REACH = Number(envVar('DT_RAPM_REACH') ?? 2);
+function towardRapm(span: PlayerSpan, d: number): number {
+  const r = apbrDrapmAround(span, DT_RAPM_REACH);
+  if (!r) return d;
+  const implied = Math.max(0, Math.min(100, 50 + DT_RAPM_SCALE * r.d));
+  const w = r.poss / (r.poss + 30000);
+  return d + Math.max(-DT_RAPM_CAP, Math.min(DT_RAPM_CAP, DT_RAPM * w * (implied - d)));
+}
 const DT_MIN = Number(envVar('DT_MIN') ?? 0.5);
 const DT_MIN_FULL = Number(envVar('DT_MIN_FULL') ?? 32);
 function minutesShrink(span: PlayerSpan, d: number): number {
@@ -1371,7 +1389,8 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // award data for the window and no recognition, the hustle bonus and the floors stop at `DT_NOREC_CAP`.
   const noRecCap = DT_NOREC_CAP < 100 && hasDefenseAwardCoverage(span) && individualDefenseRate(span) === 0 ? DT_NOREC_CAP : 100;
   const final0 = Math.round(Math.min((DT_MIN ? undefined : NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName))) ?? 100, noRecCap, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
-  const final = DT_MIN ? Math.round(minutesShrink(span, final0)) : final0;
+  const final1 = DT_RAPM ? Math.round(towardRapm(span, final0)) : final0;
+  const final = DT_MIN ? Math.round(minutesShrink(span, final1)) : final1;
   const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
   return result;
