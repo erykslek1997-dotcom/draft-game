@@ -7,6 +7,7 @@ import { ratingSpan } from './ratingPosition';
 import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
 import { apbrDrapmAround } from './apbrRapmLookup';
+import DTAL_COMPOSITE from '../data/dtalComposite.json';
 import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
@@ -1364,6 +1365,10 @@ function towardRapm(span: PlayerSpan, d: number): number {
   const w = r.poss / (r.poss + 30000);
   return d + Math.max(-DT_RAPM_CAP, Math.min(DT_RAPM_CAP, DT_RAPM * w * (implied - d)));
 }
+/** 2026-11-27, D-TAL rebuild (measurement): `DT_COMP` of the way toward the combined source D-TAL
+ * (`scripts/_dens.ts` ZS=1 POSW=1 WRITE=…: z-scores within position, weights by era and position group, no source
+ * over 40%, rank-mapped onto the current distribution). 0 = off. */
+const DT_COMP = Number(envVar('DT_COMP') ?? 0);
 const DT_MIN = Number(envVar('DT_MIN') ?? 0.5);
 const DT_MIN_FULL = Number(envVar('DT_MIN_FULL') ?? 32);
 function minutesShrink(span: PlayerSpan, d: number): number {
@@ -1389,7 +1394,9 @@ export function computeDefensiveTalent(rawSpan: PlayerSpan): number {
   // award data for the window and no recognition, the hustle bonus and the floors stop at `DT_NOREC_CAP`.
   const noRecCap = DT_NOREC_CAP < 100 && hasDefenseAwardCoverage(span) && individualDefenseRate(span) === 0 ? DT_NOREC_CAP : 100;
   const final0 = Math.round(Math.min((DT_MIN ? undefined : NAMED_DTAL_CAP.get(normalizePlayerName(span.playerName))) ?? 100, noRecCap, withHustleBonus(span, blended)) - modernRulesDefenseCut(span));
-  const final1 = DT_RAPM ? Math.round(towardRapm(span, final0)) : final0;
+  const final1a = DT_RAPM ? Math.round(towardRapm(span, final0)) : final0;
+  const comp = DT_COMP ? (DTAL_COMPOSITE as Record<string, number>)[span.id] : undefined;
+  const final1 = comp === undefined ? final1a : Math.round(final1a + DT_COMP * (comp - final1a));
   const final = DT_MIN ? Math.round(minutesShrink(span, final1)) : final1;
   const result = DT_SKILL > 0 ? withSkillDefense(span, final) : final;
   if (namedShiftRegistered() && neighbourWindowsRegistered()) shiftedDefensiveTalentCache.set(span.id, result);
