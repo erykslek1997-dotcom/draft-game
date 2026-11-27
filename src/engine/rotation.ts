@@ -243,7 +243,7 @@ function starterOffenseFactor(player: PlayerSpan): number {
   return Math.max(STARTER_OFFENSE_FLOOR.min, 1 - STARTER_OFFENSE_FLOOR.perPoint * gap);
 }
 
-function bestPrimaryAssignment(
+export function bestPrimaryAssignment(
   roster: PlayerSpan[],
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
   const cacheKey = roster.map((p) => p.id).join('|');
