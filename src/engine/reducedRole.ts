@@ -3,6 +3,7 @@ import { normalizePlayerName } from '../data/schema';
 import { players } from '../data/players';
 import { resolveSourceName, seasonEndYearOf } from '../data/sourceNameResolver';
 import { spanEndYears } from './era';
+import { envVar } from './env';
 import rsData from '../data/awards/bpm2.json';
 import careerData from '../data/cardCareerMetadata.json';
 
@@ -31,7 +32,11 @@ const LIFT_SHARE = 0.8;
 const GAP_DECAY = 0.5;
 /** A player past this season of his career who takes fewer shots is usually declining, not
  * deferring (Millsap in Denver, Mutombo in Houston) — the rule stays with players in their prime. */
-const MAX_CAREER_SEASON = 9;
+const MAX_CAREER_SEASON = Number(envVar('RR_MAX_SEASON') ?? 9);
+/** 2026-11-27 (the user: "jeśli gracz w mniejszej roli jest taki sam, mając wcześniej potwierdzenie… czy
+ * powinniśmy go karać?" — Durant in Golden State, his OKC windows had Westbrook): `RR_ANY=1` lets the
+ * earlier window have a star teammate too — what counts is that he carried more shots there. 0 = off. */
+const RR_ANY = (envVar('RR_ANY') ?? '0') === '1';
 
 let teamStars: Map<string, { key: string; bpm: number }[]> | null = null;
 let teamOf: Map<string, string> | null = null;
@@ -102,7 +107,7 @@ function reducedRoleReference(span: PlayerSpan): ReducedRoleReference | null {
     const prior = (index().spansByPlayer.get(normalizePlayerName(span.playerName)) ?? [])
       .filter((s) => {
         const y = spanEndYears(s.spanLabel);
-        return y.length > 0 && Math.max(...y) < start && starSeasonShare(s) === 0;
+        return y.length > 0 && Math.max(...y) < start && (RR_ANY ? s.fga >= span.fga + FGA_DROP : starSeasonShare(s) === 0);
       })
       .sort((a, b) => Math.max(...spanEndYears(b.spanLabel)) - Math.max(...spanEndYears(a.spanLabel)))[0];
     if (prior && span.fga <= prior.fga - FGA_DROP && span.box.tsPct >= prior.box.tsPct - TS_TOLERANCE) {
