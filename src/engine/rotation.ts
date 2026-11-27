@@ -842,6 +842,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   return cloneRotation(result);
 }
 
+const ROT_FILL_EMPTY = (envVar('ROT_FILL_EMPTY') ?? '1') === '1';
 function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   const primaryBySlot = bestPrimaryAssignment(roster).assignment;
 
@@ -857,6 +858,20 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
     if (starterGrant) slots[slot].push({ playerId: starterGrant.playerId, minutes: starterGrant.minutes });
     for (const g of here.filter((g) => g !== starterGrant).sort((x, y) => y.minutes - x.minutes)) {
       slots[slot].push({ playerId: g.playerId, minutes: g.minutes });
+    }
+  }
+  // 2026-11-27 (`ROT_FILL_EMPTY`, 0 = off): a slot the starter search left empty (Klay + Drexler, no
+  // PG) wrote its top grant first — Klay, already the SF starter — so he started twice and 30-minute
+  // Bridges read as bench. The empty slot's starter is its non-starter with the most minutes overall.
+  if (ROT_FILL_EMPTY) {
+    const primaries = new Set(Object.values(primaryBySlot).filter((p): p is PlayerSpan => !!p).map((p) => p.id));
+    const total = (id: string) => grants.filter((g) => g.playerId === id).reduce((a, g) => a + g.minutes, 0);
+    for (const slot of STARTER_SLOTS) {
+      if (primaryBySlot[slot] || slots[slot].length === 0) continue;
+      const pick = slots[slot].filter((e) => !primaries.has(e.playerId)).sort((a, b) => total(b.playerId) - total(a.playerId))[0];
+      if (!pick) continue;
+      slots[slot] = [pick, ...slots[slot].filter((e) => e !== pick)];
+      primaries.add(pick.playerId);
     }
   }
   mergeTinyBackupSlivers(roster, slots, primaryBySlot);
@@ -1213,13 +1228,17 @@ export function allAssignments(team: Team): ResolvedSlotAssignment[] {
  * backup. Keep the stored lineup identity authoritative; use the first valid positive-minute
  * assignment as a defensive fallback for malformed/imported rotations.
  */
+const ROT_DISTINCT = (envVar('ROT_DISTINCT') ?? '0') === '1';
 export function primaryStarters(team: Team): ResolvedSlotAssignment[] {
   if (!team.rotation) return [];
   const result: ResolvedSlotAssignment[] = [];
   for (const slot of STARTER_SLOTS) {
     const resolved = resolve(team.roster, team.rotation.slots[slot] ?? [], slot);
     if (resolved.length === 0) continue;
-    const designated = resolved.find((entry) => entry.minutes > 0) ?? resolved[0];
+    // 2026-11-27 (`ROT_DISTINCT`, 0 = off): a player listed first at two slots (Klay at PG and SF) started
+    // twice and pushed a 30-minute starter out of the five; the second slot takes its next player.
+    const used = (entry: ResolvedSlotAssignment) => ROT_DISTINCT && result.some((r) => r.player.id === entry.player.id);
+    const designated = resolved.find((entry) => entry.minutes > 0 && !used(entry)) ?? resolved.find((entry) => entry.minutes > 0) ?? resolved[0];
     result.push(designated);
   }
   return result;
