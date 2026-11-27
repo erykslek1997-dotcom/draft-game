@@ -842,7 +842,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   return cloneRotation(result);
 }
 
-const ROT_FILL_EMPTY = (envVar('ROT_FILL_EMPTY') ?? '0') === '1';
+const ROT_FILL_EMPTY = (envVar('ROT_FILL_EMPTY') ?? '1') === '1';
 function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   const primaryBySlot = bestPrimaryAssignment(roster).assignment;
 
