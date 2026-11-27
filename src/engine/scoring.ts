@@ -212,9 +212,20 @@ const DEFENSE_SCORE_ANCHORS = { worst: 5, best: 102 };
  */
 const SPACING_SCORE_ANCHORS = { worst: 20, best: 90 };
 
+/**
+ * 2026-11-27 (the user: "czy powinna być mechanika która pozwala przekroczyć 100" — two elite shooters read the
+ * same spacing as one): `UNCAP` (comma list of spc, off, def, tal) lets that score pass 100, each point above
+ * counted at `UNCAP_W`. Empty = every cap as before.
+ */
+const UNCAP = new Set((envVar('UNCAP') ?? '').split(',').filter(Boolean));
+const UNCAP_W = Number(envVar('UNCAP_W') ?? 0.5);
+function capTop(v: number, key: string): number {
+  if (v <= 100) return v;
+  return UNCAP.has(key) ? 100 + UNCAP_W * (v - 100) : 100;
+}
 function rescaleToFullRange(raw: number, anchors: { worst: number; best: number }): number {
   const scaled = ((raw - anchors.worst) / (anchors.best - anchors.worst)) * 100;
-  return Math.max(0, Math.min(100, scaled));
+  return Math.max(0, anchors === SPACING_SCORE_ANCHORS ? capTop(scaled, 'spc') : Math.min(100, scaled));
 }
 
 /**
@@ -295,7 +306,7 @@ export function talentScore(team: Team): number {
   const floorPenalty = Math.max(0, STARTER_FLOOR_THRESHOLD - weakestStarter) * STARTER_FLOOR_PENALTY_PER_POINT;
   // 2026-11-25 (`TAL_CAP`, 100 = as before; Curry vs Stockton beside Jordan + LeBron: an all-star five's mean
   // TAL passes 100 and the cap erased a 5-point TAL difference).
-  return Math.round(Math.max(0, Math.min(TAL_CAP, average - floorPenalty)));
+  return Math.round(Math.max(0, UNCAP.has('tal') ? capTop(average - floorPenalty, 'tal') : Math.min(TAL_CAP, average - floorPenalty)));
 }
 
 /**
@@ -1293,7 +1304,7 @@ export function offenseScoreBreakdown(team: Team): OffenseScoreBreakdown {
   const fivePlayers = primaryStarters(team).map((e) => e.player);
   const raw = raw1 + OFF_PAIR_W * Math.max(0, 0.9 * pairO - raw1) + motionOffense(fivePlayers).points + insideOutOffense(fivePlayers).points + helioOffense(fivePlayers).points + pnrOffense(fivePlayers).points + showtimeOffense(fivePlayers).points + isoOffense(fivePlayers).points + twoPostOffense(fivePlayers);
   // 2026-10-07: offensive rebounding, on the final scale (see teamGlass.ts).
-  const score = Math.round(Math.max(0, Math.min(100, calibrateOffenseToDefenseScale(raw) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'))));
+  const score = Math.round(Math.max(0, capTop((UNCAP.has('off') ? offenseOnScaleUncapped(raw) : calibrateOffenseToDefenseScale(raw)) + teamGlass(team).offensePoints * OFFENSIVE_GLASS_SHARE + realResidualPoints(allAssignments(team), 'offense'), 'off')));
   return { ...components, score, raw };
 }
 
@@ -1334,6 +1345,9 @@ const DEFENSE_RAW_SD = 8.2;
 const DEFENSE_MEAN = 74.1;
 const DEFENSE_SD = 9.31;
 /** Also maps each offense ingredient bar, so the bars and the Offense score share one scale. */
+function offenseOnScaleUncapped(raw: number): number {
+  return Math.max(0, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD));
+}
 export function calibrateOffenseToDefenseScale(raw: number): number {
   return Math.max(0, Math.min(100, DEFENSE_MEAN + (raw - OFFENSE_RAW_MEAN) * (DEFENSE_SD / OFFENSE_RAW_SD)));
 }
@@ -1436,7 +1450,7 @@ export function defenseScore(team: Team): number {
     defenseStyleBonus(primaryStarters(team).map((a) => a.player));
   const kneed = Math.max(0, Math.min(100, DEF_PARTS.knee ? applyDefenseKnee(adjusted) : adjusted));
   // 2026-10-07: defensive rebounding and fouls, on the final scale past the knee (see teamGlass.ts).
-  return Math.round(Math.max(0, Math.min(100, DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'))));
+  return Math.round(Math.max(0, capTop(DEFENSE_MEAN + (kneed - DEFENSE_RAW_MEAN) * (DEFENSE_SD / DEFENSE_RAW_SD) + (DEF_PARTS.glass ? teamGlass(team).defensePoints : 0) + realResidualPoints(allAssignments(team), 'defense'), 'def')));
 }
 
 /**
