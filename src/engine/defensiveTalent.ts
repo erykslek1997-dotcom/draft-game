@@ -1353,8 +1353,8 @@ function onPositionNeutralDefense(position: string, value: number): number {
  * window ± `DT_RAPM_REACH` seasons, possession-weighted; 50 + `DT_RAPM_SCALE` per point), weighted by sample
  * (poss / (poss + 30000)), at most ±`DT_RAPM_CAP`. RAPM is the one source that takes the teammates out. 0 = off.
  */
-const DT_RAPM = Number(envVar('DT_RAPM') ?? 0);
-const DT_RAPM_SCALE = Number(envVar('DT_RAPM_SCALE') ?? 14);
+const DT_RAPM = Number(envVar('DT_RAPM') ?? 1);
+const DT_RAPM_SCALE = Number(envVar('DT_RAPM_SCALE') ?? 20);
 const DT_RAPM_CAP = Number(envVar('DT_RAPM_CAP') ?? 12);
 const DT_RAPM_REACH = Number(envVar('DT_RAPM_REACH') ?? 2);
 function towardRapm(span: PlayerSpan, d: number): number {
