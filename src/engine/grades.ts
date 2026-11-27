@@ -1402,11 +1402,14 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * gap (computeTalent, near-peak gaps halved as in `STAR_WINDOWS`).
  */
 const WIN_GAP = (envVar('WIN_GAP') ?? '0') === '1';
-const WIN_GAP_MIX = Number(envVar('WIN_GAP_MIX') ?? 1);
+const WIN_GAP_MIX = Number(envVar('WIN_GAP_MIX') ?? 0.5);
 // Only windows already in the star band, and only players whose peak the cap really pulled down.
 const WIN_GAP_FROM = Number(envVar('WIN_GAP_FROM') ?? 80);
 const WIN_GAP_CAPPED = Number(envVar('WIN_GAP_CAPPED') ?? 5);
-const enginePeakCache = new Map<string, { tal: number; shown: number }>();
+const enginePeakCache = new Map<string, { tal: number; shown: number; smooth: Map<string, number> }>();
+// A lone dip between two better windows (George 2016-18 at engine 79 between 89 and 94) is read no
+// lower than the neighbours' mean minus `WIN_GAP_DIP` — the gap follows the career, not one window.
+const WIN_GAP_DIP = Number(envVar('WIN_GAP_DIP') ?? 3);
 let inWindowGap = false;
 function windowGapCap(ctx: TierGateContext, value: number): number {
   if (inWindowGap) return value;
@@ -1415,14 +1418,20 @@ function windowGapCap(ctx: TierGateContext, value: number): number {
   if (!peak) {
     inWindowGap = true;
     try {
-      const spans = draftPool.filter((s) => normalizePlayerName(s.playerName) === key).map((s) => tierContextFor(s));
+      const spans = draftPool.filter((s) => normalizePlayerName(s.playerName) === key).sort((a, b) => a.spanLabel.localeCompare(b.spanLabel)).map((s) => tierContextFor(s));
       const tal = Math.max(...spans.map((c) => c.tal));
       const shown = Math.max(...spans.map((c) => displayTalentForSpan(c)));
-      peak = { tal, shown };
+      const smooth = new Map<string, number>();
+      spans.forEach((c, i) => {
+        const prev = spans[i - 1]?.tal, next = spans[i + 1]?.tal;
+        const floor = prev !== undefined && next !== undefined && prev > c.tal && next > c.tal ? (prev + next) / 2 - WIN_GAP_DIP : -Infinity;
+        smooth.set(c.spanLabel ?? '', Math.max(c.tal, floor));
+      });
+      peak = { tal, shown, smooth };
     } finally { inWindowGap = false; }
     enginePeakCache.set(key, peak);
   }
-  const gap = peak.tal - ctx.tal;
+  const gap = peak.tal - (peak.smooth.get(ctx.spanLabel ?? '') ?? ctx.tal);
   if (gap <= 0 || value < WIN_GAP_FROM || peak.tal - peak.shown < WIN_GAP_CAPPED) return value;
   const kept = gap >= STAR_WINDOWS.within ? gap : gap * (STAR_WINDOWS.keep + ((1 - STAR_WINDOWS.keep) * gap) / STAR_WINDOWS.within);
   return Math.round(value - WIN_GAP_MIX * Math.max(0, value - (peak.shown - kept)));
