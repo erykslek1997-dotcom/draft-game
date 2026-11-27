@@ -1401,7 +1401,7 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
  * With `WIN_GAP` a window reads at most the player's best displayed window minus the engine's own
  * gap (computeTalent, near-peak gaps halved as in `STAR_WINDOWS`).
  */
-const WIN_GAP = (envVar('WIN_GAP') ?? '0') === '1';
+const WIN_GAP = (envVar('WIN_GAP') ?? '1') === '1';
 const WIN_GAP_MIX = Number(envVar('WIN_GAP_MIX') ?? 0.5);
 // Only windows already in the star band, and only players whose peak the cap really pulled down.
 const WIN_GAP_FROM = Number(envVar('WIN_GAP_FROM') ?? 80);

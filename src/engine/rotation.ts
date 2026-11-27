@@ -236,7 +236,7 @@ const ROT_PIN_FLEX = (envVar('ROT_PIN_FLEX') ?? '1') === '1';
 // Magic, Shaq started Mikal Bridges at the four, because the pin held Kawhi at the three and Magic
 // could not take it): with `ROT_PIN_ANY` a pinned star may also start at any slot he plays at least
 // at the partial line (fit >= 0.92), so the search can move him over for another star.
-const ROT_PIN_ANY = (envVar('ROT_PIN_ANY') ?? '0') === '1';
+const ROT_PIN_ANY = (envVar('ROT_PIN_ANY') ?? '1') === '1';
 function starterOffenseFactor(player: PlayerSpan): number {
   if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
