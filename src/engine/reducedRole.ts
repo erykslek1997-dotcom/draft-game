@@ -38,11 +38,11 @@ const MAX_CAREER_SEASON_WIDE = Number(envVar('RR_MAX_SEASON') ?? 10);
 /** 2026-11-27 (the user: "jeśli gracz w mniejszej roli jest taki sam, mając wcześniej potwierdzenie… czy
  * powinniśmy go karać?" — Durant in Golden State, his OKC windows had Westbrook): `RR_ANY=1` lets the
  * earlier window have a star teammate too — what counts is that he carried more shots there. 0 = off. */
-const RR_ANY = (envVar('RR_ANY') ?? '0') === '1';
+const RR_ANY = (envVar('RR_ANY') ?? '1') === '1';
 /** 2026-11-27 (Durant: 38.5 → 33.8 minutes, 28 points a 36 in both): `RR_PER36=1` reads the reduced role
  * from minutes too (`MPG_DROP` fewer, or `FGA_DROP` fewer shots) with points a 36 held within `PTS36_TOL`,
  * and lets the earlier window sit up to `RR_GAP` seasons back (linear fade). 0 = off. */
-const RR_PER36 = (envVar('RR_PER36') ?? '0') === '1';
+const RR_PER36 = (envVar('RR_PER36') ?? '1') === '1';
 const MPG_DROP = 3;
 const PTS36_TOL = 1.5;
 const RR_GAP = Number(envVar('RR_GAP') ?? 4);
