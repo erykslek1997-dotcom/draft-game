@@ -2270,6 +2270,18 @@ export function orgDupAdjustment(team: Team): number {
   if (!ORG_DUP) return 0;
   return -(orgDupCost(primaryStarters(team).map((s) => s.player)) - ORG_DUP_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
 }
+/**
+ * 2026-11-27 (the user: Jokic's passing should carry a role five): real five-man units 2013-14 on
+ * (`scripts/_drive.ts`) — beyond the five's Offense, its best playmaker (handling skill) is worth
+ * +0.76 ORtg per 10 points (90% +0.30 … +1.23). `PM_BEST` = ORtg per 10 (0 = off), around `PM_BEST_REF`.
+ */
+const PM_BEST = Number(envVar('PM_BEST') ?? 0);
+const PM_BEST_REF = Number(envVar('PM_BEST_REF') ?? 90);
+export function bestPlaymakerAdjustment(team: Team): number {
+  if (!PM_BEST) return 0;
+  const best = Math.max(0, ...primaryStarters(team).map((s) => skill(s.player, 'handling') ?? 50));
+  return (PM_BEST * (best - PM_BEST_REF)) / 10 * BALL_HANDLER_OVERALL_PER_ORTG;
+}
 export function driveDupAdjustment(team: Team): number {
   if (!DRIVE_DUP) return 0;
   const dc = primaryStarters(team).map((s) => driveCreator(s.player)).sort((a, b) => b - a);
@@ -2492,6 +2504,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('bpm', () => bpmAdjustment(team)) +
     d('driveDup', () => driveDupAdjustment(team)) +
     d('orgDup', () => orgDupAdjustment(team)) +
+    d('pmBest', () => bestPlaymakerAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
