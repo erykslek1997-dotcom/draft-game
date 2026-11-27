@@ -552,6 +552,33 @@ function preLinePoints(span: PlayerSpan): number {
   return (skill * share * MAX_SPACING_POINTS) / 100;
 }
 
+/**
+ * 2026-11-27 (the user: "gdyby grali dziś" — Magic 1985-87 read 18, 85.7% at the line; "musi być wyważone"):
+ * in the early line era few took threes, so a window's spacing gets a floor read from his free throws —
+ * the LOWER QUARTILE of modern (2012+) spacing at that FT% and position group (`scripts/_ftsp.ts`), so a
+ * projected shooter never reads as more than a cautious modern twin. Full through 1988, fading to none by
+ * 1996 (the line's volume caught up). `SPC_FT_FLOOR` = share of that floor (0 = off).
+ */
+const SPC_FT_FLOOR = Number(envVar('SPC_FT_FLOOR') ?? 1);
+const FT_FLOOR_TABLE: Record<'G' | 'F' | 'C', [number, number][]> = {
+  G: [[0.625, 1], [0.675, 14], [0.725, 21], [0.775, 28], [0.825, 40], [0.875, 53], [0.925, 65]],
+  F: [[0.625, 0], [0.675, 8], [0.725, 18], [0.775, 22], [0.825, 45], [0.875, 57], [0.925, 80]],
+  C: [[0.775, 0], [0.825, 17], [0.875, 54]],
+};
+function ftFloorPoints(span: PlayerSpan): number {
+  if (!SPC_FT_FLOOR || !(span.box.ftPct > 0)) return 0;
+  const end = Math.max(...spanEndYears(span.spanLabel));
+  if (end <= LAST_SEASON_WITHOUT_THE_LINE) return 0;
+  const fade = end <= 1988 ? 1 : Math.max(0, (1996 - end) / 8);
+  if (!fade) return 0;
+  const pos = span.primaryPosition;
+  const t = FT_FLOOR_TABLE[pos === 'PG' || pos === 'SG' ? 'G' : pos === 'SF' ? 'F' : 'C']; // PF on the cautious big scale (the user: bigs' free throws say less)
+  const ft = span.box.ftPct;
+  let v = ft <= t[0][0] ? t[0][1] : t[t.length - 1][1];
+  for (let i = 1; i < t.length; i++) if (ft <= t[i][0] && ft > t[i - 1][0]) { const f = (ft - t[i - 1][0]) / (t[i][0] - t[i - 1][0]); v = t[i - 1][1] + f * (t[i][1] - t[i - 1][1]); break; }
+  return (v * SPC_FT_FLOOR * fade * MAX_SPACING_POINTS) / 100;
+}
+
 export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): SpacingBreakdown {
   if (selfCreationOverride !== undefined) return rawSpacingBreakdown(span, selfCreationOverride);
   const hit = smoothedCache.get(span.id);
@@ -568,7 +595,7 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
     weight += w;
   }
-  const points = Math.max(weight > 0 ? sum / weight : own.points, preLinePoints(span));
+  const points = Math.max(weight > 0 ? sum / weight : own.points, preLinePoints(span), ftFloorPoints(span));
   const result = { ...own, points, tier: tierForPoints(span, points) };
   smoothedCache.set(span.id, result);
   return result;
