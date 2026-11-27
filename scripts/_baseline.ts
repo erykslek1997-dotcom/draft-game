@@ -70,13 +70,7 @@ for (const [tsIndex, ts] of (teamSeasons as { season: string; team: string; srs:
   const b = scoreTeam(teamOf(spans as PlayerSpan[], `${end}-${ts.team}`));
   // DUMP (2026-11-26, the user: "czy coś nie liczy się podwójnie"): every Overall ingredient per team.
   let comp: Record<string, number> | undefined;
-  if (process.env.DUMP) {
-    const S = await import('../src/engine/scoring'); const L = await import('../src/engine/teammateLift'); const H = await import('../src/engine/heliocentric'); const R = await import('../src/engine/reviewRules'); const RO = await import('../src/engine/rotation');
-    const t = teamOf(spans as PlayerSpan[], `${end}-${ts.team}`);
-    comp = { talent: b.talentScore, bench: b.benchDepthScore, fit: b.fitScore, offense: b.offenseScore, defense: b.defenseScore, spacing: b.spacingScore,
-      lift: L.liftAdjustment(t), creator: S.creatorAdjustment(t), ballLoad: S.ballLoadAdjustment(t), handler: S.ballHandlerAdjustment(t), helio: H.heliocentricAdjustment(t),
-      review: R.reviewAdjustment(RO.primaryStarters(t).map((a) => a.player)), era: S.eraAdjustment(t), benchOff: S.benchOffenseAdjustment(t), benchRole: S.benchRoleAdjustment(t), benchFloor: S.benchFloorAdjustment(t), certainty: S.dataCertaintyAdjustment(t), ...Object.fromEntries(Object.entries(R.reviewRuleHits(RO.primaryStarters(t).map((a) => a.player))).map(([k, v]) => ['rev_' + k, Number(v)])) };
-  }
+  if (process.env.DUMP) { const { teamFeatures } = await import('./_features'); comp = { end, team: ts.team, ...teamFeatures(teamOf(spans as PlayerSpan[], `${end}-${ts.team}`)) } as unknown as Record<string, number>; }
   rows.push({ comp, label: `${ts.season} ${ts.team}`, end, srs: ts.srs, ovr: b.overallExact, off: b.offenseScore, def: b.defenseScore, tal: b.talentScore, spans: spans as PlayerSpan[], minShare: top.map((r) => r.minutes / total) });
 }
 const corr = (xs: number[], ys: number[]) => {
@@ -143,4 +137,4 @@ if (process.env.STARTEST) {
   console.log('SRS ~ Overall + top TAL   ', JSON.stringify(ols([feats.map((f) => f.ovr), feats.map((f) => f.top)])));
 }
 
-if (process.env.DUMP) { const { writeFileSync } = await import('node:fs'); writeFileSync(process.env.DUMP, JSON.stringify(rows.map((x) => ({ srs: x.srs, ovr: x.ovr, ...x.comp })))); }
+if (process.env.DUMP) { const { writeFileSync } = await import('node:fs'); writeFileSync(process.env.DUMP, JSON.stringify(rows.map((x) => ({ srs: x.srs, ...x.comp })))); }

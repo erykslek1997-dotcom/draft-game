@@ -52,6 +52,9 @@ const TALK: Partial<Record<string, Lines>> = {
   OFFENSE_IS_THE_WEAK_SIDE: {
     concern: ['They’ll guard, sure. Then they come back down and brick for 24 seconds. Watchable? No.'],
   },
+  DEFENSE_IS_THE_WEAK_SIDE: {
+    concern: ['Sure, they score. Then they jog back and give it right back. Nobody on this roster wants to guard anybody.'],
+  },
   ELITE_FLOOR_GENERAL: {
     praise: ['{a} running the show and everybody else just catches and dunks. Easiest job in the league, playing next to him.'],
   },

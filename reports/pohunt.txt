@@ -1,0 +1,20 @@
+[1]   Done                    PO_HUNT=$v npx tsx scripts/_simFeatures.ts 40 5000 $D/simH$v.json > /dev/null 2>&1
+[2]-  Done                    PO_HUNT=$v npx tsx scripts/_simFeatures.ts 40 5000 $D/simH$v.json > /dev/null 2>&1
+[3]+  Done                    PO_HUNT=$v npx tsx scripts/_simFeatures.ts 40 5000 $D/simH$v.json > /dev/null 2>&1
+PO_HUNT=0.5
+feature         r SRS r game | beyond Overall:    SRS SRS10+   game | series  g.ser
+talent           0.85   0.25 |                  +0.18  +0.19  -0.02 |  -0.18  -0.01 <-
+defense          0.72   0.25 |                  +0.11  +0.14  +0.09 |  +0.12  +0.09
+huntResistance   0.64   0.08 |                  +0.08  +0.11  +0.03 |  +0.18  +0.16 <-
+PO_HUNT=1
+feature         r SRS r game | beyond Overall:    SRS SRS10+   game | series  g.ser
+talent           0.85   0.25 |                  +0.18  +0.19  -0.02 |  -0.18  +0.03 <-
+defense          0.72   0.25 |                  +0.11  +0.14  +0.09 |  +0.12  +0.15
+huntResistance   0.64   0.08 |                  +0.08  +0.11  +0.03 |  +0.18  +0.25 <-
+PO_HUNT=2
+feature         r SRS r game | beyond Overall:    SRS SRS10+   game | series  g.ser
+talent           0.85   0.25 |                  +0.18  +0.19  -0.02 |  -0.18  -0.01 <-
+defense          0.72   0.25 |                  +0.11  +0.14  +0.09 |  +0.12  +0.22
+huntResistance   0.64   0.08 |                  +0.08  +0.11  +0.03 |  +0.18  +0.34 <-
+
+[exited with code 0]
