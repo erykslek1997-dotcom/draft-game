@@ -1213,13 +1213,17 @@ export function allAssignments(team: Team): ResolvedSlotAssignment[] {
  * backup. Keep the stored lineup identity authoritative; use the first valid positive-minute
  * assignment as a defensive fallback for malformed/imported rotations.
  */
+const ROT_DISTINCT = (envVar('ROT_DISTINCT') ?? '0') === '1';
 export function primaryStarters(team: Team): ResolvedSlotAssignment[] {
   if (!team.rotation) return [];
   const result: ResolvedSlotAssignment[] = [];
   for (const slot of STARTER_SLOTS) {
     const resolved = resolve(team.roster, team.rotation.slots[slot] ?? [], slot);
     if (resolved.length === 0) continue;
-    const designated = resolved.find((entry) => entry.minutes > 0) ?? resolved[0];
+    // 2026-11-27 (`ROT_DISTINCT`, 0 = off): a player listed first at two slots (Klay at PG and SF) started
+    // twice and pushed a 30-minute starter out of the five; the second slot takes its next player.
+    const used = (entry: ResolvedSlotAssignment) => ROT_DISTINCT && result.some((r) => r.player.id === entry.player.id);
+    const designated = resolved.find((entry) => entry.minutes > 0 && !used(entry)) ?? resolved.find((entry) => entry.minutes > 0) ?? resolved[0];
     result.push(designated);
   }
   return result;
