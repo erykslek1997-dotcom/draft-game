@@ -3,7 +3,7 @@ import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataU
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
-import { ballHandlerCost, ballShare } from './ballHandling';
+import { astPctForSpan, ballHandlerCost, ballShare } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -15,6 +15,7 @@ import {
   selfCreationRate,
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
+  computeSpacing,
 } from './spacing';
 import { rimPressure, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
@@ -2234,6 +2235,47 @@ const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
 const BALL_HANDLER_REF = 0.54;
 
 /**
+ * 2026-11-27 (the user: no benefit from two players who both drive AND organise — Magic + LeBron).
+ * Real five-man units 2013-14 on (`scripts/_drive.ts`, 955 units): with two drive-creators (real AST%
+ * and rim pressure both high) the unit's ORtg lands 2.8 below what its Offense and tracked ball shares
+ * predict (90% -4.9 … -0.7). `DRIVE_DUP` = ORtg a 100 trips at a full pair (0 = off).
+ */
+const DRIVE_DUP = Number(envVar('DRIVE_DUP') ?? 0);
+const DRIVE_DUP_REF = Number(envVar('DRIVE_DUP_REF') ?? 0);
+export function driveCreator(p: PlayerSpan): number {
+  const a = Math.max(0, Math.min(1, (astPctForSpan(p) - 15) / 20));
+  const r = Math.max(0, Math.min(1, ((skill(p, 'rimPressure') ?? 50) - 55) / 30));
+  return a * r;
+}
+/**
+ * 2026-11-27 (the user: Magic + LeBron double up — two big organisers; Nash or CP3 beside a star shoot
+ * and can play off the ball). Real units 2013-14 on (`scripts/_drive.ts`): a second passer at 30-40%
+ * AST% costs ~5 ORtg at 40% (90% -9.8 … +1.0); when one of the two organisers does not shoot
+ * (spacing < 75, none at 50) ~10 (90% -16 … -3.5, 15 units). `ORG_DUP` = ORtg at a full pair of
+ * non-shooters (both of the two; a shooter beside him plays off the ball). 0 = off.
+ */
+const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
+const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
+export function orgDupCost(five: PlayerSpan[]): number {
+  if (!ORG_DUP || five.length < 2) return 0;
+  const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
+  const pair = Math.max(0, Math.min(1, (pas[1].a - 30) / 10));
+  // Both must be poor shooters: if one shoots, he plays off the ball (spacing 85 → none, 60 → full).
+  const nonShoot = (x: { sp: number }) => Math.max(0, Math.min(1, (85 - x.sp) / 25));
+  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1]));
+}
+export function orgDupAdjustment(team: Team): number {
+  if (!ORG_DUP) return 0;
+  return -(orgDupCost(primaryStarters(team).map((s) => s.player)) - ORG_DUP_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+export function driveDupAdjustment(team: Team): number {
+  if (!DRIVE_DUP) return 0;
+  const dc = primaryStarters(team).map((s) => driveCreator(s.player)).sort((a, b) => b - a);
+  const pair = Math.max(0, Math.min(1, ((dc[1] ?? 0) - 0.4) / 0.2));
+  return -(DRIVE_DUP * pair - DRIVE_DUP_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+
+/**
  * 2026-11-11, the audit (the user: "ławka z 4 solidnych graczy jest gorzej oceniana niż 3 lepszych +
  * ktoś kto nie gra"): `benchDepthScore` reads only the reserves who play, so the last man on the
  * bench was invisible. The card number of the weakest reserve (playing or not), at `per` Overall a
@@ -2446,6 +2488,8 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('benchOff', () => benchOffenseAdjustment(team)) +
     d('benchRole', () => benchRoleAdjustment(team)) +
     d('bpm', () => bpmAdjustment(team)) +
+    d('driveDup', () => driveDupAdjustment(team)) +
+    d('orgDup', () => orgDupAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
