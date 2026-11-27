@@ -559,7 +559,7 @@ function preLinePoints(span: PlayerSpan): number {
  * projected shooter never reads as more than a cautious modern twin. Full through 1988, fading to none by
  * 1996 (the line's volume caught up). `SPC_FT_FLOOR` = share of that floor (0 = off).
  */
-const SPC_FT_FLOOR = Number(envVar('SPC_FT_FLOOR') ?? 0);
+const SPC_FT_FLOOR = Number(envVar('SPC_FT_FLOOR') ?? 1);
 const FT_FLOOR_TABLE: Record<'G' | 'F' | 'C', [number, number][]> = {
   G: [[0.625, 1], [0.675, 14], [0.725, 21], [0.775, 28], [0.825, 40], [0.875, 53], [0.925, 65]],
   F: [[0.625, 0], [0.675, 8], [0.725, 18], [0.775, 22], [0.825, 45], [0.875, 57], [0.925, 80]],
@@ -572,7 +572,7 @@ function ftFloorPoints(span: PlayerSpan): number {
   const fade = end <= 1988 ? 1 : Math.max(0, (1996 - end) / 8);
   if (!fade) return 0;
   const pos = span.primaryPosition;
-  const t = FT_FLOOR_TABLE[pos === 'PG' || pos === 'SG' ? 'G' : pos === 'C' ? 'C' : 'F'];
+  const t = FT_FLOOR_TABLE[pos === 'PG' || pos === 'SG' ? 'G' : pos === 'SF' ? 'F' : 'C']; // PF on the cautious big scale (the user: bigs' free throws say less)
   const ft = span.box.ftPct;
   let v = ft <= t[0][0] ? t[0][1] : t[t.length - 1][1];
   for (let i = 1; i < t.length; i++) if (ft <= t[i][0] && ft > t[i - 1][0]) { const f = (ft - t[i - 1][0]) / (t[i][0] - t[i - 1][0]); v = t[i - 1][1] + f * (t[i][1] - t[i - 1][1]); break; }
