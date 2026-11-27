@@ -1346,7 +1346,7 @@ function onPositionNeutralDefense(position: string, value: number): number {
  * high): `DT_MIN` of a window's D-TAL above 50 fades with minutes — none at `DT_MIN_FULL`+ a game, all of it
  * at 15 — so a 25-minute defender keeps less of his per-minute edge. With it on, the named Manu cap is off.
  */
-const DT_MIN = Number(envVar('DT_MIN') ?? 0);
+const DT_MIN = Number(envVar('DT_MIN') ?? 0.5);
 const DT_MIN_FULL = Number(envVar('DT_MIN_FULL') ?? 32);
 function minutesShrink(span: PlayerSpan, d: number): number {
   if (d <= 50) return d;
