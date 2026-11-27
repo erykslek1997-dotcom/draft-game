@@ -23,3 +23,16 @@ export function apbrRapmForSpan(span: PlayerSpan): { o: number; d: number; net: 
   cache.set(span.id, result);
   return result;
 }
+
+/** 2026-11-27: defensive RAPM over the window's seasons and `reach` seasons either side, weighted by
+ * possessions (single-season RAPM swings: Bowen +2.7 / +0.7 / −0.2 in three straight years). */
+export function apbrDrapmAround(span: PlayerSpan, reach = 2): { d: number; poss: number } | null {
+  if (ERA_MASK) return null;
+  const seasons = byName.get(normalizePlayerName(span.playerName));
+  if (!seasons) return null;
+  const ys = spanEndYears(span.spanLabel);
+  if (!ys.length) return null;
+  let poss = 0, d = 0;
+  for (let y = Math.min(...ys) - reach; y <= Math.max(...ys) + reach; y++) { const r = seasons[String(y)]; if (!r) continue; poss += r[0]; d += r[0] * r[2]; }
+  return poss > 0 ? { d: d / poss, poss } : null;
+}
