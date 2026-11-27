@@ -138,3 +138,24 @@ if (process.env.STARTEST) {
 }
 
 if (process.env.DUMP) { const { writeFileSync } = await import('node:fs'); writeFileSync(process.env.DUMP, JSON.stringify(rows.map((x) => ({ srs: x.srs, ...x.comp })))); }
+// BENCHTEST (2026-11-27, the user: deep benches undervalued — 93-94 Sonics): beyond Overall, do the
+// real 6th-8th men (by real minutes) explain SRS?
+if (process.env.BENCHTEST) {
+  const { effectiveTalent } = await import('../src/engine/grades');
+  const ys = rows.map((x) => x.srs);
+  const ols = (cols: number[][]) => {
+    const X = cols[0].map((_, i) => [1, ...cols.map((c) => c[i])]); const k = X[0].length;
+    const A = Array.from({ length: k }, (_, a) => Array.from({ length: k }, (_, b) => X.reduce((s, r) => s + r[a] * r[b], 0)));
+    const v = Array.from({ length: k }, (_, a) => X.reduce((s, r, i) => s + r[a] * ys[i], 0));
+    for (let i = 0; i < k; i++) { const p = A[i][i]; for (let j = i; j < k; j++) A[i][j] /= p; v[i] /= p; for (let r = 0; r < k; r++) if (r !== i) { const f = A[r][i]; for (let j = i; j < k; j++) A[r][j] -= f * A[i][j]; v[r] -= f * v[i]; } }
+    return { b: v.map((x) => x.toFixed(3)), r: corr(X.map((row) => row.reduce((s, x, i) => s + x * v[i], 0)), ys).toFixed(4) };
+  };
+  const t = (x: Row, i: number) => effectiveTalent(x.spans[i]);
+  const bench = rows.map((x) => (t(x, 5) + t(x, 6) + t(x, 7)) / 3);
+  const benchW = rows.map((x) => { let a = 0, w = 0; for (let i = 5; i < 8; i++) { a += t(x, i) * x.minShare[i]; w += x.minShare[i]; } return a / w; });
+  const sixth = rows.map((x) => t(x, 5));
+  console.log('SRS ~ Overall               ', JSON.stringify(ols([rows.map((x) => x.ovr)])));
+  console.log('SRS ~ Overall + bench TAL   ', JSON.stringify(ols([rows.map((x) => x.ovr), bench])));
+  console.log('SRS ~ Overall + bench TAL(w)', JSON.stringify(ols([rows.map((x) => x.ovr), benchW])));
+  console.log('SRS ~ Overall + 6th man TAL ', JSON.stringify(ols([rows.map((x) => x.ovr), sixth])));
+}
