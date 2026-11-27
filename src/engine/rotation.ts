@@ -243,7 +243,7 @@ function starterOffenseFactor(player: PlayerSpan): number {
   return Math.max(STARTER_OFFENSE_FLOOR.min, 1 - STARTER_OFFENSE_FLOOR.perPoint * gap);
 }
 
-export function bestPrimaryAssignment(
+function bestPrimaryAssignment(
   roster: PlayerSpan[],
 ): { assignment: Partial<Record<Position, PlayerSpan>>; score: number } {
   const cacheKey = roster.map((p) => p.id).join('|');
@@ -842,6 +842,7 @@ export function autoAssignRotation(roster: PlayerSpan[]): Rotation {
   return cloneRotation(result);
 }
 
+const ROT_FILL_EMPTY = (envVar('ROT_FILL_EMPTY') ?? '0') === '1';
 function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
   const primaryBySlot = bestPrimaryAssignment(roster).assignment;
 
@@ -857,6 +858,20 @@ function autoAssignRotationUncached(roster: PlayerSpan[]): Rotation {
     if (starterGrant) slots[slot].push({ playerId: starterGrant.playerId, minutes: starterGrant.minutes });
     for (const g of here.filter((g) => g !== starterGrant).sort((x, y) => y.minutes - x.minutes)) {
       slots[slot].push({ playerId: g.playerId, minutes: g.minutes });
+    }
+  }
+  // 2026-11-27 (`ROT_FILL_EMPTY`, 0 = off): a slot the starter search left empty (Klay + Drexler, no
+  // PG) wrote its top grant first — Klay, already the SF starter — so he started twice and 30-minute
+  // Bridges read as bench. The empty slot's starter is its non-starter with the most minutes overall.
+  if (ROT_FILL_EMPTY) {
+    const primaries = new Set(Object.values(primaryBySlot).filter((p): p is PlayerSpan => !!p).map((p) => p.id));
+    const total = (id: string) => grants.filter((g) => g.playerId === id).reduce((a, g) => a + g.minutes, 0);
+    for (const slot of STARTER_SLOTS) {
+      if (primaryBySlot[slot] || slots[slot].length === 0) continue;
+      const pick = slots[slot].filter((e) => !primaries.has(e.playerId)).sort((a, b) => total(b.playerId) - total(a.playerId))[0];
+      if (!pick) continue;
+      slots[slot] = [pick, ...slots[slot].filter((e) => e !== pick)];
+      primaries.add(pick.playerId);
     }
   }
   mergeTinyBackupSlivers(roster, slots, primaryBySlot);
