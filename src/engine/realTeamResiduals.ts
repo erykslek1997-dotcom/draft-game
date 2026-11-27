@@ -16,12 +16,17 @@ import data from '../data/realTeamResiduals.json';
  */
 const ROWS = data as unknown as Record<string, [number, number]>;
 // Half strength: real SRS 0.8600 → 0.8641 (in sample), game 0.8099 → 0.8079; full: 0.8673 / 0.7931.
+const REAL_RES_NEGCAP = Number(envVar('REAL_RES_NEGCAP') ?? 0.4);
 export const REAL_RES_SCALE = Number(envVar('REAL_RES') ?? 0.5);
 /** Real ORtg / DRtg points per point of the team's Offense / Defense score (the audits' slopes). */
 const POINTS_PER_SCORE = { offense: 0.164, defense: 0.14 };
 export function realTeamResidual(span: PlayerSpan): { offense: number; defense: number } {
   const row = ROWS[normalizePlayerName(span.playerName)];
-  return row ? { offense: row[0], defense: row[1] } : { offense: 0, defense: 0 };
+  if (!row) return { offense: 0, defense: 0 };
+  // 2026-11-27 (LeBron −0.86: he played every minute of teams the engine already rated on him; Jordan, Bird,
+  // Stockton have no row at all): `REAL_RES_NEGCAP` caps how far a residual can pull down (0 = no cap).
+  const cap = (v: number) => (REAL_RES_NEGCAP > 0 ? Math.max(-REAL_RES_NEGCAP, v) : v);
+  return { offense: cap(row[0]), defense: cap(row[1]) };
 }
 /** Score points for a rotation: Σ minutes/48 · the player's residual, on the score's scale. */
 export function realResidualPoints(minutes: { player: PlayerSpan; minutes: number }[], side: 'offense' | 'defense'): number {
