@@ -198,7 +198,7 @@ export interface InsightEvidence {
 export type DetectorId =
   | 'ELITE_PRIMARY_CREATOR' | 'MULTIPLE_CREATION_SOURCES'
   | 'SECONDARY_CREATION_PRESENT' | 'CREATION_SHORTAGE'
-  | 'SINGLE_CREATOR_DEPENDENCY' | 'BENCH_CREATION_SHORTAGE' | 'OFFENSE_IS_THE_WEAK_SIDE'
+  | 'SINGLE_CREATOR_DEPENDENCY' | 'BENCH_CREATION_SHORTAGE' | 'OFFENSE_IS_THE_WEAK_SIDE' | 'DEFENSE_IS_THE_WEAK_SIDE'
   | 'CREATION_SURVIVES_STAR_REST'
   | 'EFFICIENT_FGA_BUDGET' | 'HIGH_TALENT_PER_FGA'
   | 'STAR_FGA_COMPRESSION' | 'MULTIPLE_HIGH_USAGE_PLAYERS'
@@ -1732,7 +1732,7 @@ export function insightContextFor(
 type InsightTopic =
   | 'creation' | 'usage' | 'spacing' | 'perimeter_def' | 'rim_def' | 'team_def' | 'weak_link_def'
   | 'rebounding' | 'position' | 'minutes' | 'depth' | 'closing' | 'structure' | 'playmaking' | 'free_throws'
-  | 'offense_level';
+  | 'offense_level' | 'defense_level';
 
 const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
   creation: 'creation', usage: 'usage', fga: 'usage', off_ball: 'usage', fit: 'usage', redundancy: 'usage',
@@ -1744,6 +1744,7 @@ const CATEGORY_TOPIC: Record<InsightCategory, InsightTopic> = {
 
 const TOPIC_OVERRIDE: Partial<Record<DetectorId, InsightTopic>> = {
   OFFENSE_IS_THE_WEAK_SIDE: 'offense_level',
+  DEFENSE_IS_THE_WEAK_SIDE: 'defense_level',
   STAR_POWER_WITH_USAGE_COLLISION: 'usage',
   ELITE_CREATION_POOR_SPACING: 'spacing',
   ELITE_SPACING_WEAK_CREATION: 'creation',
@@ -1779,7 +1780,7 @@ const CROSS_TOPIC_CONFLICTS: Partial<Record<DetectorId, DetectorId[]>> = {
 };
 
 const TOPIC_AREA: Partial<Record<InsightTopic, InsightScoreArea>> = {
-  creation: 'offense', playmaking: 'offense', offense_level: 'offense', usage: 'fit', spacing: 'spacing',
+  creation: 'offense', playmaking: 'offense', offense_level: 'offense', usage: 'fit', spacing: 'spacing', defense_level: 'defense',
   perimeter_def: 'defense', rim_def: 'defense', team_def: 'defense', weak_link_def: 'defense',
   minutes: 'rotation', position: 'rotation', depth: 'benchDepth',
 };
@@ -1895,6 +1896,32 @@ function weakOffenseInsight(context: InsightContext): RosterInsight | null {
   };
 }
 
+/**
+ * 2026-11-27: the defense twin of `weakOffenseInsight`. After the top-end package (more offense
+ * weight, two review rules out) the bottom quarter read 1.23 concerns vs 1.50 strengths — weak
+ * teams lose mostly on defense (bottom-quarter Defense 74 vs 82 at the top), and the defense
+ * detectors describe structure, not the result. Defense under `WEAK_DEFENSE_SCORE` (the bottom
+ * quarter of drafted rosters, measured 75) and weaker than the offense is named as the side
+ * that held the team back.
+ */
+const WEAK_DEFENSE_SCORE = 75;
+function weakDefenseInsight(context: InsightContext): RosterInsight | null {
+  const offense = context.scores?.offense;
+  const defense = context.scores?.defense;
+  if (defense == null || defense >= WEAK_DEFENSE_SCORE || (offense != null && offense <= defense)) return null;
+  const severity = clamp01(0.55 + (WEAK_DEFENSE_SCORE - defense) / 30);
+  const relevance = 0.8;
+  const confidence = 0.8;
+  const uniqueness = 0.8;
+  return {
+    id: 'DEFENSE_IS_THE_WEAK_SIDE', type: 'concern', category: 'defensive_structure',
+    severity, relevance, confidence, uniqueness,
+    score: scoreInsight(severity, relevance, confidence, uniqueness),
+    message: `The defense (${Math.round(defense)}) is the weak side — it rates in the bottom quarter of drafted rosters and trails this team's own offense.`,
+    evidence: { values: { defense: Math.round(defense) } },
+  };
+}
+
 export function generateRosterInsights(
   team: TeamFeatureSnapshot,
   config = DEFAULT_INSIGHT_CONFIG,
@@ -1912,6 +1939,8 @@ export function generateRosterInsights(
 
   const weakOffense = weakOffenseInsight(context);
   if (weakOffense) ranked.push(weakOffense);
+  const weakDefense = weakDefenseInsight(context);
+  if (weakDefense) ranked.push(weakDefense);
   const eligible = ranked.filter(i => i.score >= config.minScore);
   // `allActiveInsights` stays in raw score order (debug/tooling reads it as a priority ranking).
   return { ...selectForDisplay(eligible, config, context), allActiveInsights: ranked };
