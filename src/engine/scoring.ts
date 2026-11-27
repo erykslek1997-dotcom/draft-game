@@ -2289,8 +2289,9 @@ export function orgDupCost(five: PlayerSpan[]): number {
   // lower bar): the third passer costs from `ORG3_FROM`% and the fourth from `ORG4_FROM`%, `ORG_STAIR` ORtg per 5
   // points, at most 2 each. Real units 2013-14 on read the third at −0.9 (20-25%) / −1.2 (25%+, 7 units). 0 = off.
   // `ORG_STAIR_PERIM=1` (the user: a passing big works from the elbow, not in the guards' way): the staircase
-  // ranks the perimeter passers only (PG, SG, SF); a big is never one of the extra cooks.
-  const st = ORG_STAIR_PERIM ? five.filter((p) => p.primaryPosition !== 'PF' && p.primaryPosition !== 'C').map((p) => astPctForSpan(p)).sort((x, y) => y - x) : pas.map((x) => x.a);
+  // ranks the perimeter passers only (PG, SG, SF, and a PF who handles like a wing — LeBron 2011-14); a center is never one
+  // of the extra cooks.
+  const st = ORG_STAIR_PERIM ? five.filter((p) => p.primaryPosition !== 'C' && !(p.primaryPosition === 'PF' && (skill(p, 'handling') ?? 0) < 85)).map((p) => astPctForSpan(p)).sort((x, y) => y - x) : pas.map((x) => x.a);
   const stair = ORG_STAIR ? Math.min(2, (ORG_STAIR * Math.max(0, (st[2] ?? 0) - ORG3_FROM)) / 5) + Math.min(2, (ORG_STAIR * Math.max(0, (st[3] ?? 0) - ORG4_FROM)) / 5) : 0;
   return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1])) + stair;
 }
