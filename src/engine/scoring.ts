@@ -2273,10 +2273,12 @@ export function driveCreator(p: PlayerSpan): number {
  */
 const ORG_DUP = Number(envVar('ORG_DUP') ?? 10);
 const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
+// 2026-11-27 (`ORG_FROM`, the user: "25%?"): the second passer's AST% where the cost starts (full 10 points on).
+const ORG_FROM = Number(envVar('ORG_FROM') ?? 30);
 export function orgDupCost(five: PlayerSpan[]): number {
   if (!ORG_DUP || five.length < 2) return 0;
   const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
-  const pair = Math.max(0, Math.min(1, (pas[1].a - 30) / 10));
+  const pair = Math.max(0, Math.min(1, (pas[1].a - ORG_FROM) / 10));
   // Both must be poor shooters: if one shoots, he plays off the ball (spacing 85 → none, 60 → full).
   const nonShoot = (x: { sp: number }) => Math.max(0, Math.min(1, (85 - x.sp) / 25));
   return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1]));
