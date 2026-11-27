@@ -3,7 +3,7 @@ import { isCreator, isPerimeterDefender, isRimProtector, selfCreatorLevel, dataU
 import { spanEndYears } from './era';
 import { realResidualPoints } from './realTeamResiduals';
 import { traitFitBonus } from './traits';
-import { ballHandlerCost, ballShare } from './ballHandling';
+import { astPctForSpan, ballHandlerCost, ballShare } from './ballHandling';
 import type { Position, PlayerSpan, OffensiveArchetype } from '../data/schema';
 import type { Team } from './types';
 import { positionFitMultiplier, STARTER_SLOTS, isUpwardSlide } from './positions';
@@ -2234,6 +2234,26 @@ const BALL_HANDLER_OVERALL_PER_ORTG = 0.75 / 0.85;
 const BALL_HANDLER_REF = 0.54;
 
 /**
+ * 2026-11-27 (the user: no benefit from two players who both drive AND organise — Magic + LeBron).
+ * Real five-man units 2013-14 on (`scripts/_drive.ts`, 955 units): with two drive-creators (real AST%
+ * and rim pressure both high) the unit's ORtg lands 2.8 below what its Offense and tracked ball shares
+ * predict (90% -4.9 … -0.7). `DRIVE_DUP` = ORtg a 100 trips at a full pair (0 = off).
+ */
+const DRIVE_DUP = Number(envVar('DRIVE_DUP') ?? 0);
+const DRIVE_DUP_REF = Number(envVar('DRIVE_DUP_REF') ?? 0);
+export function driveCreator(p: PlayerSpan): number {
+  const a = Math.max(0, Math.min(1, (astPctForSpan(p) - 15) / 20));
+  const r = Math.max(0, Math.min(1, ((skill(p, 'rimPressure') ?? 50) - 55) / 30));
+  return a * r;
+}
+export function driveDupAdjustment(team: Team): number {
+  if (!DRIVE_DUP) return 0;
+  const dc = primaryStarters(team).map((s) => driveCreator(s.player)).sort((a, b) => b - a);
+  const pair = Math.max(0, Math.min(1, ((dc[1] ?? 0) - 0.4) / 0.2));
+  return -(DRIVE_DUP * pair - DRIVE_DUP_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
+
+/**
  * 2026-11-11, the audit (the user: "ławka z 4 solidnych graczy jest gorzej oceniana niż 3 lepszych +
  * ktoś kto nie gra"): `benchDepthScore` reads only the reserves who play, so the last man on the
  * bench was invisible. The card number of the weakest reserve (playing or not), at `per` Overall a
@@ -2446,6 +2466,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('benchOff', () => benchOffenseAdjustment(team)) +
     d('benchRole', () => benchRoleAdjustment(team)) +
     d('bpm', () => bpmAdjustment(team)) +
+    d('driveDup', () => driveDupAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
