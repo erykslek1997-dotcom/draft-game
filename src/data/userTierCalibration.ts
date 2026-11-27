@@ -295,6 +295,10 @@ export const USER_TAL_TARGET: Readonly<Record<string, number>> = {
  */
 export const USER_WINDOW_TIERS: ReadonlyArray<readonly [name: string, spanLabel: string, tier: OverallTier]> = [
   ['Stephen Curry', '2016-18', 'Legend'],
+  // 2026-11-27, the user: Jokic's MVP windows read 93 under Embiid (BPM 12.9-13.4, best of the top tier).
+  ['Nikola Jokic', '2020-22', 'Legend'],
+  ['Nikola Jokic', '2021-23', 'Legend'],
+  ['Nikola Jokic', '2022-24', 'Legend'],
 ];
 
 /**
