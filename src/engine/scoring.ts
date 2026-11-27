@@ -2296,6 +2296,21 @@ export function bestPlaymakerAdjustment(team: Team): number {
   const best = Math.max(0, ...primaryStarters(team).map((s) => skill(s.player, 'handling') ?? 50));
   return (PM_BEST * (best - PM_BEST_REF)) / 10 * BALL_HANDLER_OVERALL_PER_ORTG;
 }
+/**
+ * 2026-11-27 (the user: "czy powinna być oddzielna mechanika na spacing i 3pt?"): real five-man units 2013-14 on
+ * (`scripts/_drive.ts`) — beyond the five's Offense, the starters' mean catch-and-shoot skill (spot-up) is worth
+ * +1.0 ORtg per 10 points (90% +0.56 … +1.53); once it is in, spacing as a whole and pull-up threes add nothing.
+ * `SPOT_W` = ORtg per 10 points of mean spot-up over `SPOT_REF` (0 = off).
+ */
+const SPOT_W = Number(envVar('SPOT_W') ?? 0);
+const SPOT_REF = Number(envVar('SPOT_REF') ?? 50);
+export function spotUpAdjustment(team: Team): number {
+  if (!SPOT_W) return 0;
+  const st = primaryStarters(team).map((e) => skill(e.player, 'spotUp') ?? teamSpacingValue(e.player));
+  if (st.length === 0) return 0;
+  const mean = st.reduce((a, b) => a + b, 0) / st.length;
+  return (SPOT_W * (mean - SPOT_REF)) / 10 * BALL_HANDLER_OVERALL_PER_ORTG;
+}
 export function driveDupAdjustment(team: Team): number {
   if (!DRIVE_DUP) return 0;
   const dc = primaryStarters(team).map((s) => driveCreator(s.player)).sort((a, b) => b - a);
@@ -2519,6 +2534,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('driveDup', () => driveDupAdjustment(team)) +
     d('orgDup', () => orgDupAdjustment(team)) +
     d('pmBest', () => bestPlaymakerAdjustment(team)) +
+    d('spotUp', () => spotUpAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
