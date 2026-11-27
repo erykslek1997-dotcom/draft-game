@@ -232,6 +232,11 @@ const STARTER_OFFENSE_FLOOR = { floor: 50, perPoint: 0.015, min: 0.7 };
  * starter value is `VETERAN_STARTER_KEEP` of the rest; off the bench he is worth what he is. */
 const VETERAN_STARTER_KEEP = 0.95;
 const ROT_PIN_FLEX = (envVar('ROT_PIN_FLEX') ?? '1') === '1';
+// 2026-11-27 (the user: "piątka to najlepszych pięciu, pozycje do nich" — Curry, Jordan, Kawhi,
+// Magic, Shaq started Mikal Bridges at the four, because the pin held Kawhi at the three and Magic
+// could not take it): with `ROT_PIN_ANY` a pinned star may also start at any slot he plays at least
+// at the partial line (fit >= 0.92), so the search can move him over for another star.
+const ROT_PIN_ANY = (envVar('ROT_PIN_ANY') ?? '0') === '1';
 function starterOffenseFactor(player: PlayerSpan): number {
   if (spacesTheFloor(player)) return 1;
   const gap = Math.max(0, STARTER_OFFENSE_FLOOR.floor - computeOffensiveTalent(player));
@@ -285,7 +290,7 @@ export function bestPrimaryAssignment(
     // 2026-11-19 (the user's rotations: Bird to the four so Butler starts at three; "piątka to najlepszych
     // pięciu, pozycje do nich"): with `ROT_PIN_FLEX` a pinned star may also start at a position he
     // plays in full (a real second position), not only his own.
-    if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition && !(ROT_PIN_FLEX && positionCompetence(player, slot) === 'full')) {
+    if (v === undefined && pinnedIds.has(player.id) && slot !== player.primaryPosition && !(ROT_PIN_FLEX && positionCompetence(player, slot) === 'full') && !(ROT_PIN_ANY && positionFitMultiplier(player, slot) >= 0.92)) {
       v = 0;
       valueByPlayerSlot.set(key, v);
     }
