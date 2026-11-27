@@ -1409,7 +1409,7 @@ const WIN_GAP = (envVar('WIN_GAP') ?? '1') === '1';
  * stars' typical gap (−0.32, TAL 84+ windows), at 1.69 TAL per BPM point (TAL on BPM, 1974+), weighted by
  * the sample's reliability (minutes / (minutes + 500) × source quality), at most ±`PO_TAL_MAX`. 0 = off.
  */
-const PO_TAL = Number(envVar('PO_TAL') ?? 0);
+const PO_TAL = Number(envVar('PO_TAL') ?? 0.5);
 const PO_TAL_MAX = Number(envVar('PO_TAL_MAX') ?? 6);
 const PO_TAL_REF = -0.32;
 function playoffTalShift(playerName: string, spanLabel: string): number {
