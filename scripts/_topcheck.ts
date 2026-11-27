@@ -26,6 +26,10 @@ const score = (core: Record<string, PlayerSpan>, pos: string, p: PlayerSpan) => 
 let ok = 0, n = 0, margin = 0;
 for (const [a, sa, b, sb] of PAIRS) { const A = w(a, sa), B = w(b, sb); const pos = A.primaryPosition;
   const m = MARGINS[`${a}>${b}`] ?? {}; const lo = m.min ?? 0, hi = m.max ?? Infinity;
-  const d = [STAR, ROLE].map((c) => score(c, pos, A) - score(c, pos, B)); for (const x of d) { n++; if (x > lo && x <= hi) ok++; margin += Math.min(x - lo, 0) + Math.min(hi - x, 0); }
+  // 2026-11-27: a core that already holds A or B (Kawhi in the star five) let B play BESIDE A; that core
+  // member is swapped for a like-for-like stand-in so both are judged on the same four teammates.
+  const SUB: Record<string, PlayerSpan> = { 'Kawhi Leonard': w('Scottie Pippen','1990-92'), 'Kevin Garnett': w('Chris Webber','2000-02'), 'David Robinson': w('Patrick Ewing','1993-95'), 'Dwyane Wade': w('Clyde Drexler','1990-92'), 'Chris Paul': w('Gary Payton','1995-97'), 'Klay Thompson': w('Ray Allen','2000-02'), 'Draymond Green': w('Shawn Marion','2004-06'), 'Rudy Gobert': w('Ben Wallace','2002-04') };
+  const clean = (c: Record<string, PlayerSpan>) => Object.fromEntries(Object.entries(c).map(([k, v]) => [k, (v.playerName === a || v.playerName === b) && SUB[v.playerName] ? SUB[v.playerName] : v]));
+  const d = [clean(STAR), clean(ROLE)].map((c) => score(c, pos, A) - score(c, pos, B)); for (const x of d) { n++; if (x > lo && x <= hi) ok++; margin += Math.min(x - lo, 0) + Math.min(hi - x, 0); }
   console.log((d.every((x) => x > lo && x <= hi) ? 'ok ' : d.some((x) => x > lo && x <= hi) ? '½  ' : 'BAD') , `${a} ${sa} > ${b} ${sb}`.padEnd(62), d.map((x) => x.toFixed(1)).join(' / '), process.env.PARTS ? [STAR, ROLE].map((c) => { const x = parts(c, pos, A), y = parts(c, pos, B); return 'T F O D ' + x.map((v, i) => v - y[i]).join(' '); }).join(' | ') : ''); }
 console.log(`TOP CHECK ${ok}/${n}, shortfall ${margin.toFixed(1)}`);
