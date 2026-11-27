@@ -15,6 +15,7 @@ import {
   selfCreationRate,
   SHOOTING_ANOMALY_TEAM_SPACING_FLOOR,
   WALKING_GRAVITY_FLOOR,
+  computeSpacing,
 } from './spacing';
 import { rimPressure, rimPressureTeam } from './rimPressure';
 import { teamSpacingValue } from './midrangeGravity';
@@ -2246,6 +2247,27 @@ export function driveCreator(p: PlayerSpan): number {
   const r = Math.max(0, Math.min(1, ((skill(p, 'rimPressure') ?? 50) - 55) / 30));
   return a * r;
 }
+/**
+ * 2026-11-27 (the user: Magic + LeBron double up — two big organisers; Nash or CP3 beside a star shoot
+ * and can play off the ball). Real units 2013-14 on (`scripts/_drive.ts`): a second passer at 30-40%
+ * AST% costs ~5 ORtg at 40% (90% -9.8 … +1.0); when one of the two organisers does not shoot
+ * (spacing < 75, none at 50) ~10 (90% -16 … -3.5, 15 units). `ORG_DUP` = ORtg at a full pair of
+ * non-shooters (both of the two; a shooter beside him plays off the ball). 0 = off.
+ */
+const ORG_DUP = Number(envVar('ORG_DUP') ?? 0);
+const ORG_DUP_REF = Number(envVar('ORG_DUP_REF') ?? 0);
+export function orgDupCost(five: PlayerSpan[]): number {
+  if (!ORG_DUP || five.length < 2) return 0;
+  const pas = five.map((p) => ({ a: astPctForSpan(p), sp: computeSpacing(p) })).sort((x, y) => y.a - x.a);
+  const pair = Math.max(0, Math.min(1, (pas[1].a - 30) / 10));
+  // Both must be poor shooters: if one shoots, he plays off the ball (spacing 85 → none, 60 → full).
+  const nonShoot = (x: { sp: number }) => Math.max(0, Math.min(1, (85 - x.sp) / 25));
+  return ORG_DUP * pair * Math.min(nonShoot(pas[0]), nonShoot(pas[1]));
+}
+export function orgDupAdjustment(team: Team): number {
+  if (!ORG_DUP) return 0;
+  return -(orgDupCost(primaryStarters(team).map((s) => s.player)) - ORG_DUP_REF) * BALL_HANDLER_OVERALL_PER_ORTG;
+}
 export function driveDupAdjustment(team: Team): number {
   if (!DRIVE_DUP) return 0;
   const dc = primaryStarters(team).map((s) => driveCreator(s.player)).sort((a, b) => b - a);
@@ -2467,6 +2489,7 @@ export function scoreTeam(team: Team): ScoreBreakdown {
     d('benchRole', () => benchRoleAdjustment(team)) +
     d('bpm', () => bpmAdjustment(team)) +
     d('driveDup', () => driveDupAdjustment(team)) +
+    d('orgDup', () => orgDupAdjustment(team)) +
     d('hunt', () => HUNT_W * (fit0.components.huntResistance - HUNT_REF));
   const overall = Math.round(overallExact);
   const certainty = dataCertaintyAdjustment(team);
