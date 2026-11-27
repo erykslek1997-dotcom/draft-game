@@ -16,7 +16,7 @@ import data from '../data/realTeamResiduals.json';
  */
 const ROWS = data as unknown as Record<string, [number, number]>;
 // Half strength: real SRS 0.8600 → 0.8641 (in sample), game 0.8099 → 0.8079; full: 0.8673 / 0.7931.
-const REAL_RES_NEGCAP = Number(envVar('REAL_RES_NEGCAP') ?? 0);
+const REAL_RES_NEGCAP = Number(envVar('REAL_RES_NEGCAP') ?? 0.4);
 export const REAL_RES_SCALE = Number(envVar('REAL_RES') ?? 0.5);
 /** Real ORtg / DRtg points per point of the team's Offense / Defense score (the audits' slopes). */
 const POINTS_PER_SCORE = { offense: 0.164, defense: 0.14 };

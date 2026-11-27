@@ -1195,7 +1195,7 @@ const HELIO_NEG = Number(envVar('OFF_HELIO_NEG') ?? 4);
 const TWO_POST = Number(envVar('OFF_TWO_POST') ?? 4);
 const TWO_POST_USE = Number(envVar('OFF_TWO_POST_USE') ?? 0.5);
 // 2026-11-27 (Durant 2012-14 listed PF, spacing 99): a frontcourt shooter (spacing `OFF_TWO_POST_SPC`+) is not on the block. 0 = off.
-const TWO_POST_SPC = Number(envVar('OFF_TWO_POST_SPC') ?? 0);
+const TWO_POST_SPC = Number(envVar('OFF_TWO_POST_SPC') ?? 85);
 function twoPostOffense(five: PlayerSpan[]): number {
   if (!TWO_POST) return 0;
   // Real cases (scripts/_twopost.ts): Spurs 1990 Cummings + Robinson -2.1, Pelicans 2018 Davis + Cousins -1.0 ORtg
