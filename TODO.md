@@ -519,6 +519,15 @@ Zrobione: pokoje Mini (do 4), Duel (test, 1v1), All-Time online (do 8, 60 s, rot
 - [ ] App Store / Google Play: „Primeball”.
 - [ ] Znaki: USPTO (PRIMEBALL, PRIME BALL; klasy 9 i 41) i TMview (UE/PL); konsultacja prawna — „Prime” a NBA na Amazon Prime Video.
 
+**Przed startem z domeną (2026-11-28):**
+- [ ] Domena **primeball.app** w Porkbun (primeball.com zajęta — przekierowuje na primeserv.com); WHOIS privacy, auto-renew, przekierowanie `hello@primeball.app`. Potem: rekordy DNS pod GitHub Pages, `base` w `vite.config` z `/draft-game/` na `/`.
+- [ ] **Zdjęcia zawodników** — `public/headshots/` (1349 plików NBA, 11 MB) trafia do wersji publicznej na GitHub Pages. Decyzja przed startem: inicjały/sylwetki, Wikimedia Commons z kredytami, albo zostawić świadomie na własne ryzyko.
+- [ ] Polityka prywatności (logowanie Supabase = e-maile, RODO).
+- [ ] Konta społecznościowe: @primeball na X zajęte (loteria krypto „PrimeBall”); sprawdzić YouTube/TikTok/Instagram ręcznie, zapas @playprimeball / @primeballapp.
+- [ ] Statystyki bez cookies (Cloudflare Web Analytics albo GoatCounter) — po podpięciu domeny.
+- [ ] Google Search Console (rekord TXT w DNS) — po podpięciu domeny.
+- Znaki towarowe: nie do sprawdzenia przez nas (Eryk, 2026-11-28) — pomijamy do czasu ewentualnej monetyzacji.
+
 **Kolejność prac (od najprostszego):**
 1. [x] **Ucięte nazwiska na liście draftu (desktop 1280 px)** — „Shai…”, „Dirk…”: kolumna nazwiska za wąska, obok dużo miejsca na statystyki i puste kolumny. Zrzut przed/po.
 2. [ ] **Czerwień tylko jako alarm** — w menu czerwone kropki-ikony przy Mini Draft i Duel oraz czerwona kreska nad „Today's dailies”; zgodnie z brand bookiem czerwień = „on the clock” / ważne zero. W menu złoto albo krem.
