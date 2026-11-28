@@ -1391,6 +1391,10 @@ export function displayTalentForSpan(ctx: TierGateContext): number {
   let placed = place === undefined ? value : Math.min(place, value);
   if (WIN_GAP && ctx.playerName) placed = Math.min(placed, windowGapCap(ctx, placed));
   // The user's own window order (LeBron) stays as he set it.
+  // 2026-11-27 (the user: too many estimated windows in the AI's rosters): a window rated on less real data reads closer
+  // to an ordinary starter — `CERT_K74` of its TAL above 70 for windows ending 1974-96 (no play-by-play: RAPM, skills,
+  // shooting partly estimated), `CERT_KPRE` before 1974 (no steals, blocks, BPM). 0 = off.
+  if ((CERT_K74 || CERT_KPRE) && ctx.spanLabel && placed > 70) { const end = Math.max(...spanEndYears(ctx.spanLabel)); const k = end <= 1973 ? CERT_KPRE : end <= 1996 ? CERT_K74 : 0; placed = placed - k * (placed - 70); }
   if (PO_TAL && ctx.playerName && ctx.spanLabel && !hasUserWindowOrder(ctx.playerName)) placed = Math.round(placed + playoffTalShift(ctx.playerName, ctx.spanLabel));
   return allNbaTeamGate(ctx.playerName, shortSeasonCap(ctx.playerName, ctx.spanLabel, placed));
 }
@@ -1411,6 +1415,8 @@ const WIN_GAP = (envVar('WIN_GAP') ?? '1') === '1';
  * the sample's reliability (minutes / (minutes + 500) × source quality), at most ±`PO_TAL_MAX`. 0 = off.
  */
 const PO_TAL = Number(envVar('PO_TAL') ?? 0.5);
+const CERT_K74 = Number(envVar('CERT_K74') ?? 0);
+const CERT_KPRE = Number(envVar('CERT_KPRE') ?? 0);
 const PO_TAL_MAX = Number(envVar('PO_TAL_MAX') ?? 6);
 const PO_TAL_REF = -0.32;
 function playoffTalShift(playerName: string, spanLabel: string): number {
