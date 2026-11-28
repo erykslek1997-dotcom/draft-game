@@ -16,7 +16,7 @@ for (const [name, seasons] of Object.entries(data as unknown as Record<string, R
 // 2026-11-28 (the user: "nie masz jak odtworzyć RAPM?"): a lineup-level ridge RAPM from the pbpstats five-man lineups,
 // 2000-01 .. 2025-26 (`scripts/buildLineupRapm.ts`; r ~0.9 with APBR where both exist). `RAPM_LINEUP=1` fills the seasons
 // APBR lacks (2019-20 on), `RAPM_LINEUP=all` averages the two where both exist. 0 = APBR only.
-const RAPM_LINEUP = envVar('RAPM_LINEUP') ?? '0';
+const RAPM_LINEUP = envVar('RAPM_LINEUP') ?? '1';
 if (RAPM_LINEUP !== '0') for (const [name, seasons] of Object.entries(lineupData as unknown as Record<string, Record<string, [number, number, number, number]>>)) {
   const key = normalizePlayerName(name); const cur = { ...(byName.get(key) ?? {}) };
   for (const [y, r] of Object.entries(seasons)) { const a = cur[y]; cur[y] = !a ? r : RAPM_LINEUP === 'all' ? [a[0], (a[1] + r[1]) / 2, (a[2] + r[2]) / 2, (a[3] + r[3]) / 2] : a; }
