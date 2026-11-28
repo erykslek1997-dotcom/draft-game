@@ -5,7 +5,7 @@ import json, os, sys, time, urllib.request, concurrent.futures as cf
 OUT = os.environ.get('OUT') or os.path.join(os.path.dirname(__file__), '..', 'src', 'data', 'raw', 'pbpLineups')
 os.makedirs(OUT, exist_ok=True)
 teams = [t['id'] for t in json.load(urllib.request.urlopen('https://api.pbpstats.com/get-teams/nba', timeout=90))['teams']]
-seasons = [f"{y}-{str(y + 1)[2:]}" for y in range(2000, 2026)]
+seasons = [f"{y}-{str(y + 1)[2:]}" for y in range(int(os.environ.get("FROM", 2000)), 2026)]
 def job(s, t):
     f = os.path.join(OUT, f"{s}-{t}.json")
     if os.path.exists(f): return 'skip'
