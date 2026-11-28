@@ -419,6 +419,7 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  */
 const ERA_VOLUME_SHARE = Number(envVar('SPC_ERA') ?? 1);
 const SPC_ERA_POW = Number(envVar('SPC_ERA_POW') ?? 1);
+const SPC_SMOOTH_DOWN = (envVar('SPC_SMOOTH_DOWN') ?? '0') === '1';
 const ACCURATE_LOW_VOLUME = {
   lift: Number(envVar('SPC_LIFT') ?? 2),
   fromAccuracy: 6,
@@ -602,7 +603,10 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
     weight += w;
   }
-  const points = Math.max(weight > 0 ? sum / weight : own.points, preLinePoints(span), ftFloorPoints(span));
+  // 2026-11-27 (the user: Bird 1982-84, 0.9 threes at 27%, read 85 off his later windows): `SPC_SMOOTH_DOWN=1` lets the
+  // neighbour blend only lower a window (a lucky year evens out), never lend it a shot it did not show.
+  const smoothed = weight > 0 ? sum / weight : own.points;
+  const points = Math.max(SPC_SMOOTH_DOWN ? Math.min(smoothed, own.points) : smoothed, preLinePoints(span), ftFloorPoints(span));
   const result = { ...own, points, tier: tierForPoints(span, points) };
   smoothedCache.set(span.id, result);
   return result;
