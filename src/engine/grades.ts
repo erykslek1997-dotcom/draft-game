@@ -1415,8 +1415,8 @@ const WIN_GAP = (envVar('WIN_GAP') ?? '1') === '1';
  * the sample's reliability (minutes / (minutes + 500) × source quality), at most ±`PO_TAL_MAX`. 0 = off.
  */
 const PO_TAL = Number(envVar('PO_TAL') ?? 0.5);
-const CERT_K74 = Number(envVar('CERT_K74') ?? 0);
-const CERT_KPRE = Number(envVar('CERT_KPRE') ?? 0);
+const CERT_K74 = Number(envVar('CERT_K74') ?? 0.1);
+const CERT_KPRE = Number(envVar('CERT_KPRE') ?? 0.15);
 const PO_TAL_MAX = Number(envVar('PO_TAL_MAX') ?? 6);
 const PO_TAL_REF = -0.32;
 function playoffTalShift(playerName: string, spanLabel: string): number {

@@ -402,7 +402,7 @@ export interface SpacingBreakdown {
 }
 
 // 2026-11-27 (no name exceptions; the user: Bird 1982-84 too high): `SPC_MANUAL_WG=0` drops the named walking-gravity list.
-const SPC_MANUAL_WG = (envVar('SPC_MANUAL_WG') ?? '1') === '1';
+const SPC_MANUAL_WG = (envVar('SPC_MANUAL_WG') ?? '0') === '1';
 function hasManualWalkingGravity(span: PlayerSpan): boolean {
   if (!SPC_MANUAL_WG) return false;
   const name = normalizePlayerName(span.playerName);
@@ -421,8 +421,8 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * before — nothing in `src/` passes it.
  */
 const ERA_VOLUME_SHARE = Number(envVar('SPC_ERA') ?? 1);
-const SPC_ERA_POW = Number(envVar('SPC_ERA_POW') ?? 1);
-const SPC_SMOOTH_DOWN = (envVar('SPC_SMOOTH_DOWN') ?? '0') === '1';
+const SPC_ERA_POW = Number(envVar('SPC_ERA_POW') ?? 0.7);
+const SPC_SMOOTH_DOWN = (envVar('SPC_SMOOTH_DOWN') ?? '1') === '1';
 const ACCURATE_LOW_VOLUME = {
   lift: Number(envVar('SPC_LIFT') ?? 2),
   fromAccuracy: 6,

@@ -1359,8 +1359,8 @@ const DT_RAPM = Number(envVar('DT_RAPM') ?? 1);
 const DT_RAPM_SCALE = Number(envVar('DT_RAPM_SCALE') ?? 20);
 const DT_RAPM_CAP = Number(envVar('DT_RAPM_CAP') ?? 12);
 const DT_RAPM_REACH = Number(envVar('DT_RAPM_REACH') ?? 2);
-const DT_RAPM_EST = Number(envVar('DT_RAPM_EST') ?? 0);
-const DT_RAPM_EST_TO = Number(envVar('DT_RAPM_EST_TO') ?? 9999);
+const DT_RAPM_EST = Number(envVar('DT_RAPM_EST') ?? 1);
+const DT_RAPM_EST_TO = Number(envVar('DT_RAPM_EST_TO') ?? 1996);
 function towardRapm(span: PlayerSpan, d: number): number {
   const real = apbrDrapmAround(span, DT_RAPM_REACH);
   // 2026-11-27 (`DT_RAPM_EST`, 0 = off): where there is no RAPM (before 1997, after 2019), a box-score estimate of it
