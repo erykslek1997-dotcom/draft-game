@@ -4,7 +4,7 @@
 // layout { name: { endYear: [poss, ORAPM, DRAPM (+ = better defense), net] } } and, for 2000-19, its agreement with APBR.
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-const DIR = resolve(import.meta.dirname, '../src/data/raw/pbpLineups');
+const DIR = process.env.LINEUP_DIR ?? resolve(import.meta.dirname, '../src/data/raw/pbpLineups');
 const LAMBDA = Number(process.env.LAMBDA ?? 3000);
 const names = new Map<string, string>();
 for (const f of readdirSync(resolve(import.meta.dirname, '../src/data/raw/pbpstats'))) if (f.endsWith('-Player.json')) for (const r of JSON.parse(readFileSync(resolve(import.meta.dirname, '../src/data/raw/pbpstats', f), 'utf8')).multi_row_table_data) names.set(String(r.EntityId), r.Name);
