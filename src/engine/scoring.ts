@@ -1208,11 +1208,14 @@ const TWO_POST = Number(envVar('OFF_TWO_POST') ?? 4);
 const TWO_POST_USE = Number(envVar('OFF_TWO_POST_USE') ?? 0.5);
 // 2026-11-27 (Durant 2012-14 listed PF, spacing 99): a frontcourt shooter (spacing `OFF_TWO_POST_SPC`+) is not on the block. 0 = off.
 const TWO_POST_SPC = Number(envVar('OFF_TWO_POST_SPC') ?? 85);
+// 2026-11-28 (the user: Hakeem 92-94 -4 next to LeBron 2012-14 listed PF): a frontcourt handler (handling
+// `OFF_TWO_POST_HANDLE`+, as in the stair rule) runs it from the perimeter, not the block. 0 = off.
+const TWO_POST_HANDLE = Number(envVar('OFF_TWO_POST_HANDLE') ?? 0);
 function twoPostOffense(five: PlayerSpan[]): number {
   if (!TWO_POST) return 0;
   // Real cases (scripts/_twopost.ts): Spurs 1990 Cummings + Robinson -2.1, Pelicans 2018 Davis + Cousins -1.0 ORtg
   // under the engine's read — two in 600 teams, because coaches don't build it; the user: "nie bez powodu tak się nie gra".
-  const n = new Set(five.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && (dataUsageDemand(p) ?? 0.3) >= TWO_POST_USE && !(TWO_POST_SPC && computeSpacing(p) >= TWO_POST_SPC)).map((p) => p.id)).size;
+  const n = new Set(five.filter((p) => (p.primaryPosition === 'PF' || p.primaryPosition === 'C') && (dataUsageDemand(p) ?? 0.3) >= TWO_POST_USE && !(TWO_POST_SPC && computeSpacing(p) >= TWO_POST_SPC) && !(TWO_POST_HANDLE && (skill(p, 'handling') ?? 0) >= TWO_POST_HANDLE)).map((p) => p.id)).size;
   return n >= 2 ? -TWO_POST : 0;
 }
 export function helioOffense(five: PlayerSpan[]): { points: number; met: number } {
