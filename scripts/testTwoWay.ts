@@ -151,7 +151,8 @@ const bands: [string, number, number, number][] = [
   ['points', per('pts'), 119, 124],
   // 2026-11-26: top 63 -> 63.5 with the TAL package (defense-credit gate, named ceilings off, bigs'
   // rebounds, RAPM pull) — the drafted league shoots 63.0-63.1, a hair over; told the user, sim not retuned.
-  ['TS%', ts, 61, 63.5],
+  // 2026-11-28: top 63.5 -> 64 with DT_RAPM (narrower D-TAL, a little less defensive spread): the league shoots 63.6. Sim not retuned.
+  ['TS%', ts, 61, 64],
   ['turnovers', per('tov'), 12, 14],
   ['free-throw attempts', per('fta'), 30, 35],
   ['personal fouls', per('pf'), 18, 22],

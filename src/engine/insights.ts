@@ -605,7 +605,8 @@ const WEAK_STARTING_REBOUNDING_THRESHOLD = 0.62;
 const ELITE_BARS = {
   primaryCreatorImpact: 100, // 31% (was 82: 92%)
   starterRebounding: 0.99,   // 35% (was 0.68: 92%)
-  defensiveCoverage: 0.90,   // 30% (was 0.82: 63%)
+  // 2026-11-28: 0.90 -> 0.88 with DT_RAPM: the narrower D-TAL lowers coverage ~0.03 across the board (POA-wing-rim fixture 0.914 -> 0.887), so the same top third sits lower.
+  defensiveCoverage: 0.88,   // 30% (was 0.82: 63%)
   defensiveLayering: 1.0,    // 27% (was 0.82: 76%)
   perimeterDefense: 0.9,     // 29% (was 0.80: 54%)
   rimProtection: 0.95,       // 42% (was 0.82: 51%; the input saturates, can't separate further)
@@ -1370,7 +1371,9 @@ export const DETECTORS: RosterInsightDetector[] = [
       const frontcourtSpacers = t.frontcourtSpacerCount ?? 0;
       const penalty = t.nonlinearNonSpacerPenalty ?? 1;
       const startersWhoSpace = t.starterPlusShooterCount ?? 0;
-      return bigs >= 2 && frontcourtSpacers >= 1 && frontcourtSpacing >= 0.45 &&
+      return bigs >= 2 && // 2026-11-28: 0.45 -> 0.40 after the named walking-gravity list went (SPC_MANUAL_WG 0): Dirk 06-08 + Chandler
+        // (the 2011 title frontcourt) read 0.41 and are a real viable two-big spacing.
+        frontcourtSpacers >= 1 && frontcourtSpacing >= 0.40 &&
         startersWhoSpace >= 3 && penalty <= 0.27
         ? hit(
           0.76,
