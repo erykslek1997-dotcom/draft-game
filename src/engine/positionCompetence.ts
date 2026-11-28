@@ -83,7 +83,7 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
  * guard who doesn't shoot plays the two only partly — off the ball he spaces nothing. `SG_SHOOT=1`: a PG's SG
  * score is capped by his spacing, 0.5 at 40 or below up to no cap at 70. 0 = off.
  */
-const SG_SHOOT = (envVar('SG_SHOOT') ?? '0') === '1';
+const SG_SHOOT = (envVar('SG_SHOOT') ?? '1') === '1';
 function nonShootingPointAtTwo(span: PlayerSpan, slot: Position): number {
   if (!SG_SHOOT || slot !== 'SG' || span.primaryPosition !== 'PG') return 1;
   const spc = computeSpacing(span);
