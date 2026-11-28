@@ -401,7 +401,10 @@ export interface SpacingBreakdown {
   tier: SpacingTier;
 }
 
+// 2026-11-27 (no name exceptions; the user: Bird 1982-84 too high): `SPC_MANUAL_WG=0` drops the named walking-gravity list.
+const SPC_MANUAL_WG = (envVar('SPC_MANUAL_WG') ?? '0') === '1';
 function hasManualWalkingGravity(span: PlayerSpan): boolean {
+  if (!SPC_MANUAL_WG) return false;
   const name = normalizePlayerName(span.playerName);
   const entry = MANUAL_WALKING_GRAVITY.find((e) => normalizePlayerName(e.player) === name);
   if (!entry) return false;
@@ -418,6 +421,8 @@ function hasManualWalkingGravity(span: PlayerSpan): boolean {
  * before — nothing in `src/` passes it.
  */
 const ERA_VOLUME_SHARE = Number(envVar('SPC_ERA') ?? 1);
+const SPC_ERA_POW = Number(envVar('SPC_ERA_POW') ?? 0.7);
+const SPC_SMOOTH_DOWN = (envVar('SPC_SMOOTH_DOWN') ?? '1') === '1';
 const ACCURATE_LOW_VOLUME = {
   lift: Number(envVar('SPC_LIFT') ?? 2),
   fromAccuracy: 6,
@@ -428,7 +433,10 @@ function rawSpacingBreakdown(span: PlayerSpan, selfCreationOverride?: number): S
   // 2026-11-05, the user ("Bowen zbyt mocny ten spacing": 2.7 threes a game in 2002-04 read as 6.3
   // today): the era scale counts at `ERA_VOLUME_SHARE` of its full lift.
   const fullScale = span.box.threePA > 0 ? eraScaledThreePA(span.spanLabel, span.box.threePA) / span.box.threePA : 1;
-  const scaledThreePA = span.box.threePA * (fullScale >= 1 ? 1 + ERA_VOLUME_SHARE * (fullScale - 1) : fullScale);
+  // 2026-11-27 (the user: Bird's 2.7 threes in 1986 read as 21.6 today, "przesada"): `SPC_ERA_POW` damps the era
+  // multiplier (league 3PA now / then) — 0.5 = its square root, about the same rank in today's league (Bird 2.7 -> ~7.6). 1 = as before.
+  const damped = fullScale >= 1 ? Math.pow(fullScale, SPC_ERA_POW) : fullScale;
+  const scaledThreePA = span.box.threePA * (damped >= 1 ? 1 + ERA_VOLUME_SHARE * (damped - 1) : damped);
   const selfCreation = selfCreationOverride ?? selfCreationRate(span);
 
   const accuracyBar =
@@ -598,7 +606,10 @@ export function spacingBreakdown(span: PlayerSpan, selfCreationOverride?: number
     sum += w * (shift === 0 ? own.points : rawSpacingBreakdown(window).points);
     weight += w;
   }
-  const points = Math.max(weight > 0 ? sum / weight : own.points, preLinePoints(span), ftFloorPoints(span));
+  // 2026-11-27 (the user: Bird 1982-84, 0.9 threes at 27%, read 85 off his later windows): `SPC_SMOOTH_DOWN=1` lets the
+  // neighbour blend only lower a window (a lucky year evens out), never lend it a shot it did not show.
+  const smoothed = weight > 0 ? sum / weight : own.points;
+  const points = Math.max(SPC_SMOOTH_DOWN ? Math.min(smoothed, own.points) : smoothed, preLinePoints(span), ftFloorPoints(span));
   const result = { ...own, points, tier: tierForPoints(span, points) };
   smoothedCache.set(span.id, result);
   return result;

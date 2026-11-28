@@ -1,3 +1,5 @@
+import { computeSpacing } from './spacing';
+import { envVar } from './env';
 import type { PlayerSpan, Position } from '../data/schema';
 import { isCreator, isPlaymaker } from './skills';
 import { normalizePlayerName } from '../data/schema';
@@ -74,7 +76,18 @@ export function positionCompetenceScore(span: PlayerSpan, slot: Position): numbe
     if (height !== undefined && height < MIN_SG_HEIGHT_INCHES) return 0;
   }
   const name = normalizePlayerName(span.playerName);
-  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, shootingPointAtTwo(span, slot), Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1));
+  return Math.max(NAMED_SLOT_FLOORS[name]?.[slot] ?? 0, shootingPointAtTwo(span, slot), Math.min(rawCompetenceScore(span, slot), sizeCap(span, slot), crossCourtCap(span, slot), NAMED_SLOT_CAPS[name]?.[slot] ?? 1, nonShootingPointAtTwo(span, slot)));
+}
+/**
+ * 2026-11-28 (the user: John Wall, spacing 45, backing up Jordan at the two "zamiast nominalnego SG"): a point
+ * guard who doesn't shoot plays the two only partly — off the ball he spaces nothing. `SG_SHOOT=1`: a PG's SG
+ * score is capped by his spacing, 0.5 at 40 or below up to no cap at 70. 0 = off.
+ */
+const SG_SHOOT = (envVar('SG_SHOOT') ?? '1') === '1';
+function nonShootingPointAtTwo(span: PlayerSpan, slot: Position): number {
+  if (!SG_SHOOT || slot !== 'SG' || span.primaryPosition !== 'PG') return 1;
+  const spc = computeSpacing(span);
+  return 0.5 + 0.5 * Math.max(0, Math.min(1, (spc - 40) / 30));
 }
 
 /**

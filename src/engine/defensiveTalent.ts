@@ -8,6 +8,7 @@ import { normalizePlayerName } from '../data/schema';
 import { realSpan } from './realAdvancedLookup';
 import { apbrDrapmAround } from './apbrRapmLookup';
 import DTAL_COMPOSITE from '../data/dtalComposite.json';
+import DRAPM_ESTIMATE from '../data/drapmEstimate.json';
 import preBpmDwsData from '../data/preBpmDefensiveWinShares.json';
 import { draftPool } from '../data/draftPool';
 import { computeDefensiveImpact } from './defense';
@@ -1358,8 +1359,16 @@ const DT_RAPM = Number(envVar('DT_RAPM') ?? 1);
 const DT_RAPM_SCALE = Number(envVar('DT_RAPM_SCALE') ?? 20);
 const DT_RAPM_CAP = Number(envVar('DT_RAPM_CAP') ?? 12);
 const DT_RAPM_REACH = Number(envVar('DT_RAPM_REACH') ?? 2);
+const DT_RAPM_EST = Number(envVar('DT_RAPM_EST') ?? 1);
+const DT_RAPM_EST_TO = Number(envVar('DT_RAPM_EST_TO') ?? 1996);
 function towardRapm(span: PlayerSpan, d: number): number {
-  const r = apbrDrapmAround(span, DT_RAPM_REACH);
+  const real = apbrDrapmAround(span, DT_RAPM_REACH);
+  // 2026-11-27 (`DT_RAPM_EST`, 0 = off): where there is no RAPM (before 1997, after 2019), a box-score estimate of it
+  // (`scripts/_box2rapm.ts`, ridge on 1997-2019 windows; held-out players r 0.58-0.66 — DBPM carries most of it),
+  // counted as `DT_RAPM_EST` x 20000 possessions.
+  // `DT_RAPM_EST_TO`: only windows ending by that year (the estimate misses modern rim deterrence: Gobert 2021-23 0.75).
+  const estD = !real && DT_RAPM_EST && Math.max(...spanEndYears(span.spanLabel)) <= DT_RAPM_EST_TO ? (DRAPM_ESTIMATE as Record<string, number>)[span.id] : undefined;
+  const r = real ?? (estD === undefined ? null : { d: estD, poss: DT_RAPM_EST * 20000 });
   if (!r) return d;
   const implied = Math.max(0, Math.min(100, 50 + DT_RAPM_SCALE * r.d));
   const w = r.poss / (r.poss + 30000);
