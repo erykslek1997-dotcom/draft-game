@@ -401,7 +401,10 @@ export interface SpacingBreakdown {
   tier: SpacingTier;
 }
 
+// 2026-11-27 (no name exceptions; the user: Bird 1982-84 too high): `SPC_MANUAL_WG=0` drops the named walking-gravity list.
+const SPC_MANUAL_WG = (envVar('SPC_MANUAL_WG') ?? '1') === '1';
 function hasManualWalkingGravity(span: PlayerSpan): boolean {
+  if (!SPC_MANUAL_WG) return false;
   const name = normalizePlayerName(span.playerName);
   const entry = MANUAL_WALKING_GRAVITY.find((e) => normalizePlayerName(e.player) === name);
   if (!entry) return false;
