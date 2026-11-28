@@ -549,10 +549,18 @@ function selfCreationProxy(player: PlayerSpan): number {
   return POST_SCORER_SELF_CREATION * usage;
 }
 
+// 2026-11-28 (the user: Robinson 91-93 reading self-creation 0): with no measured unassisted-FG rate (pre-1997) the
+// archetype proxy gave 0 to every Versatile Big, Secondary Ball Handler and Movement Shooter. `SC_SKILL_FB` = 1 reads the
+// player's selfCreation skill on the measured scale instead (7.4 + 0.562 × skill: r 0.90 over 3692 measured windows), never
+// under the proxy. 0 = off.
+const SC_SKILL_FB = envVar('SC_SKILL_FB') === '1';
 function starterSelfCreation(player: PlayerSpan): number {
   const measured = measuredSelfCreationForSpan(player, selfCreationFgByYear);
   const proxy = selfCreationProxy(player);
-  if (measured == null) return proxy * 100;
+  if (measured == null) {
+    const sk = SC_SKILL_FB ? skill(player, 'selfCreation') : null;
+    return sk == null ? proxy * 100 : Math.max(proxy * 100, 7.4 + 0.562 * sk);
+  }
   const floor = ((selfCreatorLevel(player) ?? (PRIMARY_CREATOR_ARCHETYPES.includes(player.offensiveArchetype) ? 1 : 0)) >= 0.85) ? proxy * SELF_CREATION_PROXY_FLOOR_WEIGHT : 0;
   return Math.max(measured, floor) * 100;
 }
